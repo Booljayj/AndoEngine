@@ -41,19 +41,6 @@ namespace S
 		{}
 
 		void Update() const;
-
-		void SetMesh( const EntityID MeshRendererID, const EntityID MeshID ) const;
-		void SetShaderProgram( const EntityID MeshRendererID, const EntityID ShaderProgID ) const;
-
-		void SetShaderSource( const EntityID ShaderID, const char* Source, GLenum SourceType ) const;
-		void SetProgramShaders( const EntityID ShaderProgramID, const vector<EntityID>& NewLinkedShaderIDs ) const;
-		void Link( const EntityID ShaderPogramID ) const;
-
-	protected:
-		void RebindBufferData( GLuint VAOID, const C::Mesh* MeshComp ) const;
 		void Render( const C::MeshRenderer* MeshRendererComp ) const;
-
-		void Compile( C::Shader* ShaderComp );
-		void Link( C::ShaderProgram* ShaderProgramComp ) const;
 	};
 }

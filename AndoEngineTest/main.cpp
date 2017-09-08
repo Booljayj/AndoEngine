@@ -21,6 +21,8 @@ using namespace std;
 #include "ShaderProgramComponent.h"
 #include "ShaderComponent.h"
 
+#include "GLVertexData.h"
+
 int main( int argc, const char * argv[] )
 {
 	cout << "Hello, World! This is AndoEngine." << endl;
@@ -43,7 +45,7 @@ int main( int argc, const char * argv[] )
 	TCompManager<C::ShaderProgram> ShaderProgramManager{};
 	TCompInfo<C::ShaderProgram> ShaderProgram{ 130, "ShaderProgram", &ShaderProgramManager };
 
-	S::EntitySystem EntitySystem{
+	S::EntitySystem EntitySys{
 		{
 			&Transform,
 			&Hierarchy,
@@ -54,18 +56,18 @@ int main( int argc, const char * argv[] )
 		}
 	};
 
-	S::SDLSystem SDLSystem;
-	S::SDLEventSystem SDLEventSystem;
-	S::SDLWindowSystem SDLWindowSystem;
+	S::SDLSystem SDL;
+	S::SDLEventSystem SDLEvent;
+	S::SDLWindowSystem SDLWindow;
 
-	S::RenderingSystem RenderingSystem{ &EntitySystem, &Mesh, &MeshRenderer, &Shader, &ShaderProgram };
+	S::RenderingSystem Rendering{ &EntitySys, &Mesh, &MeshRenderer, &Shader, &ShaderProgram };
 
 	cout << "Initializing all systems" << endl;
 	bool bInitializeSuccessful =
-		EntitySystem.Initialize() &&
-		SDLSystem.Initialize() &&
-		SDLEventSystem.Initialize() &&
-		SDLWindowSystem.Initialize();
+		EntitySys.Initialize() &&
+		SDL.Initialize() &&
+		SDLEvent.Initialize() &&
+		SDLWindow.Initialize();
 
 	if( bInitializeSuccessful )
 	{
@@ -77,57 +79,67 @@ int main( int argc, const char * argv[] )
 		EntityID ShaderProgramEnt = 50;
 		EntityID MeshEnt = 55;
 
-		EntitySystem.Create( EntA );
-		EntitySystem.Create( EntB, { &Transform, &Hierarchy } );
+		EntitySys.Create( EntA );
+		EntitySys.Create( EntB, { &Transform, &Hierarchy } );
 
-		EntitySystem.Create( VertexShaderEnt, { &Shader } );
-		EntitySystem.Create( FragmentShaderEnt, { &Shader } );
-		EntitySystem.Create( ShaderProgramEnt, { &ShaderProgram } );
+		EntitySys.Create( VertexShaderEnt, { &Shader } );
+		EntitySys.Create( FragmentShaderEnt, { &Shader } );
+		EntitySys.Create( ShaderProgramEnt, { &ShaderProgram } );
 
-		EntitySystem.Create( MeshEnt, { &Transform, &Mesh, &MeshRenderer } );
+		EntitySys.Create( MeshEnt, { &Transform, &Mesh, &MeshRenderer } );
 
-		RenderingSystem.SetMesh( MeshEnt, MeshEnt );
-		RenderingSystem.SetShaderProgram( MeshEnt, ShaderProgramEnt );
-		RenderingSystem.SetShaderSource(
-			VertexShaderEnt,
+		C::Mesh* TestMesh = EntitySys.Find( MeshEnt )->Get( Mesh );
+		TestMesh->Vertices =
+		{
+			GL::VertexData{ -1, -1, 0 },
+			GL::VertexData{ 1, -1, 0 },
+			GL::VertexData{ 0, 1, 0 },
+		};
+		TestMesh->CreateBuffers();
+
+		C::MeshRenderer* TestMeshRenderer = EntitySys.Find( MeshEnt )->Get( MeshRenderer );
+		TestMeshRenderer->Setup( TestMesh );
+
+		C::Shader* TestVertexShader = EntitySys.Find( VertexShaderEnt )->Get( Shader );
+		TestVertexShader->Source =
 			"#version 330 core\n\
-			layout(location = 0) in vec3 vertexPosition_modelspace;\n\
-			void main(void) { gl_Position.xyz = vertexPosition_modelspace; gl_Position.w = 1.0; }",
-			GL_VERTEX_SHADER
-		);
-		RenderingSystem.SetShaderSource(
-			FragmentShaderEnt,
-			"#version 330 core\n\
-			out vec3 color;\n\
-			void main(){ color = vec3(1,0,0); }",
-			GL_FRAGMENT_SHADER
-		);
+			in vec3 vert_Position;\n\
+			void main(void) { gl_Position.xyz = vert_Position; gl_Position.w = 1.0; }";
+		TestVertexShader->ShaderType = GL_VERTEX_SHADER;
 
-		RenderingSystem.SetProgramShaders( ShaderProgramEnt, { VertexShaderEnt, FragmentShaderEnt } );
-		RenderingSystem.Link( ShaderProgramEnt );
+		C::Shader* TestFragmentShader = EntitySys.Find( FragmentShaderEnt )->Get( Shader );
+		TestFragmentShader->Source =
+			"#version 330 core\n\
+			out vec4 color;\n\
+			void main(){ color = vec4(1,0,0,1); }";
+		TestFragmentShader->ShaderType = GL_FRAGMENT_SHADER;
+
+		C::ShaderProgram* TestProgram = EntitySys.Find( ShaderProgramEnt )->Get( ShaderProgram );
+		TestProgram->Link( { TestVertexShader, TestFragmentShader } );
+		TestProgram->Use();
 
 		cout << "Current entity system status:" << endl;
-		cout << EntitySystem;
+		cout << EntitySys;
 
 		bool bShutdownRequested = false;
 		do{
-			SDLEventSystem.Update( bShutdownRequested );
+			SDLEvent.Update( bShutdownRequested );
 			if( !bShutdownRequested )
 			{
-				SDLWindowSystem.Clear();
+				SDLWindow.Clear();
 
-				RenderingSystem.Update();
+				Rendering.Update();
 
-				SDLWindowSystem.Swap();
+				SDLWindow.Swap();
 			}
 		}
 		while( !bShutdownRequested );
 	}
 
-	EntitySystem.Deinitialize();
-	SDLWindowSystem.Deinitialize();
-	SDLEventSystem.Deinitialize();
-	SDLSystem.Deinitialize();
+	EntitySys.Deinitialize();
+	SDLWindow.Deinitialize();
+	SDLEvent.Deinitialize();
+	SDL.Deinitialize();
 
 	return 0;
 }

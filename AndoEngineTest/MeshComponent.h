@@ -8,10 +8,16 @@
 
 #pragma once
 
-#include "TCompManager.h"
-#include "TCompInfo.h"
+#include <cassert>
+
 #include "GL/glew.h"
 #include "glm/vec3.hpp"
+
+#include "TCompManager.h"
+#include "TCompInfo.h"
+
+#include "GLVertexData.h"
+#include "GLVertexBufferObject.h"
 
 using namespace glm;
 
@@ -19,45 +25,26 @@ namespace C
 {
 	struct Mesh
 	{
-		enum {
-			VertexBuffer = 0,
-			ColorBuffer,
-			NormalBuffer,
+		vector<GL::VertexData> Vertices;
+		GLuint BufferID[GL::EBuffer::Count()] = {0};
 
-			MaxBufferSize,
-		};
-
-		Mesh()
-		{
-			//Default screen triangle
-			Vertices = {
-				vec3{ -1.0f, -1.0f, 0.0f },
-				vec3{ 1.0f, -1.0f, 0.0f },
-				vec3{ 0.0f,  1.0f, 0.0f },
-			};
-//			VertData = {
-//				-1.0f, -1.0f, 0.0f,
-//				1.0f, -1.0f, 0.0f,
-//				0.0f, 1.0f, 0.0f,
-//			};
-		}
-
-		vector<vec3> Vertices;
-		GLfloat VertData[9] = {
-			-1.0f, -1.0f, 0.0f,
-			1.0f, -1.0f, 0.0f,
-			0.0f, 1.0f, 0.0f,
-		};
-		GLuint BufferID[MaxBufferSize] = {0};
-
-		void OnRetained()
-		{
-			glGenBuffers( 1, &BufferID[VertexBuffer] );
-		}
+		void OnRetained() {}
 
 		void OnReleased()
 		{
-			glDeleteBuffers( 1, &BufferID[VertexBuffer] );
+			if( BufferID[0] != 0 ) DestroyBuffers();
+		}
+
+		void CreateBuffers()
+		{
+			glGenBuffers( GL::EBuffer::Count(), &BufferID[0] );
+			glBindBuffer( GL_ARRAY_BUFFER, BufferID[GL::EBuffer::VertexData] );
+			glBufferData( GL_ARRAY_BUFFER, sizeof(decltype(Vertices)::value_type) * Vertices.size(), Vertices.data(), GL_STATIC_DRAW );
+		}
+
+		void DestroyBuffers()
+		{
+			glDeleteBuffers( GL::EBuffer::Count(), &BufferID[0] );
 		}
 	};
 }
