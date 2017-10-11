@@ -25,12 +25,13 @@ namespace S
 {
 	void RenderingSystem::Update() const
 	{
-		MeshRendererManager->ForEach(
+		const auto RenderMeshRendererComponent =
 			[this]( C::MeshRenderer* Comp )
 			{
 				Render( Comp );
-			}
-		);
+			};
+
+		MeshRendererManager->ForEach( RenderMeshRendererComponent );
 	}
 
 	void RenderingSystem::Render( const C::MeshRenderer* MeshRendererComp ) const

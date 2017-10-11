@@ -14,8 +14,8 @@
 #include "BasicComponents.h"
 #include "MeshComponent.h"
 #include "MeshRendererComponent.h"
-#include "ShaderComponent.h"
-#include "ShaderProgramComponent.h"
+
+#include "GLShader.h"
 
 namespace S
 {
@@ -25,13 +25,13 @@ namespace S
 		S::EntitySystem* EntitySys;
 		TCompInfo<C::Mesh>* Mesh;
 		TCompInfo<C::MeshRenderer>* MeshRenderer;
-		TCompInfo<C::Shader>* Shader;
-		TCompInfo<C::ShaderProgram>* ShaderProgram;
+		TCompInfo<C::ShaderComponent>* Shader;
+		TCompInfo<C::ProgramComponent>* ShaderProgram;
 
 		TCompManager<C::MeshRenderer>* MeshRendererManager;
 
 	public:
-		RenderingSystem( S::EntitySystem* InEntitySys, TCompInfo<C::Mesh>* InMesh, TCompInfo<C::MeshRenderer>* InMeshRenderer, TCompInfo<C::Shader>* InShader, TCompInfo<C::ShaderProgram>* InShaderProgram )
+		RenderingSystem( S::EntitySystem* InEntitySys, TCompInfo<C::Mesh>* InMesh, TCompInfo<C::MeshRenderer>* InMeshRenderer, TCompInfo<C::ShaderComponent>* InShader, TCompInfo<C::ProgramComponent>* InShaderProgram )
 		: EntitySys( InEntitySys )
 		, Mesh( InMesh )
 		, MeshRenderer( InMeshRenderer )

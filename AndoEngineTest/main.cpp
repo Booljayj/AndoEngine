@@ -18,10 +18,9 @@ using namespace std;
 #include "BasicComponents.h"
 #include "MeshComponent.h"
 #include "MeshRendererComponent.h"
-#include "ShaderProgramComponent.h"
-#include "ShaderComponent.h"
 
 #include "GLVertexData.h"
+#include "GLShader.h"
 
 int main( int argc, const char * argv[] )
 {
@@ -39,11 +38,11 @@ int main( int argc, const char * argv[] )
 	TCompManager<C::MeshRenderer> MeshRendererManager{};
 	TCompInfo<C::MeshRenderer> MeshRenderer{ 110, "MeshRenderer", &MeshRendererManager };
 
-	TCompManager<C::Shader> ShaderManager{};
-	TCompInfo<C::Shader> Shader{ 120, "Shader", &ShaderManager };
+	TCompManager<C::ShaderComponent> ShaderManager{};
+	TCompInfo<C::ShaderComponent> Shader{ 120, "Shader", &ShaderManager };
 
-	TCompManager<C::ShaderProgram> ShaderProgramManager{};
-	TCompInfo<C::ShaderProgram> ShaderProgram{ 130, "ShaderProgram", &ShaderProgramManager };
+	TCompManager<C::ProgramComponent> ProgramManager{};
+	TCompInfo<C::ProgramComponent> Program{ 130, "Program", &ProgramManager };
 
 	S::EntitySystem EntitySys{
 		{
@@ -52,7 +51,7 @@ int main( int argc, const char * argv[] )
 			&Mesh,
 			&MeshRenderer,
 			&Shader,
-			&ShaderProgram,
+			&Program,
 		}
 	};
 
@@ -60,7 +59,7 @@ int main( int argc, const char * argv[] )
 	S::SDLEventSystem SDLEvent;
 	S::SDLWindowSystem SDLWindow;
 
-	S::RenderingSystem Rendering{ &EntitySys, &Mesh, &MeshRenderer, &Shader, &ShaderProgram };
+	S::RenderingSystem Rendering{ &EntitySys, &Mesh, &MeshRenderer, &Shader, &Program };
 
 	cout << "Initializing all systems" << endl;
 	bool bInitializeSuccessful =
@@ -84,7 +83,7 @@ int main( int argc, const char * argv[] )
 
 		EntitySys.Create( VertexShaderEnt, { &Shader } );
 		EntitySys.Create( FragmentShaderEnt, { &Shader } );
-		EntitySys.Create( ShaderProgramEnt, { &ShaderProgram } );
+		EntitySys.Create( ShaderProgramEnt, { &Program } );
 
 		EntitySys.Create( MeshEnt, { &Transform, &Mesh, &MeshRenderer } );
 
@@ -100,23 +99,24 @@ int main( int argc, const char * argv[] )
 		C::MeshRenderer* TestMeshRenderer = EntitySys.Find( MeshEnt )->Get( MeshRenderer );
 		TestMeshRenderer->Setup( TestMesh );
 
-		C::Shader* TestVertexShader = EntitySys.Find( VertexShaderEnt )->Get( Shader );
+		C::ShaderComponent* TestVertexShader = EntitySys.Find( VertexShaderEnt )->Get( Shader );
 		TestVertexShader->Source =
 			"#version 330 core\n\
 			in vec3 vert_Position;\n\
 			void main(void) { gl_Position.xyz = vert_Position; gl_Position.w = 1.0; }";
-		TestVertexShader->ShaderType = GL_VERTEX_SHADER;
+		TestVertexShader->ShaderType = GL::EShader::Vertex;
 
-		C::Shader* TestFragmentShader = EntitySys.Find( FragmentShaderEnt )->Get( Shader );
+		C::ShaderComponent* TestFragmentShader = EntitySys.Find( FragmentShaderEnt )->Get( Shader );
 		TestFragmentShader->Source =
 			"#version 330 core\n\
 			out vec4 color;\n\
 			void main(){ color = vec4(1,0,0,1); }";
-		TestFragmentShader->ShaderType = GL_FRAGMENT_SHADER;
+		TestFragmentShader->ShaderType = GL::EShader::Fragment;
 
-		C::ShaderProgram* TestProgram = EntitySys.Find( ShaderProgramEnt )->Get( ShaderProgram );
-		TestProgram->Link( { TestVertexShader, TestFragmentShader } );
-		TestProgram->Use();
+		C::ProgramComponent* TestProgram = EntitySys.Find( ShaderProgramEnt )->Get( Program );
+		TestProgram->LinkedShaders = { TestVertexShader, TestFragmentShader };
+		GL::Link( *TestProgram );
+		GL::Use( *TestProgram );
 
 		cout << "Current entity system status:" << endl;
 		cout << EntitySys;

@@ -10,6 +10,7 @@
 
 #include <type_traits>
 #include <cstring>
+#include <vector>
 #include <boost/preprocessor.hpp>
 using namespace std;
 
@@ -21,8 +22,9 @@ namespace NAME {\
 	using TYPE = SIZE_TYPE;\
 	constexpr TYPE __Count__ = BOOST_PP_TUPLE_SIZE( VALUES_TUPLE );\
 	enum ENUM : TYPE { BOOST_PP_TUPLE_ENUM( VALUES_TUPLE ) };\
-	constexpr const char* const __Names__[__Count__] = {\
-		BOOST_PP_SEQ_ENUM( BOOST_PP_SEQ_TRANSFORM( ENUM_VALUE_STRINGIFY, NAME, BOOST_PP_TUPLE_TO_SEQ( VALUES_TUPLE ) ) )\
+	constexpr const char* const __Names__[__Count__ + 1] = {\
+		BOOST_PP_SEQ_ENUM( BOOST_PP_SEQ_TRANSFORM( ENUM_VALUE_STRINGIFY, NAME, BOOST_PP_TUPLE_TO_SEQ( VALUES_TUPLE ) ) ),\
+		"Invalid"\
 	};\
 \
 	constexpr TYPE Count() { return __Count__; }\
@@ -39,8 +41,7 @@ namespace NAME {\
 		return Value < __Count__;\
 	}\
 	const char* Name( const TYPE& Value ) {\
-		if( IsValid( Value ) ) return __Names__[Value];\
-		return "INVALID";\
+		return __Names__[Value > __Count__ ? __Count__ : Value];\
 	}\
 	TYPE Value( const char* Name ) {\
 		for( TYPE Index = 0; Index < __Count__; ++Index ) {\
@@ -87,3 +88,71 @@ namespace NAME {\
 		return Name( FromGlobal( Global ) );\
 	}\
 }\
+
+//Experiments
+#if 0
+
+template< typename TENUM_INTERNAL, const std::vector<const char*>* TNAMES_INTERNAL >
+struct Enum
+{
+	using TYPE = typename std::underlying_type<TENUM_INTERNAL>::type;
+
+	static constexpr inline const char* Name( const TYPE& Value )
+	{
+		return TNAMES_INTERNAL->at( Value );
+	}
+};
+
+enum class EInternal : uint8_t
+{
+	FirstThing,
+	SecondThing
+};
+
+const vector<const char*> EInternalNames = { "FirstThing", "SecondThing" };
+
+struct ESmart : Enum<EInternal, &EInternalNames>
+{
+};
+
+const char* SecondName = ESmart::Name( 1 );
+
+//Or, the alternative, just use global template functions
+
+template< typename TEnum >
+const char* EnumName( typename std::underlying_type<TEnum>::type& Value );
+
+template<>
+const char* EnumName<EInternal>( std::underlying_type<EInternal>& Value )
+{
+	return "Something";
+}
+
+template< typename TENUM >
+class Enum
+{
+	using ENUM = TENUM;
+
+	static constexpr const size_t COUNT = 0;
+	static constexpr const char* Name( TENUM Value );
+	static constexpr TENUM Value( const char* Name );
+};
+
+enum class ETest : int
+{
+	Value1,
+	Value2,
+	Value3
+};
+
+template<>
+class Enum<ETest>
+{
+	using ENUM = ETest;
+	static constexpr const char* NAMES[3] = { "Value 1", "Value 2", "Value 3" };
+
+	static constexpr const size_t COUNT = 3;
+	static constexpr const char* Name( ETest Value ) { return NAMES[static_cast<size_t>( Value )]; }
+};
+
+#endif

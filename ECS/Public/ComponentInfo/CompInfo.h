@@ -23,12 +23,13 @@ struct CompInfo
 	{
 		assert( Manager != nullptr );
 	}
+	virtual ~CompInfo() {}
 
 	const CompTypeID ID;
 	const string Name;
 	CompManager* const Manager;
 
-	CompManager* GetManager() const { return Manager; }
+	virtual CompManager* GetManager() const { return Manager; }
 
 	template< typename TStream >
 	friend TStream& operator <<( TStream& Stream, const CompInfo& Info )

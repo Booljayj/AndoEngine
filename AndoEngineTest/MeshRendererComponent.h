@@ -14,9 +14,9 @@
 #include "GLVertexData.h"
 #include "GLVertexBufferObject.h"
 #include "GLVertexArrayObject.h"
+#include "GLShader.h"
 
 #include "MeshComponent.h"
-#include "ShaderProgramComponent.h"
 
 #include "TCompManager.h"
 #include "TCompInfo.h"
@@ -40,16 +40,16 @@ namespace C
 			return VertexArrayID != 0 && VertexCount > 0;
 		}
 
-		void Setup( C::Mesh* MeshComp )
+		inline void Setup( C::Mesh* MeshComp )
 		{
 			VertexCount = static_cast<GLuint>( MeshComp->Vertices.size() );
 			
 			glGenVertexArrays( 1, &VertexArrayID );
 			GL::BindBuffersToVertexArrayObject( VertexArrayID, MeshComp->BufferID );
-			cout << GL::DescribeVertexArrayObject( VertexArrayID );
+			//cout << GL::DescribeVertexArrayObject( VertexArrayID );
 		}
 
-		void Teardown()
+		inline void Teardown()
 		{
 			glDeleteVertexArrays( 1, &VertexArrayID );
 		}

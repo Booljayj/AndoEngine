@@ -20,7 +20,8 @@ struct TCompInfo : public CompInfo
 	TCompInfo( CompTypeID InID, const char* InName, TCompManager<TTData>* InManager )
 	: CompInfo( InID, InName, InManager )
 	{}
+	virtual ~TCompInfo() override {}
 
 	//hides CompManager* CompInfo::GetManager() const;
-	TCompManager<TTData>* GetManager() const { return static_cast<TCompManager<TTData>*>( CompInfo::GetManager() ); }
+	TCompManager<TTData>* GetManager() const override final { return static_cast<TCompManager<TTData>*>( CompInfo::GetManager() ); }
 };

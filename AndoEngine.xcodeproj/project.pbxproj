@@ -1,0 +1,693 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		D04238611F0EC9D300A10E37 /* OwnedComponent.h in Headers */ = {isa = PBXBuildFile; fileRef = D04238601F0EC9D300A10E37 /* OwnedComponent.h */; };
+		D0724CCE1F5CA21900ED2F60 /* GLVertexArrayObject.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D0724CCC1F5CA21900ED2F60 /* GLVertexArrayObject.cpp */; };
+		D0724CD11F5CAD1D00ED2F60 /* GLBasicEnums.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D0724CCF1F5CAD1D00ED2F60 /* GLBasicEnums.cpp */; };
+		D0724CD41F5CAE7400ED2F60 /* GLVertexBufferObject.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D0724CD21F5CAE7400ED2F60 /* GLVertexBufferObject.cpp */; };
+		D0724CD71F5DECC500ED2F60 /* GLUniform.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D0724CD51F5DECC500ED2F60 /* GLUniform.cpp */; };
+		D0724CDA1F5F458A00ED2F60 /* GLShader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D0724CD81F5F458A00ED2F60 /* GLShader.cpp */; };
+		D083E58D1F11700C00BCD5BD /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D083E58C1F11700C00BCD5BD /* main.cpp */; };
+		D083E5911F11708A00BCD5BD /* libECS.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D0911DDD1F08427500152EF8 /* libECS.a */; };
+		D087DA5A1F3E3C2F0041FA37 /* RenderingSystem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D087DA591F3E3C2F0041FA37 /* RenderingSystem.cpp */; };
+		D090FDB11F35188F002C58C8 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D090FDB01F35188F002C58C8 /* OpenGL.framework */; };
+		D090FDB41F351FD2002C58C8 /* libGLEW.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D090FDB31F351FD2002C58C8 /* libGLEW.a */; };
+		D090FDB61F351FE5002C58C8 /* libSDL2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D090FDB51F351FE5002C58C8 /* libSDL2.a */; };
+		D0911E0E1F08439600152EF8 /* EntitySystem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D0911DFB1F08439600152EF8 /* EntitySystem.cpp */; };
+		D0911E0F1F08439600152EF8 /* Entity.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D0911DFC1F08439600152EF8 /* Entity.cpp */; };
+		D0911E101F08439600152EF8 /* CompInfo.h in Headers */ = {isa = PBXBuildFile; fileRef = D0911DFF1F08439600152EF8 /* CompInfo.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		D0911E111F08439600152EF8 /* TCompInfo.h in Headers */ = {isa = PBXBuildFile; fileRef = D0911E001F08439600152EF8 /* TCompInfo.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		D0911E121F08439600152EF8 /* CompManager.h in Headers */ = {isa = PBXBuildFile; fileRef = D0911E021F08439600152EF8 /* CompManager.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		D0911E131F08439600152EF8 /* TCompManager.h in Headers */ = {isa = PBXBuildFile; fileRef = D0911E031F08439600152EF8 /* TCompManager.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		D0911E161F08439600152EF8 /* Config.h in Headers */ = {isa = PBXBuildFile; fileRef = D0911E071F08439600152EF8 /* Config.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		D0911E171F08439600152EF8 /* EntitySystem.h in Headers */ = {isa = PBXBuildFile; fileRef = D0911E081F08439600152EF8 /* EntitySystem.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		D0911E181F08439600152EF8 /* Entity.h in Headers */ = {isa = PBXBuildFile; fileRef = D0911E091F08439600152EF8 /* Entity.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		D0911E191F08439600152EF8 /* General.h in Headers */ = {isa = PBXBuildFile; fileRef = D0911E0A1F08439600152EF8 /* General.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		D0911E1A1F08439600152EF8 /* Serializer.h in Headers */ = {isa = PBXBuildFile; fileRef = D0911E0B1F08439600152EF8 /* Serializer.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		D0911E1B1F08439600152EF8 /* EntityInfo.h in Headers */ = {isa = PBXBuildFile; fileRef = D0911E0D1F08439600152EF8 /* EntityInfo.h */; settings = {ATTRIBUTES = (Public, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		D083E5921F11711D00BCD5BD /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D0911D931F0841E900152EF8 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D0911DDC1F08427500152EF8;
+			remoteInfo = ECS;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		D083E5881F11700C00BCD5BD /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		D04238601F0EC9D300A10E37 /* OwnedComponent.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OwnedComponent.h; sourceTree = "<group>"; };
+		D0724CC81F5C379D00ED2F60 /* EnumMacros.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EnumMacros.h; sourceTree = "<group>"; };
+		D0724CCB1F5CA02000ED2F60 /* GLVertexData.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GLVertexData.h; sourceTree = "<group>"; };
+		D0724CCC1F5CA21900ED2F60 /* GLVertexArrayObject.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = GLVertexArrayObject.cpp; sourceTree = "<group>"; };
+		D0724CCD1F5CA21900ED2F60 /* GLVertexArrayObject.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GLVertexArrayObject.h; sourceTree = "<group>"; };
+		D0724CCF1F5CAD1D00ED2F60 /* GLBasicEnums.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = GLBasicEnums.cpp; sourceTree = "<group>"; };
+		D0724CD01F5CAD1D00ED2F60 /* GLBasicEnums.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GLBasicEnums.h; sourceTree = "<group>"; };
+		D0724CD21F5CAE7400ED2F60 /* GLVertexBufferObject.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = GLVertexBufferObject.cpp; sourceTree = "<group>"; };
+		D0724CD31F5CAE7400ED2F60 /* GLVertexBufferObject.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GLVertexBufferObject.h; sourceTree = "<group>"; };
+		D0724CD51F5DECC500ED2F60 /* GLUniform.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = GLUniform.cpp; sourceTree = "<group>"; };
+		D0724CD61F5DECC500ED2F60 /* GLUniform.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GLUniform.h; sourceTree = "<group>"; };
+		D0724CD81F5F458A00ED2F60 /* GLShader.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = GLShader.cpp; sourceTree = "<group>"; };
+		D0724CD91F5F458A00ED2F60 /* GLShader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GLShader.h; sourceTree = "<group>"; };
+		D083E58A1F11700C00BCD5BD /* AndoEngineTest */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = AndoEngineTest; sourceTree = BUILT_PRODUCTS_DIR; };
+		D083E58C1F11700C00BCD5BD /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		D083E5941F11724600BCD5BD /* BasicComponents.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BasicComponents.h; sourceTree = "<group>"; };
+		D083E5961F1BBEE500BCD5BD /* libGLEW.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libGLEW.a; path = ../../../../usr/local/Cellar/glew/2.0.0/lib/libGLEW.a; sourceTree = "<group>"; };
+		D083E5981F1BBEF300BCD5BD /* libglfw.3.2.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libglfw.3.2.dylib; path = ../../../../usr/local/Cellar/glfw/3.2.1/lib/libglfw.3.2.dylib; sourceTree = "<group>"; };
+		D087DA531F3680CC0041FA37 /* MeshComponent.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MeshComponent.h; sourceTree = "<group>"; };
+		D087DA541F3681770041FA37 /* MeshRendererComponent.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MeshRendererComponent.h; sourceTree = "<group>"; };
+		D087DA571F3BBBBA0041FA37 /* RenderingSystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RenderingSystem.h; sourceTree = "<group>"; };
+		D087DA591F3E3C2F0041FA37 /* RenderingSystem.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RenderingSystem.cpp; sourceTree = "<group>"; };
+		D090FDA61F28FE68002C58C8 /* libSDL2.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libSDL2.a; path = ../../../../usr/local/Cellar/sdl2/2.0.5/lib/libSDL2.a; sourceTree = "<group>"; };
+		D090FDA81F2E3C93002C58C8 /* SDLSystems.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SDLSystems.h; sourceTree = "<group>"; };
+		D090FDA91F3515D9002C58C8 /* libGLEW.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libGLEW.a; path = ../../../../usr/local/Cellar/glew/2.1.0/lib/libGLEW.a; sourceTree = "<group>"; };
+		D090FDAC1F351742002C58C8 /* libGLEW.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libGLEW.a; path = "../../Downloads/glew-2.1.0/build/lib/libGLEW.a"; sourceTree = "<group>"; };
+		D090FDAE1F3517D7002C58C8 /* libGLEW.2.1.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libGLEW.2.1.0.dylib; path = "../../Downloads/glew-2.1.0/build/lib/libGLEW.2.1.0.dylib"; sourceTree = "<group>"; };
+		D090FDB01F35188F002C58C8 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
+		D090FDB31F351FD2002C58C8 /* libGLEW.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libGLEW.a; path = ../../../../usr/local/lib/libGLEW.a; sourceTree = "<group>"; };
+		D090FDB51F351FE5002C58C8 /* libSDL2.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libSDL2.a; path = ../../../../usr/local/lib/libSDL2.a; sourceTree = "<group>"; };
+		D0911DDD1F08427500152EF8 /* libECS.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libECS.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		D0911DF81F08439600152EF8 /* Plan.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Plan.txt; sourceTree = "<group>"; };
+		D0911DFB1F08439600152EF8 /* EntitySystem.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = EntitySystem.cpp; sourceTree = "<group>"; };
+		D0911DFC1F08439600152EF8 /* Entity.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Entity.cpp; sourceTree = "<group>"; };
+		D0911DFF1F08439600152EF8 /* CompInfo.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CompInfo.h; path = ECS/Public/ComponentInfo/CompInfo.h; sourceTree = SOURCE_ROOT; };
+		D0911E001F08439600152EF8 /* TCompInfo.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TCompInfo.h; path = ECS/Public/ComponentInfo/TCompInfo.h; sourceTree = SOURCE_ROOT; };
+		D0911E021F08439600152EF8 /* CompManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CompManager.h; path = ECS/Public/ComponentManager/CompManager.h; sourceTree = SOURCE_ROOT; };
+		D0911E031F08439600152EF8 /* TCompManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TCompManager.h; path = ECS/Public/ComponentManager/TCompManager.h; sourceTree = SOURCE_ROOT; };
+		D0911E071F08439600152EF8 /* Config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Config.h; path = ECS/Public/Core/Config.h; sourceTree = SOURCE_ROOT; };
+		D0911E081F08439600152EF8 /* EntitySystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EntitySystem.h; path = ECS/Public/Core/EntitySystem.h; sourceTree = SOURCE_ROOT; };
+		D0911E091F08439600152EF8 /* Entity.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Entity.h; path = ECS/Public/Core/Entity.h; sourceTree = SOURCE_ROOT; };
+		D0911E0A1F08439600152EF8 /* General.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = General.h; path = ECS/Public/Core/General.h; sourceTree = SOURCE_ROOT; };
+		D0911E0B1F08439600152EF8 /* Serializer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Serializer.h; path = ECS/Public/Core/Serializer.h; sourceTree = SOURCE_ROOT; };
+		D0911E0D1F08439600152EF8 /* EntityInfo.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EntityInfo.h; path = ECS/Public/StandardComponents/EntityInfo.h; sourceTree = SOURCE_ROOT; };
+		D0911E1E1F0843D700152EF8 /* BasicProperty.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BasicProperty.h; sourceTree = "<group>"; };
+		D0911E1F1F0843D700152EF8 /* MemberProperty.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MemberProperty.h; sourceTree = "<group>"; };
+		D0911E201F0843D700152EF8 /* MemberPropertyEditor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MemberPropertyEditor.h; sourceTree = "<group>"; };
+		D0911E211F0843D700152EF8 /* Property.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Property.h; sourceTree = "<group>"; };
+		D0911E221F0843D700152EF8 /* StaticProperty.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = StaticProperty.h; sourceTree = "<group>"; };
+		D0911E231F0843D700152EF8 /* TypeInfo.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TypeInfo.h; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		D083E5871F11700C00BCD5BD /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D090FDB11F35188F002C58C8 /* OpenGL.framework in Frameworks */,
+				D083E5911F11708A00BCD5BD /* libECS.a in Frameworks */,
+				D090FDB41F351FD2002C58C8 /* libGLEW.a in Frameworks */,
+				D090FDB61F351FE5002C58C8 /* libSDL2.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D0911DDA1F08427500152EF8 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		D0724CC91F5C9F4B00ED2F60 /* OpenGL */ = {
+			isa = PBXGroup;
+			children = (
+				D0724CCB1F5CA02000ED2F60 /* GLVertexData.h */,
+				D0724CCC1F5CA21900ED2F60 /* GLVertexArrayObject.cpp */,
+				D0724CCD1F5CA21900ED2F60 /* GLVertexArrayObject.h */,
+				D0724CCF1F5CAD1D00ED2F60 /* GLBasicEnums.cpp */,
+				D0724CD01F5CAD1D00ED2F60 /* GLBasicEnums.h */,
+				D0724CD21F5CAE7400ED2F60 /* GLVertexBufferObject.cpp */,
+				D0724CD31F5CAE7400ED2F60 /* GLVertexBufferObject.h */,
+				D0724CD51F5DECC500ED2F60 /* GLUniform.cpp */,
+				D0724CD61F5DECC500ED2F60 /* GLUniform.h */,
+				D0724CD81F5F458A00ED2F60 /* GLShader.cpp */,
+				D0724CD91F5F458A00ED2F60 /* GLShader.h */,
+			);
+			name = OpenGL;
+			sourceTree = "<group>";
+		};
+		D0724CCA1F5C9F6100ED2F60 /* Macros */ = {
+			isa = PBXGroup;
+			children = (
+				D0724CC81F5C379D00ED2F60 /* EnumMacros.h */,
+			);
+			name = Macros;
+			sourceTree = "<group>";
+		};
+		D083E58B1F11700C00BCD5BD /* AndoEngineTest */ = {
+			isa = PBXGroup;
+			children = (
+				D0724CCA1F5C9F6100ED2F60 /* Macros */,
+				D0724CC91F5C9F4B00ED2F60 /* OpenGL */,
+				D087DA581F3BBBC00041FA37 /* Systems */,
+				D087DA521F3680AE0041FA37 /* Components */,
+				D083E58C1F11700C00BCD5BD /* main.cpp */,
+			);
+			path = AndoEngineTest;
+			sourceTree = "<group>";
+		};
+		D083E5951F1BBEE400BCD5BD /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				D090FDB51F351FE5002C58C8 /* libSDL2.a */,
+				D090FDB31F351FD2002C58C8 /* libGLEW.a */,
+				D090FDB01F35188F002C58C8 /* OpenGL.framework */,
+				D090FDAE1F3517D7002C58C8 /* libGLEW.2.1.0.dylib */,
+				D090FDAC1F351742002C58C8 /* libGLEW.a */,
+				D090FDA91F3515D9002C58C8 /* libGLEW.a */,
+				D090FDA61F28FE68002C58C8 /* libSDL2.a */,
+				D083E5981F1BBEF300BCD5BD /* libglfw.3.2.dylib */,
+				D083E5961F1BBEE500BCD5BD /* libGLEW.a */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		D087DA521F3680AE0041FA37 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				D083E5941F11724600BCD5BD /* BasicComponents.h */,
+				D087DA531F3680CC0041FA37 /* MeshComponent.h */,
+				D087DA541F3681770041FA37 /* MeshRendererComponent.h */,
+			);
+			name = Components;
+			sourceTree = "<group>";
+		};
+		D087DA581F3BBBC00041FA37 /* Systems */ = {
+			isa = PBXGroup;
+			children = (
+				D090FDA81F2E3C93002C58C8 /* SDLSystems.h */,
+				D087DA571F3BBBBA0041FA37 /* RenderingSystem.h */,
+				D087DA591F3E3C2F0041FA37 /* RenderingSystem.cpp */,
+			);
+			name = Systems;
+			sourceTree = "<group>";
+		};
+		D0911D921F0841E900152EF8 = {
+			isa = PBXGroup;
+			children = (
+				D0911DF71F08439600152EF8 /* ECS */,
+				D0911E1C1F0843D700152EF8 /* Reflection */,
+				D083E58B1F11700C00BCD5BD /* AndoEngineTest */,
+				D0911DDE1F08427500152EF8 /* Products */,
+				D083E5951F1BBEE400BCD5BD /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		D0911DDE1F08427500152EF8 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				D0911DDD1F08427500152EF8 /* libECS.a */,
+				D083E58A1F11700C00BCD5BD /* AndoEngineTest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		D0911DF71F08439600152EF8 /* ECS */ = {
+			isa = PBXGroup;
+			children = (
+				D0911DF81F08439600152EF8 /* Plan.txt */,
+				D0911DF91F08439600152EF8 /* Private */,
+				D0911DFD1F08439600152EF8 /* Public */,
+			);
+			path = ECS;
+			sourceTree = "<group>";
+		};
+		D0911DF91F08439600152EF8 /* Private */ = {
+			isa = PBXGroup;
+			children = (
+				D0911DFA1F08439600152EF8 /* Core */,
+			);
+			path = Private;
+			sourceTree = "<group>";
+		};
+		D0911DFA1F08439600152EF8 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				D0911DFB1F08439600152EF8 /* EntitySystem.cpp */,
+				D0911DFC1F08439600152EF8 /* Entity.cpp */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		D0911DFD1F08439600152EF8 /* Public */ = {
+			isa = PBXGroup;
+			children = (
+				D0911DFE1F08439600152EF8 /* ComponentInfo */,
+				D0911E011F08439600152EF8 /* ComponentManager */,
+				D0911E061F08439600152EF8 /* Core */,
+				D0911E0C1F08439600152EF8 /* StandardComponents */,
+			);
+			path = Public;
+			sourceTree = "<group>";
+		};
+		D0911DFE1F08439600152EF8 /* ComponentInfo */ = {
+			isa = PBXGroup;
+			children = (
+				D0911DFF1F08439600152EF8 /* CompInfo.h */,
+				D0911E001F08439600152EF8 /* TCompInfo.h */,
+			);
+			path = ComponentInfo;
+			sourceTree = "<group>";
+		};
+		D0911E011F08439600152EF8 /* ComponentManager */ = {
+			isa = PBXGroup;
+			children = (
+				D0911E021F08439600152EF8 /* CompManager.h */,
+				D0911E031F08439600152EF8 /* TCompManager.h */,
+			);
+			name = ComponentManager;
+			path = ComponentStorage;
+			sourceTree = "<group>";
+		};
+		D0911E061F08439600152EF8 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				D0911E071F08439600152EF8 /* Config.h */,
+				D0911E081F08439600152EF8 /* EntitySystem.h */,
+				D0911E091F08439600152EF8 /* Entity.h */,
+				D0911E0A1F08439600152EF8 /* General.h */,
+				D0911E0B1F08439600152EF8 /* Serializer.h */,
+				D04238601F0EC9D300A10E37 /* OwnedComponent.h */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		D0911E0C1F08439600152EF8 /* StandardComponents */ = {
+			isa = PBXGroup;
+			children = (
+				D0911E0D1F08439600152EF8 /* EntityInfo.h */,
+			);
+			path = StandardComponents;
+			sourceTree = "<group>";
+		};
+		D0911E1C1F0843D700152EF8 /* Reflection */ = {
+			isa = PBXGroup;
+			children = (
+				D0911E1D1F0843D700152EF8 /* Public */,
+			);
+			path = Reflection;
+			sourceTree = "<group>";
+		};
+		D0911E1D1F0843D700152EF8 /* Public */ = {
+			isa = PBXGroup;
+			children = (
+				D0911E1E1F0843D700152EF8 /* BasicProperty.h */,
+				D0911E1F1F0843D700152EF8 /* MemberProperty.h */,
+				D0911E201F0843D700152EF8 /* MemberPropertyEditor.h */,
+				D0911E211F0843D700152EF8 /* Property.h */,
+				D0911E221F0843D700152EF8 /* StaticProperty.h */,
+				D0911E231F0843D700152EF8 /* TypeInfo.h */,
+			);
+			path = Public;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		D0911DDB1F08427500152EF8 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D0911E111F08439600152EF8 /* TCompInfo.h in Headers */,
+				D0911E161F08439600152EF8 /* Config.h in Headers */,
+				D0911E101F08439600152EF8 /* CompInfo.h in Headers */,
+				D0911E1A1F08439600152EF8 /* Serializer.h in Headers */,
+				D0911E131F08439600152EF8 /* TCompManager.h in Headers */,
+				D0911E1B1F08439600152EF8 /* EntityInfo.h in Headers */,
+				D0911E171F08439600152EF8 /* EntitySystem.h in Headers */,
+				D0911E191F08439600152EF8 /* General.h in Headers */,
+				D0911E121F08439600152EF8 /* CompManager.h in Headers */,
+				D0911E181F08439600152EF8 /* Entity.h in Headers */,
+				D04238611F0EC9D300A10E37 /* OwnedComponent.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		D083E5891F11700C00BCD5BD /* AndoEngineTest */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D083E58E1F11700C00BCD5BD /* Build configuration list for PBXNativeTarget "AndoEngineTest" */;
+			buildPhases = (
+				D083E5861F11700C00BCD5BD /* Sources */,
+				D083E5871F11700C00BCD5BD /* Frameworks */,
+				D083E5881F11700C00BCD5BD /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D083E5931F11711D00BCD5BD /* PBXTargetDependency */,
+			);
+			name = AndoEngineTest;
+			productName = AndoEngineTest;
+			productReference = D083E58A1F11700C00BCD5BD /* AndoEngineTest */;
+			productType = "com.apple.product-type.tool";
+		};
+		D0911DDC1F08427500152EF8 /* ECS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D0911DE61F08427500152EF8 /* Build configuration list for PBXNativeTarget "ECS" */;
+			buildPhases = (
+				D0911DD91F08427500152EF8 /* Sources */,
+				D0911DDA1F08427500152EF8 /* Frameworks */,
+				D0911DDB1F08427500152EF8 /* Headers */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ECS;
+			productName = ECS;
+			productReference = D0911DDD1F08427500152EF8 /* libECS.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		D0911D931F0841E900152EF8 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0830;
+				TargetAttributes = {
+					D083E5891F11700C00BCD5BD = {
+						CreatedOnToolsVersion = 8.3.2;
+						ProvisioningStyle = Automatic;
+					};
+					D0911DDC1F08427500152EF8 = {
+						CreatedOnToolsVersion = 8.3.2;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = D0911D961F0841E900152EF8 /* Build configuration list for PBXProject "AndoEngine" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = D0911D921F0841E900152EF8;
+			productRefGroup = D0911DDE1F08427500152EF8 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				D0911DDC1F08427500152EF8 /* ECS */,
+				D083E5891F11700C00BCD5BD /* AndoEngineTest */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		D083E5861F11700C00BCD5BD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D083E58D1F11700C00BCD5BD /* main.cpp in Sources */,
+				D0724CDA1F5F458A00ED2F60 /* GLShader.cpp in Sources */,
+				D087DA5A1F3E3C2F0041FA37 /* RenderingSystem.cpp in Sources */,
+				D0724CD11F5CAD1D00ED2F60 /* GLBasicEnums.cpp in Sources */,
+				D0724CD71F5DECC500ED2F60 /* GLUniform.cpp in Sources */,
+				D0724CCE1F5CA21900ED2F60 /* GLVertexArrayObject.cpp in Sources */,
+				D0724CD41F5CAE7400ED2F60 /* GLVertexBufferObject.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D0911DD91F08427500152EF8 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D0911E0F1F08439600152EF8 /* Entity.cpp in Sources */,
+				D0911E0E1F08439600152EF8 /* EntitySystem.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		D083E5931F11711D00BCD5BD /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D0911DDC1F08427500152EF8 /* ECS */;
+			targetProxy = D083E5921F11711D00BCD5BD /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		D083E58F1F11700C00BCD5BD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = /usr/local/include;
+				LIBRARY_SEARCH_PATHS = /usr/local/lib;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		D083E5901F11700C00BCD5BD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = /usr/local/include;
+				LIBRARY_SEARCH_PATHS = /usr/local/lib;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		D0911D971F0841E900152EF8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+			};
+			name = Debug;
+		};
+		D0911D981F0841E900152EF8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+			};
+			name = Release;
+		};
+		D0911DE71F08427500152EF8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				EXECUTABLE_PREFIX = lib;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_CPP_EXCEPTIONS = YES;
+				GCC_ENABLE_CPP_RTTI = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		D0911DE81F08427500152EF8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				EXECUTABLE_PREFIX = lib;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_ENABLE_CPP_EXCEPTIONS = YES;
+				GCC_ENABLE_CPP_RTTI = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		D083E58E1F11700C00BCD5BD /* Build configuration list for PBXNativeTarget "AndoEngineTest" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D083E58F1F11700C00BCD5BD /* Debug */,
+				D083E5901F11700C00BCD5BD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D0911D961F0841E900152EF8 /* Build configuration list for PBXProject "AndoEngine" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D0911D971F0841E900152EF8 /* Debug */,
+				D0911D981F0841E900152EF8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D0911DE61F08427500152EF8 /* Build configuration list for PBXNativeTarget "ECS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D0911DE71F08427500152EF8 /* Debug */,
+				D0911DE81F08427500152EF8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = D0911D931F0841E900152EF8 /* Project object */;
+}

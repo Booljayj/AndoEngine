@@ -90,5 +90,14 @@ namespace GL
 		glBindBuffer( GL_ARRAY_BUFFER, BufferID[EBuffer::VertexData] );
 		glEnableVertexAttribArray( EAttribute::Position );
 		glVertexAttribPointer( EAttribute::Position, decltype( VertexData::Position )::length(), GL_FLOAT, GL_FALSE, sizeof( VertexData ), reinterpret_cast<void*>( offsetof( VertexData, Position ) ) );
+
+		//glEnableVertexAttribArray( EAttribute::Color );
+		//glVertexAttribPointer( EAttribute::Color, decltype( VertexData::Color )::length(), GL_UNSIGNED_BYTE, GL_TRUE, sizeof( VertexData ), reinterpret_cast<void*>( offsetof( VertexData, Color ) ) );
+
+		//glEnableVertexAttribArray( EAttribute::Normal );
+		//glVertexAttribPointer( EAttribute::Normal, decltype( VertexData::Normal )::lenght(), GL_FLOAT, GL_FALSE, sizeof( VertexData ), reinterpret_cast<void*>( offsetof( VertexData, Normal ) ) );
+
+		//glEnableVertexAttribArray( EAttribute::TexCoords );
+		//glVertexAttribPointer( EAttribute::TexCoords, decltype( VertexData::TexCoords )::lenght(), GL_UNSIGNED_SHORT, GL_TRUE, sizeof( VertexData ), reinterpret_cast<void*>( offsetof( VertexData, TexCoords ) ) );
 	}
 }

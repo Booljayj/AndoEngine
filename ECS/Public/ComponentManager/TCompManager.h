@@ -75,6 +75,15 @@ protected:
 				}
 			}
 		}
+
+		template< typename TPred, typename... TArgs >
+		void ForEachAll( TPred& Pred, TArgs... Args )
+		{
+			for( size_t Index = 0; Index < MANAGER_BLOCK_SIZE; ++Index )
+			{
+				Pred( &Data[Index], Free[Index], Args... );
+			}
+		}
 	};
 
 	vector<ManagedBlock*> Blocks;
@@ -83,7 +92,7 @@ protected:
 public:
 	TTData* Cast( raw_ptr Comp ) { return static_cast<TTData*>( Comp ); }
 
-	raw_ptr Retain() override
+	raw_ptr Retain() override final
 	{
 		//Grow the number of managed blocks if we don't currently have any free components
 		if( LowestFreeBlockIndex == Blocks.size() )
@@ -100,18 +109,18 @@ public:
 		}
 
 		Retained.push_back( RetainedComponent );
-		RetainedComponent->OnRetained();
+		OnRetained( RetainedComponent );
 
 		return RetainedComponent;
 	}
 
-	void Release( raw_ptr RawReleasedComponent ) override
+	void Release( raw_ptr RawReleasedComponent ) override final
 	{
-		//Released components are not fully released until the manager is flushed
+		//Released components are not fully released until the manager is flushed, typically the very last thing done at the end of the frame
 		Released.push_back( RawReleasedComponent );
 	}
 
-	void Flush() override
+	void Flush() override final
 	{
 		size_t BlockCount = Blocks.size();
 		size_t ContainingBlockIndex = 0;
@@ -131,7 +140,7 @@ public:
 				if( Blocks[ContainingBlockIndex]->Contains( ReleasedComponent ) )
 				{
 					Blocks[ContainingBlockIndex]->Release( ReleasedComponent );
-					ReleasedComponent->OnReleased();
+					OnReleased( ReleasedComponent );
 					ReleasedComponent = nullptr; //Signals the loop to stop
 				}
 				else
@@ -154,12 +163,12 @@ public:
 		Released.clear();
 	}
 
-	size_t CountTotal() const override
+	size_t CountTotal() const override final
 	{
 		return MANAGER_BLOCK_SIZE * Blocks.size();
 	}
 
-	size_t CountFree() const override
+	size_t CountFree() const override final
 	{
 		size_t RunningTotal = 0;
 		for( size_t Index = 0; Index < Blocks.size(); ++Index )
@@ -175,12 +184,6 @@ public:
 	}
 
 	template< typename TPred, typename... TArgs >
-	inline void ForEach( TPred&& Pred, TArgs... Args )
-	{
-		ForEach( Pred, Args... );
-	}
-
-	template< typename TPred, typename... TArgs >
 	inline void ForEach( TPred& Pred, TArgs... Args )
 	{
 		for( size_t Index = 0; Index < Blocks.size(); ++Index )
@@ -189,9 +192,18 @@ public:
 		}
 	}
 
-	void Save( const raw_ptr Comp, ByteStream& Bytes ) override { Serializer<TTData>::Save( *Cast( Comp ), Bytes ); }
-	void Load( raw_ptr Comp, const ByteStream& Bytes ) override { Serializer<TTData>::Load( *Cast( Comp ), Bytes ); }
-	void Copy( const raw_ptr CompA, raw_ptr CompB ) override { *Cast( CompB ) = *Cast( CompA ); }
+	template< typename TPred, typename... TArgs >
+	inline void ForEachAll( TPred& Pred, TArgs... Args )
+	{
+		for( size_t Index = 0; Index < Blocks.size(); ++Index )
+		{
+			Blocks[Index]->ForEachAll( Pred, Args... );
+		}
+	}
+
+	void Save( const raw_ptr Comp, ByteStream& Bytes ) override final { Serializer<TTData>::Save( *Cast( Comp ), Bytes ); }
+	void Load( raw_ptr Comp, const ByteStream& Bytes ) override final { Serializer<TTData>::Load( *Cast( Comp ), Bytes ); }
+	void Copy( const raw_ptr CompA, raw_ptr CompB ) override final { *Cast( CompB ) = *Cast( CompA ); }
 
 protected:
 	virtual void OnRetained( TTData* Comp ) {}

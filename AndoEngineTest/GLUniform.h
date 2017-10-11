@@ -28,7 +28,7 @@ namespace GL
 		EGLType::ENUM Type; // is this irrelevant?
 		uint32_t Location;
 
-		uint8_t ComponentCount; //either 1, 2, 3, 4, 6, 12, or 16. 0 is a special value for textures, which cannot fit in this model.
+		uint8_t ComponentCount; //the number of 32bit components that compose this type
 		uint16_t ElementCount; //if uniform is an array, this is the size of the array
 	};
 
