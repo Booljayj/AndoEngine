@@ -21,6 +21,12 @@
 # Unity3D Generated File On Crash Reports
 sysinfo.txt
 
+# Build files
+*.o
+*.d
+*.a
+*.out
+
 #### OS generated Files
 .DS_Store
 .DS_Store?
