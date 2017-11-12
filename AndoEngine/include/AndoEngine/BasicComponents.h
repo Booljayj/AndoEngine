@@ -1,38 +1,23 @@
-//
-//  TestComponents.h
-//  AndoEngine
-//
-//  Created by Justin Bool on 7/8/17.
-//
-//
+// Copyright © 2017 Justin Bool. All rights reserved.
 
 #pragma once
 
-#include "EntitySystem/General.h"
+#include "EntityFramework/EntityFrameworkTypes.h"
 #include "glm/mat4x4.hpp"
-
-using namespace glm;
 
 namespace C
 {
-	struct Transform
+	using namespace glm;
+
+	struct TransformComponent
 	{
 		mat4x4 LocalTransform;
 		mat4x4 WorldTransform;
-
-		void OnRetained() {}
-		void OnReleased() {}
 	};
 
-	struct Hierarchy
+	struct HierarchyComponent
 	{
-		EntityID Parent;
-		vector<EntityID> Children;
-
-		Transform* ParentTransform;
-		vector<Transform*> ChildrenTransforms;
-
-		void OnRetained() {}
-		void OnReleased() {}
+		HierarchyComponent* Parent;
+		vector<HierarchyComponent*> Children;
 	};
 }

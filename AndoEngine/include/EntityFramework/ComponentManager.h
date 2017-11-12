@@ -1,10 +1,4 @@
-//
-//  istorage.h
-//  ECS
-//
-//  Created by Justin Bool on 4/15/17.
-//  Copyright © 2017 Justin Bool. All rights reserved.
-//
+// Copyright © 2017 Justin Bool. All rights reserved.
 
 #pragma once
 
@@ -16,20 +10,20 @@
 #include <bitset>
 using namespace std;
 
-#include "General.h"
+#include "EntityFrameworkTypes.h"
 #include "Serializer.h"
 
-struct CompManager
+struct ComponentManager
 {
 public:
-	virtual ~CompManager() {}
+	virtual ~ComponentManager() {}
 
 	virtual bool Initialize() { return true; }
 	virtual bool Deinitialize() { return true; }
+	virtual void Setup( const Entity& NewEntity, raw_ptr NewComponent ) {}
 
 	virtual raw_ptr Retain() = 0;
 	virtual void Release( raw_ptr ) = 0;
-	virtual void Flush() = 0;
 
 	virtual size_t CountTotal() const = 0;
 	virtual size_t CountFree() const = 0;
@@ -38,13 +32,6 @@ public:
 	virtual void Save( const raw_ptr, ByteStream& ) = 0;
 	virtual void Load( raw_ptr, const ByteStream& ) = 0;
 	virtual void Copy( const raw_ptr, raw_ptr ) = 0;
-
-	const vector<raw_ptr>& GetRetained() { return Retained; }
-	const vector<raw_ptr>& GetReleased() { return Released; }
-
-protected:
-	vector<raw_ptr> Retained;
-	vector<raw_ptr> Released;
 };
 
 template< typename TCOMP, size_t BLOCK_SIZE >
@@ -106,7 +93,7 @@ struct ManagedComponentBlock
 };
 
 template< class TCOMP >
-struct TCompManager : public CompManager
+struct TComponentManager : public ComponentManager
 {
 	static constexpr const size_t BLOCK_SIZE = 64;
 
@@ -143,49 +130,22 @@ public:
 	{
 		//Released components are not fully released until the manager is flushed, typically the very last thing done at the end of the frame
 		Released.push_back( RawReleasedComponent );
-	}
 
-	void Flush() override final
-	{
-		size_t BlockCount = Blocks.size();
-		size_t ContainingBlockIndex = 0;
-
-		// Sort pointers by value ascending to increase the likelihood releasing all pointers in a given block at once
-		std::sort( Released.begin(), Released.end() );
-
-		for( raw_ptr RawReleasedComponent : Released )
+		TCOMP* ReleasedComponent = Cast( RawReleasedComponent );
+		for( size_t ContainingBlockIndex = 0; ContainingBlockIndex < Blocks.size(); ++ContainingBlockIndex )
 		{
-			TCOMP* ReleasedComponent = Cast( RawReleasedComponent );
-
-			// Each time this loop is run, it iterates over the blocks starting at the last index and looping around until it gets to the previous (looping) index
-			// This done to optimize cases where the released components are in a sequence within the same block
-			size_t PreviousContainingBlockIndex = ContainingBlockIndex;
-			do
+			auto* Block = Blocks[ContainingBlockIndex];
+			if( Block->Contains( ReleasedComponent ) )
 			{
-				if( Blocks[ContainingBlockIndex]->Contains( ReleasedComponent ) )
+				Block->Release( ReleasedComponent );
+				if( ContainingBlockIndex < LowestFreeBlockIndex )
 				{
-					Blocks[ContainingBlockIndex]->Release( ReleasedComponent );
-					OnReleased( ReleasedComponent );
-					ReleasedComponent = nullptr; //Signals the loop to stop
+					LowestFreeBlockIndex = ContainingBlockIndex;
 				}
-				else
-				{
-					//Check the next block, looping around to the first if we've reached the end of the array
-					ContainingBlockIndex = ( ContainingBlockIndex + 1 ) % BlockCount;
-				}
+				return true;
 			}
-			while( ContainingBlockIndex != PreviousContainingBlockIndex && ReleasedComponent != nullptr );
-
-			if( ContainingBlockIndex < LowestFreeBlockIndex )
-			{
-				LowestFreeBlockIndex = ContainingBlockIndex;
-			}
-
-			assert( ReleasedComponent == nullptr ); //Should never happen unless the blocks don't contain the component
 		}
-
-		Retained.clear();
-		Released.clear();
+		assert( false ); //Should never reach this point unless the component was not part of this manager
 	}
 
 	size_t CountTotal() const override final

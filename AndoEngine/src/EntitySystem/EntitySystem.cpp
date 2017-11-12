@@ -1,19 +1,13 @@
-//
-//  EntitySystem.cpp
-//  EntitySystem
-//
-//  Created by Justin Bool on 4/13/17.
-//  Copyright © 2017 Justin Bool. All rights reserved.
-//
+// Copyright © 2017 Justin Bool. All rights reserved.
 
 #include <stdio.h>
 #include <cassert>
 
-#include "EntitySystem/EntitySystem.h"
+#include "EntityFramework/EntitySystem.h"
 
 namespace S
 {
-	EntitySystem::EntitySystem( const vector<CompInfo*>& ComponentInfos )
+	EntitySystem::EntitySystem( const vector<ComponentInfo*>& ComponentInfos )
 	{
 		for( auto* ComponentInfo : ComponentInfos )
 		{
@@ -25,7 +19,7 @@ namespace S
 	{
 		for( auto& ComponentInfoPair : ComponentInfoMap )
 		{
-			CompInfo* Info = ComponentInfoPair.second;
+			ComponentInfo* Info = ComponentInfoPair.second;
 			if( !Info->GetManager()->Initialize() )
 			{
 				fprintf( stdout, "Fatal error initializing component manager for %s", Info->GetName().c_str() );
@@ -39,7 +33,7 @@ namespace S
 	{
 		for( auto& ComponentInfoPair : ComponentInfoMap )
 		{
-			CompInfo* Info = ComponentInfoPair.second;
+			ComponentInfo* Info = ComponentInfoPair.second;
 			if( !Info->GetManager()->Deinitialize() )
 			{
 				fprintf( stdout, "Fatal error deinitializing component manager for %s", Info->GetName().c_str() );
@@ -54,12 +48,12 @@ namespace S
 		(void)InsertNew( NewID );
 	}
 
-	void EntitySystem::Create( const EntityID& NewID, const vector<CompInfo*>& ComponentInfos, const vector<ByteStream>& ComponentDatas /* = {} */ )
+	void EntitySystem::Create( const EntityID& NewID, const vector<ComponentInfo*>& ComponentInfos, const vector<ByteStream>& ComponentDatas /* = {} */ )
 	{
 		InsertNew( NewID ).Setup( ComponentInfos, ComponentDatas );
 	}
 
-	void EntitySystem::Create( const EntityID& NewID, const vector<CompTypeID>& ComponentTypeIDs, const vector<ByteStream>& ComponentDatas /* = {} */ )
+	void EntitySystem::Create( const EntityID& NewID, const vector<ComponentTypeID>& ComponentTypeIDs, const vector<ByteStream>& ComponentDatas /* = {} */ )
 	{
 		InsertNew( NewID ).Setup( GetComponentInfos( ComponentTypeIDs ), ComponentDatas );
 	}
@@ -116,10 +110,6 @@ namespace S
 
 	void EntitySystem::Flush()
 	{
-		for( const auto& ComponentInfoMapPair : ComponentInfoMap )
-		{
-			ComponentInfoMapPair.second->GetManager()->Flush();
-		}
 		Created.clear();
 		Destroyed.clear();
 	}
@@ -135,7 +125,7 @@ namespace S
 		return Entities.back();
 	}
 
-	const vector<CompInfo*>& EntitySystem::GetComponentInfos( const vector<CompTypeID>& ComponentTypes )
+	const vector<ComponentInfo*>& EntitySystem::GetComponentInfos( const vector<ComponentTypeID>& ComponentTypes )
 	{
 		ComponentInfoBuffer.clear();
 		for( const auto& ComponentType : ComponentTypes )

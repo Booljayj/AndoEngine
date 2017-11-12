@@ -1,14 +1,8 @@
-//
-//  serialize.h
-//  ECS
-//
-//  Created by Justin Bool on 4/12/17.
-//  Copyright © 2017 Justin Bool. All rights reserved.
-//
+// Copyright © 2017 Justin Bool. All rights reserved.
 
 #pragma once
 
-#include "General.h"
+#include "EntityFrameworkTypes.h"
 
 template<typename TTData>
 struct Serializer

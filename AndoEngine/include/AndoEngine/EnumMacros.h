@@ -1,10 +1,4 @@
-//
-//  EnumMacros.h
-//  AndoEngine
-//
-//  Created by Justin Bool on 9/3/17.
-//
-//
+// Copyright © 2017 Justin Bool. All rights reserved.
 
 #pragma once
 

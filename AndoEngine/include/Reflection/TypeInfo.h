@@ -1,10 +1,4 @@
-//
-//  type_info.h
-//  ECS
-//
-//  Created by Justin Bool on 6/2/17.
-//  Copyright © 2017 Justin Bool. All rights reserved.
-//
+// Copyright © 2017 Justin Bool. All rights reserved.
 
 #ifndef type_info_h
 #define type_info_h
@@ -45,7 +39,7 @@ struct type_info_structure : type_info
 		const TType TStructure::* m_vptr;
 		const TType& get( TStructure* ctx ) { return ctx.*m_vptr; }
 	}
-	
+
 	const type_info[] members;
 	const size_t member_count;
 };

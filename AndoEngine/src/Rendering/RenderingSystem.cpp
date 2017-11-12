@@ -9,7 +9,7 @@
 #include <cassert>
 
 #include "Rendering/RenderingSystem.h"
-#include "EntitySystem/Entity.h"
+#include "EntityFramework/Entity.h"
 #include <glm/vec3.hpp>
 
 void PrintGLErrors()

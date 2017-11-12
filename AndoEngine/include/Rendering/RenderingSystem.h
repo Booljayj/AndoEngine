@@ -8,9 +8,9 @@
 
 #pragma once
 
-#include "EntitySystem/CompInfo.h"
-#include "EntitySystem/Entity.h"
-#include "EntitySystem/EntitySystem.h"
+#include "EntityFramework/ComponentInfo.h"
+#include "EntityFramework/Entity.h"
+#include "EntityFramework/EntitySystem.h"
 #include "AndoEngine/BasicComponents.h"
 #include "MeshComponent.h"
 #include "MeshRendererComponent.h"
@@ -23,15 +23,15 @@ namespace S
 	{
 	private:
 		S::EntitySystem* EntitySys;
-		TCompInfo<C::Mesh>* Mesh;
-		TCompInfo<C::MeshRenderer>* MeshRenderer;
-		TCompInfo<C::ShaderComponent>* Shader;
-		TCompInfo<C::ProgramComponent>* ShaderProgram;
+		TComponentInfo<C::Mesh>* Mesh;
+		TComponentInfo<C::MeshRenderer>* MeshRenderer;
+		TComponentInfo<C::ShaderComponent>* Shader;
+		TComponentInfo<C::ProgramComponent>* ShaderProgram;
 
-		TCompManager<C::MeshRenderer>* MeshRendererManager;
+		TComponentManager<C::MeshRenderer>* MeshRendererManager;
 
 	public:
-		RenderingSystem( S::EntitySystem* InEntitySys, TCompInfo<C::Mesh>* InMesh, TCompInfo<C::MeshRenderer>* InMeshRenderer, TCompInfo<C::ShaderComponent>* InShader, TCompInfo<C::ProgramComponent>* InShaderProgram )
+		RenderingSystem( S::EntitySystem* InEntitySys, TComponentInfo<C::Mesh>* InMesh, TComponentInfo<C::MeshRenderer>* InMeshRenderer, TComponentInfo<C::ShaderComponent>* InShader, TComponentInfo<C::ProgramComponent>* InShaderProgram )
 		: EntitySys( InEntitySys )
 		, Mesh( InMesh )
 		, MeshRenderer( InMeshRenderer )

@@ -18,8 +18,8 @@
 
 #include "MeshComponent.h"
 
-#include "EntitySystem/CompManager.h"
-#include "EntitySystem/CompInfo.h"
+#include "EntityFramework/ComponentManager.h"
+#include "EntityFramework/ComponentInfo.h"
 
 namespace C
 {

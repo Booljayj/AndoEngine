@@ -13,8 +13,7 @@ using namespace std;
 
 #include "GL/glew.h"
 
-#include "EntitySystem/General.h"
-#include "EntitySystem/CompManager.h"
+#include "EntityFramework/ComponentManager.h"
 #include "AndoEngine/EnumMacros.h"
 #include "GLUniform.h"
 
