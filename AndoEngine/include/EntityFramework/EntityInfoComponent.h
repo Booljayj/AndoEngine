@@ -9,7 +9,7 @@ using namespace std;
 
 namespace C
 {
-	constexpr const CompTypeID EntityInfoComponent_ID = 0;
+	constexpr const ComponentTypeID EntityInfoComponent_ID = 0;
 
 	struct EntityInfoComponent
 	{

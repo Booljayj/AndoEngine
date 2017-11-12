@@ -32,14 +32,14 @@ void Entity::Setup( const vector<ComponentInfo*>& InComponentInfos, const vector
 			raw_ptr const NewOwnedComponent = ComponentInfo->GetManager()->Retain();
 			Owned.push_back( EntityOwnedComponent{ ComponentInfo->GetID(), NewOwnedComponent } );
 
-			auto& const ComponentData = InComponentDatas[Index];
+			auto& ComponentData = InComponentDatas[Index];
 			ComponentInfo->GetManager()->Load( NewOwnedComponent, ComponentData );
 		}
 	}
 
 	for( size_t OwnedIndex = 0; OwnedIndex < Owned.size(); ++OwnedIndex )
 	{
-		InComponentInfos[OwnedIndex]->GetManager()->Setup( this, Owned[OwnedIndex].CompPtr );
+		InComponentInfos[OwnedIndex]->GetManager()->Setup( *this, Owned[OwnedIndex].CompPtr );
 	}
 }
 

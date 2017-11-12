@@ -13,6 +13,8 @@ using namespace std;
 #include "EntityFrameworkTypes.h"
 #include "Serializer.h"
 
+struct Entity;
+
 struct ComponentManager
 {
 public:
@@ -120,7 +122,6 @@ public:
 			++LowestFreeBlockIndex;
 		}
 
-		Retained.push_back( RetainedComponent );
 		OnRetained( RetainedComponent );
 
 		return RetainedComponent;
@@ -128,9 +129,6 @@ public:
 
 	void Release( raw_ptr RawReleasedComponent ) override final
 	{
-		//Released components are not fully released until the manager is flushed, typically the very last thing done at the end of the frame
-		Released.push_back( RawReleasedComponent );
-
 		TCOMP* ReleasedComponent = Cast( RawReleasedComponent );
 		for( size_t ContainingBlockIndex = 0; ContainingBlockIndex < Blocks.size(); ++ContainingBlockIndex )
 		{
@@ -142,7 +140,6 @@ public:
 				{
 					LowestFreeBlockIndex = ContainingBlockIndex;
 				}
-				return true;
 			}
 		}
 		assert( false ); //Should never reach this point unless the component was not part of this manager

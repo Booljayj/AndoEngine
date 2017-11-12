@@ -45,7 +45,7 @@ namespace C
 		bool bIsCompiled = false;
 	};
 
-	class ShaderComponentManager : public TCompManager<ShaderComponent>
+	class ShaderComponentManager : public TComponentManager<ShaderComponent>
 	{
 		void OnRetained( ShaderComponent* Comp ) override final {}
 		void OnReleased( ShaderComponent* Comp ) override final {}
@@ -62,7 +62,7 @@ namespace C
 		bool bIsLinked = false;
 	};
 
-	class ProgramComponentManager : public TCompManager<ProgramComponent>
+	class ProgramComponentManager : public TComponentManager<ProgramComponent>
 	{
 		void OnRetained( ProgramComponent* Comp ) override final {}
 		void OnReleased( ProgramComponent* Comp ) override final {}
