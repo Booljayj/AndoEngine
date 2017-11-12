@@ -11,7 +11,7 @@ using namespace std;
 
 #include <GL/glew.h>
 
-#include "EntitySystem/EntitySystem.h"
+#include "EntityFramework/EntitySystem.h"
 #include "Rendering/SDLSystems.h"
 #include "Rendering/RenderingSystem.h"
 
@@ -26,23 +26,23 @@ int main( int argc, const char * argv[] )
 {
 	cout << "Hello, World! This is AndoEngine." << endl;
 
-	TCompManager<C::Transform> TransformManager{};
-	TCompInfo<C::Transform> Transform{ 1, "Transform", &TransformManager };
+	TComponentManager<C::TransformComponent> TransformManager{};
+	TComponentInfo<C::TransformComponent> Transform{ 1, "Transform", &TransformManager };
 
-	TCompManager<C::Hierarchy> HierarchyManager{};
-	TCompInfo<C::Hierarchy> Hierarchy{ 2, "Hierarchy", &HierarchyManager };
+	TComponentManager<C::HierarchyComponent> HierarchyManager{};
+	TComponentInfo<C::HierarchyComponent> Hierarchy{ 2, "Hierarchy", &HierarchyManager };
 
-	TCompManager<C::Mesh> MeshManager{};
-	TCompInfo<C::Mesh> Mesh{ 100, "Mesh", &MeshManager };
+	TComponentManager<C::Mesh> MeshManager{};
+	TComponentInfo<C::Mesh> Mesh{ 100, "Mesh", &MeshManager };
 
-	TCompManager<C::MeshRenderer> MeshRendererManager{};
-	TCompInfo<C::MeshRenderer> MeshRenderer{ 110, "MeshRenderer", &MeshRendererManager };
+	TComponentManager<C::MeshRenderer> MeshRendererManager{};
+	TComponentInfo<C::MeshRenderer> MeshRenderer{ 110, "MeshRenderer", &MeshRendererManager };
 
-	TCompManager<C::ShaderComponent> ShaderManager{};
-	TCompInfo<C::ShaderComponent> Shader{ 120, "Shader", &ShaderManager };
+	TComponentManager<C::ShaderComponent> ShaderManager{};
+	TComponentInfo<C::ShaderComponent> Shader{ 120, "Shader", &ShaderManager };
 
-	TCompManager<C::ProgramComponent> ProgramManager{};
-	TCompInfo<C::ProgramComponent> Program{ 130, "Program", &ProgramManager };
+	TComponentManager<C::ProgramComponent> ProgramManager{};
+	TComponentInfo<C::ProgramComponent> Program{ 130, "Program", &ProgramManager };
 
 	S::EntitySystem EntitySys{
 		{
