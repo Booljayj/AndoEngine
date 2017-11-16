@@ -149,4 +149,20 @@ class Enum<ETest>
 	static constexpr const char* Name( ETest Value ) { return NAMES[static_cast<size_t>( Value )]; }
 };
 
+////
+
+I really don't like how complex these preprocessor macros become. I think a better solution is to write
+a small code generator that creates the expanded version of a smart enum from a simple input list. In
+other words:
+
+somevalues.enum -generator-> somevalues.enum.h, somevalues.enum.cpp (or equiv).
+
+The expanded version will be easier to read and faster to process for analyzers. Might even be able
+to keep everything in the same file if I write the generator to append and truncate the source .enum
+file, but that is trickier. A failure of the generator should NEVER potentially delete source.
+
+This also opens up the possibility of having a more efficient layout. For instance, instead of using
+individual string literals for the names, all the names could be stored in a single buffer with internal
+null terminators. The array of names is then just an array of indices/pointers into this list.
+
 #endif

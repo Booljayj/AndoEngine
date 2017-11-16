@@ -34,7 +34,7 @@ namespace GL
 	void DescribeParam_Bound( ostream& Stream, EAttribute::ENUM Attribute, EAttributeTypeParameter::ENUM Param, size_t& Storage )
 	{
 		glGetVertexAttribiv( static_cast<GLint>( Attribute ), EAttributeTypeParameter::ToGlobal( Param ), reinterpret_cast<GLint*>( &Storage ) );
-		Stream << EAttributeTypeParameter::Name( Param ) << " = " << EGLType::GlobalName( static_cast<GLenum>( Storage ) );
+		Stream << EAttributeTypeParameter::Name( Param ) << " = " << EGLType::ToName( EGLType::FromGL( static_cast<GLenum>( Storage ) ) );
 	}
 
 	void DescribeParam_Bound( ostream& Stream, EAttribute::ENUM Attribute, EAttributeBoolParameter::ENUM Param, size_t& Storage )

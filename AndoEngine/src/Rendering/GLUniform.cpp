@@ -34,7 +34,7 @@ namespace GL
 
 			UniformInfo NewUniformInfo;
 			NewUniformInfo.NameID = string{ NameBuffer, static_cast<string::size_type>( NameSize ) };
-			NewUniformInfo.Type = EGLType::Cast( EGLType::FromGlobal( Type ) );
+			NewUniformInfo.Type = EGLType::FromGL( Type );
 			NewUniformInfo.ElementCount = static_cast<uint16_t>( ElementCount );
 			NewUniformInfo.Location = static_cast<uint32_t>( glGetUniformLocation( ProgramID, NameBuffer ) );
 

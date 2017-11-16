@@ -10,6 +10,5 @@
 
 namespace GL
 {
-	DefineEnumerationConverter( EGLType );
 	DefineEnumerationConverter( EGLBool );
 }
