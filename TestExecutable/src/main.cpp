@@ -22,10 +22,41 @@ using namespace std;
 #include "Rendering/GLVertexData.h"
 #include "Rendering/GLShader.h"
 
+#include "AndoEngine/LinearAllocator.h"
+#include "AndoEngine/LinearContainers.h"
+#include "AndoEngine/LinearStrings.h"
+
 int main( int argc, const char * argv[] )
 {
 	cout << "Hello, World! This is AndoEngine." << endl;
 
+	cout << "making temp allocator" << endl;
+	LinearAllocatorData Alloc{ 40000 };
+	cout << Alloc << '\n';
+	BEGIN_ALLOC_BLOCK( Alloc );
+	//l_string broken; //NOPE! You need to supply the allocator, or this won't compile.
+	l_string s{ "Really long string that we don't want to allocate for.", Alloc };
+	s += " I mean, really long.";
+	s += " Like, ridiculously long in a feeble attempt to get more ";
+	s += "allocations.";
+	cout << s << '\n';
+	cout << Alloc << '\n';
+
+	END_ALLOC_BLOCK( Alloc );
+	cout << "...aaand it's gone!" << endl;
+	cout << Alloc << '\n';
+
+	l_vector<uint16_t> v{ Alloc };
+	v.push_back( 10 );
+	cout << Alloc << '\n';
+	v.push_back( 100 );
+	cout << Alloc << '\n';
+	v.push_back( 1000 );
+	cout << Alloc << '\n';
+	v.push_back( 10000 );
+	cout << Alloc << '\n';
+
+	return 0;
 	TComponentManager<C::TransformComponent> TransformManager{};
 	TComponentInfo<C::TransformComponent> Transform{ 1, "Transform", &TransformManager };
 
