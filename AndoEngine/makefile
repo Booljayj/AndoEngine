@@ -3,11 +3,12 @@ NAME := AndoEngine
 #commands
 CXX := clang++
 CPP := clang
+AR := libtool
 RM := rm -rf
 MKDIR := mkdir -p
 
 CXXFLAGS := -std=c++14 -Wall -c -MMD -MP -I./include -I./gen
-ARFLAGS := cq
+ARFLAGS := -static -o
 
 #directories
 DIRSRC := src
@@ -64,4 +65,4 @@ $(DIRGEN)/%.enum.h: $(DIRINC)/%.enum $(ENUM_BUILDER)
 $(TARGET): $(ENUM_OUT) $(OBJ)
 	$(info > Building $(TARGETTYPE) $(NAME)...)
 	@$(RM) $@
-	@$(AR) $(ARFLAGS) $@ $^
+	@$(AR) $(ARFLAGS) $@ $(OBJ)
