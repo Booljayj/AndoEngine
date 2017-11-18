@@ -20,8 +20,8 @@ LDLIBS += -framework $(FRAMEWORKS)
 endif
 
 #core library
-CXXFLAGS += -I../$(CORELIB)/include
-LDFLAGS += -L../$(CORELIB)/
+CXXFLAGS += -I../$(CORELIB)/include -I../$(CORELIB)/gen
+LDFLAGS += -L../$(CORELIB)
 LDLIBS += -l$(CORELIB)
 
 #directories

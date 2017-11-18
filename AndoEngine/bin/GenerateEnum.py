@@ -41,39 +41,31 @@ public:
 	static inline constexpr TYPE Count() {{ return _Count; }}
 	static inline constexpr bool IsValid( const TYPE Value ) {{ return Value < _Count; }}
 
+	static constexpr const char* _NameBlock = {chunked_name_block};
+
+	//Converting to/from a human-readable name
+	static const TYPE _NameOffsets[];
 	static constexpr const char* ToName( const TYPE Value ) {{
 		TYPE Index = Value > _Count ? _Count : Value;
 		return _NameBlock + _NameOffsets[Index];
 	}}
 	static ENUM FromName( const char* Name );
-{conversion_method_declarations}\
+{conversion_declarations}\
 private:
 	static constexpr TYPE _Count = {enum_values_count};
-
-	static constexpr const char* _NameBlock = {chunked_name_block};
-	static constexpr const TYPE _NameOffsets[] = {{ {chunked_name_offsets} }};
-{conversion_data}\
 }};
 {namespace_end}\
 '''
 
 conversion_typedef_template = '\tusing CONV{index}_TYPE = {type};\n'
-conversion_data_template = '''
-	static constexpr const CONV{index}_TYPE _Conv{index}Data[] = {{ {chunked_data} }};
-'''
-conversion_method_declaration_template = '''
+conversion_declaration_template = '''
+	//Conversion {index}: to/from {name}
+	static const CONV{index}_TYPE _Conv{index}Data[];
 	static constexpr CONV{index}_TYPE To{name}( const ENUM Value ) {{
 		TYPE Index = Value > _Count ? _Count : Value;
 		return _Conv{index}Data[Index];
 	}}
-	static constexpr ENUM From{name}( const CONV{index}_TYPE CValue ) {{
-		for( TYPE Index = 0; Index < _Count; ++Index ) {{
-			if( _Conv{index}Data[Index] == CValue ) {{
-				return static_cast<ENUM>( Index );
-			}}
-		}}
-		return static_cast<ENUM>( {default} );
-	}}
+	static ENUM From{name}( const CONV{index}_TYPE CValue );
 '''
 
 source_template = '''\
@@ -81,6 +73,8 @@ source_template = '''\
 #include "{header_file_name}"
 
 {namespace_begin}\
+const {class_name}::TYPE {class_name}::_NameOffsets[] = {{ {chunked_name_offsets} }};
+
 {class_name}::ENUM {class_name}::FromName( const char* Name ) {{
 	for( TYPE Index = 0; Index < _Count; ++Index ) {{
 		if( strcmp( _NameBlock + _NameOffsets[Index], Name ) == 0 ) {{
@@ -89,11 +83,22 @@ source_template = '''\
 	}}
 	return static_cast<ENUM>( _Count );
 }}
-{conversion_method_definitions}\
+{conversion_definitions}\
 {namespace_end}\
 '''
 
-conversion_method_definition_template = ''
+conversion_definition_template = '''
+const {class_name}::CONV{index}_TYPE {class_name}::_Conv{index}Data[] = {{ {chunked_data} }};
+
+{class_name}::ENUM {class_name}::From{name}( const {class_name}::CONV{index}_TYPE CValue ) {{
+	for( TYPE Index = 0; Index < _Count; ++Index ) {{
+		if( _Conv{index}Data[Index] == CValue ) {{
+			return static_cast<ENUM>( Index );
+		}}
+	}}
+	return static_cast<ENUM>( {default} );
+}}
+'''
 
 input_file_path = sys.argv[1]
 output_directory = sys.argv[2].rstrip( '/' )
@@ -138,7 +143,7 @@ for i in range( 0, len( value_names ), chunk_size ):
 ## Name Offsets
 chunk_size = 12
 for i in range( 0, len( value_name_offsets ), chunk_size ):
-	format_args['chunked_name_offsets'] += '\n\t\t{},'.format( ', '.join( str(x).rjust(3) for x in value_name_offsets[i:i+chunk_size] ) )
+	format_args['chunked_name_offsets'] += '\n\t{},'.format( ', '.join( str(x).rjust(3) for x in value_name_offsets[i:i+chunk_size] ) )
 
 if 'include' in raw_data:
 	for include in raw_data['include']:
@@ -166,16 +171,15 @@ if 'conv' in raw_data:
 
 		chunk_size = 8
 		for i in range( 0, len( conversion_data_values ), chunk_size ):
-			conversion_format_args['chunked_data'] += '\n\t\t{},'.format( ', '.join( conversion_data_values[i:i+chunk_size] ) )
+			conversion_format_args['chunked_data'] += '\n\t{},'.format( ', '.join( conversion_data_values[i:i+chunk_size] ) )
 
 		format_args['conversion_typedefs'] += conversion_typedef_template.format_map( conversion_format_args )
-		format_args['conversion_data'] += conversion_data_template.format_map( conversion_format_args )
-		format_args['conversion_method_declarations'] += conversion_method_declaration_template.format_map( conversion_format_args )
-		format_args['conversion_method_definitions'] += conversion_method_definition_template.format_map( conversion_format_args )
+		format_args['conversion_declarations'] += conversion_declaration_template.format_map( conversion_format_args )
+		format_args['conversion_definitions'] += conversion_definition_template.format_map( conversion_format_args )
+
 	format_args['conversion_typedefs'] += '\n'
-	format_args['conversion_data'] += '\n'
-	format_args['conversion_method_declarations'] += '\n'
-	format_args['conversion_method_definitions'] += '\n'
+	format_args['conversion_declarations'] += '\n'
+	format_args['conversion_definitions'] += '\n'
 
 header_file = open( header_file_path, 'w' )
 header_file.write( header_template.format_map( format_args ) )

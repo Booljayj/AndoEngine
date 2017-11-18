@@ -1,7 +1,5 @@
 {
 	"files.associations": {
-		"iosfwd": "cpp",
-		"cassert": "cpp",
-		"tuple": "cpp"
+		"*.enum": "yaml"
 	}
 }
