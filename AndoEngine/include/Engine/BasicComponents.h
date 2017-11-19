@@ -13,6 +13,6 @@ namespace C
 	struct HierarchyComponent
 	{
 		HierarchyComponent* Parent;
-		vector<HierarchyComponent*> Children;
+		std::vector<HierarchyComponent*> Children;
 	};
 }

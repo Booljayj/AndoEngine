@@ -4,7 +4,7 @@
 #include "Engine/LinearAllocator.h"
 
 template< class CharT >
-using l_basic_string = basic_string<CharT, std::char_traits<CharT>, TLinearAllocator<CharT>>;
+using l_basic_string = std::basic_string<CharT, std::char_traits<CharT>, TLinearAllocator<CharT>>;
 
 using l_string = l_basic_string<char>;
 using l_wstring = l_basic_string<wchar_t>;

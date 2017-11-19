@@ -16,7 +16,7 @@ namespace S
 			}
 			else
 			{
-				cerr << "SDL_Init Error: " << SDL_GetError() << endl;
+				std::cerr << "SDL_Init Error: " << SDL_GetError() << std::endl;
 				return false;
 			}
 		}
@@ -82,17 +82,17 @@ namespace S
 						Swap();
 						return true;
 					}
-					cerr << "Failed to initialize GLEW\n";
+					std::cerr << "Failed to initialize GLEW\n";
 
 					SDL_GL_DeleteContext( MainContext );
 					MainContext = nullptr;
 				}
-				cerr << "Failed to create OpenGL Context\n";
+				std::cerr << "Failed to create OpenGL Context\n";
 
 				SDL_DestroyWindow( MainWindow );
 				MainWindow = nullptr;
 			}
-			cerr << "SDL_Window Error: " << SDL_GetError() << endl;
+			std::cerr << "SDL_Window Error: " << SDL_GetError() << std::endl;
 			return false;
 		}
 

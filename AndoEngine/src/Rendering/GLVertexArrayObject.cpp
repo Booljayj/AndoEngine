@@ -14,48 +14,53 @@ namespace GL
 	void DescribeParam_Bound( ostream& Stream, EAttribute::ENUM Attribute, EAttributeIntParameter::ENUM Param, size_t& Storage )
 	{
 		glGetVertexAttribiv( static_cast<GLint>( Attribute ), EAttributeIntParameter::ToGL( Param ), reinterpret_cast<GLint*>( &Storage ) );
-		Stream << EAttributeIntParameter::ToName( Param ) << " = " << Storage;
+		Stream << EAttributeIntParameter::ToName( Param ) << ": " << Storage;
 	}
 
 	void DescribeParam_Bound( ostream& Stream, EAttribute::ENUM Attribute, EAttributeTypeParameter::ENUM Param, size_t& Storage )
 	{
 		glGetVertexAttribiv( static_cast<GLint>( Attribute ), EAttributeTypeParameter::ToGL( Param ), reinterpret_cast<GLint*>( &Storage ) );
-		Stream << EAttributeTypeParameter::ToName( Param ) << " = " << EGLType::ToName( EGLType::FromGL( static_cast<GLenum>( Storage ) ) );
+		Stream << EAttributeTypeParameter::ToName( Param ) << ": " << EGLType::ToName( EGLType::FromGL( static_cast<GLenum>( Storage ) ) );
 	}
 
 	void DescribeParam_Bound( ostream& Stream, EAttribute::ENUM Attribute, EAttributeBoolParameter::ENUM Param, size_t& Storage )
 	{
 		glGetVertexAttribiv( static_cast<GLint>( Attribute ), EAttributeBoolParameter::ToGL( Param ), reinterpret_cast<GLint*>( &Storage ) );
-		Stream << EAttributeBoolParameter::ToName( Param ) << " = " << EGLBool::ToName( EGLBool::FromGL( static_cast<GLenum>( Storage ) ) );
+		Stream << EAttributeBoolParameter::ToName( Param ) << ": " << EGLBool::ToName( EGLBool::FromGL( static_cast<GLenum>( Storage ) ) );
 	}
 
 	void DescribeParam_Bound( ostream& Stream, EAttribute::ENUM Attribute, EAttributePtrParameter::ENUM Param, size_t& Storage )
 	{
 		glGetVertexAttribPointerv( static_cast<GLint>( Attribute ), EAttributePtrParameter::ToGL( Param ), reinterpret_cast<void**>( &Storage ) );
-		Stream << EAttributePtrParameter::ToName( Param ) << " = " << Storage;
+		Stream << EAttributePtrParameter::ToName( Param ) << ": " << Storage;
 	}
 
-	string DescribeVertexArrayObject( GLuint VAOID )
+	void DescribeAttribute_Bound( ostream& Stream, EAttribute::ENUM Attribute )
 	{
 		size_t Storage = 0;
-		ostringstream Stream;
+		Stream << "\t[Attribute]{ " << EAttribute::ToName( Attribute ) << ", ";
+		DescribeParam_Bound( Stream, Attribute, EAttributeBoolParameter::Enabled, Storage ); Stream << ", ";
+		DescribeParam_Bound( Stream, Attribute, EAttributeIntParameter::BufferID, Storage ); Stream << ", ";
+		DescribeParam_Bound( Stream, Attribute, EAttributeIntParameter::Size, Storage ); Stream << ", ";
+		DescribeParam_Bound( Stream, Attribute, EAttributeIntParameter::Stride, Storage ); Stream << ", ";
+		DescribeParam_Bound( Stream, Attribute, EAttributePtrParameter::Offset, Storage ); Stream << ", ";
+		DescribeParam_Bound( Stream, Attribute, EAttributeTypeParameter::Type, Storage ); Stream << ", ";
+		DescribeParam_Bound( Stream, Attribute, EAttributeBoolParameter::Normalized, Storage ); Stream << " }";
+	}
 
-		Stream << "VertexArrayObject " << VAOID << endl;
+	void DescribeVertexArrayObject( ostream& Stream, GLuint VAOID )
+	{
+		size_t Storage = 0;
+
+		Stream << "[VertexArrayObject]{\n\t" << VAOID << ",\n";
 		glBindVertexArray( VAOID );
 
 		for( EAttribute::TYPE AttributeIndex = 0; AttributeIndex < EAttribute::Count(); ++AttributeIndex )
 		{
 			EAttribute::ENUM CurAttribute = EAttribute::Cast( AttributeIndex );
-			Stream << "\t" << EAttribute::ToName( CurAttribute ) << ": ";
-			DescribeParam_Bound( Stream, CurAttribute, EAttributeBoolParameter::Enabled, Storage ); Stream << ", ";
-			DescribeParam_Bound( Stream, CurAttribute, EAttributeIntParameter::BufferID, Storage ); Stream << ", ";
-			DescribeParam_Bound( Stream, CurAttribute, EAttributeIntParameter::Size, Storage ); Stream << ", ";
-			DescribeParam_Bound( Stream, CurAttribute, EAttributeIntParameter::Stride, Storage ); Stream << ", ";
-			DescribeParam_Bound( Stream, CurAttribute, EAttributePtrParameter::Offset, Storage ); Stream << ", ";
-			DescribeParam_Bound( Stream, CurAttribute, EAttributeTypeParameter::Type, Storage ); Stream << ", ";
-			DescribeParam_Bound( Stream, CurAttribute, EAttributeBoolParameter::Normalized, Storage ); Stream << "\n";
+			DescribeAttribute_Bound( Stream, CurAttribute );
+			Stream << "\n";
 		}
-		return Stream.str();
 	}
 
 	void BindAttributeNames( GLuint ProgramID )

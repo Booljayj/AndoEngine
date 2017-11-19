@@ -37,18 +37,18 @@ namespace S
 
 		friend inline std::ostream& operator <<( std::ostream& Stream, const EntitySystem& ECS )
 		{
-			Stream << "[EntitySystem]: {" << endl;
-			Stream << "\tComponents: " << ECS.ComponentInfoMap.size() << endl;
+			Stream << "[EntitySystem]: {" << std::endl;
+			Stream << "\tComponents: " << ECS.ComponentInfoMap.size() << std::endl;
 			for( auto& ComponentInfoPair : ECS.ComponentInfoMap )
 			{
 				Stream << "\t" << *ComponentInfoPair.second;
 			}
-			Stream << "\tEntities: " << ECS.EntityIDs.size() << endl;
+			Stream << "\tEntities: " << ECS.EntityIDs.size() << std::endl;
 			for( size_t Index = 0; Index < ECS.EntityIDs.size(); ++Index )
 			{
-				Stream << "\t" << ECS.EntityIDs[Index] << ": " << ECS.Entities[Index] << endl;
+				Stream << "\t" << ECS.EntityIDs[Index] << ": " << ECS.Entities[Index] << std::endl;
 			}
-			return Stream << "}" << endl;
+			return Stream << "}" << std::endl;
 		}
 
 	protected:

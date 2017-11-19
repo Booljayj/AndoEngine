@@ -37,7 +37,7 @@ namespace C
 
 		//Runtime data
 		GL::ProgramID _ProgramID = 0;
-		vector<GL::UniformInfo> _Uniforms;
+		std::vector<GL::UniformInfo> _Uniforms;
 		bool bIsLinked = false;
 	};
 

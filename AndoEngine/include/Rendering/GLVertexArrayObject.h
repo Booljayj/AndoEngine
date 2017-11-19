@@ -17,8 +17,9 @@ namespace GL
 	void DescribeParam_Bound( std::ostream& Stream, EAttribute::ENUM Attribute, EAttributeTypeParameter::ENUM Param, size_t& Storage );
 	void DescribeParam_Bound( std::ostream& Stream, EAttribute::ENUM Attribute, EAttributeBoolParameter::ENUM Param, size_t& Storage );
 	void DescribeParam_Bound( std::ostream& Stream, EAttribute::ENUM Attribute, EAttributePtrParameter::ENUM Param, size_t& Storage );
+	void DescribeAttribute_Bound( std::ostream& Stream, EAttribute::ENUM Attribute );
 
-	std::string DescribeVertexArrayObject( GLuint VAOID );
+	void DescribeVertexArrayObject( std::ostream& Stream, GLuint VAOID );
 
 	void BindAttributeNames( GLuint ProgramID );
 	void BindBuffersToVertexArrayObject( GLuint VAOID, const GLuint BufferID[EBuffer::Count()] );

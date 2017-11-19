@@ -11,7 +11,7 @@ namespace GL
 {
 	struct UniformInfo
 	{
-		string NameID; //@todo: Change to some kind of 32b string id, only used to identify a particular uniform by a readable name
+		std::string NameID; //@todo: Change to some kind of 32b string id, only used to identify a particular uniform by a readable name
 		EGLType::ENUM Type; // is this irrelevant?
 		uint32_t Location;
 
