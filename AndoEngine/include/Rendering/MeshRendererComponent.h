@@ -1,8 +1,5 @@
 #pragma once
-
-#include <iostream>
-#include "GL/glew.h"
-
+#include <GL/glew.h>
 #include "Rendering/GLVertexBufferObject.h"
 #include "Rendering/GLVertexArrayObject.h"
 #include "Rendering/GLShader.h"

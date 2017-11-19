@@ -1,8 +1,9 @@
 #include <cassert>
-
 #include "Rendering/RenderingSystem.h"
 #include "EntityFramework/Entity.h"
 #include <glm/vec3.hpp>
+
+using namespace std;
 
 void PrintGLErrors()
 {

@@ -1,14 +1,8 @@
-//
-//  GLVertexAttributes.hpp
-//  AndoEngine
-//
 #pragma once
-
 #include <cstdint>
 #include <ostream>
-using namespace std;
+#include <string>
 #include <GL/glew.h>
-
 #include "Rendering/Attribute.enum.h"
 #include "Rendering/AttributeBoolParameter.enum.h"
 #include "Rendering/AttributeIntParameter.enum.h"
@@ -19,12 +13,12 @@ using namespace std;
 
 namespace GL
 {
-	void DescribeParam_Bound( ostream& Stream, EAttribute::ENUM Attribute, EAttributeIntParameter::ENUM Param, size_t& Storage );
-	void DescribeParam_Bound( ostream& Stream, EAttribute::ENUM Attribute, EAttributeTypeParameter::ENUM Param, size_t& Storage );
-	void DescribeParam_Bound( ostream& Stream, EAttribute::ENUM Attribute, EAttributeBoolParameter::ENUM Param, size_t& Storage );
-	void DescribeParam_Bound( ostream& Stream, EAttribute::ENUM Attribute, EAttributePtrParameter::ENUM Param, size_t& Storage );
+	void DescribeParam_Bound( std::ostream& Stream, EAttribute::ENUM Attribute, EAttributeIntParameter::ENUM Param, size_t& Storage );
+	void DescribeParam_Bound( std::ostream& Stream, EAttribute::ENUM Attribute, EAttributeTypeParameter::ENUM Param, size_t& Storage );
+	void DescribeParam_Bound( std::ostream& Stream, EAttribute::ENUM Attribute, EAttributeBoolParameter::ENUM Param, size_t& Storage );
+	void DescribeParam_Bound( std::ostream& Stream, EAttribute::ENUM Attribute, EAttributePtrParameter::ENUM Param, size_t& Storage );
 
-	string DescribeVertexArrayObject( GLuint VAOID );
+	std::string DescribeVertexArrayObject( GLuint VAOID );
 
 	void BindAttributeNames( GLuint ProgramID );
 	void BindBuffersToVertexArrayObject( GLuint VAOID, const GLuint BufferID[EBuffer::Count()] );

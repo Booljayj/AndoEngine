@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <cassert>
-
 #include "EntityFramework/EntitySystem.h"
+
+using namespace std;
 
 namespace S
 {
@@ -20,7 +21,7 @@ namespace S
 			ComponentInfo* Info = ComponentInfoPair.second;
 			if( !Info->GetManager()->Initialize() )
 			{
-				fprintf( stdout, "Fatal error initializing component manager for %s", Info->GetName().c_str() );
+				fprintf( stdout, "Fatal error initializing component manager for %s", Info->GetName() );
 				return false;
 			}
 		}
@@ -34,7 +35,7 @@ namespace S
 			ComponentInfo* Info = ComponentInfoPair.second;
 			if( !Info->GetManager()->Deinitialize() )
 			{
-				fprintf( stdout, "Fatal error deinitializing component manager for %s", Info->GetName().c_str() );
+				fprintf( stdout, "Fatal error deinitializing component manager for %s", Info->GetName() );
 				return false;
 			}
 		}

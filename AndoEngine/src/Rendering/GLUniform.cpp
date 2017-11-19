@@ -1,6 +1,8 @@
 #include <glm/mat4x4.hpp>
 #include "Rendering/GLUniform.h"
 
+using namespace std;
+
 namespace GL
 {
 	void GetUniforms( const GLuint& ProgramID, vector<UniformInfo>& OutUniforms )

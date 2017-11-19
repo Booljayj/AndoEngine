@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstdint>
-
 #include "Engine/LinearAllocator.h"
 
 /** Macro used to define a function that requires a context. Must appear as the first parameter in the function */

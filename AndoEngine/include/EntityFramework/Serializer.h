@@ -1,5 +1,4 @@
 #pragma once
-
 #include "EntityFramework/Types.h"
 
 template<typename TTData>

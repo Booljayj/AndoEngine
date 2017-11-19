@@ -1,13 +1,10 @@
 #pragma once
-
 #include <cassert>
 #include <functional>
 #include <algorithm>
 #include <array>
 #include <vector>
 #include <bitset>
-using namespace std;
-
 #include "EntityFramework/Types.h"
 #include "EntityFramework/Serializer.h"
 
@@ -20,26 +17,26 @@ public:
 
 	virtual bool Initialize() { return true; }
 	virtual bool Deinitialize() { return true; }
-	virtual void Setup( const Entity& NewEntity, raw_ptr NewComponent ) {}
+	virtual void Setup( const Entity& NewEntity, ptr_t NewComponent ) {}
 
-	virtual raw_ptr Retain() = 0;
-	virtual void Release( raw_ptr ) = 0;
+	virtual ptr_t Retain() = 0;
+	virtual void Release( ptr_t ) = 0;
 
 	virtual size_t CountTotal() const = 0;
 	virtual size_t CountFree() const = 0;
 	virtual size_t CountUsed() const = 0;
 
-	virtual void Save( const raw_ptr, ByteStream& ) = 0;
-	virtual void Load( raw_ptr, const ByteStream& ) = 0;
-	virtual void Copy( const raw_ptr, raw_ptr ) = 0;
+	virtual void Save( const ptr_t, ByteStream& ) = 0;
+	virtual void Load( ptr_t, const ByteStream& ) = 0;
+	virtual void Copy( const ptr_t, ptr_t ) = 0;
 };
 
 template< typename TCOMP, size_t BLOCK_SIZE >
 struct ManagedComponentBlock
 {
 	size_t LowestFreeIndex;
-	bitset<BLOCK_SIZE> Free;
-	array<TCOMP, BLOCK_SIZE> Data;
+	std::bitset<BLOCK_SIZE> Free;
+	std::array<TCOMP, BLOCK_SIZE> Data;
 
 	ManagedComponentBlock()
 		: LowestFreeIndex( 0 )
@@ -99,12 +96,12 @@ struct TComponentManager : public ComponentManager
 
 protected:
 	size_t LowestFreeBlockIndex;
-	vector<ManagedComponentBlock<TCOMP, BLOCK_SIZE>*> Blocks;
+	std::vector<ManagedComponentBlock<TCOMP, BLOCK_SIZE>*> Blocks;
 
 public:
-	TCOMP* Cast( raw_ptr Comp ) { return static_cast<TCOMP*>( Comp ); }
+	TCOMP* Cast( ptr_t Comp ) { return static_cast<TCOMP*>( Comp ); }
 
-	raw_ptr Retain() override final
+	ptr_t Retain() override final
 	{
 		//Grow the number of managed blocks if we don't currently have any free components
 		if( LowestFreeBlockIndex == Blocks.size() )
@@ -125,7 +122,7 @@ public:
 		return RetainedComponent;
 	}
 
-	void Release( raw_ptr RawReleasedComponent ) override final
+	void Release( ptr_t RawReleasedComponent ) override final
 	{
 		TCOMP* ReleasedComponent = Cast( RawReleasedComponent );
 		for( size_t ContainingBlockIndex = 0; ContainingBlockIndex < Blocks.size(); ++ContainingBlockIndex )
@@ -181,9 +178,9 @@ public:
 		}
 	}
 
-	void Save( const raw_ptr Comp, ByteStream& Bytes ) override final { Serializer<TCOMP>::Save( *Cast( Comp ), Bytes ); }
-	void Load( raw_ptr Comp, const ByteStream& Bytes ) override final { Serializer<TCOMP>::Load( *Cast( Comp ), Bytes ); }
-	void Copy( const raw_ptr CompA, raw_ptr CompB ) override final { *Cast( CompB ) = *Cast( CompA ); }
+	void Save( const ptr_t Comp, ByteStream& Bytes ) override final { Serializer<TCOMP>::Save( *Cast( Comp ), Bytes ); }
+	void Load( ptr_t Comp, const ByteStream& Bytes ) override final { Serializer<TCOMP>::Load( *Cast( Comp ), Bytes ); }
+	void Copy( const ptr_t CompA, ptr_t CompB ) override final { *Cast( CompB ) = *Cast( CompA ); }
 
 protected:
 	virtual void OnRetained( TCOMP* Comp ) {}

@@ -1,8 +1,6 @@
 #pragma once
-
 #include <ostream>
-#include "GL/glew.h"
-
+#include <GL/glew.h>
 #include "EntityFramework/ComponentManager.h"
 #include "Rendering/Shader.enum.h"
 #include "Rendering/GLUniform.h"
@@ -15,8 +13,6 @@ namespace GL
 
 namespace C
 {
-	using namespace std;
-
 	struct ShaderComponent
 	{
 		//Serialized data
@@ -54,13 +50,11 @@ namespace C
 
 namespace GL
 {
-	using namespace std;
-
 	bool Compile( C::ShaderComponent& Shader );
-	void DescribeCompilationErrors( ostream& Stream, const C::ShaderComponent& Shader );
+	void DescribeCompilationErrors( std::ostream& Stream, const C::ShaderComponent& Shader );
 
 	bool Link( C::ProgramComponent& Program );
-	void DescribeLinkingErrors( ostream& Stream, const C::ProgramComponent& Program );
+	void DescribeLinkingErrors( std::ostream& Stream, const C::ProgramComponent& Program );
 
 	void Use( const C::ProgramComponent& Program );
 }

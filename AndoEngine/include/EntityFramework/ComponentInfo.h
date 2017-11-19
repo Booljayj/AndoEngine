@@ -1,8 +1,5 @@
 #pragma once
-
 #include <iostream>
-using namespace std;
-
 #include "EntityFramework/Types.h"
 #include "EntityFramework/ComponentManager.h"
 
@@ -16,15 +13,15 @@ public:
 
 protected:
 	ComponentTypeID ID;
-	string Name;
+	const char* Name;
 	ComponentManager* Manager;
 
 public:
 	ComponentTypeID GetID() const { return ID; }
-	string GetName() const { return Name; }
+	const char* GetName() const { return Name; }
 	ComponentManager* GetManager() const { return Manager; }
 
-	friend ostream& operator<<( ostream& Stream, const ComponentInfo& Info );
+	friend std::ostream& operator<<( std::ostream& Stream, const ComponentInfo& Info );
 };
 
 template< typename TDATA >

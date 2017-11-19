@@ -1,30 +1,18 @@
-//
-//  main.cpp
-//  AndoEngineTest
-//
-//  Created by Justin Bool on 7/8/17.
-//
-//
-
 #include <iostream>
-using namespace std;
-
 #include <GL/glew.h>
-
-#include "EntityFramework/EntitySystem.h"
-#include "Rendering/SDLSystems.h"
-#include "Rendering/RenderingSystem.h"
-
 #include "Engine/BasicComponents.h"
-#include "Rendering/MeshComponent.h"
-#include "Rendering/MeshRendererComponent.h"
-
-#include "Rendering/VertexData.h"
-#include "Rendering/GLShader.h"
-
 #include "Engine/LinearAllocator.h"
 #include "Engine/LinearContainers.h"
 #include "Engine/LinearStrings.h"
+#include "EntityFramework/EntitySystem.h"
+#include "Rendering/SDLSystems.h"
+#include "Rendering/RenderingSystem.h"
+#include "Rendering/MeshComponent.h"
+#include "Rendering/MeshRendererComponent.h"
+#include "Rendering/VertexData.h"
+#include "Rendering/GLShader.h"
+
+using namespace std;
 
 int main( int argc, const char * argv[] )
 {

@@ -1,22 +1,13 @@
-//
-//  GLVertexAttributes.cpp
-//  AndoEngine
-//
-//  Created by Justin Bool on 9/3/17.
-//
-//
-
 #include <string>
 #include <sstream>
-using namespace std;
-
 #include <glm/vec3.hpp>
-
 #include "Rendering/GLBool.enum.h"
 #include "Rendering/GLType.enum.h"
 #include "Rendering/GLVertexArrayObject.h"
 #include "Rendering/GLVertexBufferObject.h"
 #include "Rendering/VertexData.h"
+
+using namespace std;
 
 namespace GL
 {

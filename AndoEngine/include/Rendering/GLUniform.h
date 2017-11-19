@@ -1,14 +1,10 @@
 #pragma once
-
 #include <cstdint>
 #include <string>
 #include <vector>
-using namespace std;
-
 #include <GL/glew.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
-
 #include "Rendering/GLType.enum.h"
 
 namespace GL
@@ -25,7 +21,7 @@ namespace GL
 
 	using UniformData = uint32_t;
 
-	void GetUniforms( const GLuint& ProgramID, vector<UniformInfo>& OutUniforms );
+	void GetUniforms( const GLuint& ProgramID, std::vector<UniformInfo>& OutUniforms );
 
 	template< typename TValue >
 	inline void SetUniform_Bound( const GLuint& ProgramID, const char* UniformName, const TValue& Value )

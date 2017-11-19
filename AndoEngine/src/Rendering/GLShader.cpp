@@ -1,9 +1,10 @@
 #include <iostream>
 #include <vector>
-
 #include "Rendering/GLBool.enum.h"
 #include "Rendering/GLShader.h"
 #include "Rendering/GLVertexArrayObject.h"
+
+using namespace std;
 
 namespace GL
 {
@@ -28,7 +29,7 @@ namespace GL
 
 		if( !(Shader.bIsCompiled = EGLBool::FromGL( CompileStatus ) == EGLBool::True ) )
 		{
-			DescribeCompilationErrors( std::cerr, Shader );
+			DescribeCompilationErrors( cerr, Shader );
 		}
 
 		return Shader.bIsCompiled;

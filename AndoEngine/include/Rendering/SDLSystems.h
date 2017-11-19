@@ -1,11 +1,7 @@
 #pragma once
-
-#include <iostream>
 #include <vector>
-using namespace std;
-
-#include "SDL2/SDL.h"
-#include "GL/glew.h"
+#include <GL/glew.h>
+#include <SDL2/SDL.h>
 
 namespace S
 {
@@ -34,7 +30,7 @@ namespace S
 	class SDLEventSystem
 	{
 	public:
-		vector<SDL_Event> FrameEvents;
+		std::vector<SDL_Event> FrameEvents;
 
 		bool Initialize()
 		{

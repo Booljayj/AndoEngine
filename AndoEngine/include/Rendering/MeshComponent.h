@@ -1,19 +1,15 @@
 #pragma once
-
+#include <vector>
 #include <GL/glew.h>
-#include <glm/vec3.hpp>
-
 #include "Rendering/Buffer.enum.h"
 #include "Rendering/GLVertexBufferObject.h"
 #include "Rendering/VertexData.h"
-
-using namespace glm;
 
 namespace C
 {
 	struct Mesh
 	{
-		vector<GL::VertexData> Vertices;
+		std::vector<GL::VertexData> Vertices;
 		GLuint BufferID[GL::EBuffer::Count()] = {0};
 
 		void OnRetained() {}

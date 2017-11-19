@@ -1,9 +1,6 @@
 #pragma once
-
 #include <vector>
 #include <tuple>
-using namespace std;
-
 #include "EntityFramework/Types.h"
 #include "EntityFramework/ComponentInfo.h"
 #include "EntityFramework/ComponentManager.h"
@@ -11,7 +8,7 @@ using namespace std;
 struct EntityOwnedComponent
 {
 	ComponentTypeID TypeID;
-	raw_ptr CompPtr;
+	ptr_t CompPtr;
 
 	bool operator==( const ComponentTypeID& InTypeID ) const { return TypeID == InTypeID; }
 };
@@ -28,8 +25,8 @@ struct Entity
 	bool operator==( const Entity& Other ) const { return Owned.data() == Other.Owned.data(); }
 
 	//Entity creation
-	void Setup( const vector<ComponentInfo*>& InComponentInfos, const vector<ByteStream>& InComponentDatas = vector<ByteStream>{} );
-	void Reset( vector<EntityOwnedComponent>& OutOwnedComponents );
+	void Setup( const std::vector<ComponentInfo*>& InComponentInfos, const std::vector<ByteStream>& InComponentDatas = std::vector<ByteStream>{} );
+	void Reset( std::vector<EntityOwnedComponent>& OutOwnedComponents );
 
 	//Component testing
 	bool Has( const ComponentTypeID& TypeID ) const;
@@ -37,7 +34,7 @@ struct Entity
 	bool Has( const TComponentInfo<TTData>& ComponentInfo ) const { return Has( ComponentInfo.GetID() ); }
 
 	//Component retrieval
-	raw_ptr Get( const ComponentTypeID& TypeID ) const;
+	ptr_t Get( const ComponentTypeID& TypeID ) const;
 	template<typename TTData>
 	TTData* Get( const TComponentInfo<TTData>& ComponentInfo ) { return static_cast<TTData*>( Get( ComponentInfo.GetID() ) ); }
 
@@ -45,13 +42,13 @@ struct Entity
 	size_t Count() const { return Owned.size(); }
 	size_t Capacity() const { return 0; } //used for fixed-size entities
 
-	friend ostream& operator<<( ostream& Stream, const Entity& Entity );
+	friend std::ostream& operator<<( std::ostream& Stream, const Entity& Entity );
 
 protected:
-	vector<EntityOwnedComponent> Owned;
+	std::vector<EntityOwnedComponent> Owned;
 
 	//Component manipulation
-	raw_ptr Add( const ComponentTypeID& TypeID, ComponentManager* Manager );
+	ptr_t Add( const ComponentTypeID& TypeID, ComponentManager* Manager );
 	template<typename TTData>
 	TTData* Add( const TComponentInfo<TTData>& ComponentInfo ) { return Add( ComponentInfo.GetID(), ComponentInfo.GetManager() ); }
 

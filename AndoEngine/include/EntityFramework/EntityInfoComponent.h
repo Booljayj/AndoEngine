@@ -1,8 +1,5 @@
 #pragma once
-
 #include <string>
-using namespace std;
-
 #include "EntityFramework/ComponentInfo.h"
 
 namespace C
@@ -12,7 +9,7 @@ namespace C
 	struct EntityInfoComponent
 	{
 		EntityID id;
-		string name;
+		std::string name;
 		uint32_t flags;
 	};
 }
