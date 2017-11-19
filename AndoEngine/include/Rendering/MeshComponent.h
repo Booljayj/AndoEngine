@@ -1,24 +1,11 @@
-//
-//  MeshComponent.h
-//  AndoEngine
-//
-//  Created by Justin Bool on 8/6/17.
-//
-//
-
 #pragma once
-
-#include <cassert>
 
 #include <GL/glew.h>
 #include <glm/vec3.hpp>
 
-#include "EntityFramework/ComponentManager.h"
-#include "EntityFramework/ComponentInfo.h"
-
 #include "Rendering/Buffer.enum.h"
-#include "Rendering/GLVertexData.h"
 #include "Rendering/GLVertexBufferObject.h"
+#include "Rendering/VertexData.h"
 
 using namespace glm;
 

@@ -1,11 +1,9 @@
-// Copyright © 2017 Justin Bool. All rights reserved.
-
 #pragma once
 
 #include <string>
 using namespace std;
 
-#include "ComponentInfo.h"
+#include "EntityFramework/ComponentInfo.h"
 
 namespace C
 {

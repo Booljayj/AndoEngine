@@ -1,11 +1,3 @@
-//
-//  TestSystems.h
-//  AndoEngine
-//
-//  Created by Justin Bool on 7/30/17.
-//
-//
-
 #pragma once
 
 #include <iostream>

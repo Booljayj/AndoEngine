@@ -1,5 +1,3 @@
-// Copyright © 2017 Justin Bool. All rights reserved.
-
 #pragma once
 
 #include <iostream>
@@ -8,9 +6,9 @@
 #include <unordered_map>
 using namespace std;
 
-#include "EntityFrameworkTypes.h"
-#include "Entity.h"
-#include "ComponentInfo.h"
+#include "EntityFramework/Types.h"
+#include "EntityFramework/Entity.h"
+#include "EntityFramework/ComponentInfo.h"
 
 /* The classes below are exported */
 #pragma GCC visibility push(default)

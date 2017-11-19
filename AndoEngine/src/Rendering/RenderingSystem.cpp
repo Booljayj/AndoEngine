@@ -1,11 +1,3 @@
-//
-//  RenderingSystem.cpp
-//  AndoEngine
-//
-//  Created by Justin Bool on 8/11/17.
-//
-//
-
 #include <cassert>
 
 #include "Rendering/RenderingSystem.h"

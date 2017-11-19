@@ -1,11 +1,3 @@
-//
-//  GLVertex.h
-//  AndoEngine
-//
-//  Created by Justin Bool on 9/3/17.
-//
-//
-
 #pragma once
 
 #include "glm/vec2.hpp"

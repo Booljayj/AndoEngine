@@ -16,7 +16,7 @@ using namespace std;
 #include "Rendering/GLType.enum.h"
 #include "Rendering/GLVertexArrayObject.h"
 #include "Rendering/GLVertexBufferObject.h"
-#include "Rendering/GLVertexData.h"
+#include "Rendering/VertexData.h"
 
 namespace GL
 {

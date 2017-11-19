@@ -1,10 +1,7 @@
-// Copyright © 2017 Justin Bool. All rights reserved.
-
 #pragma once
 
 #include <vector>
 
-#include "EntityFramework/EntityFrameworkTypes.h"
 #include "glm/mat4x4.hpp"
 
 namespace C

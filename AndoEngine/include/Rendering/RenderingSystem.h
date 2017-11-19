@@ -1,14 +1,6 @@
-//
-//  RenderingSystem.h
-//  AndoEngine
-//
-//  Created by Justin Bool on 8/9/17.
-//
-//
-
 #pragma once
 
-#include "AndoEngine/BasicComponents.h"
+#include "Engine/BasicComponents.h"
 #include "EntityFramework/ComponentInfo.h"
 #include "EntityFramework/Entity.h"
 #include "EntityFramework/EntitySystem.h"

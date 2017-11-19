@@ -1,8 +1,6 @@
-// Copyright © 2017 Justin Bool. All rights reserved.
-
 #pragma once
 
-#include "EntityFrameworkTypes.h"
+#include "EntityFramework/Types.h"
 
 template<typename TTData>
 struct Serializer

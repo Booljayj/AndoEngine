@@ -1,16 +1,6 @@
-//
-//  GLShader.hpp
-//  AndoEngine
-//
-//  Created by Justin Bool on 9/5/17.
-//
-//
-
 #pragma once
 
 #include <ostream>
-using namespace std;
-
 #include "GL/glew.h"
 
 #include "EntityFramework/ComponentManager.h"
@@ -25,6 +15,8 @@ namespace GL
 
 namespace C
 {
+	using namespace std;
+
 	struct ShaderComponent
 	{
 		//Serialized data
@@ -45,7 +37,7 @@ namespace C
 	struct ProgramComponent
 	{
 		//Serialized data
-		vector<ShaderComponent*> LinkedShaders;
+		std::vector<ShaderComponent*> LinkedShaders;
 
 		//Runtime data
 		GL::ProgramID _ProgramID = 0;
@@ -62,6 +54,8 @@ namespace C
 
 namespace GL
 {
+	using namespace std;
+
 	bool Compile( C::ShaderComponent& Shader );
 	void DescribeCompilationErrors( ostream& Stream, const C::ShaderComponent& Shader );
 

@@ -1,11 +1,3 @@
-//
-//  GLUniform.hpp
-//  AndoEngine
-//
-//  Created by Justin Bool on 9/4/17.
-//
-//
-
 #pragma once
 
 #include <cstdint>

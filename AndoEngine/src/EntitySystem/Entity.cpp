@@ -1,10 +1,8 @@
-// Copyright © 2017 Justin Bool. All rights reserved.
-
 #include <vector>
 #include <cassert>
 using namespace std;
 
-#include "EntityFramework/EntityFrameworkTypes.h"
+#include "EntityFramework/Types.h"
 #include "EntityFramework/Entity.h"
 
 Entity::Entity()

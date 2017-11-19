@@ -1,11 +1,3 @@
-//
-//  GLShader.cpp
-//  AndoEngine
-//
-//  Created by Justin Bool on 9/5/17.
-//
-//
-
 #include <iostream>
 #include <vector>
 

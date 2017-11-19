@@ -1,5 +1,3 @@
-// Copyright © 2017 Justin Bool. All rights reserved.
-
 #include <stdio.h>
 #include <cassert>
 

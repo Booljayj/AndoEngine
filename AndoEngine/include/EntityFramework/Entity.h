@@ -1,14 +1,12 @@
-// Copyright © 2017 Justin Bool. All rights reserved.
-
 #pragma once
 
 #include <vector>
 #include <tuple>
 using namespace std;
 
-#include "EntityFrameworkTypes.h"
-#include "ComponentInfo.h"
-#include "ComponentManager.h"
+#include "EntityFramework/Types.h"
+#include "EntityFramework/ComponentInfo.h"
+#include "EntityFramework/ComponentManager.h"
 
 struct EntityOwnedComponent
 {

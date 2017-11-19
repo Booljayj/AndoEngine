@@ -1,25 +1,13 @@
-//
-//  MeshRendererComponent.h
-//  AndoEngine
-//
-//  Created by Justin Bool on 8/6/17.
-//
-//
-
 #pragma once
 
 #include <iostream>
 #include "GL/glew.h"
 
-#include "GLVertexData.h"
-#include "GLVertexBufferObject.h"
-#include "GLVertexArrayObject.h"
-#include "GLShader.h"
-
+#include "Rendering/GLVertexBufferObject.h"
+#include "Rendering/GLVertexArrayObject.h"
+#include "Rendering/GLShader.h"
 #include "Rendering/MeshComponent.h"
-
-#include "EntityFramework/ComponentManager.h"
-#include "EntityFramework/ComponentInfo.h"
+#include "Rendering/VertexData.h"
 
 namespace C
 {

@@ -5,9 +5,6 @@
 #include <algorithm>
 #include <ostream>
 
-#define BEGIN_ALLOC_BLOCK( Alloc ) const size_t __LastUsed_##Alloc##__ = Alloc.GetUsed();
-#define END_ALLOC_BLOCK( Alloc ) Alloc.SetUsed( __LastUsed_##Alloc##__ );
-
 class LinearAllocatorData
 {
 	uint8_t* Data;
@@ -38,6 +35,7 @@ public:
 	friend std::ostream& operator<<( std::ostream& Stream, LinearAllocatorData& Alloc );
 };
 
+/** std allocator that uses a linear allocator data struct to manage allocations. */
 template< typename T >
 class TLinearAllocator
 {

@@ -1,12 +1,10 @@
-// Copyright © 2017 Justin Bool. All rights reserved.
-
 #pragma once
 
 #include <iostream>
 using namespace std;
 
-#include "EntityFrameworkTypes.h"
-#include "ComponentManager.h"
+#include "EntityFramework/Types.h"
+#include "EntityFramework/ComponentManager.h"
 
 struct ComponentInfo
 {

@@ -15,16 +15,16 @@ using namespace std;
 #include "Rendering/SDLSystems.h"
 #include "Rendering/RenderingSystem.h"
 
-#include "AndoEngine/BasicComponents.h"
+#include "Engine/BasicComponents.h"
 #include "Rendering/MeshComponent.h"
 #include "Rendering/MeshRendererComponent.h"
 
-#include "Rendering/GLVertexData.h"
+#include "Rendering/VertexData.h"
 #include "Rendering/GLShader.h"
 
-#include "AndoEngine/LinearAllocator.h"
-#include "AndoEngine/LinearContainers.h"
-#include "AndoEngine/LinearStrings.h"
+#include "Engine/LinearAllocator.h"
+#include "Engine/LinearContainers.h"
+#include "Engine/LinearStrings.h"
 
 int main( int argc, const char * argv[] )
 {
@@ -33,17 +33,12 @@ int main( int argc, const char * argv[] )
 	cout << "making temp allocator" << endl;
 	LinearAllocatorData Alloc{ 40000 };
 	cout << Alloc << '\n';
-	BEGIN_ALLOC_BLOCK( Alloc );
 	//l_string broken; //NOPE! You need to supply the allocator, or this won't compile.
 	l_string s{ "Really long string that we don't want to allocate for.", Alloc };
 	s += " I mean, really long.";
 	s += " Like, ridiculously long in a feeble attempt to get more ";
 	s += "allocations.";
 	cout << s << '\n';
-	cout << Alloc << '\n';
-
-	END_ALLOC_BLOCK( Alloc );
-	cout << "...aaand it's gone!" << endl;
 	cout << Alloc << '\n';
 
 	l_vector<uint16_t> v{ Alloc };

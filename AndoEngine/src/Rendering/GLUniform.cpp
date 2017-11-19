@@ -1,14 +1,5 @@
-//
-//  GLUniform.cpp
-//  AndoEngine
-//
-//  Created by Justin Bool on 9/4/17.
-//
-//
-
-#include "Rendering/GLUniform.h"
-
 #include <glm/mat4x4.hpp>
+#include "Rendering/GLUniform.h"
 
 namespace GL
 {

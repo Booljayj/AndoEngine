@@ -1,5 +1,3 @@
-// Copyright © 2017 Justin Bool. All rights reserved.
-
 #pragma once
 
 #include <cassert>
@@ -10,8 +8,8 @@
 #include <bitset>
 using namespace std;
 
-#include "EntityFrameworkTypes.h"
-#include "Serializer.h"
+#include "EntityFramework/Types.h"
+#include "EntityFramework/Serializer.h"
 
 struct Entity;
 
