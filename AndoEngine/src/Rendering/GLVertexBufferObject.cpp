@@ -9,6 +9,4 @@
 #include "Rendering/GLVertexBufferObject.h"
 
 namespace GL
-{
-	DefineEnumeration( EBuffer );
-}
+{}

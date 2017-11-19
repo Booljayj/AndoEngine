@@ -1,0 +1,13 @@
+name: EGLBool
+type: uint8_t
+namespace: GL
+include:
+  - <cstdint>
+  - <cstring>
+  - GL/glew.h
+conv:
+  - { name: GL, type: GLenum, default: 0, comment: OpenGL built-in enum }
+
+values:
+  - { name: True, conv: [ GL_TRUE ] }
+  - { name: False, conv: [ GL_FALSE ] }

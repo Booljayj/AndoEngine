@@ -1,0 +1,15 @@
+name: EAttribute
+type: uint8_t
+namespace: GL
+include:
+  - <cstdint>
+  - <cstring>
+  - GL/glew.h
+
+values:
+  - { name: Position }
+  - { name: Color }
+  - { name: Normal }
+  - { name: TexCoords }
+  - { name: BoneIndexes }
+  - { name: BoneWeights }

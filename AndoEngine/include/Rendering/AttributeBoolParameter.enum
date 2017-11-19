@@ -1,0 +1,13 @@
+name: EAttributeBoolParameter
+type: uint8_t
+namespace: GL
+include:
+  - <cstdint>
+  - <cstring>
+  - GL/glew.h
+conv:
+  - { name: GL, type: GLenum, default: 0, comment: OpenGL built-in enum }
+
+values:
+  - { name: Enabled, conv: [ GL_VERTEX_ATTRIB_ARRAY_ENABLED ] }
+  - { name: Normalized, conv: [ GL_VERTEX_ATTRIB_ARRAY_NORMALIZED ] }

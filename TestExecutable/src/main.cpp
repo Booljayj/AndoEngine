@@ -90,7 +90,7 @@ int main( int argc, const char * argv[] )
 	S::SDLEventSystem SDLEvent;
 	S::SDLWindowSystem SDLWindow;
 
-	S::RenderingSystem Rendering{ &EntitySys, &Mesh, &MeshRenderer, &Shader, &Program };
+	S::RenderingSystem Rendering{ &MeshRenderer };
 
 	cout << "Initializing all systems" << endl;
 	bool bInitializeSuccessful =

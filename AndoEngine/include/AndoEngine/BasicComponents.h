@@ -2,12 +2,15 @@
 
 #pragma once
 
+#include <vector>
+
 #include "EntityFramework/EntityFrameworkTypes.h"
 #include "glm/mat4x4.hpp"
 
 namespace C
 {
 	using namespace glm;
+	using namespace std;
 
 	struct TransformComponent
 	{

@@ -11,16 +11,5 @@
 #include <cstdint>
 #include <GL/glew.h>
 
-#include "AndoEngine/EnumMacros.h"
-
 namespace GL
-{
-	DeclareEnumeration(
-		EBuffer,
-		uint8_t,
-		(
-			VertexData,
-			InstanceData
-		)
-	);
-}
+{}

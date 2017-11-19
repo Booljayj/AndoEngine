@@ -17,8 +17,7 @@ using namespace std;
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "AndoEngine/EnumMacros.h"
-#include "GLBasicEnums.h"
+#include "Rendering/GLType.enum.h"
 
 namespace GL
 {

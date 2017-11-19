@@ -9,14 +9,12 @@
 #include <iostream>
 #include <vector>
 
+#include "Rendering/GLBool.enum.h"
 #include "Rendering/GLShader.h"
-#include "Rendering/GLBasicEnums.h"
 #include "Rendering/GLVertexArrayObject.h"
 
 namespace GL
 {
-	DefineEnumerationConverter( EShader );
-
 	bool Compile( C::ShaderComponent& Shader )
 	{
 		if( Shader.bIsCompiled )
@@ -28,7 +26,7 @@ namespace GL
 		//Create a new OpenGL Shader object if we need one.
 		if( Shader._ShaderID == 0 )
 		{
-			Shader._ShaderID = glCreateShader( EShader::ToGlobal( Shader.ShaderType ) );
+			Shader._ShaderID = glCreateShader( EShader::ToGL( Shader.ShaderType ) );
 		}
 		glShaderSource( Shader._ShaderID, 1, &Shader.Source, 0 );
 
@@ -36,7 +34,7 @@ namespace GL
 		glCompileShader( Shader._ShaderID );
 		glGetShaderiv( Shader._ShaderID, GL_COMPILE_STATUS, &CompileStatus );
 
-		if( !(Shader.bIsCompiled = EGLBool::FromGlobal( CompileStatus ) == EGLBool::True ) )
+		if( !(Shader.bIsCompiled = EGLBool::FromGL( CompileStatus ) == EGLBool::True ) )
 		{
 			DescribeCompilationErrors( std::cerr, Shader );
 		}
@@ -104,7 +102,7 @@ namespace GL
 		//Determing if the linking was successful (saving result to component)
 		glGetProgramiv( Program._ProgramID, GL_LINK_STATUS, &LinkStatus );
 
-		if( ( Program.bIsLinked = EGLBool::FromGlobal( LinkStatus ) == EGLBool::True ) )
+		if( ( Program.bIsLinked = EGLBool::FromGL( LinkStatus ) == EGLBool::True ) )
 		{
 			GetUniforms( Program._ProgramID, Program._Uniforms );
 		}

@@ -1,0 +1,10 @@
+name: EBuffer
+type: uint8_t
+namespace: GL
+include:
+  - <cstdint>
+  - <cstring>
+
+values:
+  - { name: VertexData }
+  - { name: InstanceData }

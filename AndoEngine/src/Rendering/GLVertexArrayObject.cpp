@@ -12,41 +12,36 @@ using namespace std;
 
 #include <glm/vec3.hpp>
 
+#include "Rendering/GLBool.enum.h"
+#include "Rendering/GLType.enum.h"
 #include "Rendering/GLVertexArrayObject.h"
 #include "Rendering/GLVertexBufferObject.h"
-#include "Rendering/GLBasicEnums.h"
 #include "Rendering/GLVertexData.h"
 
 namespace GL
 {
-	DefineEnumeration( EAttribute );
-	DefineEnumerationConverter( EAttributeIntParameter );
-	DefineEnumerationConverter( EAttributeBoolParameter );
-	DefineEnumerationConverter( EAttributeTypeParameter );
-	DefineEnumerationConverter( EAttributePtrParameter );
-
 	void DescribeParam_Bound( ostream& Stream, EAttribute::ENUM Attribute, EAttributeIntParameter::ENUM Param, size_t& Storage )
 	{
-		glGetVertexAttribiv( static_cast<GLint>( Attribute ), EAttributeIntParameter::ToGlobal( Param ), reinterpret_cast<GLint*>( &Storage ) );
-		Stream << EAttributeIntParameter::Name( Param ) << " = " << Storage;
+		glGetVertexAttribiv( static_cast<GLint>( Attribute ), EAttributeIntParameter::ToGL( Param ), reinterpret_cast<GLint*>( &Storage ) );
+		Stream << EAttributeIntParameter::ToName( Param ) << " = " << Storage;
 	}
 
 	void DescribeParam_Bound( ostream& Stream, EAttribute::ENUM Attribute, EAttributeTypeParameter::ENUM Param, size_t& Storage )
 	{
-		glGetVertexAttribiv( static_cast<GLint>( Attribute ), EAttributeTypeParameter::ToGlobal( Param ), reinterpret_cast<GLint*>( &Storage ) );
-		Stream << EAttributeTypeParameter::Name( Param ) << " = " << EGLType::ToName( EGLType::FromGL( static_cast<GLenum>( Storage ) ) );
+		glGetVertexAttribiv( static_cast<GLint>( Attribute ), EAttributeTypeParameter::ToGL( Param ), reinterpret_cast<GLint*>( &Storage ) );
+		Stream << EAttributeTypeParameter::ToName( Param ) << " = " << EGLType::ToName( EGLType::FromGL( static_cast<GLenum>( Storage ) ) );
 	}
 
 	void DescribeParam_Bound( ostream& Stream, EAttribute::ENUM Attribute, EAttributeBoolParameter::ENUM Param, size_t& Storage )
 	{
-		glGetVertexAttribiv( static_cast<GLint>( Attribute ), EAttributeBoolParameter::ToGlobal( Param ), reinterpret_cast<GLint*>( &Storage ) );
-		Stream << EAttributeBoolParameter::Name( Param ) << " = " << EGLBool::GlobalName( static_cast<GLenum>( Storage ) );
+		glGetVertexAttribiv( static_cast<GLint>( Attribute ), EAttributeBoolParameter::ToGL( Param ), reinterpret_cast<GLint*>( &Storage ) );
+		Stream << EAttributeBoolParameter::ToName( Param ) << " = " << EGLBool::ToName( EGLBool::FromGL( static_cast<GLenum>( Storage ) ) );
 	}
 
 	void DescribeParam_Bound( ostream& Stream, EAttribute::ENUM Attribute, EAttributePtrParameter::ENUM Param, size_t& Storage )
 	{
-		glGetVertexAttribPointerv( static_cast<GLint>( Attribute ), EAttributePtrParameter::ToGlobal( Param ), reinterpret_cast<void**>( &Storage ) );
-		Stream << EAttributePtrParameter::Name( Param ) << " = " << Storage;
+		glGetVertexAttribPointerv( static_cast<GLint>( Attribute ), EAttributePtrParameter::ToGL( Param ), reinterpret_cast<void**>( &Storage ) );
+		Stream << EAttributePtrParameter::ToName( Param ) << " = " << Storage;
 	}
 
 	string DescribeVertexArrayObject( GLuint VAOID )
@@ -60,7 +55,7 @@ namespace GL
 		for( EAttribute::TYPE AttributeIndex = 0; AttributeIndex < EAttribute::Count(); ++AttributeIndex )
 		{
 			EAttribute::ENUM CurAttribute = EAttribute::Cast( AttributeIndex );
-			Stream << "\t" << EAttribute::Name( AttributeIndex ) << ": ";
+			Stream << "\t" << EAttribute::ToName( CurAttribute ) << ": ";
 			DescribeParam_Bound( Stream, CurAttribute, EAttributeBoolParameter::Enabled, Storage ); Stream << ", ";
 			DescribeParam_Bound( Stream, CurAttribute, EAttributeIntParameter::BufferID, Storage ); Stream << ", ";
 			DescribeParam_Bound( Stream, CurAttribute, EAttributeIntParameter::Size, Storage ); Stream << ", ";
@@ -77,7 +72,7 @@ namespace GL
 		string ShaderPrefix = "vert_";
 		for( EAttribute::TYPE AttributeIndex = 0; AttributeIndex < EAttribute::Count(); ++AttributeIndex )
 		{
-			string ShaderAttributeName = ShaderPrefix + EAttribute::Name( AttributeIndex );
+			string ShaderAttributeName = ShaderPrefix + EAttribute::ToName( EAttribute::Cast( AttributeIndex ) );
 			glBindAttribLocation( ProgramID, AttributeIndex, ShaderAttributeName.c_str() );
 		}
 	}

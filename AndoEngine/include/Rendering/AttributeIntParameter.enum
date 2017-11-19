@@ -1,0 +1,16 @@
+name: EAttributeIntParameter
+type: uint8_t
+namespace: GL
+include:
+  - <cstdint>
+  - <cstring>
+  - GL/glew.h
+conv:
+  - { name: GL, type: GLenum, default: 0, comment: OpenGL built-in enum }
+
+values:
+  - { name: BufferID, conv: [ GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING ] }
+  - { name: Size, conv: [ GL_VERTEX_ATTRIB_ARRAY_SIZE ] }
+  - { name: Stride, conv: [ GL_VERTEX_ATTRIB_ARRAY_STRIDE ] }
+  - { name:  Integer, conv: [  GL_VERTEX_ATTRIB_ARRAY_INTEGER  ] }
+  - { name:  Divisor, conv: [  GL_VERTEX_ATTRIB_ARRAY_DIVISOR  ] }

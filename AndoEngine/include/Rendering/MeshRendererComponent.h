@@ -16,7 +16,7 @@
 #include "GLVertexArrayObject.h"
 #include "GLShader.h"
 
-#include "MeshComponent.h"
+#include "Rendering/MeshComponent.h"
 
 #include "EntityFramework/ComponentManager.h"
 #include "EntityFramework/ComponentInfo.h"

@@ -16,8 +16,9 @@
 #include "EntityFramework/ComponentManager.h"
 #include "EntityFramework/ComponentInfo.h"
 
-#include "GLVertexData.h"
-#include "GLVertexBufferObject.h"
+#include "Rendering/Buffer.enum.h"
+#include "Rendering/GLVertexData.h"
+#include "Rendering/GLVertexBufferObject.h"
 
 using namespace glm;
 

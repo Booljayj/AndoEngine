@@ -14,20 +14,11 @@ using namespace std;
 #include "GL/glew.h"
 
 #include "EntityFramework/ComponentManager.h"
-#include "AndoEngine/EnumMacros.h"
-#include "GLUniform.h"
+#include "Rendering/Shader.enum.h"
+#include "Rendering/GLUniform.h"
 
 namespace GL
 {
-	DeclareEnumerationConverter(
-		EShader,
-		( uint8_t, GLenum ),
-		(
-			( Vertex, GL_VERTEX_SHADER ),
-			( Fragment, GL_FRAGMENT_SHADER )
-		)
-	);
-
 	using ProgramID = GLuint;
 	using ShaderID = GLuint;
 }

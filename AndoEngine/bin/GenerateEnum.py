@@ -40,14 +40,14 @@ public:
 
 	static inline constexpr TYPE Count() {{ return _Count; }}
 	static inline constexpr bool IsValid( const TYPE Value ) {{ return Value < _Count; }}
+	static inline constexpr ENUM Cast( const TYPE Value ) {{ return static_cast<ENUM>( IsValid( Value ) ? Value : _Count ); }}
 
 	static constexpr const char* _NameBlock = {chunked_name_block};
 
 	//Converting to/from a human-readable name
 	static const TYPE _NameOffsets[];
-	static constexpr const char* ToName( const TYPE Value ) {{
-		TYPE Index = Value > _Count ? _Count : Value;
-		return _NameBlock + _NameOffsets[Index];
+	static constexpr const char* ToName( const ENUM Value ) {{
+		return _NameBlock + _NameOffsets[static_cast<TYPE>( Value )];
 	}}
 	static ENUM FromName( const char* Name );
 {conversion_declarations}\
@@ -62,8 +62,7 @@ conversion_declaration_template = '''
 	//Conversion {index}: to/from {name}
 	static const CONV{index}_TYPE _Conv{index}Data[];
 	static constexpr CONV{index}_TYPE To{name}( const ENUM Value ) {{
-		TYPE Index = Value > _Count ? _Count : Value;
-		return _Conv{index}Data[Index];
+		return _Conv{index}Data[static_cast<TYPE>( Value )];
 	}}
 	static ENUM From{name}( const CONV{index}_TYPE CValue );
 '''
@@ -112,9 +111,6 @@ os.makedirs( output_directory, exist_ok = True )
 input_file = open( input_file_path, 'r' )
 raw_data = yaml.load( input_file, Loader = yaml.BaseLoader ) #load all values as strings
 input_file.close()
-
-values = [value['name'] for value in raw_data['values']]
-conversions = raw_data['conv']
 
 format_args = FormatDict(
 	[
