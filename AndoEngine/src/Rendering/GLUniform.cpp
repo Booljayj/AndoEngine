@@ -1,5 +1,5 @@
 #include <glm/mat4x4.hpp>
-#include "Rendering/GLUniform.h"
+#include "Rendering/Uniform.h"
 
 using namespace std;
 

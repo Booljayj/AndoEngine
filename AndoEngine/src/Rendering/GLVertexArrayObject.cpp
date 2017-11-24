@@ -1,63 +1,75 @@
 #include <string>
 #include <sstream>
 #include <glm/vec3.hpp>
+#include "Rendering/BufferTarget.enum.h"
 #include "Rendering/GLBool.enum.h"
 #include "Rendering/GLType.enum.h"
 #include "Rendering/GLVertexArrayObject.h"
-#include "Rendering/GLVertexBufferObject.h"
 #include "Rendering/VertexData.h"
 
 using namespace std;
 
 namespace GL
 {
-	void DescribeParam_Bound( ostream& Stream, EAttribute::ENUM Attribute, EAttributeIntParameter::ENUM Param, size_t& Storage )
+	void DescribeAttributeParameter_Bound( ostream& Stream, EAttribute::ENUM Attribute, EAttributeParameter::ENUM Param, size_t& Storage )
 	{
-		glGetVertexAttribiv( static_cast<GLint>( Attribute ), EAttributeIntParameter::ToGL( Param ), reinterpret_cast<GLint*>( &Storage ) );
-		Stream << EAttributeIntParameter::ToName( Param ) << ": " << Storage;
-	}
+		switch( Param )
+		{
+			case EAttributeParameter::Enabled:
+			case EAttributeParameter::Normalized:
+			//boolean
+			glGetVertexAttribiv( static_cast<GLint>( Attribute ), EAttributeParameter::ToGL( Param ), reinterpret_cast<GLint*>( &Storage ) );
+			Stream << EAttributeParameter::ToName( Param ) << ": " << EGLBool::ToName( EGLBool::FromGL( static_cast<GLenum>( Storage ) ) );
+			break;
 
-	void DescribeParam_Bound( ostream& Stream, EAttribute::ENUM Attribute, EAttributeTypeParameter::ENUM Param, size_t& Storage )
-	{
-		glGetVertexAttribiv( static_cast<GLint>( Attribute ), EAttributeTypeParameter::ToGL( Param ), reinterpret_cast<GLint*>( &Storage ) );
-		Stream << EAttributeTypeParameter::ToName( Param ) << ": " << EGLType::ToName( EGLType::FromGL( static_cast<GLenum>( Storage ) ) );
-	}
+			case EAttributeParameter::BufferID:
+			case EAttributeParameter::Size:
+			case EAttributeParameter::Stride:
+			case EAttributeParameter::Integer:
+			case EAttributeParameter::Divisor:
+			//integer
+			glGetVertexAttribiv( static_cast<GLint>( Attribute ), EAttributeParameter::ToGL( Param ), reinterpret_cast<GLint*>( &Storage ) );
+			Stream << EAttributeParameter::ToName( Param ) << ": " << Storage;
+			break;
 
-	void DescribeParam_Bound( ostream& Stream, EAttribute::ENUM Attribute, EAttributeBoolParameter::ENUM Param, size_t& Storage )
-	{
-		glGetVertexAttribiv( static_cast<GLint>( Attribute ), EAttributeBoolParameter::ToGL( Param ), reinterpret_cast<GLint*>( &Storage ) );
-		Stream << EAttributeBoolParameter::ToName( Param ) << ": " << EGLBool::ToName( EGLBool::FromGL( static_cast<GLenum>( Storage ) ) );
-	}
+			case EAttributeParameter::Type:
+			//type
+			glGetVertexAttribiv( static_cast<GLint>( Attribute ), EAttributeParameter::ToGL( Param ), reinterpret_cast<GLint*>( &Storage ) );
+			Stream << EAttributeParameter::ToName( Param ) << ": " << EGLType::ToName( EGLType::FromGL( static_cast<GLenum>( Storage ) ) );
+			break;
 
-	void DescribeParam_Bound( ostream& Stream, EAttribute::ENUM Attribute, EAttributePtrParameter::ENUM Param, size_t& Storage )
-	{
-		glGetVertexAttribPointerv( static_cast<GLint>( Attribute ), EAttributePtrParameter::ToGL( Param ), reinterpret_cast<void**>( &Storage ) );
-		Stream << EAttributePtrParameter::ToName( Param ) << ": " << Storage;
+			case EAttributeParameter::Offset:
+			//pointer
+			glGetVertexAttribPointerv( static_cast<GLint>( Attribute ), EAttributeParameter::ToGL( Param ), reinterpret_cast<void**>( &Storage ) );
+			Stream << EAttributeParameter::ToName( Param ) << ": " << Storage;
+			break;
+		}
 	}
 
 	void DescribeAttribute_Bound( ostream& Stream, EAttribute::ENUM Attribute )
 	{
 		size_t Storage = 0;
-		Stream << "\t[Attribute]{ " << EAttribute::ToName( Attribute ) << ", ";
-		DescribeParam_Bound( Stream, Attribute, EAttributeBoolParameter::Enabled, Storage ); Stream << ", ";
-		DescribeParam_Bound( Stream, Attribute, EAttributeIntParameter::BufferID, Storage ); Stream << ", ";
-		DescribeParam_Bound( Stream, Attribute, EAttributeIntParameter::Size, Storage ); Stream << ", ";
-		DescribeParam_Bound( Stream, Attribute, EAttributeIntParameter::Stride, Storage ); Stream << ", ";
-		DescribeParam_Bound( Stream, Attribute, EAttributePtrParameter::Offset, Storage ); Stream << ", ";
-		DescribeParam_Bound( Stream, Attribute, EAttributeTypeParameter::Type, Storage ); Stream << ", ";
-		DescribeParam_Bound( Stream, Attribute, EAttributeBoolParameter::Normalized, Storage ); Stream << " }";
+		Stream << "[Attribute]{ " << EAttribute::ToName( Attribute ) << ", ";
+		DescribeAttributeParam_Bound( Stream, Attribute, EAttributeParameter::Enabled, Storage ); Stream << ", ";
+		DescribeAttributeParam_Bound( Stream, Attribute, EAttributeParameter::BufferID, Storage ); Stream << ", ";
+		DescribeAttributeParam_Bound( Stream, Attribute, EAttributeParameter::Size, Storage ); Stream << ", ";
+		DescribeAttributeParam_Bound( Stream, Attribute, EAttributeParameter::Stride, Storage ); Stream << ", ";
+		DescribeAttributeParam_Bound( Stream, Attribute, EAttributeParameter::Offset, Storage ); Stream << ", ";
+		DescribeAttributeParam_Bound( Stream, Attribute, EAttributeParameter::Type, Storage ); Stream << ", ";
+		DescribeAttributeParam_Bound( Stream, Attribute, EAttributeParameter::Normalized, Storage ); Stream << " }";
 	}
 
 	void DescribeVertexArrayObject( ostream& Stream, GLuint VAOID )
 	{
 		size_t Storage = 0;
 
-		Stream << "[VertexArrayObject]{\n\t" << VAOID << ",\n";
+		Stream << "[VertexArrayObject]{\n\tID: " << VAOID << ",\n";
 		glBindVertexArray( VAOID );
 
 		for( EAttribute::TYPE AttributeIndex = 0; AttributeIndex < EAttribute::Count(); ++AttributeIndex )
 		{
 			EAttribute::ENUM CurAttribute = EAttribute::Cast( AttributeIndex );
+			Stream << "\t";
 			DescribeAttribute_Bound( Stream, CurAttribute );
 			Stream << "\n";
 		}
@@ -78,7 +90,7 @@ namespace GL
 		glBindVertexArray( VAOID );
 
 		//These could be simplified using some macros, but I think I prefer them written out explicitly. When we have a lot more attributes, some common macro patterns should emerge.
-		glBindBuffer( GL_ARRAY_BUFFER, BufferID[EBuffer::VertexData] );
+		glBindBuffer( EBufferTarget::ToGL( EBufferTarget::Array ), BufferID[EBuffer::VertexData] );
 		glEnableVertexAttribArray( EAttribute::Position );
 		glVertexAttribPointer( EAttribute::Position, decltype( VertexData::Position )::length(), GL_FLOAT, GL_FALSE, sizeof( VertexData ), reinterpret_cast<void*>( offsetof( VertexData, Position ) ) );
 

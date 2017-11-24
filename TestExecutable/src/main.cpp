@@ -10,7 +10,7 @@
 #include "Rendering/MeshComponent.h"
 #include "Rendering/MeshRendererComponent.h"
 #include "Rendering/VertexData.h"
-#include "Rendering/GLShader.h"
+#include "Rendering/Shader.h"
 
 using namespace std;
 

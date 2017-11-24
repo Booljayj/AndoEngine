@@ -1,7 +1,7 @@
 #include <iostream>
 #include <vector>
 #include "Rendering/GLBool.enum.h"
-#include "Rendering/GLShader.h"
+#include "Rendering/Shader.h"
 #include "Rendering/GLVertexArrayObject.h"
 
 using namespace std;

@@ -3,13 +3,8 @@
 #include <GL/glew.h>
 #include "EntityFramework/ComponentManager.h"
 #include "Rendering/Shader.enum.h"
-#include "Rendering/GLUniform.h"
-
-namespace GL
-{
-	using ProgramID = GLuint;
-	using ShaderID = GLuint;
-}
+#include "Rendering/Uniform.h"
+#include "Rendering/Types.h"
 
 namespace C
 {
@@ -20,7 +15,7 @@ namespace C
 		GL::EShader::ENUM ShaderType = GL::EShader::Vertex;
 
 		//Runtime data
-		GL::ShaderID _ShaderID = 0;
+		ShaderID _ShaderID = 0;
 		bool bIsCompiled = false;
 	};
 
@@ -36,7 +31,7 @@ namespace C
 		std::vector<ShaderComponent*> LinkedShaders;
 
 		//Runtime data
-		GL::ProgramID _ProgramID = 0;
+		ProgramID _ProgramID = 0;
 		std::vector<GL::UniformInfo> _Uniforms;
 		bool bIsLinked = false;
 	};
