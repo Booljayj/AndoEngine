@@ -99,14 +99,18 @@ const {class_name}::CONV{index}_TYPE {class_name}::_Conv{index}Data[] = {{ {chun
 }}
 '''
 
-input_file_path = sys.argv[1]
-output_directory = sys.argv[2].rstrip( '/' )
+input_file_path = sys.argv[1].lstrip( '/' )
+header_output_directory = sys.argv[2].lstrip( '/' ).rstrip( '/' )
+print(header_output_directory)
+source_output_directory = sys.argv[3].lstrip( '/' ).rstrip( '/' )
+print(source_output_directory)
 
 file_name = input_file_path.rsplit( '/', 1 )[1]
-header_file_path = '{}/{}.h'.format( output_directory, file_name )
-source_file_path = '{}/{}.cpp'.format( output_directory, file_name )
+header_file_path = '{}/{}.h'.format( header_output_directory, file_name )
+source_file_path = '{}/{}.cpp'.format( source_output_directory, file_name )
 
-os.makedirs( output_directory, exist_ok = True )
+os.makedirs( header_output_directory, exist_ok = True )
+os.makedirs( source_output_directory, exist_ok = True )
 
 input_file = open( input_file_path, 'r' )
 raw_data = yaml.load( input_file, Loader = yaml.BaseLoader ) #load all values as strings
