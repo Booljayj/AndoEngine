@@ -2,7 +2,7 @@
 #include <ostream>
 #include <GL/glew.h>
 #include "EntityFramework/ComponentManager.h"
-#include "Rendering/Shader.enum.h"
+#include "Rendering/EShader.enum.h"
 #include "Rendering/Uniform.h"
 #include "Rendering/Types.h"
 

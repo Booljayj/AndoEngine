@@ -4,7 +4,7 @@ namespace: GL
 include:
   - <cstdint>
   - <cstring>
-  - GL/glew.h
+  - <GL/glew.h>
 conv:
   - { name: GL, type: GLenum, default: 0, comment: OpenGL built-in enum }
 

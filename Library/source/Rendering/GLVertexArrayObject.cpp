@@ -1,9 +1,9 @@
 #include <string>
 #include <sstream>
 #include <glm/vec3.hpp>
-#include "Rendering/BufferTarget.enum.h"
-#include "Rendering/GLBool.enum.h"
-#include "Rendering/GLType.enum.h"
+#include "Rendering/EBufferTarget.enum.h"
+#include "Rendering/EGLBool.enum.h"
+#include "Rendering/EGLType.enum.h"
 #include "Rendering/GLVertexArrayObject.h"
 #include "Rendering/VertexData.h"
 

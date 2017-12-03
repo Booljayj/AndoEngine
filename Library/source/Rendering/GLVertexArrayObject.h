@@ -2,9 +2,9 @@
 #include <cstdint>
 #include <ostream>
 #include <GL/glew.h>
-#include "Rendering/Attribute.enum.h"
-#include "Rendering/AttributeParameter.enum.h"
-#include "Rendering/Buffer.enum.h"
+#include "Rendering/EAttribute.enum.h"
+#include "Rendering/EAttributeParameter.enum.h"
+#include "Rendering/EBuffer.enum.h"
 #include "Rendering/Types.h"
 
 namespace GL

@@ -1,6 +1,6 @@
 #include <iostream>
 #include <vector>
-#include "Rendering/GLBool.enum.h"
+#include "Rendering/EGLBool.enum.h"
 #include "Rendering/Shader.h"
 #include "Rendering/GLVertexArrayObject.h"
 

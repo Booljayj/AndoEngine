@@ -4,7 +4,7 @@ namespace: GL
 include:
   - <cstdint>
   - <cstring>
-  - GL/glew.h
+  - <GL/glew.h>
 
 values:
   - { name: Position }

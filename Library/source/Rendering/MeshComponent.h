@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 #include <GL/glew.h>
-#include "Rendering/Buffer.enum.h"
+#include "Rendering/EBuffer.enum.h"
 #include "Rendering/VertexData.h"
 
 namespace C
