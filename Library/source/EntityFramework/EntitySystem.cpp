@@ -65,9 +65,9 @@ namespace S
 			size_t LastEntityIndex = EntityIDs.size() - 1;
 
 			//Last entity and destroyed entity switch places entirely. Destroyed entity is now last.
-			std::swap( Entities[DestroyedEntityIndex], Entities[LastEntityIndex] );
-			std::swap( EntityIDs[DestroyedEntityIndex], EntityIDs[LastEntityIndex] );
-			std::swap( DestroyedEntityIndex, LastEntityIndex );
+			std::swap( Entities[DestroyedEntityIndex], Entities[LastEntityIndex] ); //Swap actual entities
+			std::swap( EntityIDs[DestroyedEntityIndex], EntityIDs[LastEntityIndex] ); //Swap entity IDs
+			std::swap( DestroyedEntityIndex, LastEntityIndex ); //Swap our current indexes for both entities
 
 			Entities[DestroyedEntityIndex].Reset( ReclaimedComponentBuffer );
 			ReleaseReclaimedComponents();
@@ -75,7 +75,6 @@ namespace S
 			Entities.pop_back();
 			EntityIDs.pop_back();
 
-			Destroyed.push_back( ID );
 			return true;
 		}
 		else
@@ -102,25 +101,13 @@ namespace S
 		}
 	}
 
-	Entity& EntitySystem::Get( const EntityID& ID ) const
-	{
-		return *Find( ID );
-	}
-
-	void EntitySystem::Flush()
-	{
-		Created.clear();
-		Destroyed.clear();
-	}
-
-	Entity& EntitySystem::InsertNew( const EntityID& NewID )
+	Entity& EntitySystem::InsertNew( const EntityID NewID )
 	{
 		assert( std::find( EntityIDs.begin(), EntityIDs.end(), NewID ) == EntityIDs.end() );
 
 		Entities.push_back( Entity{} );
 		EntityIDs.push_back( NewID );
 
-		Created.push_back( NewID );
 		return Entities.back();
 	}
 

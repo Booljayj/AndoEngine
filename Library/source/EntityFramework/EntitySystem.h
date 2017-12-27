@@ -19,21 +19,25 @@ namespace S
 		bool Initialize();
 		bool Deinitialize();
 
-		// Entity creation
+		/// Entity creation
+		/** Create a blank entity that contains no components */
 		void Create( const EntityID& NewID );
+		/** Create an entity that contains the components referenced by the component infos */
 		void Create( const EntityID& NewID, const std::vector<ComponentInfo*>& ComponentInfos, const std::vector<ByteStream>& ComponentDatas = {} );
+		/** Create an entity that contains the components referenced by the component IDs */
 		void Create( const EntityID& NewID, const std::vector<ComponentTypeID>& ComponentTypeIDs, const std::vector<ByteStream>& ComponentDatas = {} );
 
-		// Entity destruction
+		///  Entity destruction
+		/** Destroy a particular entity */
 		bool Destroy( Entity* );
+		/** Destroy the entity with the provided ID */
 		bool Destroy( const EntityID& ID );
 
-		// Entity queries
+		/// Entity queries
+		/** Returns true if there is an entity with the provided ID */
 		bool Exists( const EntityID& ID ) const noexcept;
+		/** Returns a pointer to the entity that is using the provided ID, or null if no entity has this ID */
 		Entity* Find( const EntityID& ID ) const noexcept;
-		Entity& Get( const EntityID& ID ) const;
-
-		void Flush();
 
 		friend inline std::ostream& operator <<( std::ostream& Stream, const EntitySystem& ECS )
 		{
@@ -66,13 +70,16 @@ namespace S
 		std::vector<Entity> Entities;
 		std::vector<EntityID> EntityIDs;
 
-		std::vector<EntityID> Created;
-		std::vector<EntityID> Destroyed;
-
-		Entity& InsertNew( const EntityID& NewID );
+		/** Insert a new entity with the specified ID */
+		Entity& InsertNew( const EntityID NewID );
+		/** Get a list of component infos from the list of component types */
 		const std::vector<ComponentInfo*>& GetComponentInfos( const std::vector<ComponentTypeID>& ComponentTypeIDs );
+		/** Find the index of an ID in the master ID list */
 		size_t FindPositionByEntityID( const EntityID& ID ) const noexcept;
+		/** Find the index of an entity in the master entity list */
 		size_t FindPositionByEntity( const Entity& EntityRef ) const noexcept;
+
+		/** Release all components in the reclamation buffer */
 		void ReleaseReclaimedComponents();
 	};
 }

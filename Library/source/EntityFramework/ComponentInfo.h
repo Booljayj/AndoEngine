@@ -3,6 +3,7 @@
 #include "EntityFramework/Types.h"
 #include "EntityFramework/ComponentManager.h"
 
+/** Represents a component that can be owned by an entity */
 struct ComponentInfo
 {
 public:
@@ -12,8 +13,11 @@ public:
 	virtual ~ComponentInfo() {}
 
 protected:
+	/** The unique ID of this component. Used to identify a component, so this should never change once it is used */
 	ComponentTypeID ID;
+	/** The human-readable name of this component. Used in debugging and some types of serialization */
 	const char* Name;
+	/** The manager which creates and collates components of this type */
 	ComponentManager* Manager;
 
 public:
@@ -24,6 +28,7 @@ public:
 	friend std::ostream& operator<<( std::ostream& Stream, const ComponentInfo& Info );
 };
 
+/** Template used to provide type information to a ComponentInfo */
 template< typename TDATA >
 struct TComponentInfo : public ComponentInfo
 {
@@ -31,6 +36,9 @@ struct TComponentInfo : public ComponentInfo
 		: ComponentInfo( InID, InName, InManager )
 	{}
 	virtual ~TComponentInfo() override {}
+
+	/** The type of the component */
+	using TYPE = TDATA;
 
 	TComponentManager<TDATA>* GetTypedManager() const { return static_cast<TComponentManager<TDATA>*>( ComponentInfo::GetManager() ); }
 };

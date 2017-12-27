@@ -10,30 +10,46 @@
 
 struct Entity;
 
+/** Interface for a class which can manage the lifecycle and assignment of components */
 struct ComponentManager
 {
 public:
 	virtual ~ComponentManager() {}
 
+	/** Initialize the component manager, returns true on success */
 	virtual bool Initialize() { return true; }
+	/** Deinitialize the component manager, returns true on success */
 	virtual bool Deinitialize() { return true; }
+	/** Set up an entity that has just been assigned a component */
 	virtual void Setup( const Entity& NewEntity, ptr_t NewComponent ) {}
 
+	/** Retain an instance of a component to be used by a specific entity, returning a pointer to  it */
 	virtual ptr_t Retain() = 0;
+	/** Release a component that was previously retained */
 	virtual void Release( ptr_t ) = 0;
 
+	/** Number of component instances that this manager has created */
 	virtual size_t CountTotal() const = 0;
+	/** Number of component instances that have not been assigned to an entity */
 	virtual size_t CountFree() const = 0;
+	/** Number of component instances that have been assigned to an entity */
 	virtual size_t CountUsed() const = 0;
 
+	/** Serialize the state of a component to a byte stream */
 	virtual void Save( const ptr_t, ByteStream& ) = 0;
+	/** Deserialize the state of a component from a byte stream */
 	virtual void Load( ptr_t, const ByteStream& ) = 0;
+	/** Duplicate a component's state */
 	virtual void Copy( const ptr_t, ptr_t ) = 0;
 };
 
 template< typename TCOMP, size_t BLOCK_SIZE >
 struct ManagedComponentBlock
 {
+	//@todo: these asserts are to prepare for a change where the size of a ManagedComponentBlock can be provided during initialization.
+	static_assert( BLOCK_SIZE <= sizeof( size_t )*8, "Number of components per block should not exceed sizeof(size_t)*8" );
+	static_assert( BLOCK_SIZE != 0, "Number of components per block cannot be 0" );
+
 	size_t LowestFreeIndex;
 	std::bitset<BLOCK_SIZE> Free;
 	std::array<TCOMP, BLOCK_SIZE> Data;
@@ -41,6 +57,7 @@ struct ManagedComponentBlock
 	ManagedComponentBlock()
 		: LowestFreeIndex( 0 )
 	{
+		//@todo: Change this to track used components, not free ones. It just seems cleaner.
 		Free.set(); //start all true (free)
 	}
 
@@ -71,7 +88,7 @@ struct ManagedComponentBlock
 	}
 
 	template< typename TPRED >
-	void ForEach( TPRED& Pred )
+	void ForEach( const TPRED& Pred )
 	{
 		for( size_t Index = 0; Index < BLOCK_SIZE; ++Index )
 		{
@@ -80,7 +97,7 @@ struct ManagedComponentBlock
 	}
 
 	template< typename TPRED >
-	void ForEachAll( TPRED& Pred )
+	void ForEachAll( const TPRED& Pred )
 	{
 		for( size_t Index = 0; Index < BLOCK_SIZE; ++Index )
 		{
@@ -89,9 +106,11 @@ struct ManagedComponentBlock
 	}
 };
 
+/** A component manager for a type of component */
 template< class TCOMP >
 struct TComponentManager : public ComponentManager
 {
+	//@todo: Switch to a method that allows this to be set during initialization, along with the maximum number of blocks.
 	static constexpr const size_t BLOCK_SIZE = 64;
 
 protected:
@@ -99,6 +118,7 @@ protected:
 	std::vector<ManagedComponentBlock<TCOMP, BLOCK_SIZE>*> Blocks;
 
 public:
+	/** Convenience function to cast a raw pointer to component pointer */
 	TCOMP* Cast( ptr_t Comp ) { return static_cast<TCOMP*>( Comp ); }
 
 	ptr_t Retain() override final
@@ -160,21 +180,23 @@ public:
 		return CountTotal() - CountFree();
 	}
 
+	//Iterate over all retained components in this manager, calling the predicate with the component as the first argument.
 	template< typename TPred, typename... TArgs >
-	inline void ForEach( TPred& Pred, TArgs... Args )
+	inline void ForEach( const TPred& Pred )
 	{
 		for( size_t Index = 0; Index < Blocks.size(); ++Index )
 		{
-			Blocks[Index]->ForEach( Pred, Args... );
+			Blocks[Index]->ForEach( Pred );
 		}
 	}
 
+	//Iterate over all components in this manager, calling the predicate with the component as the first argument and the usage status as the second.
 	template< typename TPred, typename... TArgs >
-	inline void ForEachAll( TPred& Pred, TArgs... Args )
+	inline void ForEachAll( const TPred& Pred )
 	{
 		for( size_t Index = 0; Index < Blocks.size(); ++Index )
 		{
-			Blocks[Index]->ForEachAll( Pred, Args... );
+			Blocks[Index]->ForEachAll( Pred );
 		}
 	}
 
