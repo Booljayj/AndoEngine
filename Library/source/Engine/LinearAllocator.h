@@ -13,7 +13,7 @@ class LinearAllocatorData
 	size_t Peak; //@todo: use a define to get rid of this at runtime
 
 public:
-	LinearAllocatorData( size_t Capacity );
+	LinearAllocatorData( size_t RealCapacity );
 	~LinearAllocatorData();
 
 	inline uint8_t* GetData( const size_t Offset = 0 ) const { return Data + Offset; }

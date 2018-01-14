@@ -1,6 +1,8 @@
 #pragma once
 #include <string>
 #include <sstream>
+#include <cstdarg>
+#include <cstdio>
 #include "Engine/LinearAllocator.h"
 
 template< class CharT >
@@ -28,3 +30,17 @@ using l_basic_stringstream = std::basic_stringstream<CharT, std::char_traits<Cha
 
 using l_stringstream = l_basic_stringstream<char>;
 using l_wstringstream = l_basic_stringstream<wchar_t>;
+
+const char* l_printf( LinearAllocatorData& Allocator, const char* Format, ... )
+{
+	char* const DataPtr = reinterpret_cast<char*>( Allocator.GetData( Allocator.GetUsed() ) );
+	const size_t MaxLength = Allocator.GetCapacity() - Allocator.GetUsed();
+	va_list args;
+	va_start( args, Format );
+
+	const size_t ActualLength = vsnprintf( DataPtr, MaxLength, Format, args );
+	Allocator.SetUsed( Allocator.GetUsed() + ActualLength );
+
+	va_end( args );
+	return DataPtr;
+}
