@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include "Engine/LinearAllocator.h"
+#include "Engine/Logger.h"
 
 /** Macro used to define a function that requires a context. Must appear as the first parameter in the function */
 #define CTX_ARG const Context& CTX
@@ -24,12 +25,9 @@ struct Context
 	/** ID of the thread this context is being used on. Each thread should have its own context */
 	uint32_t ThreadID;
 
-	/** function used to print output. */
-	void (*Log)( int, const char* );
+	/** Logger object used to print output */
+	Logger* Log;
 
-	/** function called to assert that a condition is true. */
-	void (*Assert)( bool, const char* );
-
-	/** linear storage object used for dynamic allocation of small objects */
-	LinearAllocatorData Temp;
+	/** Linear Allocator object used for dynamic allocation of small objects within the thread */
+	mutable LinearAllocatorData Temp;
 };
