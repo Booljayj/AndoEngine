@@ -3,6 +3,13 @@
 #include "EntityFramework/Types.h"
 #include "EntityFramework/ComponentManager.h"
 
+#define CREATE_COMPONENT( __TYPE__, __NAME__, __ID__, __MANAGER_TYPE__ )\
+__MANAGER_TYPE__<__TYPE__> __NAME__##Manager{};\
+TComponentInfo<__TYPE__> __NAME__{ __ID__, #__NAME__, &__NAME__##Manager }
+
+#define CREATE_STANDARD_COMPONENT( __TYPE__, __NAME__, __ID__ )\
+CREATE_COMPONENT( __TYPE__, __NAME__, __ID__, TComponentManager )
+
 /** Represents a component that can be owned by an entity */
 struct ComponentInfo
 {
