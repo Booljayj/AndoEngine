@@ -9,7 +9,7 @@
 
 namespace GL
 {
-	void DescribeAttributeParam_Bound( std::ostream& Stream, EAttribute::ENUM Attribute, EAttributeParameter::ENUM Param, size_t& Storage );
+	void DescribeAttributeParam_Bound( std::ostream& Stream, EAttribute::ENUM Attribute, EAttributeParameter::ENUM Param );
 	void DescribeAttribute_Bound( std::ostream& Stream, EAttribute::ENUM Attribute );
 
 	void DescribeVertexArrayObject( std::ostream& Stream, VertexArrayObjectID VAOID );
