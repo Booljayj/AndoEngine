@@ -4,6 +4,7 @@
 #include "Engine/LinearAllocator.h"
 #include "Engine/LinearContainers.h"
 #include "Engine/LinearStrings.h"
+#include "Engine/Utility.h"
 #include "EntityFramework/EntitySystem.h"
 #include "Rendering/SDLSystems.h"
 #include "Rendering/RenderingSystem.h"
@@ -14,77 +15,87 @@
 
 using namespace std;
 
+// Components and managers
+
+CREATE_STANDARD_COMPONENT( C::TransformComponent, Transform, 1 );
+CREATE_STANDARD_COMPONENT( C::HierarchyComponent, Hierarchy, 2 );
+
+CREATE_STANDARD_COMPONENT( C::Mesh, Mesh, 100 );
+CREATE_STANDARD_COMPONENT( C::MeshRenderer, MeshRenderer, 110 );
+CREATE_STANDARD_COMPONENT( C::ShaderComponent, Shader, 120 );
+CREATE_STANDARD_COMPONENT( C::ProgramComponent, Program, 130 );
+
+// Systems
+
+ComponentInfo* Components[] =
+{
+	&Transform,
+	&Mesh,
+	&MeshRenderer,
+	&Hierarchy, //not sorted because of this guy
+	&Shader,
+	&Program,
+};
+
+S::EntitySystem EntitySys{ Components };
+
+S::SDLSystem SDL;
+S::SDLEventSystem SDLEvent;
+S::SDLWindowSystem SDLWindow;
+
+S::RenderingSystem Rendering{ &MeshRenderer };
+
+bool Startup( CTX_ARG )
+{
+	CTX.Log->Message( "Starting up all systems..." );
+	STARTUP_SYSTEM( EntitySys );
+	STARTUP_SYSTEM( SDL );
+	STARTUP_SYSTEM( SDLEvent );
+	STARTUP_SYSTEM( SDLWindow );
+	return true;
+}
+
+void Shutdown( CTX_ARG )
+{
+	CTX.Log->Message( "Shutting down all systems..." );
+	SHUTDOWN_SYSTEM( EntitySys );
+	SHUTDOWN_SYSTEM( SDLWindow );
+	SHUTDOWN_SYSTEM( SDLEvent );
+	SHUTDOWN_SYSTEM( SDL );
+}
+
 int main( int argc, const char * argv[] )
 {
-	cout << "Hello, World! This is AndoEngine." << endl;
+	Context CTX{ 0, 10000 };
+	StandardLogger MainLogger{};
+	CTX.Log = &MainLogger;
 
-	cout << "making temp allocator" << endl;
-	LinearAllocatorData Alloc{ 40000 };
-	cout << Alloc << '\n';
-	//l_string broken; //NOPE! You need to supply the allocator, or this won't compile.
-	l_string s{ "Really long string that we don't want to allocate for.", Alloc };
-	s += " I mean, really long.";
-	s += " Like, ridiculously long in a feeble attempt to get more ";
-	s += "allocations.";
-	cout << s << '\n';
-	cout << Alloc << '\n';
+	CTX.Log->Message( "Hello, World! This is AndoEngine." );
 
-	l_vector<uint16_t> v{ Alloc };
-	v.push_back( 10 );
-	cout << Alloc << '\n';
-	v.push_back( 100 );
-	cout << Alloc << '\n';
-	v.push_back( 1000 );
-	cout << Alloc << '\n';
-	v.push_back( 10000 );
-	cout << Alloc << '\n';
+	// cout << "making temp allocator" << endl;
+	// LinearAllocatorData Alloc{ 40000 };
+	// cout << Alloc << '\n';
+	// //l_string broken; //NOPE! You need to supply the allocator, or this won't compile.
+	// l_string s{ "Really long string that we don't want to allocate for.", Alloc };
+	// s += " I mean, really long.";
+	// s += " Like, ridiculously long in a feeble attempt to get more ";
+	// s += "allocations.";
+	// cout << s << '\n';
+	// cout << Alloc << '\n';
 
-	return 0;
-	TComponentManager<C::TransformComponent> TransformManager{};
-	TComponentInfo<C::TransformComponent> Transform{ 1, "Transform", &TransformManager };
+	// l_vector<uint16_t> v{ Alloc };
+	// v.push_back( 10 );
+	// cout << Alloc << '\n';
+	// v.push_back( 100 );
+	// cout << Alloc << '\n';
+	// v.push_back( 1000 );
+	// cout << Alloc << '\n';
+	// v.push_back( 10000 );
+	// cout << Alloc << '\n';
 
-	TComponentManager<C::HierarchyComponent> HierarchyManager{};
-	TComponentInfo<C::HierarchyComponent> Hierarchy{ 2, "Hierarchy", &HierarchyManager };
-
-	TComponentManager<C::Mesh> MeshManager{};
-	TComponentInfo<C::Mesh> Mesh{ 100, "Mesh", &MeshManager };
-
-	TComponentManager<C::MeshRenderer> MeshRendererManager{};
-	TComponentInfo<C::MeshRenderer> MeshRenderer{ 110, "MeshRenderer", &MeshRendererManager };
-
-	TComponentManager<C::ShaderComponent> ShaderManager{};
-	TComponentInfo<C::ShaderComponent> Shader{ 120, "Shader", &ShaderManager };
-
-	TComponentManager<C::ProgramComponent> ProgramManager{};
-	TComponentInfo<C::ProgramComponent> Program{ 130, "Program", &ProgramManager };
-
-	S::EntitySystem EntitySys{
-		{
-			&Transform,
-			&Hierarchy,
-			&Mesh,
-			&MeshRenderer,
-			&Shader,
-			&Program,
-		}
-	};
-
-	S::SDLSystem SDL;
-	S::SDLEventSystem SDLEvent;
-	S::SDLWindowSystem SDLWindow;
-
-	S::RenderingSystem Rendering{ &MeshRenderer };
-
-	cout << "Initializing all systems" << endl;
-	bool bInitializeSuccessful =
-		EntitySys.Initialize() &&
-		SDL.Initialize() &&
-		SDLEvent.Initialize() &&
-		SDLWindow.Initialize();
-
-	if( bInitializeSuccessful )
+	if( Startup( CTX ) )
 	{
-		cout << "Creating entities" << endl;
+		CTX.Log->Message( "Creating entities" );
 		EntityID EntA = 3;
 		EntityID EntB = 5;
 		EntityID VertexShaderEnt = 40;
@@ -137,6 +148,8 @@ int main( int argc, const char * argv[] )
 
 		bool bShutdownRequested = false;
 		do{
+			CTX.Temp.Reset();
+
 			SDLEvent.Update( bShutdownRequested );
 			if( !bShutdownRequested )
 			{
@@ -150,10 +163,6 @@ int main( int argc, const char * argv[] )
 		while( !bShutdownRequested );
 	}
 
-	EntitySys.Deinitialize();
-	SDLWindow.Deinitialize();
-	SDLEvent.Deinitialize();
-	SDL.Deinitialize();
-
+	Shutdown( CTX );
 	return 0;
 }

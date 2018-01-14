@@ -8,7 +8,7 @@ Entity::Entity()
 void Entity::Setup( const std::vector<ComponentInfo*>& InComponentInfos, const std::vector<ByteStream>& InComponentDatas )
 {
 	assert( Owned.size() == 0 );
-	assert( InComponentInfos.size() == InComponentDatas.size() );
+	//assert( InComponentInfos.size() == InComponentDatas.size() );
 	Owned.reserve( InComponentInfos.size() );
 
 	for( size_t Index = 0; Index < InComponentInfos.size(); ++Index )

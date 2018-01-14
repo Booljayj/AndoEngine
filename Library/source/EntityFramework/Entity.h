@@ -1,6 +1,5 @@
 #pragma once
 #include <vector>
-#include <array>
 #include <tuple>
 #include "EntityFramework/Types.h"
 #include "EntityFramework/ComponentInfo.h"

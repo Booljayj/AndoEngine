@@ -2,13 +2,15 @@
 #include <vector>
 #include <GL/glew.h>
 #include <SDL2/SDL.h>
+#include "Engine/LinearStrings.h"
+#include "Engine/Context.h"
 
 namespace S
 {
 	class SDLSystem
 	{
 	public:
-		bool Initialize()
+		bool Startup( CTX_ARG )
 		{
 			if( SDL_Init( SDL_INIT_VIDEO ) == 0 )
 			{
@@ -16,14 +18,15 @@ namespace S
 			}
 			else
 			{
-				std::cerr << "SDL_Init Error: " << SDL_GetError() << std::endl;
+				CTX.Log->Error( l_printf( CTX.Temp, "SDL_Init Error: %i", SDL_GetError() ) );
 				return false;
 			}
 		}
 
-		void Deinitialize()
+		bool Shutdown( CTX_ARG )
 		{
 			SDL_Quit();
+			return true;
 		}
 	};
 
@@ -32,13 +35,13 @@ namespace S
 	public:
 		std::vector<SDL_Event> FrameEvents;
 
-		bool Initialize()
+		bool Startup( CTX_ARG )
 		{
 			FrameEvents.reserve( 20 );
 			return true;
 		}
 
-		void Deinitialize() {}
+		bool Shutdown( CTX_ARG ) { return true; }
 
 		void Update( bool& bRequestShutdown )
 		{
@@ -63,12 +66,14 @@ namespace S
 		SDL_GLContext MainContext;
 
 	public:
-		bool Initialize()
+		bool Startup( CTX_ARG )
 		{
-			if( (MainWindow = SDL_CreateWindow( "AndoSystem", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 800, SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL )) )
+			MainWindow = SDL_CreateWindow( "AndoSystem", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 800, SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL );
+			if( MainWindow )
 			{
 				SetupGLAttributes();
-				if( (MainContext = SDL_GL_CreateContext( MainWindow )) )
+				MainContext = SDL_GL_CreateContext( MainWindow );
+				if( MainContext )
 				{
 					SDL_GL_MakeCurrent( MainWindow, MainContext );
 					SDL_GL_SetSwapInterval( 1 );
@@ -82,24 +87,25 @@ namespace S
 						Swap();
 						return true;
 					}
-					std::cerr << "Failed to initialize GLEW\n";
+					CTX.Log->Error( "Failed to initialize GLEW" );
 
 					SDL_GL_DeleteContext( MainContext );
 					MainContext = nullptr;
 				}
-				std::cerr << "Failed to create OpenGL Context\n";
+				CTX.Log->Error( "Failed to create OpenGL Context" );
 
 				SDL_DestroyWindow( MainWindow );
 				MainWindow = nullptr;
 			}
-			std::cerr << "SDL_Window Error: " << SDL_GetError() << std::endl;
+			CTX.Log->Error( l_printf( CTX.Temp, "SDL_Window Error: %i", SDL_GetError() ) );
 			return false;
 		}
 
-		void Deinitialize()
+		bool Shutdown( CTX_ARG )
 		{
 			SDL_GL_DeleteContext( MainContext );
 			SDL_DestroyWindow( MainWindow );
+			return true;
 		}
 
 		void Clear()

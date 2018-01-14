@@ -6,39 +6,38 @@ using namespace std;
 
 namespace S
 {
-	EntitySystem::EntitySystem( const vector<ComponentInfo*>& ComponentInfos )
+	bool EntitySystem::Startup( CTX_ARG )
 	{
-		for( auto* ComponentInfo : ComponentInfos )
+		const auto FirstDuplicateIterator = std::adjacent_find( RegisteredComponentInfos.begin(), RegisteredComponentInfos.end() );
+		if( FirstDuplicateIterator != RegisteredComponentInfos.end() )
 		{
-			ComponentInfoMap.insert( make_pair( ComponentInfo->GetID(), ComponentInfo ) );
+			CTX.Log->Error( "EntitySystem must not have duplicate component infos" );
+			return false;
 		}
-	}
 
-	bool EntitySystem::Initialize()
-	{
-		for( auto& ComponentInfoPair : ComponentInfoMap )
+		for( auto* Info : RegisteredComponentInfos )
 		{
-			ComponentInfo* Info = ComponentInfoPair.second;
 			if( !Info->GetManager()->Initialize() )
 			{
-				fprintf( stdout, "Fatal error initializing component manager for %s", Info->GetName() );
+				CTX.Log->Error( "EntitySystem startup failed." );
 				return false;
 			}
 		}
+		CTX.Log->Verbose( "EntitySystem startup complete." );
 		return true;
 	}
 
-	bool EntitySystem::Deinitialize()
+	bool EntitySystem::Shutdown( CTX_ARG )
 	{
-		for( auto& ComponentInfoPair : ComponentInfoMap )
+		for( auto* Info : RegisteredComponentInfos )
 		{
-			ComponentInfo* Info = ComponentInfoPair.second;
 			if( !Info->GetManager()->Deinitialize() )
 			{
-				fprintf( stdout, "Fatal error deinitializing component manager for %s", Info->GetName() );
+				CTX.Log->Error( "EntitySystem shutdown failed." );
 				return false;
 			}
 		}
+		CTX.Log->Verbose( "EntitySystem shutdown complete." );
 		return true;
 	}
 
@@ -116,7 +115,9 @@ namespace S
 		ComponentInfoBuffer.clear();
 		for( const auto& ComponentType : ComponentTypes )
 		{
-			ComponentInfoBuffer.push_back( ComponentInfoMap[ComponentType] );
+			ComponentInfo* Info = FindComponentInfo( ComponentType );
+			assert( Info );//, "Tried to get info for a component type that is not registered" ) ;
+			ComponentInfoBuffer.push_back( Info );
 		}
 		return ComponentInfoBuffer;
 	}
@@ -131,12 +132,25 @@ namespace S
 		return std::find( Entities.begin(), Entities.end(), EntityRef ) - Entities.begin();
 	}
 
+	ComponentInfo* EntitySystem::FindComponentInfo( ComponentTypeID ID ) const noexcept
+	{
+		size_t ComponentIndex = std::find( RegisteredComponentTypeIDs.begin(), RegisteredComponentTypeIDs.end(), ID ) - RegisteredComponentTypeIDs.begin();
+		if( ComponentIndex < RegisteredComponentInfos.size() )
+		{
+			return RegisteredComponentInfos[ComponentIndex];
+		}
+		return nullptr;
+	}
+
 	void EntitySystem::ReleaseReclaimedComponents()
 	{
+		//@todo This can be more efficient because both ReclaimedComponentBuffer and the Registered components array should be sorted,
+		// so we can start where we left off during the last iteration.
 		for( auto& ReclaimedComponent : ReclaimedComponentBuffer )
 		{
-			assert( ComponentInfoMap.find( ReclaimedComponent.TypeID ) != ComponentInfoMap.end() );
-			ComponentInfoMap[ReclaimedComponent.TypeID]->GetManager()->Release( ReclaimedComponent.CompPtr );
+			ComponentInfo* Info = FindComponentInfo( ReclaimedComponent.TypeID );
+			assert( Info );//, "Reclaimed a component type that is not registered with the EntitySystem" );
+			Info->GetManager()->Release( ReclaimedComponent.CompPtr );
 		}
 	}
 }
