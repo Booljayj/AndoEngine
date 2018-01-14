@@ -3,27 +3,27 @@
         {
             "name": "Mac",
             "includePath": [
-                "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1",
                 "/usr/local/include",
                 "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/8.1.0/include",
                 "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include",
-                "/usr/include",
-                "${workspaceRoot}/AndoEngine/source",
-                "${workspaceRoot}/AndoEngine/generated",
-                "${workspaceRoot}/TestExecutable/source"
+                "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1",
+                "/usr/local/include",
+                "${workspaceRoot}/Library/source",
+                "${workspaceRoot}/Library/generated",
+                "${workspaceRoot}/Tests/source"
             ],
             "defines": [],
             "intelliSenseMode": "clang-x64",
             "browse": {
                 "path": [
-                    "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1",
                     "/usr/local/include",
                     "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/8.1.0/include",
                     "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include",
-                    "/usr/include",
-                    "${workspaceRoot}/AndoEngine/source",
-                    "${workspaceRoot}/AndoEngine/generated",
-                    "${workspaceRoot}/TestExecutable/source"
+                    "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1",
+                    "/usr/local/include",
+                    "${workspaceRoot}/Library/source",
+                    "${workspaceRoot}/Library/generated",
+                    "${workspaceRoot}/Tests/source"
                 ],
                 "limitSymbolsToIncludedHeaders": true,
                 "databaseFilename": ""
@@ -38,9 +38,9 @@
             "includePath": [
                 "/usr/include",
                 "/usr/local/include",
-                "${workspaceRoot}/AndoEngine/source",
-                "${workspaceRoot}/AndoEngine/generated",
-                "${workspaceRoot}/TestExecutable/source"
+                "${workspaceRoot}/Library/source",
+                "${workspaceRoot}/Library/generated",
+                "${workspaceRoot}/Tests/source"
             ],
             "defines": [],
             "intelliSenseMode": "clang-x64",
@@ -48,9 +48,9 @@
                 "path": [
                     "/usr/include",
                     "/usr/local/include",
-                    "${workspaceRoot}/AndoEngine/source",
-                    "${workspaceRoot}/AndoEngine/generated",
-                    "${workspaceRoot}/TestExecutable/source"
+                    "${workspaceRoot}/Library/source",
+                    "${workspaceRoot}/Library/generated",
+                    "${workspaceRoot}/Tests/source"
                 ],
                 "limitSymbolsToIncludedHeaders": true,
                 "databaseFilename": ""
@@ -60,9 +60,9 @@
             "name": "Win32",
             "includePath": [
                 "C:/Program Files (x86)/Microsoft Visual Studio 14.0/VC/include",
-                "${workspaceRoot}/AndoEngine/source",
-                "${workspaceRoot}/AndoEngine/generated",
-                "${workspaceRoot}/TestExecutable/source"
+                "${workspaceRoot}/Library/source",
+                "${workspaceRoot}/Library/generated",
+                "${workspaceRoot}/Tests/source"
             ],
             "defines": [
                 "_DEBUG",
@@ -72,9 +72,9 @@
             "browse": {
                 "path": [
                     "C:/Program Files (x86)/Microsoft Visual Studio 14.0/VC/include/*",
-                    "${workspaceRoot}/AndoEngine/source",
-                    "${workspaceRoot}/AndoEngine/generated",
-                    "${workspaceRoot}/TestExecutable/source"
+                    "${workspaceRoot}/Library/source",
+                    "${workspaceRoot}/Library/generated",
+                    "${workspaceRoot}/Tests/source"
                 ],
                 "limitSymbolsToIncludedHeaders": true,
                 "databaseFilename": ""
