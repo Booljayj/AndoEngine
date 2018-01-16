@@ -7,6 +7,7 @@
 #include <deque>
 #include <unordered_map>
 #include "Engine/Context.h"
+#include "Engine/Print.h"
 #include "EntityFramework/Types.h"
 #include "EntityFramework/Entity.h"
 #include "EntityFramework/ComponentInfo.h"
@@ -18,37 +19,57 @@ namespace S
 {
 	struct EntitySystem
 	{
-		template< size_t N >
-		EntitySystem( ComponentInfo* (&InComponentInfos)[N] )
-		{
-			static_assert( N > 0, "EntitySystem must have a nonzero number of components to work with" );
+		CAN_DESCRIBE( EntitySystem );
 
-			std::array<std::tuple<ComponentTypeID, ComponentInfo*>, N> ComponentInfoPairs;
+		EntitySystem() = default;
+
+		template< size_t N >
+		bool Startup( CTX_ARG, const ComponentInfo* (&InComponentInfos)[N] )
+		{
+			using pair_array = std::array<std::tuple<ComponentTypeID, const ComponentInfo*>, N>;
+
+			pair_array ComponentInfoPairs;
 			for( size_t Index = 0; Index < N; ++Index )
 			{
-				ComponentInfo* InInfo = InComponentInfos[Index];
+				const ComponentInfo* InInfo = InComponentInfos[Index];
 				ComponentInfoPairs[Index] = std::make_tuple( InInfo->GetID(), InInfo );
 			}
 			std::sort( ComponentInfoPairs.begin(), ComponentInfoPairs.end() );
+			if( std::adjacent_find( ComponentInfoPairs.begin(), ComponentInfoPairs.end() ) != ComponentInfoPairs.end() )
+			{
+				CTX.Log->Error( "EntitySystem must not have duplicate component infos" );
+				return false;
+			}
 
 			RegisteredComponentTypeIDs.reserve( N );
 			RegisteredComponentInfos.reserve( N );
 
 			for( const auto& ComponentInfoPair : ComponentInfoPairs )
 			{
-				RegisteredComponentTypeIDs.push_back( std::get<0>( ComponentInfoPair ) );
-				RegisteredComponentInfos.push_back( std::get<1>( ComponentInfoPair ) );
+				const ComponentInfo* Info = std::get<1>( ComponentInfoPair );
+				RegisteredComponentTypeIDs.push_back( Info->GetID() );
+				RegisteredComponentInfos.push_back( Info );
+
+				if( !Info->GetManager()->Initialize() )
+				{
+					CTX.Log->Error( "EntitySystem startup failed." );
+					return false;
+				}
 			}
+
+			CTX.Log->Verbose( "EntitySystem startup complete." );
+			return true;
 		}
 
-		bool Startup( CTX_ARG );
 		bool Shutdown( CTX_ARG );
+
+		const std::vector<const ComponentInfo*>& GetRegisteredComponents() const { return RegisteredComponentInfos; }
 
 		/// Entity creation
 		/** Create a blank entity that contains no components */
 		void Create( const EntityID& NewID );
 		/** Create an entity that contains the components referenced by the component infos */
-		void Create( const EntityID& NewID, const std::vector<ComponentInfo*>& ComponentInfos, const std::vector<ByteStream>& ComponentDatas = {} );
+		void Create( const EntityID& NewID, const std::vector<const ComponentInfo*>& ComponentInfos, const std::vector<ByteStream>& ComponentDatas = {} );
 		/** Create an entity that contains the components referenced by the component IDs */
 		void Create( const EntityID& NewID, const std::vector<ComponentTypeID>& ComponentTypeIDs, const std::vector<ByteStream>& ComponentDatas = {} );
 
@@ -68,7 +89,7 @@ namespace S
 		{
 			Stream << "[EntitySystem]: {" << std::endl;
 			Stream << "\tComponents: " << ECS.RegisteredComponentInfos.size() << std::endl;
-			for( ComponentInfo* Info : ECS.RegisteredComponentInfos )
+			for( const ComponentInfo* Info : ECS.RegisteredComponentInfos )
 			{
 				Stream << "\t\t" << *Info << std::endl;
 			}
@@ -84,9 +105,9 @@ namespace S
 		//std::unordered_map<ComponentTypeID, ComponentInfo*> ComponentInfoMap;
 
 		std::vector<ComponentTypeID> RegisteredComponentTypeIDs;
-		std::vector<ComponentInfo*> RegisteredComponentInfos;
+		std::vector<const ComponentInfo*> RegisteredComponentInfos;
 
-		std::vector<ComponentInfo*> ComponentInfoBuffer;
+		std::vector<const ComponentInfo*> ComponentInfoBuffer;
 		std::vector<EntityOwnedComponent> ReclaimedComponentBuffer;
 
 		// TODO: break entity groups into 'catalogues'. Each catalogue has poly methods for Exists, Find, and Create.
@@ -102,15 +123,17 @@ namespace S
 		/** Insert a new entity with the specified ID */
 		Entity& InsertNew( const EntityID NewID );
 		/** Get a list of component infos from the list of component types */
-		const std::vector<ComponentInfo*>& GetComponentInfos( const std::vector<ComponentTypeID>& ComponentTypeIDs );
+		const std::vector<const ComponentInfo*>& GetComponentInfos( const std::vector<ComponentTypeID>& ComponentTypeIDs );
 		/** Find the index of an ID in the master ID list */
 		size_t FindPositionByEntityID( const EntityID& ID ) const noexcept;
 		/** Find the index of an entity in the master entity list */
 		size_t FindPositionByEntity( const Entity& EntityRef ) const noexcept;
 		/** Find a registered component info using its TypeID */
-		ComponentInfo* FindComponentInfo( ComponentTypeID ID ) const noexcept;
+		const ComponentInfo* FindComponentInfo( ComponentTypeID ID ) const noexcept;
 
 		/** Release all components in the reclamation buffer */
 		void ReleaseReclaimedComponents();
 	};
+
+	DESCRIPTION( EntitySystem );
 }

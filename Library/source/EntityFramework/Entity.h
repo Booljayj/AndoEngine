@@ -28,9 +28,9 @@ struct Entity
 	/// Entity creation
 
 	/** Setup this entity to use a set of components that are loaded from some set of data */
-	void Setup( const std::vector<ComponentInfo*>& InComponentInfos, const std::vector<ByteStream>& InComponentDatas );
+	void Setup( const std::vector<const ComponentInfo*>& InComponentInfos, const std::vector<ByteStream>& InComponentDatas );
 	/** Setup this entity to use a set of defaulted components */
-	void Setup( const std::vector<ComponentInfo*>& InComponentInfos );
+	void Setup( const std::vector<const ComponentInfo*>& InComponentInfos );
 	/** Reset this component, moving out the list of owned components so they can be cleaned up externally */
 	void Reset( std::vector<EntityOwnedComponent>& OutOwnedComponents );
 

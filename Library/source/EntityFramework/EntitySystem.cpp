@@ -6,27 +6,6 @@ using namespace std;
 
 namespace S
 {
-	bool EntitySystem::Startup( CTX_ARG )
-	{
-		const auto FirstDuplicateIterator = std::adjacent_find( RegisteredComponentInfos.begin(), RegisteredComponentInfos.end() );
-		if( FirstDuplicateIterator != RegisteredComponentInfos.end() )
-		{
-			CTX.Log->Error( "EntitySystem must not have duplicate component infos" );
-			return false;
-		}
-
-		for( auto* Info : RegisteredComponentInfos )
-		{
-			if( !Info->GetManager()->Initialize() )
-			{
-				CTX.Log->Error( "EntitySystem startup failed." );
-				return false;
-			}
-		}
-		CTX.Log->Verbose( "EntitySystem startup complete." );
-		return true;
-	}
-
 	bool EntitySystem::Shutdown( CTX_ARG )
 	{
 		for( auto* Info : RegisteredComponentInfos )
@@ -46,7 +25,7 @@ namespace S
 		(void)InsertNew( NewID );
 	}
 
-	void EntitySystem::Create( const EntityID& NewID, const vector<ComponentInfo*>& ComponentInfos, const vector<ByteStream>& ComponentDatas /* = {} */ )
+	void EntitySystem::Create( const EntityID& NewID, const vector<const ComponentInfo*>& ComponentInfos, const vector<ByteStream>& ComponentDatas /* = {} */ )
 	{
 		InsertNew( NewID ).Setup( ComponentInfos, ComponentDatas );
 	}
@@ -110,12 +89,12 @@ namespace S
 		return Entities.back();
 	}
 
-	const vector<ComponentInfo*>& EntitySystem::GetComponentInfos( const vector<ComponentTypeID>& ComponentTypes )
+	const vector<const ComponentInfo*>& EntitySystem::GetComponentInfos( const vector<ComponentTypeID>& ComponentTypes )
 	{
 		ComponentInfoBuffer.clear();
 		for( const auto& ComponentType : ComponentTypes )
 		{
-			ComponentInfo* Info = FindComponentInfo( ComponentType );
+			const ComponentInfo* Info = FindComponentInfo( ComponentType );
 			assert( Info );//, "Tried to get info for a component type that is not registered" ) ;
 			ComponentInfoBuffer.push_back( Info );
 		}
@@ -132,7 +111,7 @@ namespace S
 		return std::find( Entities.begin(), Entities.end(), EntityRef ) - Entities.begin();
 	}
 
-	ComponentInfo* EntitySystem::FindComponentInfo( ComponentTypeID ID ) const noexcept
+	const ComponentInfo* EntitySystem::FindComponentInfo( ComponentTypeID ID ) const noexcept
 	{
 		size_t ComponentIndex = std::find( RegisteredComponentTypeIDs.begin(), RegisteredComponentTypeIDs.end(), ID ) - RegisteredComponentTypeIDs.begin();
 		if( ComponentIndex < RegisteredComponentInfos.size() )
@@ -148,9 +127,14 @@ namespace S
 		// so we can start where we left off during the last iteration.
 		for( auto& ReclaimedComponent : ReclaimedComponentBuffer )
 		{
-			ComponentInfo* Info = FindComponentInfo( ReclaimedComponent.TypeID );
+			const ComponentInfo* Info = FindComponentInfo( ReclaimedComponent.TypeID );
 			assert( Info );//, "Reclaimed a component type that is not registered with the EntitySystem" );
 			Info->GetManager()->Release( ReclaimedComponent.CompPtr );
 		}
+	}
+
+	DESCRIPTION( EntitySystem )
+	{
+		return l_printf( CTX, "[EntitySystem]{ Components: %i, Entities: %i }", Value.RegisteredComponentTypeIDs.size(), Value.EntityIDs.size() );
 	}
 }

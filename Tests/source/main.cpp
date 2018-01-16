@@ -5,6 +5,7 @@
 #include "Engine/LinearContainers.h"
 #include "Engine/LinearStrings.h"
 #include "Engine/Utility.h"
+#include "Engine/Print.h"
 #include "EntityFramework/EntitySystem.h"
 #include "Rendering/SDLSystems.h"
 #include "Rendering/RenderingSystem.h"
@@ -27,7 +28,7 @@ CREATE_STANDARD_COMPONENT( C::ProgramComponent, Program, 130 );
 
 // Systems
 
-ComponentInfo* Components[] =
+const ComponentInfo* Components[] =
 {
 	&Transform,
 	&Mesh,
@@ -37,7 +38,7 @@ ComponentInfo* Components[] =
 	&Program,
 };
 
-S::EntitySystem EntitySys{ Components };
+S::EntitySystem EntitySys{};
 
 S::SDLSystem SDL;
 S::SDLEventSystem SDLEvent;
@@ -48,7 +49,7 @@ S::RenderingSystem Rendering{ &MeshRenderer };
 bool Startup( CTX_ARG )
 {
 	CTX.Log->Message( "Starting up all systems..." );
-	STARTUP_SYSTEM( EntitySys );
+	STARTUP_SYSTEM_ARGS( EntitySys, Components );
 	STARTUP_SYSTEM( SDL );
 	STARTUP_SYSTEM( SDLEvent );
 	STARTUP_SYSTEM( SDLWindow );
@@ -62,6 +63,23 @@ void Shutdown( CTX_ARG )
 	SHUTDOWN_SYSTEM( SDLWindow );
 	SHUTDOWN_SYSTEM( SDLEvent );
 	SHUTDOWN_SYSTEM( SDL );
+}
+
+void MainLoop( CTX_ARG )
+{
+	bool bShutdownRequested = false;
+	do{
+		CTX.Temp.Reset();
+
+		SDLEvent.Update( bShutdownRequested );
+		if( !bShutdownRequested )
+		{
+			SDLWindow.Clear();
+			Rendering.Update();
+			SDLWindow.Swap();
+		}
+	}
+	while( !bShutdownRequested );
 }
 
 int main( int argc, const char * argv[] )
@@ -143,24 +161,14 @@ int main( int argc, const char * argv[] )
 		GL::Link( *TestProgram );
 		GL::Use( *TestProgram );
 
-		cout << "Current entity system status:" << endl;
-		cout << EntitySys;
-
-		bool bShutdownRequested = false;
-		do{
-			CTX.Temp.Reset();
-
-			SDLEvent.Update( bShutdownRequested );
-			if( !bShutdownRequested )
-			{
-				SDLWindow.Clear();
-
-				Rendering.Update();
-
-				SDLWindow.Swap();
-			}
+		CTX.Log->Message( Desc( EntitySys ) );
+		CTX.Log->Message( "Component Descriptions:" );
+		for( const ComponentInfo* Info : EntitySys.GetRegisteredComponents() )
+		{
+			CTX.Log->Message( l_printf( CTX, "\t%s", Desc( *Info ) ) );
 		}
-		while( !bShutdownRequested );
+
+		//MainLoop( CTX );
 	}
 
 	Shutdown( CTX );

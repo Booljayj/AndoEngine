@@ -5,7 +5,7 @@
 Entity::Entity()
 {}
 
-void Entity::Setup( const std::vector<ComponentInfo*>& InComponentInfos, const std::vector<ByteStream>& InComponentDatas )
+void Entity::Setup( const std::vector<const ComponentInfo*>& InComponentInfos, const std::vector<ByteStream>& InComponentDatas )
 {
 	assert( Owned.size() == 0 );
 	//assert( InComponentInfos.size() == InComponentDatas.size() );
@@ -13,7 +13,7 @@ void Entity::Setup( const std::vector<ComponentInfo*>& InComponentInfos, const s
 
 	for( size_t Index = 0; Index < InComponentInfos.size(); ++Index )
 	{
-		ComponentInfo* const ComponentInfo = InComponentInfos[Index];
+		const ComponentInfo* const ComponentInfo = InComponentInfos[Index];
 		ptr_t const NewOwnedComponent = ComponentInfo->GetManager()->Retain();
 		Owned.push_back( EntityOwnedComponent{ ComponentInfo->GetID(), NewOwnedComponent } );
 
@@ -27,14 +27,14 @@ void Entity::Setup( const std::vector<ComponentInfo*>& InComponentInfos, const s
 	}
 }
 
-void Entity::Setup( const std::vector<ComponentInfo*>& InComponentInfos )
+void Entity::Setup( const std::vector<const ComponentInfo*>& InComponentInfos )
 {
 	assert( Owned.size() == 0 );
 	Owned.reserve( InComponentInfos.size() );
 
 	for( size_t Index = 0; Index < InComponentInfos.size(); ++Index )
 	{
-		auto* const ComponentInfo = InComponentInfos[Index];
+		const ComponentInfo* const ComponentInfo = InComponentInfos[Index];
 		ptr_t const NewOwnedComponent = ComponentInfo->GetManager()->Retain();
 		Owned.push_back( EntityOwnedComponent{ ComponentInfo->GetID(), NewOwnedComponent } );
 	}
