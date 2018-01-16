@@ -22,6 +22,10 @@ public:
 	{}
 	virtual ~ComponentInfo() {}
 
+	ComponentTypeID GetID() const { return ID; }
+	const char* GetName() const { return Name; }
+	ComponentManager* GetManager() const { return Manager; }
+
 protected:
 	/** The unique ID of this component. Used to identify a component, so this should never change once it is used */
 	ComponentTypeID ID;
@@ -29,13 +33,6 @@ protected:
 	const char* Name;
 	/** The manager which creates and collates components of this type */
 	ComponentManager* Manager;
-
-public:
-	ComponentTypeID GetID() const { return ID; }
-	const char* GetName() const { return Name; }
-	ComponentManager* GetManager() const { return Manager; }
-
-	friend std::ostream& operator<<( std::ostream& Stream, const ComponentInfo& Info );
 };
 
 /** Template used to provide type information to a ComponentInfo */

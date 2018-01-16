@@ -26,9 +26,7 @@ namespace S
 		template< size_t N >
 		bool Startup( CTX_ARG, const ComponentInfo* (&InComponentInfos)[N] )
 		{
-			using pair_array = std::array<std::tuple<ComponentTypeID, const ComponentInfo*>, N>;
-
-			pair_array ComponentInfoPairs;
+			std::array<std::tuple<ComponentTypeID, const ComponentInfo*>, N> ComponentInfoPairs;
 			for( size_t Index = 0; Index < N; ++Index )
 			{
 				const ComponentInfo* InInfo = InComponentInfos[Index];
@@ -63,8 +61,6 @@ namespace S
 
 		bool Shutdown( CTX_ARG );
 
-		const std::vector<const ComponentInfo*>& GetRegisteredComponents() const { return RegisteredComponentInfos; }
-
 		/// Entity creation
 		/** Create a blank entity that contains no components */
 		void Create( const EntityID& NewID );
@@ -85,25 +81,9 @@ namespace S
 		/** Returns a pointer to the entity that is using the provided ID, or null if no entity has this ID */
 		Entity* Find( const EntityID& ID ) const noexcept;
 
-		friend inline std::ostream& operator <<( std::ostream& Stream, const EntitySystem& ECS )
-		{
-			Stream << "[EntitySystem]: {" << std::endl;
-			Stream << "\tComponents: " << ECS.RegisteredComponentInfos.size() << std::endl;
-			for( const ComponentInfo* Info : ECS.RegisteredComponentInfos )
-			{
-				Stream << "\t\t" << *Info << std::endl;
-			}
-			Stream << "\tEntities: " << ECS.EntityIDs.size() << std::endl;
-			for( size_t Index = 0; Index < ECS.EntityIDs.size(); ++Index )
-			{
-				Stream << "\t\t" << std::setw(10) << ECS.EntityIDs[Index] << ", " << ECS.Entities[Index] << std::endl;
-			}
-			return Stream << "}" << std::endl;
-		}
+		const std::vector<const ComponentInfo*>& GetRegisteredComponents() const { return RegisteredComponentInfos; }
 
 	protected:
-		//std::unordered_map<ComponentTypeID, ComponentInfo*> ComponentInfoMap;
-
 		std::vector<ComponentTypeID> RegisteredComponentTypeIDs;
 		std::vector<const ComponentInfo*> RegisteredComponentInfos;
 
