@@ -39,6 +39,8 @@ public:
 template< typename T >
 class TLinearAllocator
 {
+	template< typename U >
+	friend class TLinearAllocator;
 protected:
 	LinearAllocatorData* Allocator = nullptr;
 
