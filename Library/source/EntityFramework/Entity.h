@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <tuple>
+#include "Engine/Print.h"
 #include "EntityFramework/Types.h"
 #include "EntityFramework/ComponentInfo.h"
 #include "EntityFramework/ComponentManager.h"
@@ -16,6 +17,8 @@ struct EntityOwnedComponent
 /** An Entity is an identifiable object in the game. It can own components, which define different sets of data */
 struct Entity
 {
+	CAN_DESCRIBE( Entity );
+
 	Entity();
 	Entity( Entity&& Other ) = default;
 	Entity( const Entity& Other ) = delete;
@@ -50,8 +53,8 @@ struct Entity
 	size_t Count() const { return Owned.size(); }
 	size_t Capacity() const { return 0; } //used for fixed-size entities
 
-	friend std::ostream& operator<<( std::ostream& Stream, const Entity& Entity );
-
 protected:
 	std::vector<EntityOwnedComponent> Owned;
 };
+
+DESCRIPTION( Entity );

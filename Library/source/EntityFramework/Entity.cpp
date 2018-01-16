@@ -82,12 +82,7 @@ ptr_t Entity::Get( const ComponentTypeID& TypeID ) const
 	return FoundIter != Owned.end() ? FoundIter->CompPtr : nullptr;
 }
 
-std::ostream& operator<<( std::ostream& Stream, const Entity& Entity )
+DESCRIPTION( Entity )
 {
-	Stream << "[Entity]: { Components: ";
-	for( auto& OwnedComp : Entity.Owned )
-	{
-		Stream << OwnedComp.TypeID << ", ";
-	}
-	return Stream << " }";
+	return l_printf( CTX, "[Entity]{ Components: %i }", Owned.size() );
 }
