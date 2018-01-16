@@ -6,3 +6,9 @@ std::ostream& operator<<( std::ostream& Stream, const ComponentInfo& Info )
 	Stream << ", Used: " << Info.GetManager()->CountUsed() << "/" << Info.GetManager()->CountTotal() << " }";
 	return Stream;
 }
+
+DESCRIPTION( ComponentInfo )
+{
+	return l_printf( CTX, "[ComponentInfo]{ ID: %i, Name: %s, Used: %i/%i }",
+		Value.ID, Value.Name, Value.GetManager()->CountUsed(), Value.GetManager()->CountTotal() );
+}

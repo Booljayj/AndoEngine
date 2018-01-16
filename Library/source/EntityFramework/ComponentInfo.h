@@ -1,5 +1,6 @@
 #pragma once
 #include <iostream>
+#include "Engine/Print.h"
 #include "EntityFramework/Types.h"
 #include "EntityFramework/ComponentManager.h"
 
@@ -13,6 +14,8 @@ CREATE_COMPONENT( __TYPE__, __NAME__, __ID__, TComponentManager )
 /** Represents a component that can be owned by an entity */
 struct ComponentInfo
 {
+	CAN_DESCRIBE( ComponentInfo );
+
 public:
 	ComponentInfo( const ComponentTypeID& InID, const char* InName, ComponentManager* InManager )
 		: ID( InID ), Name( InName ), Manager( InManager )
@@ -49,3 +52,5 @@ struct TComponentInfo : public ComponentInfo
 
 	TComponentManager<TDATA>* GetTypedManager() const { return static_cast<TComponentManager<TDATA>*>( ComponentInfo::GetManager() ); }
 };
+
+DESCRIPTION( ComponentInfo );
