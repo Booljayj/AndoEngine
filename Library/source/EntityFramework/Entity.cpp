@@ -84,5 +84,5 @@ ptr_t Entity::Get( const ComponentTypeID& TypeID ) const
 
 DESCRIPTION( Entity )
 {
-	return l_printf( CTX, "[Entity]{ Components: %i }", Owned.size() );
+	return l_printf( CTX, "[Entity]{ Components: %i }", Value.Owned.size() );
 }
