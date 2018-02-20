@@ -1,16 +1,54 @@
 #include <stdio.h>
 #include <cassert>
+#include "Engine/LinearContainers.h"
 #include "EntityFramework/EntitySystem.h"
 
 using namespace std;
 
 namespace S
 {
+	bool EntitySystem::Startup( CTX_ARG, const l_vector<const ComponentInfo*>& InComponentInfos )
+	{
+		const size_t Count = InComponentInfos.size();
+		l_vector<std::tuple<ComponentTypeID, const ComponentInfo*>> ComponentInfoPairs{ CTX.Temp };
+		ComponentInfoPairs.reserve( Count );
+		for( const ComponentInfo* Info : InComponentInfos )
+		{
+			ComponentInfoPairs.push_back( std::make_tuple( Info->GetID(), Info ) );
+		}
+
+		std::sort( ComponentInfoPairs.begin(), ComponentInfoPairs.end() );
+		if( std::adjacent_find( ComponentInfoPairs.begin(), ComponentInfoPairs.end() ) != ComponentInfoPairs.end() )
+		{
+			CTX.Log->Error( "EntitySystem must not have duplicate component infos" );
+			return false;
+		}
+
+		RegisteredComponentTypeIDs.reserve( Count );
+		RegisteredComponentInfos.reserve( Count );
+
+		for( const auto& ComponentInfoPair : ComponentInfoPairs )
+		{
+			const ComponentInfo* Info = std::get<1>( ComponentInfoPair );
+			RegisteredComponentTypeIDs.push_back( Info->GetID() );
+			RegisteredComponentInfos.push_back( Info );
+
+			if( !Info->GetManager()->Startup( CTX ) )
+			{
+				CTX.Log->Error( "EntitySystem startup failed." );
+				return false;
+			}
+		}
+
+		CTX.Log->Verbose( "EntitySystem startup complete." );
+		return true;
+	}
+
 	bool EntitySystem::Shutdown( CTX_ARG )
 	{
 		for( auto* Info : RegisteredComponentInfos )
 		{
-			if( !Info->GetManager()->Deinitialize() )
+			if( !Info->GetManager()->Shutdown( CTX ) )
 			{
 				CTX.Log->Error( "EntitySystem shutdown failed." );
 				return false;

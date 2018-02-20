@@ -1,5 +1,6 @@
 #pragma once
 #include <GL/glew.h>
+#include "EntityFramework/Managers/SimpleComponentManager.h"
 #include "Rendering/GLVertexArrayObject.h"
 #include "Rendering/Shader.h"
 #include "Rendering/MeshComponent.h"
@@ -38,4 +39,6 @@ namespace C
 			glDeleteVertexArrays( 1, &VertexArrayID );
 		}
 	};
+
+	using MeshRendererComponentManager = TSimpleComponentManager<MeshRenderer>;
 }

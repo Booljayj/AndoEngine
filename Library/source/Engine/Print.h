@@ -10,7 +10,7 @@ template< class T >
 const char* Describe( CTX_ARG, const T& Obj ) { return "[UNKNOWN]"; }
 
 //A macro to simplify logging with Describe, so you don't have to always type the context argument
-#define Desc( Obj ) Describe( CTX, Obj )
+#define DESC( Obj ) Describe( CTX, Obj )
 
 //Macro for making the specialized describe function a friend, allowing it to access protected members
 #define CAN_DESCRIBE( __TYPE__ ) friend const char* Describe( CTX_ARG, const __TYPE__& Value )

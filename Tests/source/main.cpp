@@ -18,41 +18,48 @@ using namespace std;
 
 // Components and managers
 
-CREATE_STANDARD_COMPONENT( C::TransformComponent, Transform, 1 );
-CREATE_STANDARD_COMPONENT( C::HierarchyComponent, Hierarchy, 2 );
+CREATE_COMPONENT(   1, Transform, C::TransformComponent, C::TransformComponentManager{} );
+CREATE_COMPONENT(   2, Hierarchy, C::HierarchyComponent, C::HierarchyComponentManager{} );
 
-CREATE_STANDARD_COMPONENT( C::Mesh, Mesh, 100 );
-CREATE_STANDARD_COMPONENT( C::MeshRenderer, MeshRenderer, 110 );
-CREATE_STANDARD_COMPONENT( C::ShaderComponent, Shader, 120 );
-CREATE_STANDARD_COMPONENT( C::ProgramComponent, Program, 130 );
+CREATE_COMPONENT( 100, Mesh, C::Mesh, C::MeshComponentManager{} );
+CREATE_COMPONENT( 110, MeshRenderer, C::MeshRenderer, C::MeshRendererComponentManager{} );
+CREATE_COMPONENT( 120, Shader, C::ShaderComponent, C::ShaderComponentManager{} );
+CREATE_COMPONENT( 130, Program, C::ProgramComponent, C::ProgramComponentManager{} );
 
 // Systems
 
-const ComponentInfo* Components[] =
-{
-	&Transform,
-	&Mesh,
-	&MeshRenderer,
-	&Hierarchy, //not sorted because of this guy
-	&Shader,
-	&Program,
-};
-
-S::EntitySystem EntitySys{};
+S::EntitySystem EntitySys;
 
 S::SDLSystem SDL;
 S::SDLEventSystem SDLEvent;
 S::SDLWindowSystem SDLWindow;
 
-S::RenderingSystem Rendering{ &MeshRenderer };
+S::RenderingSystem Rendering{ &MeshRendererManager };
 
 bool Startup( CTX_ARG )
 {
+	BEGIN_TEMP_BLOCK;
+
 	CTX.Log->Message( "Starting up all systems..." );
+
+	const l_vector<const ComponentInfo*> Components{
+		{
+			&Transform,
+			&Mesh,
+			&MeshRenderer,
+			&Hierarchy, //not sorted because of this guy
+			&Shader,
+			&Program,
+		},
+		CTX.Temp
+	};
+
 	STARTUP_SYSTEM_ARGS( EntitySys, Components );
 	STARTUP_SYSTEM( SDL );
 	STARTUP_SYSTEM( SDLEvent );
 	STARTUP_SYSTEM( SDLWindow );
+
+	END_TEMP_BLOCK;
 	return true;
 }
 
@@ -161,11 +168,11 @@ int main( int argc, const char * argv[] )
 		GL::Link( *TestProgram );
 		GL::Use( *TestProgram );
 
-		CTX.Log->Message( Desc( EntitySys ) );
+		CTX.Log->Message( DESC( EntitySys ) );
 		CTX.Log->Message( "Component Descriptions:" );
 		for( const ComponentInfo* Info : EntitySys.GetRegisteredComponents() )
 		{
-			CTX.Log->Message( l_printf( CTX, "\t%s", Desc( *Info ) ) );
+			CTX.Log->Message( l_printf( CTX, "\t%s", DESC( *Info ) ) );
 		}
 
 		//MainLoop( CTX );

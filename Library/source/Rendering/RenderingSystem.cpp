@@ -16,15 +16,14 @@ void PrintGLErrors()
 
 namespace S
 {
+	void RenderingSystem::operator()( C::MeshRenderer* MeshRendererComp ) const
+	{
+		Render( MeshRendererComp );
+	}
+
 	void RenderingSystem::Update() const
 	{
-		const auto RenderMeshRendererComponent =
-			[this]( C::MeshRenderer* Comp )
-			{
-				Render( Comp );
-			};
-
-		MeshRendererManager->ForEach( RenderMeshRendererComponent );
+		_MeshRendererManager->ForEach( *this );
 	}
 
 	void RenderingSystem::Render( const C::MeshRenderer* MeshRendererComp ) const

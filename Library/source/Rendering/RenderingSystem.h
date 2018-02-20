@@ -7,12 +7,14 @@ namespace S
 	class RenderingSystem
 	{
 	private:
-		TComponentManager<C::MeshRenderer>* MeshRendererManager;
+		C::MeshRendererComponentManager* _MeshRendererManager;
 
 	public:
-		RenderingSystem( TComponentInfo<C::MeshRenderer>* InMeshRenderer )
-		: MeshRendererManager( InMeshRenderer->GetTypedManager() )
+		RenderingSystem( C::MeshRendererComponentManager* InMeshRendererManager )
+		: _MeshRendererManager( InMeshRendererManager )
 		{}
+
+		void operator()( C::MeshRenderer* MeshRendererComp ) const;
 
 		void Update() const;
 		void Render( const C::MeshRenderer* MeshRendererComp ) const;

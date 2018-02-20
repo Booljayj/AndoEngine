@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <GL/glew.h>
+#include "EntityFramework/Managers/SimpleComponentManager.h"
 #include "Rendering/EBuffer.enum.h"
 #include "Rendering/VertexData.h"
 
@@ -30,4 +31,6 @@ namespace C
 			glDeleteBuffers( GL::EBuffer::Count(), &BufferID[0] );
 		}
 	};
+
+	using MeshComponentManager = TSimpleComponentManager<Mesh>;
 }

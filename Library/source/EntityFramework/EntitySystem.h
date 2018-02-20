@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include "Engine/Context.h"
 #include "Engine/Print.h"
+#include "Engine/LinearContainers.h"
 #include "EntityFramework/Types.h"
 #include "EntityFramework/Entity.h"
 #include "EntityFramework/ComponentInfo.h"
@@ -21,44 +22,7 @@ namespace S
 	{
 		CAN_DESCRIBE( EntitySystem );
 
-		EntitySystem() = default;
-
-		template< size_t N >
-		bool Startup( CTX_ARG, const ComponentInfo* (&InComponentInfos)[N] )
-		{
-			std::array<std::tuple<ComponentTypeID, const ComponentInfo*>, N> ComponentInfoPairs;
-			for( size_t Index = 0; Index < N; ++Index )
-			{
-				const ComponentInfo* InInfo = InComponentInfos[Index];
-				ComponentInfoPairs[Index] = std::make_tuple( InInfo->GetID(), InInfo );
-			}
-			std::sort( ComponentInfoPairs.begin(), ComponentInfoPairs.end() );
-			if( std::adjacent_find( ComponentInfoPairs.begin(), ComponentInfoPairs.end() ) != ComponentInfoPairs.end() )
-			{
-				CTX.Log->Error( "EntitySystem must not have duplicate component infos" );
-				return false;
-			}
-
-			RegisteredComponentTypeIDs.reserve( N );
-			RegisteredComponentInfos.reserve( N );
-
-			for( const auto& ComponentInfoPair : ComponentInfoPairs )
-			{
-				const ComponentInfo* Info = std::get<1>( ComponentInfoPair );
-				RegisteredComponentTypeIDs.push_back( Info->GetID() );
-				RegisteredComponentInfos.push_back( Info );
-
-				if( !Info->GetManager()->Initialize() )
-				{
-					CTX.Log->Error( "EntitySystem startup failed." );
-					return false;
-				}
-			}
-
-			CTX.Log->Verbose( "EntitySystem startup complete." );
-			return true;
-		}
-
+		bool Startup( CTX_ARG, const l_vector<const ComponentInfo*>& InComponentInfos );
 		bool Shutdown( CTX_ARG );
 
 		/// Entity creation

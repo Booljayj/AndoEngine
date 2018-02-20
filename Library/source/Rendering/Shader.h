@@ -1,7 +1,7 @@
 #pragma once
 #include <ostream>
 #include <GL/glew.h>
-#include "EntityFramework/ComponentManager.h"
+#include "EntityFramework/Managers/SimpleComponentManager.h"
 #include "Rendering/EShader.enum.h"
 #include "Rendering/Uniform.h"
 #include "Rendering/Types.h"
@@ -19,11 +19,7 @@ namespace C
 		bool bIsCompiled = false;
 	};
 
-	class ShaderComponentManager : public TComponentManager<ShaderComponent>
-	{
-		void OnRetained( ShaderComponent* Comp ) override final {}
-		void OnReleased( ShaderComponent* Comp ) override final {}
-	};
+	using ShaderComponentManager = TSimpleComponentManager<ShaderComponent>;
 
 	struct ProgramComponent
 	{
@@ -36,11 +32,7 @@ namespace C
 		bool bIsLinked = false;
 	};
 
-	class ProgramComponentManager : public TComponentManager<ProgramComponent>
-	{
-		void OnRetained( ProgramComponent* Comp ) override final {}
-		void OnReleased( ProgramComponent* Comp ) override final {}
-	};
+	using ProgramComponentManager = TSimpleComponentManager<ProgramComponent>;
 }
 
 namespace GL

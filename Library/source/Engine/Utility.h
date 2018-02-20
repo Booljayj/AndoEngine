@@ -19,3 +19,7 @@ CTX.Log->Message( "Shutdown "#__SYSNAME__ );\
 if( !__SYSNAME__.Shutdown( CTX ) ) {\
 	CTX.Log->Error( "Failed to shutdown "#__SYSNAME__ );\
 }
+
+#define TEST_BIT( Mask, Bit ) (Mask & (Bit))
+#define SET_BIT( Mask, Bit ) (Mask |= (Bit))
+#define CLEAR_BIT( Mask, Bit ) (Mask &= (~Bit))
