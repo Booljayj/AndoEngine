@@ -74,12 +74,10 @@
 
 enum class ELogLevel : uint8_t
 {
-	VeryVerbose,
-	Verbose,
+	Debug,
 	Message,
 	Warning,
 	Error,
-	Fatal,
 };
 
 struct Logger
@@ -87,14 +85,12 @@ struct Logger
 	virtual ~Logger() {}
 
 	//Information messages
-	virtual void VeryVerbose( const char* M ) {};
-	virtual void Verbose( const char* M ) {}
+	virtual void Debug( const char* M ) {}
 	virtual void Message( const char* M ) {}
 
 	//Issue messages
 	virtual void Warning( const char* M ) {}
 	virtual void Error( const char* M ) {}
-	virtual void Fatal( const char* M ) {}
 
 	//Only messages at or higher than the current level will be displayed
 	ELogLevel CurrentLevel = ELogLevel::Message;
@@ -103,13 +99,11 @@ struct Logger
 //A logger which prints to std::out
 struct StandardLogger : public Logger
 {
-	virtual void VeryVerbose( const char* M ) override;
-	virtual void Verbose( const char* M ) override;
+	virtual void Debug( const char* M ) override;
 	virtual void Message( const char* M ) override;
 
 	virtual void Warning( const char* M ) override;
 	virtual void Error( const char* M ) override;
-	virtual void Fatal( const char* M ) override;
 
 protected:
 	void TerminalOutput( const char* Prefix, const char* M );

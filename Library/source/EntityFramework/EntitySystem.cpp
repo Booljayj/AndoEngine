@@ -40,7 +40,7 @@ namespace S
 			}
 		}
 
-		CTX.Log->Verbose( "EntitySystem startup complete." );
+		CTX.Log->Debug( "EntitySystem startup complete." );
 		return true;
 	}
 
@@ -54,7 +54,7 @@ namespace S
 				return false;
 			}
 		}
-		CTX.Log->Verbose( "EntitySystem shutdown complete." );
+		CTX.Log->Debug( "EntitySystem shutdown complete." );
 		return true;
 	}
 
