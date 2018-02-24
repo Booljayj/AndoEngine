@@ -1,6 +1,6 @@
 #include <GL/glew.h>
-#include "Engine/Print.h"
 #include "Rendering/SDLSystems.h"
+#include "Engine/LinearStrings.h"
 
 namespace S
 {
@@ -12,7 +12,7 @@ namespace S
 		}
 		else
 		{
-			CTX.Log->Error( l_printf( CTX, "SDL_Init Error: %i", SDL_GetError() ) );
+			CTX.Log->Error( l_printf( CTX.Temp, "SDL_Init Error: %i", SDL_GetError() ) );
 			return false;
 		}
 	}
@@ -77,7 +77,7 @@ namespace S
 			SDL_DestroyWindow( MainWindow );
 			MainWindow = nullptr;
 		}
-		CTX.Log->Error( l_printf( CTX, "SDL_Window Error: %i", SDL_GetError() ) );
+		CTX.Log->Error( l_printf( CTX.Temp, "SDL_Window Error: %i", SDL_GetError() ) );
 		return false;
 	}
 

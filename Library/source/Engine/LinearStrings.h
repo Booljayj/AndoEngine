@@ -12,6 +12,9 @@ using l_wstring = l_basic_string<wchar_t>;
 using l_u16string = l_basic_string<char16_t>;
 using l_u32string = l_basic_string<char32_t>;
 
+const char* l_printf( LinearAllocatorData& Alloc, const char* Format, ... );
+l_string l_sprintf( LinearAllocatorData& Alloc, const char* Format, ... );
+
 //@todo Create some pretty comprehensive tests. It's very possible that this will go completely insane and start writing to invalid memory,
 // unless I got really lucky and managed to implement everything perfectly first try.
 

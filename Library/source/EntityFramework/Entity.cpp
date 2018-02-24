@@ -1,6 +1,7 @@
 #include <cassert>
-#include "EntityFramework/Types.h"
 #include "EntityFramework/Entity.h"
+#include "Engine/LinearStrings.h"
+#include "EntityFramework/Types.h"
 
 Entity::Entity()
 {}
@@ -84,5 +85,5 @@ ptr_t Entity::Get( const ComponentTypeID& TypeID ) const
 
 DESCRIPTION( Entity )
 {
-	return l_printf( CTX, "[Entity]{ Components: %i }", Value.Owned.size() );
+	return l_printf( CTX.Temp, "[Entity]{ Components: %i }", Value.Owned.size() );
 }

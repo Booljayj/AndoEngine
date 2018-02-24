@@ -2,6 +2,43 @@
 #include <cstring>
 #include "Engine/LinearStrings.h"
 
+void l_printf_internal( LinearAllocatorData& Alloc, const char* Format, va_list args, char*& OutPtr, size_t& OutLength )
+{
+	OutPtr = reinterpret_cast<char*>( Alloc.GetData( Alloc.GetUsed() ) );
+	const size_t MaxLength = Alloc.GetCapacity() - Alloc.GetUsed();
+
+	OutLength = vsnprintf( OutPtr, MaxLength, Format, args );
+	Alloc.SetUsed( Alloc.GetUsed() + OutLength );
+}
+
+const char* l_printf( LinearAllocatorData& Alloc, const char* Format, ... )
+{
+	va_list args;
+	va_start( args, Format );
+
+	char* DataPtr;
+	size_t Length;
+
+	l_printf_internal( Alloc, Format, args, DataPtr, Length );
+
+	va_end( args );
+	return DataPtr;
+}
+
+l_string l_sprintf( LinearAllocatorData& Alloc, const char* Format, ... )
+{
+	va_list args;
+	va_start( args, Format );
+
+	char* DataPtr;
+	size_t Length;
+
+	l_printf_internal( Alloc, Format, args, DataPtr, Length );
+
+	va_end( args );
+	return l_string{ DataPtr, Length, Alloc };
+}
+
 l_string_builder::l_string_builder( LinearAllocatorData& InAlloc )
 : Alloc( InAlloc )
 , Blocks( InAlloc )

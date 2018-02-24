@@ -4,6 +4,7 @@
 #include "Engine/LinearAllocator.h"
 #include "Engine/LinearContainers.h"
 #include "Engine/LinearStrings.h"
+#include "Engine/ScopedTempBlock.h"
 #include "Engine/Utility.h"
 #include "Engine/Print.h"
 #include "EntityFramework/EntitySystem.h"
@@ -38,8 +39,7 @@ S::RenderingSystem Rendering{ &MeshRendererManager };
 
 bool Startup( CTX_ARG )
 {
-	BEGIN_TEMP_BLOCK;
-
+	TEMP_SCOPE;
 	CTX.Log->Message( "Starting up all systems..." );
 
 	const l_vector<const ComponentInfo*> Components{
@@ -58,14 +58,14 @@ bool Startup( CTX_ARG )
 	STARTUP_SYSTEM( SDL );
 	STARTUP_SYSTEM( SDLEvent );
 	STARTUP_SYSTEM( SDLWindow );
-
-	END_TEMP_BLOCK;
 	return true;
 }
 
 void Shutdown( CTX_ARG )
 {
+	TEMP_SCOPE;
 	CTX.Log->Message( "Shutting down all systems..." );
+
 	SHUTDOWN_SYSTEM( EntitySys );
 	SHUTDOWN_SYSTEM( SDLWindow );
 	SHUTDOWN_SYSTEM( SDLEvent );
@@ -74,49 +74,50 @@ void Shutdown( CTX_ARG )
 
 void MainLoop( CTX_ARG )
 {
-	bool bShutdownRequested = false;
-	do{
-		CTX.Temp.Reset();
+	double TotalTime = 0.0;
+	double DeltaTime = 1.0/60.0;
+	auto LastUpdateTime = std::chrono::system_clock::now();
+	double AccumulatedTime = 0.0;
 
-		SDLEvent.Update( bShutdownRequested );
+	bool bShutdownRequested = false;
+	while( !bShutdownRequested ) {
+
+		auto CurrentUpdateTime = std::chrono::system_clock::now();
+		double ElapsedTime = ( CurrentUpdateTime - LastUpdateTime ).count();
+		ElapsedTime = std::min( ElapsedTime, 0.25 );
+		AccumulatedTime += ElapsedTime;
+
+		while( AccumulatedTime >= DeltaTime ) {
+			CTX.Temp.Reset();
+
+			SDLEvent.Update( bShutdownRequested );
+
+			TotalTime += DeltaTime;
+			AccumulatedTime -= DeltaTime;
+		}
+
 		if( !bShutdownRequested )
 		{
+			//@todo Use this alpha. It should be passed into certain rendering functions to allow them to blend between previous and current states
+			//const double AlphaFrameTime = AccumulatedTime / DeltaTime;
+			CTX.Temp.Reset();
+
 			SDLWindow.Clear();
 			Rendering.Update();
 			SDLWindow.Swap();
 		}
+
+		LastUpdateTime = CurrentUpdateTime;
 	}
-	while( !bShutdownRequested );
 }
 
 int main( int argc, const char * argv[] )
 {
-	Context CTX{ 0, 10000 };
 	StandardLogger MainLogger{};
-	CTX.Log = &MainLogger;
+	Context CTX{ 0, &MainLogger, 10000 };
 
-	CTX.Log->Message( "Hello, World! This is AndoEngine." );
-
-	// cout << "making temp allocator" << endl;
-	// LinearAllocatorData Alloc{ 40000 };
-	// cout << Alloc << '\n';
-	// //l_string broken; //NOPE! You need to supply the allocator, or this won't compile.
-	// l_string s{ "Really long string that we don't want to allocate for.", Alloc };
-	// s += " I mean, really long.";
-	// s += " Like, ridiculously long in a feeble attempt to get more ";
-	// s += "allocations.";
-	// cout << s << '\n';
-	// cout << Alloc << '\n';
-
-	// l_vector<uint16_t> v{ Alloc };
-	// v.push_back( 10 );
-	// cout << Alloc << '\n';
-	// v.push_back( 100 );
-	// cout << Alloc << '\n';
-	// v.push_back( 1000 );
-	// cout << Alloc << '\n';
-	// v.push_back( 10000 );
-	// cout << Alloc << '\n';
+	CTX.Log->Message( TERM_Cyan "Hello, World! This is AndoEngine." );
+	CTX.Log->Message( TERM_Cyan "Compiled with " __VERSION__ "\n" );
 
 	if( Startup( CTX ) )
 	{
@@ -172,12 +173,13 @@ int main( int argc, const char * argv[] )
 		CTX.Log->Message( "Component Descriptions:" );
 		for( const ComponentInfo* Info : EntitySys.GetRegisteredComponents() )
 		{
-			CTX.Log->Message( l_printf( CTX, "\t%s", DESC( *Info ) ) );
+			CTX.Log->Message( l_printf( CTX.Temp, "\t%s", DESC( *Info ) ) );
 		}
 
-		//MainLoop( CTX );
+		MainLoop( CTX );
 	}
 
 	Shutdown( CTX );
+	CTX.Log->Message( DESC( CTX.Temp ) );
 	return 0;
 }

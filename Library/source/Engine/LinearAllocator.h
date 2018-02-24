@@ -4,13 +4,17 @@
 #include <cassert>
 #include <algorithm>
 #include <ostream>
+#include "Engine/Print.h"
 
-class LinearAllocatorData
+struct LinearAllocatorData
 {
+	CAN_DESCRIBE( LinearAllocatorData );
+
+private:
 	uint8_t* Data;
 	size_t Capacity;
 	size_t Used;
-	size_t Peak; //@todo: use a define to get rid of this at runtime
+	size_t Peak;
 
 public:
 	LinearAllocatorData( size_t RealCapacity );
@@ -31,9 +35,9 @@ public:
 	}
 
 	inline void Reset() { Used = 0; }
-
-	friend std::ostream& operator<<( std::ostream& Stream, LinearAllocatorData& Alloc );
 };
+
+DESCRIPTION( LinearAllocatorData );
 
 /** std allocator that uses a linear allocator data struct to manage allocations. */
 template< typename T >

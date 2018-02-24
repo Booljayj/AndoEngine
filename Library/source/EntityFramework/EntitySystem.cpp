@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <cassert>
-#include "Engine/LinearContainers.h"
 #include "EntityFramework/EntitySystem.h"
+#include "Engine/LinearContainers.h"
+#include "Engine/LinearStrings.h"
 
 using namespace std;
 
@@ -173,6 +174,6 @@ namespace S
 
 	DESCRIPTION( EntitySystem )
 	{
-		return l_printf( CTX, "[EntitySystem]{ Components: %i, Entities: %i }", Value.RegisteredComponentTypeIDs.size(), Value.EntityIDs.size() );
+		return l_printf( CTX.Temp, "[EntitySystem]{ Components: %i, Entities: %i }", Value.RegisteredComponentTypeIDs.size(), Value.EntityIDs.size() );
 	}
 }
