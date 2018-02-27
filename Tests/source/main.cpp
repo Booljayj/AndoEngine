@@ -5,6 +5,7 @@
 #include "Engine/LinearContainers.h"
 #include "Engine/LinearStrings.h"
 #include "Engine/ScopedTempBlock.h"
+#include "Engine/Time.h"
 #include "Engine/Utility.h"
 #include "Engine/Print.h"
 #include "EntityFramework/EntitySystem.h"
@@ -74,40 +75,32 @@ void Shutdown( CTX_ARG )
 
 void MainLoop( CTX_ARG )
 {
-	double TotalTime = 0.0;
-	double DeltaTime = 1.0/60.0;
-	auto LastUpdateTime = std::chrono::system_clock::now();
-	double AccumulatedTime = 0.0;
+	TimeController_FixedUpdateVariableRendering TimeController{ 60.0f, 10.0f };
 
 	bool bShutdownRequested = false;
 	while( !bShutdownRequested ) {
+		TimeController.AdvanceFrame();
 
-		auto CurrentUpdateTime = std::chrono::system_clock::now();
-		double ElapsedTime = ( CurrentUpdateTime - LastUpdateTime ).count();
-		ElapsedTime = std::min( ElapsedTime, 0.25 );
-		AccumulatedTime += ElapsedTime;
+		SDLEvent.Update( bShutdownRequested );
 
-		while( AccumulatedTime >= DeltaTime ) {
+		while( TimeController.StartUpdateFrame() ) {
+			//const Time& T = TimeController.GetTime();
 			CTX.Temp.Reset();
+			//CTX.Log->Message( DESC( TimeController ) );
 
-			SDLEvent.Update( bShutdownRequested );
-
-			TotalTime += DeltaTime;
-			AccumulatedTime -= DeltaTime;
+			TimeController.FinishUpdateFrame();
 		}
 
 		if( !bShutdownRequested )
 		{
 			//@todo Use this alpha. It should be passed into certain rendering functions to allow them to blend between previous and current states
-			//const double AlphaFrameTime = AccumulatedTime / DeltaTime;
+			//const float InterpAlpha = TimeController.FrameInterpolationAlpha();
 			CTX.Temp.Reset();
 
 			SDLWindow.Clear();
 			Rendering.Update();
 			SDLWindow.Swap();
 		}
-
-		LastUpdateTime = CurrentUpdateTime;
 	}
 }
 
