@@ -8,7 +8,7 @@
 #include "Engine/Time.h"
 #include "Engine/Utility.h"
 #include "Engine/Print.h"
-#include "EntityFramework/EntitySystem.h"
+#include "EntityFramework/EntityFrameworkSystem.h"
 #include "Rendering/SDLSystems.h"
 #include "Rendering/RenderingSystem.h"
 #include "Rendering/MeshComponent.h"

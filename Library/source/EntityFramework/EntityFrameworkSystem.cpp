@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <cassert>
-#include "EntityFramework/EntitySystem.h"
+#include "EntityFramework/EntityFrameworkSystem.h"
 #include "Engine/LinearContainers.h"
 #include "Engine/LinearStrings.h"
 
