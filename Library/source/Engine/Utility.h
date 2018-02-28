@@ -1,15 +1,8 @@
 //General macro utilities for engine functions
 
-#define STARTUP_SYSTEM( __SYSNAME__ )\
+#define STARTUP_SYSTEM( __SYSNAME__, ... )\
 CTX.Log->Message( "Startup "#__SYSNAME__ );\
-if( !__SYSNAME__.Startup( CTX ) ) {\
-	CTX.Log->Error( "Failed to startup "#__SYSNAME__ );\
-	return false;\
-}
-
-#define STARTUP_SYSTEM_ARGS( __SYSNAME__, ... )\
-CTX.Log->Message( "Startup "#__SYSNAME__ );\
-if( !__SYSNAME__.Startup( CTX, __VA_ARGS__ ) ) {\
+if( !__SYSNAME__.Startup( CTX, ##__VA_ARGS__ ) ) {\
 	CTX.Log->Error( "Failed to startup "#__SYSNAME__ );\
 	return false;\
 }

@@ -23,8 +23,8 @@ using namespace std;
 CREATE_COMPONENT(   1, Transform, C::TransformComponent, C::TransformComponentManager{} );
 CREATE_COMPONENT(   2, Hierarchy, C::HierarchyComponent, C::HierarchyComponentManager{} );
 
-CREATE_COMPONENT( 100, Mesh, C::Mesh, C::MeshComponentManager{} );
-CREATE_COMPONENT( 110, MeshRenderer, C::MeshRenderer, C::MeshRendererComponentManager{} );
+CREATE_COMPONENT( 100, Mesh, C::MeshComponent, C::MeshComponentManager{} );
+CREATE_COMPONENT( 110, MeshRenderer, C::MeshRendererComponent, C::MeshRendererComponentManager{} );
 CREATE_COMPONENT( 120, Shader, C::ShaderComponent, C::ShaderComponentManager{} );
 CREATE_COMPONENT( 130, Program, C::ProgramComponent, C::ProgramComponentManager{} );
 
@@ -36,29 +36,29 @@ S::SDLSystem SDL;
 S::SDLEventSystem SDLEvent;
 S::SDLWindowSystem SDLWindow;
 
-S::RenderingSystem Rendering{ &MeshRendererManager };
+S::RenderingSystem Rendering;
 
 bool Startup( CTX_ARG )
 {
 	TEMP_SCOPE;
 	CTX.Log->Message( "Starting up all systems..." );
 
-	const l_vector<const ComponentInfo*> Components{
-		{
-			&Transform,
-			&Mesh,
-			&MeshRenderer,
-			&Hierarchy, //not sorted because of this guy
-			&Shader,
-			&Program,
-		},
-		CTX.Temp
+	l_vector<const ComponentInfo*> Components{ CTX.Temp };
+	Components =
+	{
+		&Transform,
+		&Hierarchy,
+		&Mesh,
+		&MeshRenderer,
+		&Shader,
+		&Program,
 	};
 
-	STARTUP_SYSTEM_ARGS( EntitySys, Components );
+	STARTUP_SYSTEM( EntitySys, Components );
 	STARTUP_SYSTEM( SDL );
 	STARTUP_SYSTEM( SDLEvent );
 	STARTUP_SYSTEM( SDLWindow );
+	STARTUP_SYSTEM( Rendering, &MeshRendererManager );
 	return true;
 }
 
@@ -67,10 +67,11 @@ void Shutdown( CTX_ARG )
 	TEMP_SCOPE;
 	CTX.Log->Message( "Shutting down all systems..." );
 
-	SHUTDOWN_SYSTEM( EntitySys );
+	SHUTDOWN_SYSTEM( Rendering );
 	SHUTDOWN_SYSTEM( SDLWindow );
 	SHUTDOWN_SYSTEM( SDLEvent );
 	SHUTDOWN_SYSTEM( SDL );
+	SHUTDOWN_SYSTEM( EntitySys );
 }
 
 void MainLoop( CTX_ARG )
@@ -81,7 +82,7 @@ void MainLoop( CTX_ARG )
 	while( !bShutdownRequested ) {
 		TimeController.AdvanceFrame();
 
-		SDLEvent.Update( bShutdownRequested );
+		SDLEvent.PollEvents( bShutdownRequested );
 
 		while( TimeController.StartUpdateFrame() ) {
 			//const Time& T = TimeController.GetTime();
@@ -93,12 +94,11 @@ void MainLoop( CTX_ARG )
 
 		if( !bShutdownRequested )
 		{
-			//@todo Use this alpha. It should be passed into certain rendering functions to allow them to blend between previous and current states
-			//const float InterpAlpha = TimeController.FrameInterpolationAlpha();
+			const float InterpolationAlpha = TimeController.FrameInterpolationAlpha();
 			CTX.Temp.Reset();
 
 			SDLWindow.Clear();
-			Rendering.Update();
+			Rendering.RenderFrame( InterpolationAlpha );
 			SDLWindow.Swap();
 		}
 	}
@@ -131,7 +131,7 @@ int main( int argc, const char * argv[] )
 
 		EntitySys.Create( MeshEnt, { &Transform, &Mesh, &MeshRenderer } );
 
-		C::Mesh* TestMesh = EntitySys.Find( MeshEnt )->Get( Mesh );
+		C::MeshComponent* TestMesh = EntitySys.Find( MeshEnt )->Get( Mesh );
 		TestMesh->Vertices =
 		{
 			GL::VertexData{ -1, -1, 0 },
@@ -140,7 +140,7 @@ int main( int argc, const char * argv[] )
 		};
 		TestMesh->CreateBuffers();
 
-		C::MeshRenderer* TestMeshRenderer = EntitySys.Find( MeshEnt )->Get( MeshRenderer );
+		C::MeshRendererComponent* TestMeshRenderer = EntitySys.Find( MeshEnt )->Get( MeshRenderer );
 		TestMeshRenderer->Setup( TestMesh );
 
 		C::ShaderComponent* TestVertexShader = EntitySys.Find( VertexShaderEnt )->Get( Shader );

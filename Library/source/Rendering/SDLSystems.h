@@ -21,7 +21,7 @@ namespace S
 		bool Startup( CTX_ARG );
 		bool Shutdown( CTX_ARG );
 
-		void Update( bool& bRequestShutdown );
+		void PollEvents( bool& bRequestShutdown );
 	};
 
 	class SDLWindowSystem

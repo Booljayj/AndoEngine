@@ -7,7 +7,7 @@
 
 namespace C
 {
-	struct Mesh
+	struct MeshComponent
 	{
 		std::vector<GL::VertexData> Vertices;
 		GLuint BufferID[GL::EBuffer::Count()] = {0};
@@ -32,5 +32,5 @@ namespace C
 		}
 	};
 
-	using MeshComponentManager = TSimpleComponentManager<Mesh>;
+	using MeshComponentManager = TSimpleComponentManager<MeshComponent>;
 }

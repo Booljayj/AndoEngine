@@ -31,7 +31,7 @@ namespace S
 
 	bool SDLEventSystem::Shutdown( CTX_ARG ) { return true; }
 
-	void SDLEventSystem::Update( bool& bRequestShutdown )
+	void SDLEventSystem::PollEvents( bool& bRequestShutdown )
 	{
 		FrameEvents.clear();
 		SDL_Event CurrentEvent;

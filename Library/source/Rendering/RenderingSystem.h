@@ -1,4 +1,5 @@
 #pragma once
+#include "Engine/Context.h"
 #include "EntityFramework/ComponentInfo.h"
 #include "Rendering/MeshRendererComponent.h"
 
@@ -7,16 +8,13 @@ namespace S
 	class RenderingSystem
 	{
 	private:
-		C::MeshRendererComponentManager* _MeshRendererManager;
+		const C::MeshRendererComponentManager* MeshRendererManager;
 
 	public:
-		RenderingSystem( C::MeshRendererComponentManager* InMeshRendererManager )
-		: _MeshRendererManager( InMeshRendererManager )
-		{}
+		bool Startup( CTX_ARG, const C::MeshRendererComponentManager* InMeshRendererManager );
+		bool Shutdown( CTX_ARG ) { return true; }
 
-		void operator()( C::MeshRenderer* MeshRendererComp ) const;
-
-		void Update() const;
-		void Render( const C::MeshRenderer* MeshRendererComp ) const;
+		void RenderFrame( float InterpolationAlpha ) const;
+		static void RenderComponent( const C::MeshRendererComponent* MeshRenderer );
 	};
 }

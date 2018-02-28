@@ -5,34 +5,30 @@
 
 using namespace std;
 
-void PrintGLErrors()
-{
-	GLenum ErrorCode = glGetError();
-	if( ErrorCode != GL_NO_ERROR )
-	{
-		cerr << "OpenGL Error: " << ErrorCode << endl;
-	}
-}
-
 namespace S
 {
-	void RenderingSystem::operator()( C::MeshRenderer* MeshRendererComp ) const
+	bool RenderingSystem::Startup( CTX_ARG, const C::MeshRendererComponentManager* InMeshRendererManager )
 	{
-		Render( MeshRendererComp );
+		MeshRendererManager = InMeshRendererManager;
+		return !!MeshRendererManager;
 	}
 
-	void RenderingSystem::Update() const
+	void RenderingSystem::RenderFrame( float InterpolationAlpha ) const
 	{
-		_MeshRendererManager->ForEach( *this );
+		MeshRendererManager->ForEach( &RenderingSystem::RenderComponent );
 	}
 
-	void RenderingSystem::Render( const C::MeshRenderer* MeshRendererComp ) const
+	void RenderingSystem::RenderComponent( const C::MeshRendererComponent* MeshRenderer )
 	{
-		if( !MeshRendererComp->IsValid() ) return;
+		if( !MeshRenderer->IsValid() ) return;
 
-		glBindVertexArray( MeshRendererComp->VertexArrayID );
-		glDrawArrays( GL_TRIANGLES, 0, MeshRendererComp->VertexCount );
+		glBindVertexArray( MeshRenderer->VertexArrayID );
+		glDrawArrays( GL_TRIANGLES, 0, MeshRenderer->VertexCount );
 
-		PrintGLErrors();
+		GLenum ErrorCode = glGetError();
+		if( ErrorCode != GL_NO_ERROR )
+		{
+			cerr << "OpenGL Error: " << ErrorCode << endl;
+		}
 	}
 }
