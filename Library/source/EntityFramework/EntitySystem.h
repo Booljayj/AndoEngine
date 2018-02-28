@@ -18,9 +18,9 @@ constexpr EntityID Entity_Root = 1;
 
 namespace S
 {
-	struct EntitySystem
+	struct EntityFrameworkSystem
 	{
-		CAN_DESCRIBE( EntitySystem );
+		CAN_DESCRIBE( EntityFrameworkSystem );
 
 		bool Startup( CTX_ARG, const l_vector<const ComponentInfo*>& InComponentInfos );
 		bool Shutdown( CTX_ARG );
@@ -79,5 +79,5 @@ namespace S
 		void ReleaseReclaimedComponents();
 	};
 
-	DESCRIPTION( EntitySystem );
+	DESCRIPTION( EntityFrameworkSystem );
 }

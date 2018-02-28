@@ -4,7 +4,7 @@
 
 namespace S
 {
-	bool SDLSystem::Startup( CTX_ARG )
+	bool SDLFrameworkSystem::Startup( CTX_ARG )
 	{
 		if( SDL_Init( SDL_INIT_VIDEO ) == 0 )
 		{
@@ -17,7 +17,7 @@ namespace S
 		}
 	}
 
-	bool SDLSystem::Shutdown( CTX_ARG )
+	bool SDLFrameworkSystem::Shutdown( CTX_ARG )
 	{
 		SDL_Quit();
 		return true;

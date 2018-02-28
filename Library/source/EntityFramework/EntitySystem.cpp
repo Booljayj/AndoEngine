@@ -8,7 +8,7 @@ using namespace std;
 
 namespace S
 {
-	bool EntitySystem::Startup( CTX_ARG, const l_vector<const ComponentInfo*>& InComponentInfos )
+	bool EntityFrameworkSystem::Startup( CTX_ARG, const l_vector<const ComponentInfo*>& InComponentInfos )
 	{
 		const size_t Count = InComponentInfos.size();
 		l_vector<std::tuple<ComponentTypeID, const ComponentInfo*>> ComponentInfoPairs{ CTX.Temp };
@@ -21,7 +21,7 @@ namespace S
 		std::sort( ComponentInfoPairs.begin(), ComponentInfoPairs.end() );
 		if( std::adjacent_find( ComponentInfoPairs.begin(), ComponentInfoPairs.end() ) != ComponentInfoPairs.end() )
 		{
-			CTX.Log->Error( "EntitySystem must not have duplicate component infos" );
+			CTX.Log->Error( "EntityFramework must not have duplicate component infos" );
 			return false;
 		}
 
@@ -36,45 +36,43 @@ namespace S
 
 			if( !Info->GetManager()->Startup( CTX ) )
 			{
-				CTX.Log->Error( "EntitySystem startup failed." );
+				CTX.Log->Error( "ComponentManager startup failed." );
 				return false;
 			}
 		}
 
-		CTX.Log->Debug( "EntitySystem startup complete." );
 		return true;
 	}
 
-	bool EntitySystem::Shutdown( CTX_ARG )
+	bool EntityFrameworkSystem::Shutdown( CTX_ARG )
 	{
 		for( auto* Info : RegisteredComponentInfos )
 		{
 			if( !Info->GetManager()->Shutdown( CTX ) )
 			{
-				CTX.Log->Error( "EntitySystem shutdown failed." );
+				CTX.Log->Error( "ComponentManager shutdown failed." );
 				return false;
 			}
 		}
-		CTX.Log->Debug( "EntitySystem shutdown complete." );
 		return true;
 	}
 
-	void EntitySystem::Create( const EntityID& NewID )
+	void EntityFrameworkSystem::Create( const EntityID& NewID )
 	{
 		(void)InsertNew( NewID );
 	}
 
-	void EntitySystem::Create( const EntityID& NewID, const vector<const ComponentInfo*>& ComponentInfos, const vector<ByteStream>& ComponentDatas /* = {} */ )
+	void EntityFrameworkSystem::Create( const EntityID& NewID, const vector<const ComponentInfo*>& ComponentInfos, const vector<ByteStream>& ComponentDatas /* = {} */ )
 	{
 		InsertNew( NewID ).Setup( ComponentInfos, ComponentDatas );
 	}
 
-	void EntitySystem::Create( const EntityID& NewID, const vector<ComponentTypeID>& ComponentTypeIDs, const vector<ByteStream>& ComponentDatas /* = {} */ )
+	void EntityFrameworkSystem::Create( const EntityID& NewID, const vector<ComponentTypeID>& ComponentTypeIDs, const vector<ByteStream>& ComponentDatas /* = {} */ )
 	{
 		InsertNew( NewID ).Setup( GetComponentInfos( ComponentTypeIDs ), ComponentDatas );
 	}
 
-	bool EntitySystem::Destroy( const EntityID& ID )
+	bool EntityFrameworkSystem::Destroy( const EntityID& ID )
 	{
 		size_t DestroyedEntityIndex = FindPositionByEntityID( ID );
 		if( DestroyedEntityIndex < EntityIDs.size() )
@@ -100,12 +98,12 @@ namespace S
 		}
 	}
 
-	bool EntitySystem::Exists( const EntityID& ID ) const noexcept
+	bool EntityFrameworkSystem::Exists( const EntityID& ID ) const noexcept
 	{
 		return std::find( EntityIDs.begin(), EntityIDs.end(), ID ) != EntityIDs.end();
 	}
 
-	Entity* EntitySystem::Find( const EntityID& ID ) const noexcept
+	Entity* EntityFrameworkSystem::Find( const EntityID& ID ) const noexcept
 	{
 		size_t FoundEntityIndex = FindPositionByEntityID( ID );
 		if( FoundEntityIndex < EntityIDs.size() )
@@ -118,7 +116,7 @@ namespace S
 		}
 	}
 
-	Entity& EntitySystem::InsertNew( const EntityID NewID )
+	Entity& EntityFrameworkSystem::InsertNew( const EntityID NewID )
 	{
 		assert( std::find( EntityIDs.begin(), EntityIDs.end(), NewID ) == EntityIDs.end() );
 
@@ -128,7 +126,7 @@ namespace S
 		return Entities.back();
 	}
 
-	const vector<const ComponentInfo*>& EntitySystem::GetComponentInfos( const vector<ComponentTypeID>& ComponentTypes )
+	const vector<const ComponentInfo*>& EntityFrameworkSystem::GetComponentInfos( const vector<ComponentTypeID>& ComponentTypes )
 	{
 		ComponentInfoBuffer.clear();
 		for( const auto& ComponentType : ComponentTypes )
@@ -140,17 +138,17 @@ namespace S
 		return ComponentInfoBuffer;
 	}
 
-	size_t EntitySystem::FindPositionByEntityID( const EntityID& ID ) const noexcept
+	size_t EntityFrameworkSystem::FindPositionByEntityID( const EntityID& ID ) const noexcept
 	{
 		return std::find( EntityIDs.begin(), EntityIDs.end(), ID ) - EntityIDs.begin();
 	}
 
-	size_t EntitySystem::FindPositionByEntity( const Entity& EntityRef ) const noexcept
+	size_t EntityFrameworkSystem::FindPositionByEntity( const Entity& EntityRef ) const noexcept
 	{
 		return std::find( Entities.begin(), Entities.end(), EntityRef ) - Entities.begin();
 	}
 
-	const ComponentInfo* EntitySystem::FindComponentInfo( ComponentTypeID ID ) const noexcept
+	const ComponentInfo* EntityFrameworkSystem::FindComponentInfo( ComponentTypeID ID ) const noexcept
 	{
 		size_t ComponentIndex = std::find( RegisteredComponentTypeIDs.begin(), RegisteredComponentTypeIDs.end(), ID ) - RegisteredComponentTypeIDs.begin();
 		if( ComponentIndex < RegisteredComponentInfos.size() )
@@ -160,20 +158,20 @@ namespace S
 		return nullptr;
 	}
 
-	void EntitySystem::ReleaseReclaimedComponents()
+	void EntityFrameworkSystem::ReleaseReclaimedComponents()
 	{
 		//@todo This can be more efficient because both ReclaimedComponentBuffer and the Registered components array should be sorted,
 		// so we can start where we left off during the last iteration.
 		for( auto& ReclaimedComponent : ReclaimedComponentBuffer )
 		{
 			const ComponentInfo* Info = FindComponentInfo( ReclaimedComponent.TypeID );
-			assert( Info );//, "Reclaimed a component type that is not registered with the EntitySystem" );
+			assert( Info );//, "Reclaimed a component type that is not registered with the EntityFrameworkSystem" );
 			Info->GetManager()->Release( ReclaimedComponent.CompPtr );
 		}
 	}
 
-	DESCRIPTION( EntitySystem )
+	DESCRIPTION( EntityFrameworkSystem )
 	{
-		return l_printf( CTX.Temp, "[EntitySystem]{ Components: %i, Entities: %i }", Value.RegisteredComponentTypeIDs.size(), Value.EntityIDs.size() );
+		return l_printf( CTX.Temp, "[EntityFramework]{ Component Count: %i, Entity Count: %i }", Value.RegisteredComponentTypeIDs.size(), Value.EntityIDs.size() );
 	}
 }

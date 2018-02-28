@@ -5,7 +5,7 @@
 
 namespace S
 {
-	class SDLSystem
+	class SDLFrameworkSystem
 	{
 	public:
 		bool Startup( CTX_ARG );
