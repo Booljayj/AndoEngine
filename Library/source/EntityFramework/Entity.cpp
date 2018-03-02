@@ -1,7 +1,7 @@
 #include <cassert>
 #include "EntityFramework/Entity.h"
+#include "Engine/Context.h"
 #include "Engine/LinearStrings.h"
-#include "EntityFramework/Types.h"
 
 Entity::Entity()
 {}

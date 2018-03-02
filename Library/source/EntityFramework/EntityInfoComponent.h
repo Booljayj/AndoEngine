@@ -1,6 +1,6 @@
 #pragma once
 #include <string>
-#include "EntityFramework/ComponentInfo.h"
+#include "EntityFramework/Types.h"
 
 namespace C
 {

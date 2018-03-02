@@ -2,7 +2,7 @@
 #include <vector>
 #include <array>
 #include <bitset>
-#include "Engine/Utility.h"
+#include "Engine/UtilityMacros.h"
 #include "EntityFramework/Internal/ManagedComponentBlock.h"
 #include "EntityFramework/ComponentManager.h"
 #include "EntityFramework/Serializer.h"

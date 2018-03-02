@@ -6,9 +6,11 @@
 #include "Engine/LinearStrings.h"
 #include "Engine/ScopedTempBlock.h"
 #include "Engine/Time.h"
-#include "Engine/Utility.h"
+#include "Engine/UtilityMacros.h"
 #include "Engine/Print.h"
+#include "EntityFramework/Entity.h"
 #include "EntityFramework/EntityFrameworkSystem.h"
+#include "EntityFramework/UtilityMacros.h"
 #include "Rendering/SDLSystems.h"
 #include "Rendering/RenderingSystem.h"
 #include "Rendering/MeshComponent.h"
@@ -43,8 +45,7 @@ bool Startup( CTX_ARG )
 	TEMP_SCOPE;
 	CTX.Log->Message( "Starting up all systems..." );
 
-	l_vector<const ComponentInfo*> Components{ CTX.Temp };
-	Components =
+	const initializer_list<const ComponentInfo*> Components =
 	{
 		&Transform,
 		&Hierarchy,

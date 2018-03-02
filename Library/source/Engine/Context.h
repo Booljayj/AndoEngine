@@ -22,6 +22,3 @@ struct Context
 	/** Linear Allocator object used for dynamic allocation of small objects within the thread */
 	mutable LinearAllocatorData Temp;
 };
-
-/** Macro used to define a function that requires a context. Must appear as the first parameter in the function */
-#define CTX_ARG const Context& CTX

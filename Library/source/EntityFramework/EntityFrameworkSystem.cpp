@@ -1,14 +1,16 @@
-#include <stdio.h>
 #include <cassert>
 #include "EntityFramework/EntityFrameworkSystem.h"
+#include "Engine/Context.h"
 #include "Engine/LinearContainers.h"
 #include "Engine/LinearStrings.h"
+#include "EntityFramework/ComponentInfo.h"
+#include "EntityFramework/Entity.h"
 
 using namespace std;
 
 namespace S
 {
-	bool EntityFrameworkSystem::Startup( CTX_ARG, const l_vector<const ComponentInfo*>& InComponentInfos )
+	bool EntityFrameworkSystem::Startup( CTX_ARG, const std::initializer_list<const ComponentInfo*>& InComponentInfos )
 	{
 		const size_t Count = InComponentInfos.size();
 		l_vector<std::tuple<ComponentTypeID, const ComponentInfo*>> ComponentInfoPairs{ CTX.Temp };

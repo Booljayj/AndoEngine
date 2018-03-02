@@ -1,4 +1,5 @@
 #include "EntityFramework/ComponentInfo.h"
+#include "Engine/Context.h"
 #include "Engine/LinearStrings.h"
 
 DESCRIPTION( ComponentInfo )

@@ -1,5 +1,5 @@
 #pragma once
-#include "Engine/Context.h"
+#include "Engine/UtilityMacros.h"
 #include "EntityFramework/ComponentInfo.h"
 #include "Rendering/MeshRendererComponent.h"
 

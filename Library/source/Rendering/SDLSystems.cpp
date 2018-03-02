@@ -1,5 +1,7 @@
 #include <GL/glew.h>
 #include "Rendering/SDLSystems.h"
+#include "Engine/Context.h"
+#include "Engine/Logger.h"
 #include "Engine/LinearStrings.h"
 
 namespace S

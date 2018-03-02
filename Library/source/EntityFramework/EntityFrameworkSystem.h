@@ -1,17 +1,13 @@
 #pragma once
-#include <cassert>
-#include <iostream>
-#include <iomanip>
+#include <initializer_list>
 #include <vector>
-#include <tuple>
-#include <deque>
-#include <unordered_map>
-#include "Engine/Context.h"
+#include "Engine/UtilityMacros.h"
 #include "Engine/Print.h"
-#include "Engine/LinearContainers.h"
 #include "EntityFramework/Types.h"
-#include "EntityFramework/Entity.h"
-#include "EntityFramework/ComponentInfo.h"
+
+struct Entity;
+struct EntityOwnedComponent;
+struct ComponentInfo;
 
 constexpr EntityID Entity_Null = 0;
 constexpr EntityID Entity_Root = 1;
@@ -22,7 +18,7 @@ namespace S
 	{
 		CAN_DESCRIBE( EntityFrameworkSystem );
 
-		bool Startup( CTX_ARG, const l_vector<const ComponentInfo*>& InComponentInfos );
+		bool Startup( CTX_ARG, const std::initializer_list<const ComponentInfo*>& InComponentInfos );
 		bool Shutdown( CTX_ARG );
 
 		/// Entity creation
