@@ -1,7 +1,7 @@
 #pragma once
 #include <GL/glew.h>
 #include "EntityFramework/Managers/SimpleComponentManager.h"
-#include "Rendering/GLVertexArrayObject.h"
+#include "Rendering/VertexArrayObject.h"
 #include "Rendering/Shader.h"
 #include "Rendering/MeshComponent.h"
 #include "Rendering/VertexData.h"

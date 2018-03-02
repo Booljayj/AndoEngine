@@ -2,7 +2,7 @@
 #include <vector>
 #include "Rendering/EGLBool.enum.h"
 #include "Rendering/Shader.h"
-#include "Rendering/GLVertexArrayObject.h"
+#include "Rendering/VertexArrayObject.h"
 
 using namespace std;
 

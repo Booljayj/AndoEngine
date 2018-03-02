@@ -4,7 +4,7 @@
 #include "Rendering/EBufferTarget.enum.h"
 #include "Rendering/EGLBool.enum.h"
 #include "Rendering/EGLType.enum.h"
-#include "Rendering/GLVertexArrayObject.h"
+#include "Rendering/VertexArrayObject.h"
 #include "Rendering/VertexData.h"
 
 using namespace std;
