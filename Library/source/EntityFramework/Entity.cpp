@@ -6,43 +6,43 @@
 Entity::Entity()
 {}
 
-void Entity::Setup( const std::vector<const ComponentInfo*>& InComponentInfos, const std::vector<ByteStream>& InComponentDatas )
+void Entity::Setup( const std::vector<const ComponentInfo*>& ComponentInfos, const std::vector<ByteStream>& ComponentDatas )
 {
-	assert( Owned.size() == 0 );
-	//assert( InComponentInfos.size() == InComponentDatas.size() );
-	Owned.reserve( InComponentInfos.size() );
+	if( Owned.size() > 0 ) { return; }
+	if( ComponentInfos.size() != ComponentDatas.size() ) { return; }
+	Owned.reserve( ComponentInfos.size() );
 
-	for( size_t Index = 0; Index < InComponentInfos.size(); ++Index )
+	for( size_t Index = 0; Index < ComponentInfos.size(); ++Index )
 	{
-		const ComponentInfo* const ComponentInfo = InComponentInfos[Index];
+		const ComponentInfo* const ComponentInfo = ComponentInfos[Index];
 		ptr_t const NewOwnedComponent = ComponentInfo->GetManager()->Retain();
 		Owned.push_back( EntityOwnedComponent{ ComponentInfo->GetID(), NewOwnedComponent } );
 
-		const ByteStream& ComponentData = InComponentDatas[Index];
+		const ByteStream& ComponentData = ComponentDatas[Index];
 		ComponentInfo->GetManager()->Load( NewOwnedComponent, ComponentData );
 	}
 
 	for( size_t OwnedIndex = 0; OwnedIndex < Owned.size(); ++OwnedIndex )
 	{
-		InComponentInfos[OwnedIndex]->GetManager()->Setup( *this, Owned[OwnedIndex].CompPtr );
+		ComponentInfos[OwnedIndex]->GetManager()->Setup( *this, Owned[OwnedIndex].CompPtr );
 	}
 }
 
-void Entity::Setup( const std::vector<const ComponentInfo*>& InComponentInfos )
+void Entity::Setup( const std::vector<const ComponentInfo*>& ComponentInfos )
 {
-	assert( Owned.size() == 0 );
-	Owned.reserve( InComponentInfos.size() );
+	if( Owned.size() > 0 ) { return; }
+	Owned.reserve( ComponentInfos.size() );
 
-	for( size_t Index = 0; Index < InComponentInfos.size(); ++Index )
+	for( size_t Index = 0; Index < ComponentInfos.size(); ++Index )
 	{
-		const ComponentInfo* const ComponentInfo = InComponentInfos[Index];
+		const ComponentInfo* const ComponentInfo = ComponentInfos[Index];
 		ptr_t const NewOwnedComponent = ComponentInfo->GetManager()->Retain();
 		Owned.push_back( EntityOwnedComponent{ ComponentInfo->GetID(), NewOwnedComponent } );
 	}
 
 	for( size_t OwnedIndex = 0; OwnedIndex < Owned.size(); ++OwnedIndex )
 	{
-		InComponentInfos[OwnedIndex]->GetManager()->Setup( *this, Owned[OwnedIndex].CompPtr );
+		ComponentInfos[OwnedIndex]->GetManager()->Setup( *this, Owned[OwnedIndex].CompPtr );
 	}
 }
 

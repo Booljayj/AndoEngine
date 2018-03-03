@@ -22,12 +22,10 @@ namespace S
 		bool Shutdown( CTX_ARG );
 
 		/// Entity creation
-		/** Create a blank entity that contains no components */
-		void Create( const EntityID& NewID );
-		/** Create an entity that contains the components referenced by the component infos */
-		void Create( const EntityID& NewID, const std::vector<const ComponentInfo*>& ComponentInfos, const std::vector<ByteStream>& ComponentDatas = {} );
-		/** Create an entity that contains the components referenced by the component IDs */
-		void Create( const EntityID& NewID, const std::vector<ComponentTypeID>& ComponentTypeIDs, const std::vector<ByteStream>& ComponentDatas = {} );
+		/** Create an entity that contains the components */
+		void Create( const EntityID& NewID, const std::vector<const ComponentInfo*>& ComponentInfos );
+		/** Create an entity that contains the components with some loaded data */
+		void Create( const EntityID& NewID, const std::vector<const ComponentInfo*>& ComponentInfos, const std::vector<ByteStream>& ComponentDatas );
 
 		/// Entity destruction
 		/** Destroy a particular entity */
@@ -41,7 +39,10 @@ namespace S
 		/** Returns a pointer to the entity that is using the provided ID, or null if no entity has this ID */
 		Entity* Find( const EntityID& ID ) const noexcept;
 
+		/** Get a list of all the registered components in this system */
 		const std::vector<const ComponentInfo*>& GetRegisteredComponents() const { return RegisteredComponentInfos; }
+		/** Get a list of component infos from the list of component types */
+		const std::vector<const ComponentInfo*>& GetComponentInfos( const std::vector<ComponentTypeID>& ComponentTypeIDs );
 
 	protected:
 		std::vector<ComponentTypeID> RegisteredComponentTypeIDs;
@@ -62,8 +63,6 @@ namespace S
 
 		/** Insert a new entity with the specified ID */
 		Entity& InsertNew( const EntityID NewID );
-		/** Get a list of component infos from the list of component types */
-		const std::vector<const ComponentInfo*>& GetComponentInfos( const std::vector<ComponentTypeID>& ComponentTypeIDs );
 		/** Find the index of an ID in the master ID list */
 		size_t FindPositionByEntityID( const EntityID& ID ) const noexcept;
 		/** Find the index of an entity in the master entity list */

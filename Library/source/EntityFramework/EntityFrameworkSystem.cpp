@@ -59,19 +59,14 @@ namespace S
 		return true;
 	}
 
-	void EntityFrameworkSystem::Create( const EntityID& NewID )
+	void EntityFrameworkSystem::Create( const EntityID& NewID, const vector<const ComponentInfo*>& ComponentInfos )
 	{
-		(void)InsertNew( NewID );
+		InsertNew( NewID ).Setup( ComponentInfos );
 	}
 
-	void EntityFrameworkSystem::Create( const EntityID& NewID, const vector<const ComponentInfo*>& ComponentInfos, const vector<ByteStream>& ComponentDatas /* = {} */ )
+	void EntityFrameworkSystem::Create( const EntityID& NewID, const vector<const ComponentInfo*>& ComponentInfos, const vector<ByteStream>& ComponentDatas )
 	{
 		InsertNew( NewID ).Setup( ComponentInfos, ComponentDatas );
-	}
-
-	void EntityFrameworkSystem::Create( const EntityID& NewID, const vector<ComponentTypeID>& ComponentTypeIDs, const vector<ByteStream>& ComponentDatas /* = {} */ )
-	{
-		InsertNew( NewID ).Setup( GetComponentInfos( ComponentTypeIDs ), ComponentDatas );
 	}
 
 	bool EntityFrameworkSystem::Destroy( const EntityID& ID )
@@ -118,16 +113,6 @@ namespace S
 		}
 	}
 
-	Entity& EntityFrameworkSystem::InsertNew( const EntityID NewID )
-	{
-		assert( std::find( EntityIDs.begin(), EntityIDs.end(), NewID ) == EntityIDs.end() );
-
-		Entities.push_back( Entity{} );
-		EntityIDs.push_back( NewID );
-
-		return Entities.back();
-	}
-
 	const vector<const ComponentInfo*>& EntityFrameworkSystem::GetComponentInfos( const vector<ComponentTypeID>& ComponentTypes )
 	{
 		ComponentInfoBuffer.clear();
@@ -138,6 +123,16 @@ namespace S
 			ComponentInfoBuffer.push_back( Info );
 		}
 		return ComponentInfoBuffer;
+	}
+
+	Entity& EntityFrameworkSystem::InsertNew( const EntityID NewID )
+	{
+		assert( std::find( EntityIDs.begin(), EntityIDs.end(), NewID ) == EntityIDs.end() );
+
+		Entities.push_back( Entity{} );
+		EntityIDs.push_back( NewID );
+
+		return Entities.back();
 	}
 
 	size_t EntityFrameworkSystem::FindPositionByEntityID( const EntityID& ID ) const noexcept

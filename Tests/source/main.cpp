@@ -123,8 +123,8 @@ int main( int argc, const char * argv[] )
 		EntityID ShaderProgramEnt = 50;
 		EntityID MeshEnt = 55;
 
-		EntityFramework.Create( EntA );
-		EntityFramework.Create( EntB, { &Transform, &Hierarchy } );
+		EntityFramework.Create( EntA, { &Transform, &Hierarchy } );
+		EntityFramework.Create( EntB, EntityFramework.GetComponentInfos( { 1, 2 } ) );
 
 		EntityFramework.Create( VertexShaderEnt, { &Shader } );
 		EntityFramework.Create( FragmentShaderEnt, { &Shader } );
