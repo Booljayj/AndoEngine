@@ -1,4 +1,5 @@
 #include <cassert>
+#include <tuple>
 #include "EntityFramework/Entity.h"
 #include "Engine/Context.h"
 #include "Engine/LinearStrings.h"
@@ -6,49 +7,20 @@
 Entity::Entity()
 {}
 
-void Entity::Setup( const std::vector<const ComponentInfo*>& ComponentInfos, const std::vector<ByteStream>& ComponentDatas )
+void Entity::Reserve( size_t ComponentCount )
 {
-	if( Owned.size() > 0 ) { return; }
-	if( ComponentInfos.size() != ComponentDatas.size() ) { return; }
-	Owned.reserve( ComponentInfos.size() );
-
-	for( size_t Index = 0; Index < ComponentInfos.size(); ++Index )
-	{
-		const ComponentInfo* const ComponentInfo = ComponentInfos[Index];
-		ptr_t const NewOwnedComponent = ComponentInfo->GetManager()->Retain();
-		Owned.push_back( EntityOwnedComponent{ ComponentInfo->GetID(), NewOwnedComponent } );
-
-		const ByteStream& ComponentData = ComponentDatas[Index];
-		ComponentInfo->GetManager()->Load( NewOwnedComponent, ComponentData );
-	}
-
-	for( size_t OwnedIndex = 0; OwnedIndex < Owned.size(); ++OwnedIndex )
-	{
-		ComponentInfos[OwnedIndex]->GetManager()->Setup( *this, Owned[OwnedIndex].CompPtr );
-	}
+	Owned.reserve( ComponentCount );
 }
 
-void Entity::Setup( const std::vector<const ComponentInfo*>& ComponentInfos )
+void Entity::Add( ComponentTypeID TypeID, void* Component )
 {
-	if( Owned.size() > 0 ) { return; }
-	Owned.reserve( ComponentInfos.size() );
-
-	for( size_t Index = 0; Index < ComponentInfos.size(); ++Index )
-	{
-		const ComponentInfo* const ComponentInfo = ComponentInfos[Index];
-		ptr_t const NewOwnedComponent = ComponentInfo->GetManager()->Retain();
-		Owned.push_back( EntityOwnedComponent{ ComponentInfo->GetID(), NewOwnedComponent } );
-	}
-
-	for( size_t OwnedIndex = 0; OwnedIndex < Owned.size(); ++OwnedIndex )
-	{
-		ComponentInfos[OwnedIndex]->GetManager()->Setup( *this, Owned[OwnedIndex].CompPtr );
-	}
+	Owned.push_back( EntityOwnedComponent{ TypeID, Component } );
 }
 
-void Entity::Reset( std::vector<EntityOwnedComponent>& OutOwnedComponents )
+void Entity::Reset( std::vector<EntityOwnedComponent>& OutComponents )
 {
-	OutOwnedComponents.insert( OutOwnedComponents.end(), Owned.begin(), Owned.end() );
+	OutComponents.reserve( OutComponents.size() + Owned.size() );
+	OutComponents.insert( OutComponents.end(), Owned.begin(), Owned.end() );
 	Owned.clear();
 }
 
@@ -59,16 +31,16 @@ bool Entity::Has( const ComponentTypeID TypeID ) const
 
 bool Entity::HasAll( const std::vector<ComponentTypeID>& TypeIDs ) const
 {
-	//@todo: finish this later when sorting is established. Loop through each TypeID and increment the owned iterator for each one.
-	//		If we encounter an owned ID that is higher than the TypeID or reach the end of the owned components, the test fails.
-	//		If we encounter the correct TypeID, we increment the TypeID iterator and keep the same owned iterator.
+	//@todo: finish this later when sorting is established. Loop through each TypeID and increment the Owned iterator for each one.
+	//		If we encounter an Owned ID that is higher than the TypeID or reach the end of the Owned components, the test fails.
+	//		If we encounter the correct TypeID, we increment the TypeID iterator and keep the same Owned iterator.
 
 	// vector<ComponentTypeID>::iterator TypeIDIterator = TypeIDs.begin();
-	// vector<OwnedEntityComponent>::iterator OwnedIterator = Owned.begin();
+	// vector<OwnedComponentsEntityComponent>::iterator OwnedComponentsIterator = Owned.begin();
 	// for(; TypeIDIterator < TypeIDs.end(); ++TypeIDIterator )
 	// {
 	// 	bool FoundComponentType = false;
-	// 	for(; OwnedIterator < Owned.end(); ++OwnedIterator )
+	// 	for(; OwnedComponentsIterator < Owned.end(); ++OwnedComponentsIterator )
 	// 	{
 	// 		if( Owned)
 	// 	}
@@ -79,7 +51,6 @@ bool Entity::HasAll( const std::vector<ComponentTypeID>& TypeIDs ) const
 ptr_t Entity::Get( const ComponentTypeID& TypeID ) const
 {
 	auto FoundIter = std::find( Owned.begin(), Owned.end(), TypeID );
-
 	return FoundIter != Owned.end() ? FoundIter->CompPtr : nullptr;
 }
 

@@ -3,6 +3,9 @@
 #include "Engine/Context.h"
 #include "Engine/LinearContainers.h"
 #include "Engine/LinearStrings.h"
+#include "Engine/Logger.h"
+#include "Engine/Print.h"
+#include "Engine/ScopedTempBlock.h"
 #include "EntityFramework/ComponentInfo.h"
 #include "EntityFramework/Entity.h"
 
@@ -59,14 +62,65 @@ namespace S
 		return true;
 	}
 
-	void EntityFrameworkSystem::Create( const EntityID& NewID, const vector<const ComponentInfo*>& ComponentInfos )
+	const Entity* EntityFrameworkSystem::Create( CTX_ARG, const EntityID& NewID, const ComponentInfo* const* ComponentInfoBegin, const ByteStream* ComponentDataBegin, size_t ComponentCount )
 	{
-		InsertNew( NewID ).Setup( ComponentInfos );
+		TEMP_SCOPE;
+
+		struct ValidatedComponentData {
+			ComponentTypeID TypeID;
+			const ComponentInfo* Info;
+			void* Component;
+
+			bool operator<( const ValidatedComponentData& Other ) const { return TypeID < Other.TypeID; }
+		};
+
+		Entity* NewEntity = InsertNew( CTX, NewID );
+		if( NewEntity ) {
+			//Build a sorted list of the components to add to the entity
+			l_vector<ValidatedComponentData> ValidatedData{ CTX.Temp };
+			for( size_t Index = 0; Index < ComponentCount; ++Index ) {
+				const ComponentInfo* Info = *( ComponentInfoBegin + Index );
+
+				if( Info ) {
+					ptr_t NewRetainedComponent = Info->GetManager()->Retain();
+
+					//Either load the predefined data into the component, or wipe it to a default state.
+					if( ComponentDataBegin ) {
+						const ByteStream& Data = *( ComponentDataBegin + Index );
+						Info->GetManager()->Load( NewRetainedComponent, Data );
+					} else {
+						Info->GetManager()->Wipe( NewRetainedComponent );
+					}
+
+					ValidatedData.push_back( ValidatedComponentData{ Info->GetID(), Info, NewRetainedComponent } );
+
+				} else {
+					//@todo Would it be useful to print the index of the null entity here? Depends, maybe add later if it becomes necessary.
+					CTX.Log->Warning( "Null component type found when creating an entity, it will be skipped." );
+				}
+			}
+			std::sort( ValidatedData.begin(), ValidatedData.end() );
+			const size_t ActualComponentCount = ValidatedData.size(); //The number of components after nullptrs have been removed.
+
+			//Add the new components to the entity
+			NewEntity->Reserve( ValidatedData.size() );
+			for( size_t Index = 0; Index < ActualComponentCount; ++Index ) {
+				const auto& Data = ValidatedData[Index];
+				NewEntity->Add( Data.TypeID, Data.Component );
+			}
+
+			//Perform final setup on the entity's new components
+			for( size_t Index = 0; Index < ActualComponentCount; ++Index ) {
+				const auto& Data = ValidatedData[Index];
+				Data.Info->GetManager()->Setup( *NewEntity, Data.Component );
+			}
+		}
+		return NewEntity;
 	}
 
-	void EntityFrameworkSystem::Create( const EntityID& NewID, const vector<const ComponentInfo*>& ComponentInfos, const vector<ByteStream>& ComponentDatas )
+	const Entity* EntityFrameworkSystem::Create( CTX_ARG, const EntityID& NewID, const std::initializer_list<const ComponentInfo*>& ComponentInfos )
 	{
-		InsertNew( NewID ).Setup( ComponentInfos, ComponentDatas );
+		return Create( CTX, NewID, ComponentInfos.begin(), nullptr, ComponentInfos.size() );
 	}
 
 	bool EntityFrameworkSystem::Destroy( const EntityID& ID )
@@ -100,12 +154,12 @@ namespace S
 		return std::find( EntityIDs.begin(), EntityIDs.end(), ID ) != EntityIDs.end();
 	}
 
-	Entity* EntityFrameworkSystem::Find( const EntityID& ID ) const noexcept
+	const Entity* EntityFrameworkSystem::Find( const EntityID& ID ) const noexcept
 	{
 		size_t FoundEntityIndex = FindPositionByEntityID( ID );
 		if( FoundEntityIndex < EntityIDs.size() )
 		{
-			return const_cast<Entity*>( &Entities[FoundEntityIndex] );
+			return &Entities[FoundEntityIndex];
 		}
 		else
 		{
@@ -113,26 +167,33 @@ namespace S
 		}
 	}
 
-	const vector<const ComponentInfo*>& EntityFrameworkSystem::GetComponentInfos( const vector<ComponentTypeID>& ComponentTypes )
+	const l_vector<const ComponentInfo*> EntityFrameworkSystem::GetComponentInfos( CTX_ARG, const l_vector<ComponentTypeID>& ComponentTypeIDs )
 	{
-		ComponentInfoBuffer.clear();
-		for( const auto& ComponentType : ComponentTypes )
+		l_vector<const ComponentInfo*> ReturnBuffer{ CTX.Temp };
+		ReturnBuffer.reserve( ComponentTypeIDs.size() );
+		for( const auto& ComponentType : ComponentTypeIDs )
 		{
 			const ComponentInfo* Info = FindComponentInfo( ComponentType );
-			assert( Info );//, "Tried to get info for a component type that is not registered" ) ;
-			ComponentInfoBuffer.push_back( Info );
+			ReturnBuffer.push_back( Info );
 		}
-		return ComponentInfoBuffer;
+		return ReturnBuffer;
+	}
+	const l_vector<const ComponentInfo*> EntityFrameworkSystem::GetComponentInfos( CTX_ARG, const std::initializer_list<ComponentTypeID>& ComponentTypeIDs )
+	{
+		l_vector<ComponentTypeID> TempBuffer{ ComponentTypeIDs, CTX.Temp };
+		return GetComponentInfos( CTX, TempBuffer );
 	}
 
-	Entity& EntityFrameworkSystem::InsertNew( const EntityID NewID )
+	Entity* EntityFrameworkSystem::InsertNew( CTX_ARG, const EntityID NewID )
 	{
-		assert( std::find( EntityIDs.begin(), EntityIDs.end(), NewID ) == EntityIDs.end() );
+		if( std::find( EntityIDs.begin(), EntityIDs.end(), NewID ) != EntityIDs.end() ) {
+			CTX.Log->Error( l_printf( CTX.Temp, "Cannot create new entity with ID '%i', that ID already exists", NewID ) );
+			return nullptr;
+		}
 
 		Entities.push_back( Entity{} );
 		EntityIDs.push_back( NewID );
-
-		return Entities.back();
+		return &Entities.back();
 	}
 
 	size_t EntityFrameworkSystem::FindPositionByEntityID( const EntityID& ID ) const noexcept
@@ -148,8 +209,7 @@ namespace S
 	const ComponentInfo* EntityFrameworkSystem::FindComponentInfo( ComponentTypeID ID ) const noexcept
 	{
 		size_t ComponentIndex = std::find( RegisteredComponentTypeIDs.begin(), RegisteredComponentTypeIDs.end(), ID ) - RegisteredComponentTypeIDs.begin();
-		if( ComponentIndex < RegisteredComponentInfos.size() )
-		{
+		if( ComponentIndex < RegisteredComponentInfos.size() ) {
 			return RegisteredComponentInfos[ComponentIndex];
 		}
 		return nullptr;

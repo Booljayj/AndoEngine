@@ -2,6 +2,7 @@
 #include <initializer_list>
 #include <vector>
 #include "Engine/UtilityMacros.h"
+#include "Engine/LinearContainers.h"
 #include "Engine/Print.h"
 #include "EntityFramework/Types.h"
 
@@ -22,10 +23,9 @@ namespace S
 		bool Shutdown( CTX_ARG );
 
 		/// Entity creation
-		/** Create an entity that contains the components */
-		void Create( const EntityID& NewID, const std::vector<const ComponentInfo*>& ComponentInfos );
-		/** Create an entity that contains the components with some loaded data */
-		void Create( const EntityID& NewID, const std::vector<const ComponentInfo*>& ComponentInfos, const std::vector<ByteStream>& ComponentDatas );
+		/** Create an entity that contains the components with optional loaded data */
+		const Entity* Create( CTX_ARG, const EntityID& NewID, const ComponentInfo* const* ComponentInfoBegin, const ByteStream* ComponentDataBegin, size_t ComponentCount );
+		const Entity* Create( CTX_ARG, const EntityID& NewID, const std::initializer_list<const ComponentInfo*>& ComponentInfos );
 
 		/// Entity destruction
 		/** Destroy a particular entity */
@@ -37,18 +37,18 @@ namespace S
 		/** Returns true if there is an entity with the provided ID */
 		bool Exists( const EntityID& ID ) const noexcept;
 		/** Returns a pointer to the entity that is using the provided ID, or null if no entity has this ID */
-		Entity* Find( const EntityID& ID ) const noexcept;
+		const Entity* Find( const EntityID& ID ) const noexcept;
 
 		/** Get a list of all the registered components in this system */
 		const std::vector<const ComponentInfo*>& GetRegisteredComponents() const { return RegisteredComponentInfos; }
 		/** Get a list of component infos from the list of component types */
-		const std::vector<const ComponentInfo*>& GetComponentInfos( const std::vector<ComponentTypeID>& ComponentTypeIDs );
+		const l_vector<const ComponentInfo*> GetComponentInfos( CTX_ARG, const l_vector<ComponentTypeID>& ComponentTypeIDs );
+		const l_vector<const ComponentInfo*> GetComponentInfos( CTX_ARG, const std::initializer_list<ComponentTypeID>& ComponentTypeIDs );
 
 	protected:
 		std::vector<ComponentTypeID> RegisteredComponentTypeIDs;
 		std::vector<const ComponentInfo*> RegisteredComponentInfos;
 
-		std::vector<const ComponentInfo*> ComponentInfoBuffer;
 		std::vector<EntityOwnedComponent> ReclaimedComponentBuffer;
 
 		// TODO: break entity groups into 'catalogues'. Each catalogue has poly methods for Exists, Find, and Create.
@@ -62,7 +62,7 @@ namespace S
 		std::vector<EntityID> EntityIDs;
 
 		/** Insert a new entity with the specified ID */
-		Entity& InsertNew( const EntityID NewID );
+		Entity* InsertNew( CTX_ARG, const EntityID NewID );
 		/** Find the index of an ID in the master ID list */
 		size_t FindPositionByEntityID( const EntityID& ID ) const noexcept;
 		/** Find the index of an entity in the master entity list */

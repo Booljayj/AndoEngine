@@ -117,20 +117,20 @@ int main( int argc, const char * argv[] )
 	{
 		CTX.Log->Message( "Creating entities" );
 		EntityID EntA = 3;
-		EntityID EntB = 5;
+		//EntityID EntB = 5;
 		EntityID VertexShaderEnt = 40;
 		EntityID FragmentShaderEnt = 45;
 		EntityID ShaderProgramEnt = 50;
 		EntityID MeshEnt = 55;
 
-		EntityFramework.Create( EntA, { &Transform, &Hierarchy } );
-		EntityFramework.Create( EntB, EntityFramework.GetComponentInfos( { 1, 2 } ) );
+		EntityFramework.Create( CTX, EntA, { &Transform, &Hierarchy } );
+		//EntityFramework.Create( CTX, EntB, EntityFramework.GetComponentInfos( CTX, { 1, 2 } ) );
 
-		EntityFramework.Create( VertexShaderEnt, { &Shader } );
-		EntityFramework.Create( FragmentShaderEnt, { &Shader } );
-		EntityFramework.Create( ShaderProgramEnt, { &Program } );
+		EntityFramework.Create( CTX, VertexShaderEnt, { &Shader } );
+		EntityFramework.Create( CTX, FragmentShaderEnt, { &Shader } );
+		EntityFramework.Create( CTX, ShaderProgramEnt, { &Program } );
 
-		EntityFramework.Create( MeshEnt, { &Transform, &Mesh, &MeshRenderer } );
+		EntityFramework.Create( CTX, MeshEnt, { &Transform, &Mesh, &MeshRenderer } );
 
 		C::MeshComponent* TestMesh = EntityFramework.Find( MeshEnt )->Get( Mesh );
 		TestMesh->Vertices =

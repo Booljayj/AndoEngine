@@ -2,6 +2,8 @@
 #include <vector>
 #include <tuple>
 #include "Engine/Print.h"
+#include "Engine/LinearContainers.h"
+#include "Engine/UtilityMacros.h"
 #include "EntityFramework/Types.h"
 #include "EntityFramework/ComponentInfo.h"
 #include "EntityFramework/ComponentManager.h"
@@ -12,6 +14,7 @@ struct EntityOwnedComponent
 	ptr_t CompPtr;
 
 	bool operator==( const ComponentTypeID& InTypeID ) const { return TypeID == InTypeID; }
+	bool operator<( const EntityOwnedComponent& Other ) const { return TypeID < Other.TypeID; }
 };
 
 /** An Entity is an identifiable object in the game. It can own components, which define different sets of data */
@@ -30,12 +33,9 @@ struct Entity
 
 	/// Entity creation
 
-	/** Setup this entity to use a set of components that are loaded from some set of data */
-	void Setup( const std::vector<const ComponentInfo*>& InComponentInfos, const std::vector<ByteStream>& InComponentDatas );
-	/** Setup this entity to use a set of defaulted components */
-	void Setup( const std::vector<const ComponentInfo*>& InComponentInfos );
-	/** Reset this component, moving out the list of owned components so they can be cleaned up externally */
-	void Reset( std::vector<EntityOwnedComponent>& OutOwnedComponents );
+	void Reserve( size_t ComponentCount );
+	void Add( ComponentTypeID TypeID, void* Component );
+	void Reset( std::vector<EntityOwnedComponent>& OutComponents );
 
 	/// Component manipulation
 
@@ -47,11 +47,11 @@ struct Entity
 	/** Returns a pointer to a component this entity owns of the specified type */
 	ptr_t Get( const ComponentTypeID& TypeID ) const;
 	template<typename TTData>
-	TTData* Get( const TComponentInfo<TTData>& ComponentInfo ) { return static_cast<TTData*>( Get( ComponentInfo.GetID() ) ); }
+	TTData* Get( const TComponentInfo<TTData>& ComponentInfo ) const { return static_cast<TTData*>( Get( ComponentInfo.GetID() ) ); }
 
 	//Debugging information
-	size_t Count() const { return Owned.size(); }
-	size_t Capacity() const { return 0; } //used for fixed-size entities
+	size_t Size() const { return Owned.size(); }
+	size_t Capacity() const { return Owned.capacity(); } //used for fixed-size entities
 
 protected:
 	std::vector<EntityOwnedComponent> Owned;
