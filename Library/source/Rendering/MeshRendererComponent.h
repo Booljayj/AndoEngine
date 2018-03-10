@@ -6,39 +6,36 @@
 #include "Rendering/MeshComponent.h"
 #include "Rendering/VertexData.h"
 
-namespace C
+struct MeshRendererComponent
 {
-	struct MeshRendererComponent
+	GLuint VertexArrayID = 0;
+	GLuint VertexCount = 0;
+
+	void OnRetained() {}
+
+	void OnReleased()
 	{
-		GLuint VertexArrayID = 0;
-		GLuint VertexCount = 0;
+		if( IsValid() ) Teardown();
+	}
 
-		void OnRetained() {}
+	bool IsValid() const
+	{
+		return VertexArrayID != 0 && VertexCount > 0;
+	}
 
-		void OnReleased()
-		{
-			if( IsValid() ) Teardown();
-		}
+	inline void Setup( MeshComponent* Mesh )
+	{
+		VertexCount = static_cast<GLuint>( Mesh->Vertices.size() );
 
-		bool IsValid() const
-		{
-			return VertexArrayID != 0 && VertexCount > 0;
-		}
+		glGenVertexArrays( 1, &VertexArrayID );
+		GL::BindBuffersToVertexArrayObject( VertexArrayID, Mesh->BufferID );
+		//cout << GL::DescribeVertexArrayObject( VertexArrayID );
+	}
 
-		inline void Setup( C::MeshComponent* Mesh )
-		{
-			VertexCount = static_cast<GLuint>( Mesh->Vertices.size() );
+	inline void Teardown()
+	{
+		glDeleteVertexArrays( 1, &VertexArrayID );
+	}
+};
 
-			glGenVertexArrays( 1, &VertexArrayID );
-			GL::BindBuffersToVertexArrayObject( VertexArrayID, Mesh->BufferID );
-			//cout << GL::DescribeVertexArrayObject( VertexArrayID );
-		}
-
-		inline void Teardown()
-		{
-			glDeleteVertexArrays( 1, &VertexArrayID );
-		}
-	};
-
-	using MeshRendererComponentManager = TSimpleComponentManager<MeshRendererComponent>;
-}
+using MeshRendererComponentManager = TSimpleComponentManager<MeshRendererComponent>;

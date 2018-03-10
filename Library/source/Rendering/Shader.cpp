@@ -8,7 +8,7 @@ using namespace std;
 
 namespace GL
 {
-	bool Compile( C::ShaderComponent& Shader )
+	bool Compile( ShaderComponent& Shader )
 	{
 		if( Shader.bIsCompiled )
 		{
@@ -35,7 +35,7 @@ namespace GL
 		return Shader.bIsCompiled;
 	}
 
-	void DescribeCompilationErrors( ostream& Stream, const C::ShaderComponent& Shader )
+	void DescribeCompilationErrors( ostream& Stream, const ShaderComponent& Shader )
 	{
 		GLint MsgLength = 0;
 		char* MsgBuffer;
@@ -47,7 +47,7 @@ namespace GL
 		delete[] MsgBuffer;
 	}
 
-	bool Link( C::ProgramComponent& Program )
+	bool Link( ProgramComponent& Program )
 	{
 		GLint LinkStatus;
 
@@ -78,7 +78,7 @@ namespace GL
 //		}
 
 		//Compile and attach any shaders this program depends on.
-		for( C::ShaderComponent* Shader : Program.LinkedShaders )
+		for( ShaderComponent* Shader : Program.LinkedShaders )
 		{
 			if( Shader && GL::Compile( *Shader ) )
 			{
@@ -105,7 +105,7 @@ namespace GL
 		}
 
 		//Detach shaders before returning success result
-		for( C::ShaderComponent* Shader : Program.LinkedShaders )
+		for( ShaderComponent* Shader : Program.LinkedShaders )
 		{
 			if( Shader && Shader->bIsCompiled )
 			{
@@ -118,7 +118,7 @@ namespace GL
 		return Program.bIsLinked;
 	}
 
-	void DescribeLinkingErrors( ostream& Stream, const C::ProgramComponent& Program )
+	void DescribeLinkingErrors( ostream& Stream, const ProgramComponent& Program )
 	{
 		GLint MsgLength = 0;
 		char* MsgBuffer;
@@ -130,7 +130,7 @@ namespace GL
 		delete[] MsgBuffer;
 	}
 
-	void Use( const C::ProgramComponent& Program )
+	void Use( const ProgramComponent& Program )
 	{
 		glUseProgram( Program._ProgramID );
 	}

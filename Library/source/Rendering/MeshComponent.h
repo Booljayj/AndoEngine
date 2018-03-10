@@ -5,32 +5,29 @@
 #include "Rendering/EBuffer.enum.h"
 #include "Rendering/VertexData.h"
 
-namespace C
+struct MeshComponent
 {
-	struct MeshComponent
+	std::vector<GL::VertexData> Vertices;
+	GLuint BufferID[GL::EBuffer::Count()] = {0};
+
+	void OnRetained() {}
+
+	void OnReleased()
 	{
-		std::vector<GL::VertexData> Vertices;
-		GLuint BufferID[GL::EBuffer::Count()] = {0};
+		if( BufferID[0] != 0 ) DestroyBuffers();
+	}
 
-		void OnRetained() {}
+	void CreateBuffers()
+	{
+		glGenBuffers( GL::EBuffer::Count(), &BufferID[0] );
+		glBindBuffer( GL_ARRAY_BUFFER, BufferID[GL::EBuffer::VertexData] );
+		glBufferData( GL_ARRAY_BUFFER, sizeof(decltype(Vertices)::value_type) * Vertices.size(), Vertices.data(), GL_STATIC_DRAW );
+	}
 
-		void OnReleased()
-		{
-			if( BufferID[0] != 0 ) DestroyBuffers();
-		}
+	void DestroyBuffers()
+	{
+		glDeleteBuffers( GL::EBuffer::Count(), &BufferID[0] );
+	}
+};
 
-		void CreateBuffers()
-		{
-			glGenBuffers( GL::EBuffer::Count(), &BufferID[0] );
-			glBindBuffer( GL_ARRAY_BUFFER, BufferID[GL::EBuffer::VertexData] );
-			glBufferData( GL_ARRAY_BUFFER, sizeof(decltype(Vertices)::value_type) * Vertices.size(), Vertices.data(), GL_STATIC_DRAW );
-		}
-
-		void DestroyBuffers()
-		{
-			glDeleteBuffers( GL::EBuffer::Count(), &BufferID[0] );
-		}
-	};
-
-	using MeshComponentManager = TSimpleComponentManager<MeshComponent>;
-}
+using MeshComponentManager = TSimpleComponentManager<MeshComponent>;

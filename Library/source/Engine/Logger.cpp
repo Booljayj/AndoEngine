@@ -1,8 +1,6 @@
 #include <iostream>
 #include "Logger.h"
 
-using namespace std;
-
 void StandardLogger::Debug( const char* M )
 {
 	if( CurrentLevel > ELogLevel::Debug ) return;
@@ -29,5 +27,5 @@ void StandardLogger::Error( const char* M )
 
 void StandardLogger::TerminalOutput( const char* Prefix, const char* M )
 {
-	cout << Prefix << M << TERM_NoColor << endl;
+	std::cout << Prefix << M << TERM_NoColor << std::endl;
 }

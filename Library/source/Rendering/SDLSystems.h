@@ -3,41 +3,38 @@
 #include <SDL2/SDL.h>
 #include "Engine/UtilityMacros.h"
 
-namespace S
+class SDLFrameworkSystem
 {
-	class SDLFrameworkSystem
-	{
-	public:
-		bool Startup( CTX_ARG );
-		bool Shutdown( CTX_ARG );
-	};
+public:
+	bool Startup( CTX_ARG );
+	bool Shutdown( CTX_ARG );
+};
 
-	class SDLEventSystem
-	{
-	protected:
-		std::vector<SDL_Event> FrameEvents;
+class SDLEventSystem
+{
+protected:
+	std::vector<SDL_Event> FrameEvents;
 
-	public:
-		bool Startup( CTX_ARG );
-		bool Shutdown( CTX_ARG );
+public:
+	bool Startup( CTX_ARG );
+	bool Shutdown( CTX_ARG );
 
-		void PollEvents( bool& bRequestShutdown );
-	};
+	void PollEvents( bool& bRequestShutdown );
+};
 
-	class SDLWindowSystem
-	{
-	protected:
-		SDL_Window* MainWindow;
-		SDL_GLContext MainContext;
+class SDLWindowSystem
+{
+protected:
+	SDL_Window* MainWindow;
+	SDL_GLContext MainContext;
 
-	public:
-		bool Startup( CTX_ARG );
-		bool Shutdown( CTX_ARG );
+public:
+	bool Startup( CTX_ARG );
+	bool Shutdown( CTX_ARG );
 
-		void Clear();
-		void Swap();
+	void Clear();
+	void Swap();
 
-	protected:
-		void SetupGLAttributes();
-	};
-}
+protected:
+	void SetupGLAttributes();
+};

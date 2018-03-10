@@ -19,35 +19,33 @@
 #include "Rendering/VertexData.h"
 #include "Rendering/Shader.h"
 
-using namespace std;
-
 // Components and managers
 
-CREATE_COMPONENT(   1, Transform, C::TransformComponent, C::TransformComponentManager{} );
-CREATE_COMPONENT(   2, Hierarchy, C::HierarchyComponent, C::HierarchyComponentManager{} );
+CREATE_COMPONENT(   1, Transform, TransformComponent, TransformComponentManager{} );
+CREATE_COMPONENT(   2, Hierarchy, HierarchyComponent, HierarchyComponentManager{} );
 
-CREATE_COMPONENT( 100, Mesh, C::MeshComponent, C::MeshComponentManager{} );
-CREATE_COMPONENT( 110, MeshRenderer, C::MeshRendererComponent, C::MeshRendererComponentManager{} );
-CREATE_COMPONENT( 120, Shader, C::ShaderComponent, C::ShaderComponentManager{} );
-CREATE_COMPONENT( 130, Program, C::ProgramComponent, C::ProgramComponentManager{} );
+CREATE_COMPONENT( 100, Mesh, MeshComponent, MeshComponentManager{} );
+CREATE_COMPONENT( 110, MeshRenderer, MeshRendererComponent, MeshRendererComponentManager{} );
+CREATE_COMPONENT( 120, Shader, ShaderComponent, ShaderComponentManager{} );
+CREATE_COMPONENT( 130, Program, ProgramComponent, ProgramComponentManager{} );
 
 // Systems
 
 ComponentCollectionSystem ComponentCollection;
-S::EntityCollectionSystem EntityCollection;
+EntityCollectionSystem EntityCollection;
 
-S::SDLFrameworkSystem SDLFramework;
-S::SDLEventSystem SDLEvent;
-S::SDLWindowSystem SDLWindow;
+SDLFrameworkSystem SDLFramework;
+SDLEventSystem SDLEvent;
+SDLWindowSystem SDLWindow;
 
-S::RenderingSystem Rendering;
+RenderingSystem Rendering;
 
 bool Startup( CTX_ARG )
 {
 	TEMP_SCOPE;
 	CTX.Log->Message( "Starting up all systems..." );
 
-	const initializer_list<const ComponentInfo*> Components =
+	const std::initializer_list<const ComponentInfo*> Components =
 	{
 		&Transform,
 		&Hierarchy,
@@ -134,7 +132,7 @@ int main( int argc, const char * argv[] )
 
 		Entity const* MeshEntity = EntityCollection.Create( CTX, MeshID, { &Transform, &Mesh, &MeshRenderer } );
 
-		C::MeshComponent* TestMesh = MeshEntity->Get( Mesh );
+		MeshComponent* TestMesh = MeshEntity->Get( Mesh );
 		TestMesh->Vertices =
 		{
 			GL::VertexData{ -1, -1, 0 },
@@ -143,24 +141,24 @@ int main( int argc, const char * argv[] )
 		};
 		TestMesh->CreateBuffers();
 
-		C::MeshRendererComponent* TestMeshRenderer = MeshEntity->Get( MeshRenderer );
+		MeshRendererComponent* TestMeshRenderer = MeshEntity->Get( MeshRenderer );
 		TestMeshRenderer->Setup( TestMesh );
 
-		C::ShaderComponent* TestVertexShader = VertexShaderEntity->Get( Shader );
+		ShaderComponent* TestVertexShader = VertexShaderEntity->Get( Shader );
 		TestVertexShader->Source =
 			"#version 330 core\n\
 			in vec3 vert_Position;\n\
 			void main(void) { gl_Position.xyz = vert_Position; gl_Position.w = 1.0; }";
 		TestVertexShader->ShaderType = GL::EShader::Vertex;
 
-		C::ShaderComponent* TestFragmentShader = FragmentShaderEntity->Get( Shader );
+		ShaderComponent* TestFragmentShader = FragmentShaderEntity->Get( Shader );
 		TestFragmentShader->Source =
 			"#version 330 core\n\
 			out vec4 color;\n\
 			void main(){ color = vec4(1,0,0,1); }";
 		TestFragmentShader->ShaderType = GL::EShader::Fragment;
 
-		C::ProgramComponent* TestProgram = ShaderProgramEntity->Get( Program );
+		ProgramComponent* TestProgram = ShaderProgramEntity->Get( Program );
 		TestProgram->LinkedShaders = { TestVertexShader, TestFragmentShader };
 		GL::Link( *TestProgram );
 		GL::Use( *TestProgram );
