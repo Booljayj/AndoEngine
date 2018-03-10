@@ -10,7 +10,7 @@
 #include "Engine/Print.h"
 #include "EntityFramework/ComponentCollectionSystem.h"
 #include "EntityFramework/Entity.h"
-#include "EntityFramework/EntityFrameworkSystem.h"
+#include "EntityFramework/EntityCollectionSystem.h"
 #include "EntityFramework/UtilityMacros.h"
 #include "Rendering/SDLSystems.h"
 #include "Rendering/RenderingSystem.h"

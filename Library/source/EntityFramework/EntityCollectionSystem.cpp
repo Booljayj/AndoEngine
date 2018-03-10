@@ -1,5 +1,5 @@
 #include <cassert>
-#include "EntityFramework/EntityFrameworkSystem.h"
+#include "EntityFramework/EntityCollectionSystem.h"
 #include "Engine/Context.h"
 #include "Engine/LinearContainers.h"
 #include "Engine/LinearStrings.h"
