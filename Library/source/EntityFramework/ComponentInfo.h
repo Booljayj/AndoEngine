@@ -16,6 +16,9 @@ struct ComponentInfo
 public:
 	virtual ~ComponentInfo() {}
 
+	/** Standard comparison predicate. Sorts ascending by ID. */
+	static bool Compare( const ComponentInfo* A, const ComponentInfo* B );
+
 	ComponentTypeID GetID() const { return ID; }
 	const char* GetName() const { return Name; }
 	ComponentManager* GetManager() const { return Manager; }

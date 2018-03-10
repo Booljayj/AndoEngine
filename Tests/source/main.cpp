@@ -8,6 +8,7 @@
 #include "Engine/Time.h"
 #include "Engine/UtilityMacros.h"
 #include "Engine/Print.h"
+#include "EntityFramework/ComponentCollectionSystem.h"
 #include "EntityFramework/Entity.h"
 #include "EntityFramework/EntityFrameworkSystem.h"
 #include "EntityFramework/UtilityMacros.h"
@@ -32,7 +33,8 @@ CREATE_COMPONENT( 130, Program, C::ProgramComponent, C::ProgramComponentManager{
 
 // Systems
 
-S::EntityFrameworkSystem EntityFramework;
+ComponentCollectionSystem ComponentCollection;
+S::EntityCollectionSystem EntityCollection;
 
 S::SDLFrameworkSystem SDLFramework;
 S::SDLEventSystem SDLEvent;
@@ -55,7 +57,8 @@ bool Startup( CTX_ARG )
 		&Program,
 	};
 
-	STARTUP_SYSTEM( EntityFramework, Components );
+	STARTUP_SYSTEM( ComponentCollection, Components.begin(), Components.size() );
+	STARTUP_SYSTEM( EntityCollection, &ComponentCollection, 100 );
 	STARTUP_SYSTEM( SDLFramework );
 	STARTUP_SYSTEM( SDLEvent );
 	STARTUP_SYSTEM( SDLWindow );
@@ -72,7 +75,8 @@ void Shutdown( CTX_ARG )
 	SHUTDOWN_SYSTEM( SDLWindow );
 	SHUTDOWN_SYSTEM( SDLEvent );
 	SHUTDOWN_SYSTEM( SDLFramework );
-	SHUTDOWN_SYSTEM( EntityFramework );
+	SHUTDOWN_SYSTEM( EntityCollection );
+	SHUTDOWN_SYSTEM( ComponentCollection );
 }
 
 void MainLoop( CTX_ARG )
@@ -117,22 +121,20 @@ int main( int argc, const char * argv[] )
 	{
 		CTX.Log->Message( "Creating entities" );
 		EntityID EntA = 3;
-		//EntityID EntB = 5;
-		EntityID VertexShaderEnt = 40;
-		EntityID FragmentShaderEnt = 45;
-		EntityID ShaderProgramEnt = 50;
-		EntityID MeshEnt = 55;
+		EntityID VertexShaderID = 40;
+		EntityID FragmentShaderID = 45;
+		EntityID ShaderProgramID = 50;
+		EntityID MeshID = 55;
 
-		EntityFramework.Create( CTX, EntA, { &Transform, &Hierarchy } );
-		//EntityFramework.Create( CTX, EntB, EntityFramework.GetComponentInfos( CTX, { 1, 2 } ) );
+		EntityCollection.Create( CTX, EntA, { &Transform, &Hierarchy } );
 
-		EntityFramework.Create( CTX, VertexShaderEnt, { &Shader } );
-		EntityFramework.Create( CTX, FragmentShaderEnt, { &Shader } );
-		EntityFramework.Create( CTX, ShaderProgramEnt, { &Program } );
+		Entity const* VertexShaderEntity = EntityCollection.Create( CTX, VertexShaderID, { &Shader } );
+		Entity const* FragmentShaderEntity = EntityCollection.Create( CTX, FragmentShaderID, { &Shader } );
+		Entity const* ShaderProgramEntity = EntityCollection.Create( CTX, ShaderProgramID, { &Program } );
 
-		EntityFramework.Create( CTX, MeshEnt, { &Transform, &Mesh, &MeshRenderer } );
+		Entity const* MeshEntity = EntityCollection.Create( CTX, MeshID, { &Transform, &Mesh, &MeshRenderer } );
 
-		C::MeshComponent* TestMesh = EntityFramework.Find( MeshEnt )->Get( Mesh );
+		C::MeshComponent* TestMesh = MeshEntity->Get( Mesh );
 		TestMesh->Vertices =
 		{
 			GL::VertexData{ -1, -1, 0 },
@@ -141,34 +143,31 @@ int main( int argc, const char * argv[] )
 		};
 		TestMesh->CreateBuffers();
 
-		C::MeshRendererComponent* TestMeshRenderer = EntityFramework.Find( MeshEnt )->Get( MeshRenderer );
+		C::MeshRendererComponent* TestMeshRenderer = MeshEntity->Get( MeshRenderer );
 		TestMeshRenderer->Setup( TestMesh );
 
-		C::ShaderComponent* TestVertexShader = EntityFramework.Find( VertexShaderEnt )->Get( Shader );
+		C::ShaderComponent* TestVertexShader = VertexShaderEntity->Get( Shader );
 		TestVertexShader->Source =
 			"#version 330 core\n\
 			in vec3 vert_Position;\n\
 			void main(void) { gl_Position.xyz = vert_Position; gl_Position.w = 1.0; }";
 		TestVertexShader->ShaderType = GL::EShader::Vertex;
 
-		C::ShaderComponent* TestFragmentShader = EntityFramework.Find( FragmentShaderEnt )->Get( Shader );
+		C::ShaderComponent* TestFragmentShader = FragmentShaderEntity->Get( Shader );
 		TestFragmentShader->Source =
 			"#version 330 core\n\
 			out vec4 color;\n\
 			void main(){ color = vec4(1,0,0,1); }";
 		TestFragmentShader->ShaderType = GL::EShader::Fragment;
 
-		C::ProgramComponent* TestProgram = EntityFramework.Find( ShaderProgramEnt )->Get( Program );
+		C::ProgramComponent* TestProgram = ShaderProgramEntity->Get( Program );
 		TestProgram->LinkedShaders = { TestVertexShader, TestFragmentShader };
 		GL::Link( *TestProgram );
 		GL::Use( *TestProgram );
 
-		CTX.Log->Message( DESC( EntityFramework ) );
-		CTX.Log->Message( "Component Descriptions:" );
-		for( const ComponentInfo* Info : EntityFramework.GetRegisteredComponents() )
-		{
-			CTX.Log->Message( l_printf( CTX.Temp, "\t%s", DESC( *Info ) ) );
-		}
+		CTX.Log->Message( DESC( EntityCollection ) );
+		CTX.Log->Message( DESC( ComponentCollection ) );
+		ComponentCollection.DescribeComponents( CTX );
 
 		MainLoop( CTX );
 	}
