@@ -12,8 +12,8 @@ using l_wstring = l_basic_string<wchar_t>;
 using l_u16string = l_basic_string<char16_t>;
 using l_u32string = l_basic_string<char32_t>;
 
-const char* l_printf( LinearAllocatorData& Alloc, const char* Format, ... );
-l_string l_sprintf( LinearAllocatorData& Alloc, const char* Format, ... );
+char const* l_printf( LinearAllocatorData& Alloc, char const* Format, ... );
+l_string l_sprintf( LinearAllocatorData& Alloc, char const* Format, ... );
 
 //@todo Create some pretty comprehensive tests. It's very possible that this will go completely insane and start writing to invalid memory,
 // unless I got really lucky and managed to implement everything perfectly first try.
@@ -30,9 +30,9 @@ class l_string_builder
 public:
 	l_string_builder( LinearAllocatorData& InAlloc );
 
-	l_string_builder& operator<<( const char* Message );
+	l_string_builder& operator<<( char const* Message );
 
-	const char* Finish();
+	char const* Finish();
 
 protected:
 	char* AllocateNewBlock();

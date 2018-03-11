@@ -2,7 +2,7 @@
 #include "Engine/Context.h"
 #include "Engine/LinearStrings.h"
 
-bool ComponentInfo::Compare( const ComponentInfo* A, const ComponentInfo* B )
+bool ComponentInfo::Compare( ComponentInfo const* A, ComponentInfo const* B )
 {
 	return A->GetID() < B->GetID();
 }

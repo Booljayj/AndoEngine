@@ -6,12 +6,9 @@
 
 bool SDLFrameworkSystem::Startup( CTX_ARG )
 {
-	if( SDL_Init( SDL_INIT_VIDEO ) == 0 )
-	{
+	if( SDL_Init( SDL_INIT_VIDEO ) == 0 ) {
 		return true;
-	}
-	else
-	{
+	} else {
 		CTX.Log->Error( l_printf( CTX.Temp, "SDL_Init Error: %i", SDL_GetError() ) );
 		return false;
 	}

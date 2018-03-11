@@ -12,7 +12,7 @@ void Entity::Reserve( size_t ComponentCount )
 	Owned.reserve( ComponentCount );
 }
 
-void Entity::Add( ComponentTypeID TypeID, void* Component )
+void Entity::Add( ComponentTypeID TypeID, ptr_t Component )
 {
 	Owned.push_back( EntityOwnedComponent{ TypeID, Component } );
 }
@@ -24,12 +24,12 @@ void Entity::Reset( std::vector<EntityOwnedComponent>& OutComponents )
 	Owned.clear();
 }
 
-bool Entity::Has( const ComponentTypeID TypeID ) const
+bool Entity::Has( ComponentTypeID TypeID ) const
 {
 	return std::find( Owned.begin(), Owned.end(), TypeID ) != Owned.end();
 }
 
-bool Entity::HasAll( const std::vector<ComponentTypeID>& TypeIDs ) const
+bool Entity::HasAll( std::vector<ComponentTypeID> const& TypeIDs ) const
 {
 	//@todo: finish this later when sorting is established. Loop through each TypeID and increment the Owned iterator for each one.
 	//		If we encounter an Owned ID that is higher than the TypeID or reach the end of the Owned components, the test fails.
@@ -48,7 +48,7 @@ bool Entity::HasAll( const std::vector<ComponentTypeID>& TypeIDs ) const
 	return false;
 }
 
-ptr_t Entity::Get( const ComponentTypeID& TypeID ) const
+ptr_t Entity::Get( ComponentTypeID TypeID ) const
 {
 	auto FoundIter = std::find( Owned.begin(), Owned.end(), TypeID );
 	return FoundIter != Owned.end() ? FoundIter->CompPtr : nullptr;

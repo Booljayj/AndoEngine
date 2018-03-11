@@ -10,7 +10,7 @@ void Time::RefreshTime()
 
 void Time::IncreaseAccumulatedTime()
 {
-	const std::chrono::duration<double> PreciseElapsedTime = CurrentUpdateTime - LastUpdateTime;
+	std::chrono::duration<double> const PreciseElapsedTime = CurrentUpdateTime - LastUpdateTime;
 	ElapsedTime = std::min( static_cast<float>( PreciseElapsedTime.count() ), MaxDeltaTime );
 	AccumulatedTime += ElapsedTime;
 }

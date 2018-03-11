@@ -1,6 +1,6 @@
 #include "Engine/ScopedTempBlock.h"
 
-ScopedTempBlock::ScopedTempBlock( CTX_ARG, const size_t InMark )
+ScopedTempBlock::ScopedTempBlock( CTX_ARG, size_t InMark )
 	: CTX_Cached( CTX ), Mark( InMark )
 {}
 

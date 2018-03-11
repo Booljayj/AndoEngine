@@ -2,7 +2,7 @@
 #include <glm/vec3.hpp>
 #include "Rendering/RenderingSystem.h"
 
-bool RenderingSystem::Startup( CTX_ARG, const MeshRendererComponentManager* InMeshRendererManager )
+bool RenderingSystem::Startup( CTX_ARG, MeshRendererComponentManager const* InMeshRendererManager )
 {
 	MeshRendererManager = InMeshRendererManager;
 	return !!MeshRendererManager;
@@ -13,7 +13,7 @@ void RenderingSystem::RenderFrame( float InterpolationAlpha ) const
 	MeshRendererManager->ForEach( &RenderingSystem::RenderComponent );
 }
 
-void RenderingSystem::RenderComponent( const MeshRendererComponent* MeshRenderer )
+void RenderingSystem::RenderComponent( MeshRendererComponent const* MeshRenderer )
 {
 	if( !MeshRenderer->IsValid() ) return;
 

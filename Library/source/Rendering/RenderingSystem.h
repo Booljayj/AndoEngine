@@ -6,12 +6,12 @@
 class RenderingSystem
 {
 private:
-	const MeshRendererComponentManager* MeshRendererManager;
+	MeshRendererComponentManager const* MeshRendererManager;
 
 public:
-	bool Startup( CTX_ARG, const MeshRendererComponentManager* InMeshRendererManager );
+	bool Startup( CTX_ARG, MeshRendererComponentManager const* InMeshRendererManager );
 	bool Shutdown( CTX_ARG ) { return true; }
 
 	void RenderFrame( float InterpolationAlpha ) const;
-	static void RenderComponent( const MeshRendererComponent* MeshRenderer );
+	static void RenderComponent( MeshRendererComponent const* MeshRenderer );
 };

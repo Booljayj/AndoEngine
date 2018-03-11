@@ -19,29 +19,29 @@ struct EntityCollectionSystem
 	CAN_DESCRIBE( EntityCollectionSystem );
 
 public:
-	bool Startup( CTX_ARG, const ComponentCollectionSystem* InComponentCollection, size_t InitialCount );
+	bool Startup( CTX_ARG, ComponentCollectionSystem const* InComponentCollection, size_t InitialCount );
 	bool Shutdown( CTX_ARG );
 
 	/// Entity creation/destruction
 	/** Create an entity that contains the components with optional loaded data */
-	const Entity* Create( CTX_ARG, const EntityID& NewID, const ComponentInfo* const* Infos, const ByteStream* ByteStreams, size_t Count );
-	const Entity* Create( CTX_ARG, const EntityID& NewID, const std::initializer_list<const ComponentInfo*>& Infos );
+	Entity const* Create( CTX_ARG, EntityID const& NewID, ComponentInfo const* const* Infos, ByteStream const* ByteStreams, size_t Count );
+	Entity const* Create( CTX_ARG, EntityID const& NewID, std::initializer_list<ComponentInfo const*> const& Infos );
 
 	/** Destroy the entity with the provided ID */
-	bool Destroy( const EntityID& DeletedID );
+	bool Destroy( EntityID const& DeletedID );
 	/** Recycle any components that were being used by destroyed entities */
 	void RecycleGarbage( CTX_ARG );
 
 	/// Entity queries
 	/** Returns true if there is an entity with the provided ID */
-	bool Exists( const EntityID& ID ) const noexcept;
+	bool Exists( EntityID const& ID ) const noexcept;
 	/** Returns a pointer to the entity that is using the provided ID, or null if no entity has this ID */
-	const Entity* Find( const EntityID& ID ) const noexcept;
+	Entity const* Find( EntityID const& ID ) const noexcept;
 	/** The number of entities in this collection */
 	size_t Count() const noexcept { return EntityIDs.size(); }
 
 private:
-	const ComponentCollectionSystem* ComponentCollection;
+	ComponentCollectionSystem const* ComponentCollection;
 
 	// TODO: break entity groups into 'catalogues'. Each catalogue has poly methods for Exists, Find, and Create.
 	// Primary catalogue is gameplay one, which holds runtime entities. Other catalogues can hold asset entities which may be loaded from disk.
@@ -56,11 +56,11 @@ private:
 	std::vector<EntityOwnedComponent> ReclaimedComponentBuffer;
 
 	/** Insert a new entity with the specified ID */
-	Entity* InsertNew( CTX_ARG, const EntityID NewID );
+	Entity* InsertNew( CTX_ARG, EntityID const& NewID );
 	/** Find the index of an ID in the master ID list */
-	size_t FindPositionByEntityID( const EntityID& ID ) const noexcept;
+	size_t FindPositionByEntityID( EntityID const& ID ) const noexcept;
 	/** Find the index of an entity in the master entity list */
-	size_t FindPositionByEntity( const Entity& EntityRef ) const noexcept;
+	size_t FindPositionByEntity( Entity const& EntityRef ) const noexcept;
 };
 
 DESCRIPTION( EntityCollectionSystem );

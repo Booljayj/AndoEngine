@@ -20,7 +20,7 @@ public:
 	LinearAllocatorData( size_t RealCapacity );
 	~LinearAllocatorData();
 
-	inline uint8_t* GetData( const size_t Offset = 0 ) const { return Data + Offset; }
+	inline uint8_t* GetData( size_t Offset = 0 ) const { return Data + Offset; }
 	inline size_t GetCapacity() const { return Capacity; }
 	inline size_t GetUsed() const { return Used; }
 	inline size_t GetPeak() const { return Peak; }
@@ -45,6 +45,7 @@ class TLinearAllocator
 {
 	template< typename U >
 	friend class TLinearAllocator;
+
 protected:
 	LinearAllocatorData* Allocator = nullptr;
 
@@ -60,37 +61,33 @@ public:
 	: Allocator( &InAllocator )
 	{}
 
-	TLinearAllocator( const TLinearAllocator& ) = default;
+	TLinearAllocator( TLinearAllocator const& ) = default;
 
 	template<typename U>
-	TLinearAllocator( const TLinearAllocator<U>& Other )
+	TLinearAllocator( TLinearAllocator<U> const& Other )
 	: Allocator( Other.Allocator )
 	{}
 
 	~TLinearAllocator() = default;
 
-	T* allocate( size_t Count, const void* Hint = nullptr )
+	T* allocate( size_t Count, void const* Hint = nullptr )
 	{
 		const size_t PrevUsed = Allocator->GetUsed();
 		const size_t AlignmentCorrection = ( ElementAlignment - ( PrevUsed % ElementAlignment ) ) % ElementAlignment;
 		const size_t NewUsed = PrevUsed + AlignmentCorrection + ( ElementSize * Count );
 
 		Allocator->SetUsed( NewUsed );
-		if( !Allocator->IsValid() )
-		{
+		if( !Allocator->IsValid() ) {
 			//default to heap allocation, we have exceeded the capacity of the temp allocator
 			return reinterpret_cast<T*>( ::operator new( ElementSize * Count ) );
-		}
-		else
-		{
-			return reinterpret_cast<T*>( Allocator->GetData( PrevUsed ) );
+		} else {
+			return reinterpret_cast<T*>( Allocator->GetData( PrevUsed + AlignmentCorrection ) );
 		}
 	}
 
 	void deallocate( T* Pointer, size_t Count )
 	{
-		if( !Allocator->Contains( reinterpret_cast<uint8_t*>( Pointer ) ) )
-		{
+		if( !Allocator->Contains( reinterpret_cast<uint8_t*>( Pointer ) ) ) {
 			::operator delete( reinterpret_cast<void*>( Pointer ) );
 		}
 	}
@@ -99,9 +96,9 @@ public:
 	//-----------------------------------
 	//Boilerplate for older C++ libraries
 	using pointer = T*;
-	using const_pointer = const T*;
+	using const_pointer = T const*;
 	using reference = T&;
-	using const_reference = const T&;
+	using const_reference = T const&;
 	using size_type = std::size_t;
 	using difference_type = std::ptrdiff_t;
 	template< class U > struct rebind { typedef TLinearAllocator<U> other; };

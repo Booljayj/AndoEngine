@@ -9,7 +9,7 @@
 struct ShaderComponent
 {
 	//Serialized data
-	const char* Source = nullptr;
+	char const* Source = nullptr;
 	GL::EShader::ENUM ShaderType = GL::EShader::Vertex;
 
 	//Runtime data
@@ -35,10 +35,10 @@ using ProgramComponentManager = TSimpleComponentManager<ProgramComponent>;
 namespace GL
 {
 	bool Compile( ShaderComponent& Shader );
-	void DescribeCompilationErrors( std::ostream& Stream, const ShaderComponent& Shader );
+	void DescribeCompilationErrors( std::ostream& Stream, ShaderComponent const& Shader );
 
 	bool Link( ProgramComponent& Program );
-	void DescribeLinkingErrors( std::ostream& Stream, const ProgramComponent& Program );
+	void DescribeLinkingErrors( std::ostream& Stream, ProgramComponent const& Program );
 
-	void Use( const ProgramComponent& Program );
+	void Use( ProgramComponent const& Program );
 }

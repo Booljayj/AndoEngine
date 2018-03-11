@@ -63,7 +63,7 @@ private:
 public:
 	TimeController_FixedUpdateVariableRendering( float InTargetFPS, float InMinFPS );
 
-	inline const Time& GetTime() const { return T; }
+	inline Time const& GetTime() const { return T; }
 	inline TimeControl& GetTimeControl() { return TControl; }
 	inline float FrameInterpolationAlpha() const { return T.AccumulatedTime / T.DeltaTime; }
 

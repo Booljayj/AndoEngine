@@ -21,12 +21,12 @@ namespace GL
 
 	using UniformData = uint32_t;
 
-	void GetUniforms( const GLuint& ProgramID, std::vector<UniformInfo>& OutUniforms );
+	void GetUniforms( GLuint ProgramID, std::vector<UniformInfo>& OutUniforms );
 
 	template< typename TValue >
-	inline void SetUniform_Bound( const GLuint& ProgramID, const char* UniformName, const TValue& Value )
+	inline void SetUniform_Bound( GLuint ProgramID, char const* UniformName, TValue const& Value )
 	{
-		const GLint Location = glGetUniformLocation( ProgramID, UniformName );
+		GLint const Location = glGetUniformLocation( ProgramID, UniformName );
 		if( Location != -1 )
 		{
 			SetUniformLocation( Location, Value );
@@ -34,11 +34,11 @@ namespace GL
 	}
 
 	template< typename TValue >
-	inline void SetUniformLocation_Bound( const GLint& UniformLocation, const TValue& Value ) {}
+	inline void SetUniformLocation_Bound( GLint UniformLocation, TValue const& Value ) {}
 }
 
 template<>
-inline void GL::SetUniformLocation_Bound( const GLint& UniformLocation, const glm::mat4x4& Value )
+inline void GL::SetUniformLocation_Bound( GLint UniformLocation, glm::mat4x4 const& Value )
 {
 	glUniformMatrix4fv( UniformLocation, 1, GL_FALSE, glm::value_ptr( Value ) );
 }

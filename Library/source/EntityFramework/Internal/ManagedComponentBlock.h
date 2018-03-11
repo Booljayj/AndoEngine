@@ -15,10 +15,10 @@ struct TInlineManagedComponentBlock
 	{}
 
 	size_t CountUsed() const { return Used.count(); }
-	bool Contains( const TCOMP* Value ) const { return Value >= Data.begin() && Value < Data.end(); }
+	bool Contains( TCOMP const* Value ) const { return Value >= Data.begin() && Value < Data.end(); }
 	bool HasAnyFree() const { return LowestFreeIndex < BLOCK_SIZE; }
-	size_t IndexOf( const TCOMP* Value ) const { return ( Value - Data.begin() ); }
-	bool IsUsed( const TCOMP* Value ) const { return Used[IndexOf(Value)]; }
+	size_t IndexOf( TCOMP const* Value ) const { return ( Value - Data.begin() ); }
+	bool IsUsed( TCOMP const* Value ) const { return Used[IndexOf(Value)]; }
 
 	TCOMP* Retain()
 	{
@@ -52,8 +52,9 @@ struct THeapManagedComponentBlock
 	{
 		Iterator( TCOMP* InPtr ) : Ptr( InPtr ) {}
 		void operator++() { ++Ptr; }
-		bool operator!=( const Iterator& Other ) const { return Ptr != Other.Ptr; }
+		bool operator!=( Iterator const& Other ) const { return Ptr != Other.Ptr; }
 		TCOMP* operator*() const { return Ptr; }
+
 	private:
 		TCOMP* Ptr;
 	};
@@ -84,21 +85,21 @@ struct THeapManagedComponentBlock
 	}
 
 	size_t CountUsed() const { return UsedCount; }
-	bool Contains( const TCOMP* Value ) const { return Value >= Data && Value < Capacity; }
+	bool Contains( TCOMP const* Value ) const { return Value >= Data && Value < Capacity; }
 	bool HasAnyFree() const { return LowestFree < Capacity; }
-	size_t IndexOf( const TCOMP* Value ) const { return Value - Data; }
-	bool IsUsed( const TCOMP* Value ) const
+	size_t IndexOf( TCOMP const* Value ) const { return Value - Data; }
+	bool IsUsed( TCOMP const* Value ) const
 	{
 		const size_t Index = IndexOf( Value );
 		return TEST_BIT( *( UsedBytes + ( Index / 8 ) ), ( 1 << ( Index / 8 ) ) );
 	}
-	void SetUsed( const TCOMP* Value )
+	void SetUsed( TCOMP const* Value )
 	{
 		++UsedCount;
 		const size_t Index = IndexOf( Value );
 		SET_BIT( *( UsedBytes + ( Index / 8 ) ), ( 1 << ( Index / 8 ) ) );
 	}
-	void SetFree( const TCOMP* Value )
+	void SetFree( TCOMP const* Value )
 	{
 		--UsedCount;
 		const size_t Index = IndexOf( Value );

@@ -4,6 +4,6 @@
 template<typename TTData>
 struct Serializer
 {
-	static void Save( const TTData& comp, ByteStream& bytes ) {}
-	static void Load( TTData& comp, const ByteStream& bytes ) {}
+	static void Save( TTData const& Comp, ByteStream& Data ) {}
+	static void Load( TTData& Comp, ByteStream const& Data ) {}
 };

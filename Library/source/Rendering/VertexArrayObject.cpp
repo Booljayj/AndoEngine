@@ -14,8 +14,7 @@ namespace GL
 	void DescribeAttributeParam_Bound( ostream& Stream, EAttribute::ENUM Attribute, EAttributeParameter::ENUM Param )
 	{
 		size_t Storage = 0;
-		switch( Param )
-		{
+		switch( Param ) {
 			case EAttributeParameter::Enabled:
 			case EAttributeParameter::Normalized:
 			//boolean
@@ -59,13 +58,12 @@ namespace GL
 		DescribeAttributeParam_Bound( Stream, Attribute, EAttributeParameter::Normalized ); Stream << " }";
 	}
 
-	void DescribeVertexArrayObject( ostream& Stream, GLuint VAOID )
+	void DescribeVertexArrayObject( ostream& Stream, VertexArrayObjectID VAOID )
 	{
 		Stream << "[VertexArrayObject]{\n\tID: " << VAOID << ",\n";
 		glBindVertexArray( VAOID );
 
-		for( EAttribute::TYPE AttributeIndex = 0; AttributeIndex < EAttribute::Count(); ++AttributeIndex )
-		{
+		for( EAttribute::TYPE AttributeIndex = 0; AttributeIndex < EAttribute::Count(); ++AttributeIndex ) {
 			EAttribute::ENUM CurAttribute = EAttribute::Cast( AttributeIndex );
 			Stream << "\t";
 			DescribeAttribute_Bound( Stream, CurAttribute );
@@ -73,17 +71,16 @@ namespace GL
 		}
 	}
 
-	void BindAttributeNames( GLuint ProgramID )
+	void BindAttributeNames( ProgramID PID )
 	{
-		string ShaderPrefix = "vert_";
-		for( EAttribute::TYPE AttributeIndex = 0; AttributeIndex < EAttribute::Count(); ++AttributeIndex )
-		{
-			string ShaderAttributeName = ShaderPrefix + EAttribute::ToName( EAttribute::Cast( AttributeIndex ) );
-			glBindAttribLocation( ProgramID, AttributeIndex, ShaderAttributeName.c_str() );
+		string const ShaderPrefix = "vert_";
+		for( EAttribute::TYPE AttributeIndex = 0; AttributeIndex < EAttribute::Count(); ++AttributeIndex ) {
+			string const ShaderAttributeName = ShaderPrefix + EAttribute::ToName( EAttribute::Cast( AttributeIndex ) );
+			glBindAttribLocation( PID, AttributeIndex, ShaderAttributeName.c_str() );
 		}
 	}
 
-	void BindBuffersToVertexArrayObject( GLuint VAOID, const GLuint BufferID[EBuffer::Count()] )
+	void BindBuffersToVertexArrayObject( VertexArrayObjectID VAOID, VertexBufferObjectID const* BufferID )
 	{
 		glBindVertexArray( VAOID );
 

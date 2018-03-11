@@ -2,7 +2,7 @@
 #include <cstring>
 #include "Engine/LinearStrings.h"
 
-void l_printf_internal( LinearAllocatorData& Alloc, const char* Format, va_list args, char*& OutPtr, size_t& OutLength )
+void l_printf_internal( LinearAllocatorData& Alloc, char const* Format, va_list args, char*& OutPtr, size_t& OutLength )
 {
 	OutPtr = reinterpret_cast<char*>( Alloc.GetData( Alloc.GetUsed() ) );
 	const size_t MaxLength = Alloc.GetCapacity() - Alloc.GetUsed();
@@ -11,7 +11,7 @@ void l_printf_internal( LinearAllocatorData& Alloc, const char* Format, va_list 
 	Alloc.SetUsed( Alloc.GetUsed() + OutLength );
 }
 
-const char* l_printf( LinearAllocatorData& Alloc, const char* Format, ... )
+const char* l_printf( LinearAllocatorData& Alloc, char const* Format, ... )
 {
 	va_list args;
 	va_start( args, Format );
@@ -25,7 +25,7 @@ const char* l_printf( LinearAllocatorData& Alloc, const char* Format, ... )
 	return DataPtr;
 }
 
-l_string l_sprintf( LinearAllocatorData& Alloc, const char* Format, ... )
+l_string l_sprintf( LinearAllocatorData& Alloc, char const* Format, ... )
 {
 	va_list args;
 	va_start( args, Format );
@@ -39,12 +39,14 @@ l_string l_sprintf( LinearAllocatorData& Alloc, const char* Format, ... )
 	return l_string{ DataPtr, Length, Alloc };
 }
 
+///// Experimental
+
 l_string_builder::l_string_builder( LinearAllocatorData& InAlloc )
 : Alloc( InAlloc )
 , Blocks( InAlloc )
 {}
 
-l_string_builder& l_string_builder::operator<<( const char* Message )
+l_string_builder& l_string_builder::operator<<( char const* Message )
 {
 	size_t TotalLength = strlen( Message ) - 1; //Don't write in the null terminator
 	size_t RemainingLength = TotalLength;

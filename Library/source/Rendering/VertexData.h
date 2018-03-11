@@ -14,14 +14,14 @@ namespace GL
 		glm::vec3 Normal;
 		glm::bvec4 Color;
 
-		VertexData( const float& x, const float& y, const float& z )
+		VertexData( float x, float y, float z )
 		: Position( x, y, z )
 		, TexCoords( 0, 0, 0, 0 )
 		, Normal( 1, 0, 0 )
 		, Color( 1, 0, 0, 1 )
 		{}
 
-		VertexData( const glm::vec3 InPosition )
+		VertexData( glm::vec3 const& InPosition )
 		: Position( InPosition )
 		, TexCoords( 0, 0, 0, 0 )
 		, Normal( 1, 0, 0 )

@@ -15,5 +15,5 @@ namespace GL
 	void DescribeVertexArrayObject( std::ostream& Stream, VertexArrayObjectID VAOID );
 
 	void BindAttributeNames( ProgramID PID );
-	void BindBuffersToVertexArrayObject( VertexArrayObjectID VAOID, const VertexBufferObjectID BufferIDArray[EBuffer::Count()] );
+	void BindBuffersToVertexArrayObject( VertexArrayObjectID VAOID, VertexBufferObjectID const* BufferIDArray );
 }

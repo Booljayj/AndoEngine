@@ -40,14 +40,14 @@ struct Entity
 	/// Component manipulation
 
 	/** Returns true if this entity contains a component of the specified type */
-	bool Has( const ComponentTypeID TypeID ) const;
+	bool Has( ComponentTypeID TypeID ) const;
 	/** Returns true if this entity contains all of the component types in the vector */
-	bool HasAll( const std::vector<ComponentTypeID>& TypeIDs ) const;
+	bool HasAll( std::vector<ComponentTypeID> const& TypeIDs ) const;
 
 	/** Returns a pointer to a component this entity owns of the specified type */
-	ptr_t Get( const ComponentTypeID& TypeID ) const;
+	ptr_t Get( ComponentTypeID TypeID ) const;
 	template<typename TTData>
-	TTData* Get( const TComponentInfo<TTData>& ComponentInfo ) const { return static_cast<TTData*>( Get( ComponentInfo.GetID() ) ); }
+	TTData* Get( TComponentInfo<TTData> const& ComponentInfo ) const { return static_cast<TTData*>( Get( ComponentInfo.GetID() ) ); }
 
 	//Debugging information
 	size_t Size() const { return Owned.size(); }

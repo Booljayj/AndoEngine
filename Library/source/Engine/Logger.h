@@ -85,12 +85,12 @@ struct Logger
 	virtual ~Logger() {}
 
 	//Information messages
-	virtual void Debug( const char* M ) {}
-	virtual void Message( const char* M ) {}
+	virtual void Debug( char const* M ) {}
+	virtual void Message( char const* M ) {}
 
 	//Issue messages
-	virtual void Warning( const char* M ) {}
-	virtual void Error( const char* M ) {}
+	virtual void Warning( char const* M ) {}
+	virtual void Error( char const* M ) {}
 
 	//Only messages at or higher than the current level will be displayed
 	ELogLevel CurrentLevel = ELogLevel::Message;
@@ -99,12 +99,12 @@ struct Logger
 //A logger which prints to std::out
 struct StandardLogger : public Logger
 {
-	virtual void Debug( const char* M ) override;
-	virtual void Message( const char* M ) override;
+	virtual void Debug( char const* M ) override;
+	virtual void Message( char const* M ) override;
 
-	virtual void Warning( const char* M ) override;
-	virtual void Error( const char* M ) override;
+	virtual void Warning( char const* M ) override;
+	virtual void Error( char const* M ) override;
 
 protected:
-	void TerminalOutput( const char* Prefix, const char* M );
+	void TerminalOutput( char const* Prefix, char const* M );
 };

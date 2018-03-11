@@ -25,10 +25,11 @@ public:
 	}
 
 	static TCOMP* Cast( ptr_t Comp ) { return static_cast<TCOMP*>( Comp ); }
+	static TCOMP const* Cast( cptr_t Comp ) { return static_cast<TCOMP const*>( Comp ); }
 
-	virtual void Setup( const Entity& NewEntity, ptr_t NewComponent ) const override
+	virtual void Setup( Entity const& NewEntity, ptr_t NewComponent ) const override
 	{
-		static_cast<const TIMPL*>( this )->OnSetup( NewEntity, Cast( NewComponent ) );
+		static_cast<TIMPL const*>( this )->OnSetup( NewEntity, Cast( NewComponent ) );
 	}
 
 	ptr_t Retain() override final
@@ -65,9 +66,9 @@ public:
 		assert( false ); //Should never reach this point unless the component was not part of this manager
 	}
 
-	virtual void Save( const ptr_t Comp, ByteStream& Bytes ) override { Serializer<TCOMP>::Save( *Cast( Comp ), Bytes ); }
-	virtual void Load( ptr_t Comp, const ByteStream& Bytes ) override { Serializer<TCOMP>::Load( *Cast( Comp ), Bytes ); }
-	virtual void Copy( const ptr_t CompA, ptr_t CompB ) override { *Cast( CompB ) = *Cast( CompA ); }
+	virtual void Save( cptr_t Comp, ByteStream& Bytes ) override { Serializer<TCOMP>::Save( *Cast( Comp ), Bytes ); }
+	virtual void Load( ptr_t Comp, ByteStream const& Bytes ) override { Serializer<TCOMP>::Load( *Cast( Comp ), Bytes ); }
+	virtual void Copy( cptr_t CompA, ptr_t CompB ) override { *Cast( CompB ) = *Cast( CompA ); }
 	virtual void Wipe( ptr_t Comp ) override { new (Comp) TCOMP{}; }
 
 	size_t CountTotal() const override final
@@ -90,7 +91,7 @@ public:
 	}
 
 	template< typename TPRED >
-	void ForEach( const TPRED& Predicate ) const
+	void ForEach( TPRED const& Predicate ) const
 	{
 		for( BlockType* Block : Blocks ) {
 			for( TCOMP& Comp : *Block ) {
@@ -100,7 +101,7 @@ public:
 	}
 
 	template< typename TPRED >
-	void ForEachAll( const TPRED& Predicate ) const {
+	void ForEachAll( TPRED const& Predicate ) const {
 		for( auto* Block : Blocks ) {
 			for( TCOMP& Comp : *Block ) {
 				Predicate( &Comp );

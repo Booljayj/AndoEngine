@@ -17,22 +17,22 @@ public:
 	virtual ~ComponentInfo() {}
 
 	/** Standard comparison predicate. Sorts ascending by ID. */
-	static bool Compare( const ComponentInfo* A, const ComponentInfo* B );
+	static bool Compare( ComponentInfo const* A, ComponentInfo const* B );
 
 	ComponentTypeID GetID() const { return ID; }
-	const char* GetName() const { return Name; }
+	char const* GetName() const { return Name; }
 	ComponentManager* GetManager() const { return Manager; }
 
 protected:
 	/** Hidden explicit construction. Use the derived template to create instances of ComponentInfo. */
-	ComponentInfo( const ComponentTypeID& InID, const char* InName, ComponentManager* InManager )
+	ComponentInfo( ComponentTypeID const& InID, char const* InName, ComponentManager* InManager )
 		: ID( InID ), Name( InName ), Manager( InManager )
 	{}
 
 	/** The unique ID of this component. Used to identify a component, so this should never change once it is used */
 	ComponentTypeID ID;
 	/** The human-readable name of this component. Used in debugging and some types of serialization */
-	const char* Name;
+	char const* Name;
 	/** The manager which creates and collates components of this type */
 	ComponentManager* Manager;
 };
@@ -42,7 +42,7 @@ template< typename TDATA >
 struct TComponentInfo : public ComponentInfo
 {
 public:
-	TComponentInfo( ComponentTypeID InID, const char* InName, ComponentManager* InManager )
+	TComponentInfo( ComponentTypeID InID, char const* InName, ComponentManager* InManager )
 		: ComponentInfo( InID, InName, InManager )
 	{}
 	virtual ~TComponentInfo() override {}

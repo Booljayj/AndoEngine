@@ -6,14 +6,14 @@
 #include "Engine/ScopedTempBlock.h"
 #include "EntityFramework/ComponentInfo.h"
 
-ComponentCollectionSystem::Searcher::Searcher( const ComponentCollectionSystem& InCollection )
+ComponentCollectionSystem::Searcher::Searcher( ComponentCollectionSystem const& InCollection )
 : Collection( InCollection )
 , CurrentIter( Collection.RegisteredTypeIDs.begin() )
 {}
 
 ComponentInfo const* ComponentCollectionSystem::Searcher::Get() const
 {
-	const size_t Index = ( CurrentIter - Collection.RegisteredTypeIDs.begin() );
+	size_t const Index = ( CurrentIter - Collection.RegisteredTypeIDs.begin() );
 	return Collection.RegisteredInfos[Index];
 }
 
@@ -34,7 +34,7 @@ void ComponentCollectionSystem::Searcher::Reset()
 	CurrentIter = Collection.RegisteredTypeIDs.begin();
 }
 
-bool ComponentCollectionSystem::Startup( CTX_ARG, const ComponentInfo* const* Infos, size_t Count )
+bool ComponentCollectionSystem::Startup( CTX_ARG, ComponentInfo const* const* Infos, size_t Count )
 {
 	RegisteredInfos.reserve( Count );
 	RegisteredTypeIDs.reserve( Count );
@@ -44,8 +44,8 @@ bool ComponentCollectionSystem::Startup( CTX_ARG, const ComponentInfo* const* In
 	for( size_t Index = 0; Index < Count; ++Index ) {
 		RegisteredInfos.push_back( Infos[Index] );
 	}
-	std::sort( RegisteredInfos.begin(), RegisteredInfos.end(), &ComponentInfo::Compare );
-	for( const ComponentInfo* Info : RegisteredInfos ) {
+	std::sort( RegisteredInfos.begin(), RegisteredInfos.end(), ComponentInfo::Compare );
+	for( ComponentInfo const* Info : RegisteredInfos ) {
 		RegisteredTypeIDs.push_back( Info->GetID() );
 		RegisteredNames.push_back( Info->GetName() );
 	}
@@ -53,20 +53,20 @@ bool ComponentCollectionSystem::Startup( CTX_ARG, const ComponentInfo* const* In
 	//Ensure we have no duplicates
 	bool ComponentsAreUnique = true;
 
-	const auto DuplicateInfoIter = std::adjacent_find( RegisteredInfos.begin(), RegisteredInfos.end() );
+	auto const DuplicateInfoIter = std::adjacent_find( RegisteredInfos.begin(), RegisteredInfos.end() );
 	if( DuplicateInfoIter != RegisteredInfos.end() ) {
 		CTX.Log->Error( l_printf( CTX.Temp, "ComponentCollection has duplicate info: %p", (void*)*DuplicateInfoIter ) );
 		ComponentsAreUnique = false;
 	}
 
-	const auto DuplicateIDIter = std::adjacent_find( RegisteredTypeIDs.begin(), RegisteredTypeIDs.end() );
+	auto const DuplicateIDIter = std::adjacent_find( RegisteredTypeIDs.begin(), RegisteredTypeIDs.end() );
 	if( DuplicateIDIter != RegisteredTypeIDs.end() ) {
 		CTX.Log->Error( l_printf( CTX.Temp, "ComponentCollection has duplicate ID: %i", *DuplicateIDIter ) );
 		ComponentsAreUnique = false;
 	}
 
-	const auto StrEq = []( const char* A, const char* B ){ return std::strcmp( A, B ) == 0; };
-	const auto DuplicateNameIter = std::adjacent_find( RegisteredNames.begin(), RegisteredNames.end(), StrEq );
+	auto const StrEq = []( char const* A, char const* B ){ return std::strcmp( A, B ) == 0; };
+	auto const DuplicateNameIter = std::adjacent_find( RegisteredNames.begin(), RegisteredNames.end(), StrEq );
 	if( DuplicateNameIter != RegisteredNames.end() ) {
 		CTX.Log->Error( l_printf( CTX.Temp, "ComponentCollection has duplicate name: %s", *DuplicateNameIter ) );
 		ComponentsAreUnique = false;
@@ -83,7 +83,7 @@ bool ComponentCollectionSystem::Startup( CTX_ARG, const ComponentInfo* const* In
 
 	//Start up the component managers if we still have infos registered
 	bool ManagerStartupWasSuccessful = true;
-	for( const ComponentInfo* Info : RegisteredInfos ) {
+	for( ComponentInfo const* Info : RegisteredInfos ) {
 		if( !Info->GetManager()->Startup( CTX ) ) {
 			CTX.Log->Error( l_printf( CTX.Temp, "%s manager startup failed", Info->GetName() ) );
 			ManagerStartupWasSuccessful = false;
@@ -96,7 +96,7 @@ bool ComponentCollectionSystem::Shutdown( CTX_ARG )
 {
 	//Shut down the component managers we currently have registered
 	bool ManagerShutdownWasSuccessful = true;
-	for( const auto* Info : RegisteredInfos ) {
+	for( auto const* Info : RegisteredInfos ) {
 		if( !Info->GetManager()->Shutdown( CTX ) ) {
 			CTX.Log->Error( l_printf( CTX.Temp, "%s manager shutdown failed", Info->GetName() ) );
 			ManagerShutdownWasSuccessful = false;
@@ -105,11 +105,10 @@ bool ComponentCollectionSystem::Shutdown( CTX_ARG )
 	return ManagerShutdownWasSuccessful;
 }
 
-bool ComponentCollectionSystem::ContainsComponentInfos( CTX_ARG, const ComponentInfo* const* Infos, size_t Count ) const
+bool ComponentCollectionSystem::ContainsComponentInfos( CTX_ARG, ComponentInfo const* const* Infos, size_t Count ) const
 {
 	for( size_t Index = 0; Index < Count; ++Index ) {
-		const ComponentInfo* Info = Infos[Index];
-		const auto FoundIter = std::find( RegisteredInfos.begin(), RegisteredInfos.end(), Info );
+		auto const FoundIter = std::find( RegisteredInfos.begin(), RegisteredInfos.end(), Infos[Index] );
 		if( FoundIter == RegisteredInfos.end() ) {
 			return false;
 		}
@@ -117,12 +116,11 @@ bool ComponentCollectionSystem::ContainsComponentInfos( CTX_ARG, const Component
 	return true;
 }
 
-const ComponentInfo* ComponentCollectionSystem::GetComponentInfo( CTX_ARG, ComponentTypeID TypeID ) const
+ComponentInfo const* ComponentCollectionSystem::GetComponentInfo( CTX_ARG, ComponentTypeID TypeID ) const
 {
-	const auto FoundIter = std::lower_bound( RegisteredTypeIDs.begin(), RegisteredTypeIDs.end(), TypeID );
-
+	auto const FoundIter = std::lower_bound( RegisteredTypeIDs.begin(), RegisteredTypeIDs.end(), TypeID );
 	if( FoundIter != RegisteredTypeIDs.end() ) {
-		const size_t Index = FoundIter - RegisteredTypeIDs.begin();
+		size_t const Index = FoundIter - RegisteredTypeIDs.begin();
 		return RegisteredInfos[Index];
 
 	} else {
@@ -131,13 +129,13 @@ const ComponentInfo* ComponentCollectionSystem::GetComponentInfo( CTX_ARG, Compo
 	}
 }
 
-const ComponentInfo* ComponentCollectionSystem::GetComponentInfo( CTX_ARG, const char* Name ) const
+ComponentInfo const* ComponentCollectionSystem::GetComponentInfo( CTX_ARG, char const* Name ) const
 {
-	const auto Compare = [=]( const char* Other ){ return ( Name == Other ) || ( std::strcmp( Name, Other ) == 0 ); };
-	const auto FoundIter = std::find_if( RegisteredNames.begin(), RegisteredNames.end(), Compare );
+	auto const Compare = [=]( char const* Other ){ return ( Name == Other ) || ( std::strcmp( Name, Other ) == 0 ); };
+	auto const FoundIter = std::find_if( RegisteredNames.begin(), RegisteredNames.end(), Compare );
 
 	if( FoundIter != RegisteredNames.end() ) {
-		const size_t Index = FoundIter - RegisteredNames.begin();
+		size_t const Index = FoundIter - RegisteredNames.begin();
 		return RegisteredInfos[Index];
 
 	} else {
@@ -146,14 +144,14 @@ const ComponentInfo* ComponentCollectionSystem::GetComponentInfo( CTX_ARG, const
 	}
 }
 
-void ComponentCollectionSystem::GetComponentInfos( CTX_ARG, const ComponentTypeID* TypeIDs, const ComponentInfo** OutInfos, size_t Count ) const
+void ComponentCollectionSystem::GetComponentInfos( CTX_ARG, ComponentTypeID const* TypeIDs, ComponentInfo const** OutInfos, size_t Count ) const
 {
 	for( size_t Index = 0; Index < Count; ++Index ) {
 		OutInfos[Index] = GetComponentInfo( CTX, TypeIDs[Index] );
 	}
 }
 
-void ComponentCollectionSystem::GetComponentInfos( CTX_ARG, const char* const* Names, const ComponentInfo** OutInfos, size_t Count ) const
+void ComponentCollectionSystem::GetComponentInfos( CTX_ARG, char const* const* Names, ComponentInfo const** OutInfos, size_t Count ) const
 {
 	for( size_t Index = 0; Index < Count; ++Index ) {
 		OutInfos[Index] = GetComponentInfo( CTX, Names[Index] );
@@ -163,8 +161,7 @@ void ComponentCollectionSystem::GetComponentInfos( CTX_ARG, const char* const* N
 void ComponentCollectionSystem::DescribeComponents( CTX_ARG ) const
 {
 	TEMP_SCOPE;
-	for( ComponentInfo const* Info : RegisteredInfos )
-	{
+	for( ComponentInfo const* Info : RegisteredInfos ) {
 		CTX.Log->Message( l_printf( CTX.Temp, "\t%s", DESC( *Info ) ) );
 	}
 }

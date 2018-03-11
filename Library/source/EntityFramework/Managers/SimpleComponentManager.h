@@ -9,7 +9,7 @@ struct TSimpleComponentManager : TChunkedComponentManager<TSimpleComponentManage
 {
 	using TChunkedComponentManager<TSimpleComponentManager, TCOMP, 64>::TChunkedComponentManager;
 
-	inline void OnSetup( const Entity& NewEntity, TCOMP* NewComponent ) const {}
+	inline void OnSetup( Entity const& NewEntity, TCOMP* NewComponent ) const {}
 	inline void OnRetained( TCOMP* Comp ) { this->Wipe( Comp ); }
 	inline void OnReleased( TCOMP* Comp ) {}
 };

@@ -26,7 +26,7 @@ public:
 	/// Generic Component Lifetime
 
 	/** Set up an entity that has just been assigned a component */
-	virtual void Setup( const Entity& NewEntity, ptr_t NewComponent ) const {}
+	virtual void Setup( Entity const& NewEntity, ptr_t NewComponent ) const {}
 
 	/** Retain an instance of a component to be used by a specific entity, returning a pointer to  it */
 	virtual ptr_t Retain() = 0;
@@ -36,11 +36,11 @@ public:
 	/// Generic Component Manipulation
 
 	/** Serialize the state of a component to a byte stream */
-	virtual void Save( const ptr_t, ByteStream& ) = 0;
+	virtual void Save( cptr_t, ByteStream& ) = 0;
 	/** Deserialize the state of a component from a byte stream */
-	virtual void Load( ptr_t, const ByteStream& ) = 0;
+	virtual void Load( ptr_t, ByteStream const& ) = 0;
 	/** Duplicate a component's state */
-	virtual void Copy( const ptr_t, ptr_t ) = 0;
+	virtual void Copy( cptr_t, ptr_t ) = 0;
 	/** Revert a component back to a default state */
 	virtual void Wipe( ptr_t ) = 0;
 

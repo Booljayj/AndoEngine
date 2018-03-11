@@ -5,14 +5,14 @@ using namespace std;
 
 namespace GL
 {
-	void GetUniforms( const GLuint& ProgramID, vector<UniformInfo>& OutUniforms )
+	void GetUniforms( GLuint ProgramID, vector<UniformInfo>& OutUniforms )
 	{
 		GLint TotalCount = 0;
 		glGetProgramiv( ProgramID, GL_ACTIVE_UNIFORMS, &TotalCount );
 		GLint NameBufferSize = 0;
 		glGetProgramiv( ProgramID, GL_ACTIVE_UNIFORM_MAX_LENGTH, &NameBufferSize );
 
-		char* NameBuffer = new char[NameBufferSize];
+		char* const NameBuffer = new char[NameBufferSize];
 
 		OutUniforms.clear();
 		OutUniforms.reserve( TotalCount );
@@ -21,8 +21,7 @@ namespace GL
 		GLint ElementCount = 0;
 		GLenum Type = 0;
 
-		for( GLuint UniformIndex = 0; UniformIndex < TotalCount; ++ UniformIndex )
-		{
+		for( GLuint UniformIndex = 0; UniformIndex < TotalCount; ++ UniformIndex ) {
 			glGetActiveUniform(	ProgramID, UniformIndex, NameBufferSize, &NameSize, &ElementCount, &Type, NameBuffer );
 
 			UniformInfo NewUniformInfo;
