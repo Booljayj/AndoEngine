@@ -4,35 +4,32 @@
 
 namespace
 {
+	inline uint8_t* JointAllocateRecursive( size_t const FinalEndOffset )
+	{
+		return reinterpret_cast<uint8_t*>( std::malloc( FinalEndOffset ) );
+	}
+
 	template< typename T, typename... TARGS >
-	uint8_t* JointAllocateRecursive( size_t prev_end_offset, T*& view_ptr, size_t size, TARGS&&... args )
+	inline uint8_t* JointAllocateRecursive( size_t const PrevEndOffset, T*& OutPointer, size_t const Size, TARGS&&... Args )
 	{
-		const size_t alignment = alignof( T );
-		const size_t next_start_offset = ( ( prev_end_offset + alignment - 1 ) / alignment ) * alignment;
-		const size_t next_end_offset = next_start_offset + ( size * sizeof( T ) );
+		size_t const Alignment = alignof( T );
+		size_t const CurStartOffset = ( ( PrevEndOffset + Alignment - 1 ) / Alignment ) * Alignment;
+		size_t const CurEndOffset = CurStartOffset + ( Size * sizeof( T ) );
 
-		char* memory = JointAllocateRecursive( next_end_offset, args... );
-		view_ptr = reinterpret_cast<T*>( memory + next_start_offset );
+		uint8_t* const Buffer = JointAllocateRecursive( CurEndOffset, Args... );
+		OutPointer = reinterpret_cast<T*>( Buffer + CurStartOffset );
 
-		return memory;
-	}
-
-	inline uint8_t* JointAllocateRecursive( size_t final_end_offset )
-	{
-		return static_cast<uint8_t*>( std::malloc( final_end_offset ) );
+		return Buffer;
 	}
 }
 
-/** Create a set of fixed-size arrays that are contiguous in memory */
+/**
+ * Create a set of fixed-size arrays that are contiguous in memory.
+ * Invoked like so: void* Buffer = JointAllocate( PtrA, SizeA, PtrB, SizeB, PtrC, SizeC );
+ * DO NOT DEALLOCATE INDIVIDUAL ARRAYS. Only the returned void* should ever be freed.
+ */
 template< typename... TARGS >
-uint8_t* JointAllocate( TARGS&&... args )
+void* JointAllocate( TARGS&&... Args )
 {
-	return static_cast<void*>( JointAllocateRecursive( 0, args... ) );
+	return reinterpret_cast<void*>( JointAllocateRecursive( 0, Args... ) );
 }
-
-//Invoked like so:
-// T1* View1;
-// const size_t DesiredSize1;
-// T2* View2;
-// const size_t DesiredSize2;
-// uint8_t* MemPtr = joint_malloc( View1, DesiredSize1, View2, DesiredSize2 );
