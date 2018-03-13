@@ -17,7 +17,7 @@ private:
 	size_t Peak;
 
 public:
-	LinearAllocatorData( size_t RealCapacity );
+	LinearAllocatorData( size_t Capacity );
 	~LinearAllocatorData();
 
 	inline uint8_t* GetData( size_t Offset = 0 ) const { return Data + Offset; }

@@ -4,15 +4,12 @@
 #include "Engine/LinearStrings.h"
 
 LinearAllocatorData::LinearAllocatorData( size_t Capacity )
-: Capacity( Capacity ) //Actual capacity is one less, because we ensure a specific value in the final byte
+: Capacity( Capacity )
 , Used( 0 )
 , Peak( 0 )
 {
 	Data = static_cast<uint8_t*>( std::malloc( Capacity + 1 ) );
-	//because we may want to directly print string literals from allocated memory,
-	//we ensure that the final value is always a null terminator. This way it's
-	//harder to accidentally go too far and read from arbitrary memory
-	Data[Capacity] = '\0';
+	Data[Capacity] = '\0'; //zero terminate the final byte
 }
 
 LinearAllocatorData::~LinearAllocatorData()
