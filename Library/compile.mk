@@ -32,7 +32,7 @@ all: $(TARGET)
 
 .PHONY: directories
 directories:
-	@$(MKDIR) $(sort $(patsubst %/, %, $(dir $(BUILD_OBJ))))
+	@-$(MKDIR) $(sort $(patsubst %/, %, $(dir $(BUILD_OBJ))))
 
 .PHONY: clean
 clean:

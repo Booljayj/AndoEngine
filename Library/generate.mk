@@ -21,7 +21,7 @@ all: $(GENERATED_OUTPUT)
 
 .PHONY: directories
 directories:
-	@$(MKDIR) $(sort $(patsubst %/, %, $(dir $(GENERATED_OUTPUT))))
+	@-$(MKDIR) $(sort $(patsubst %/, %, $(dir $(GENERATED_OUTPUT))))
 
 .PHONY: clean
 clean:

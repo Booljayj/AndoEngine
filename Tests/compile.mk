@@ -29,7 +29,6 @@ endif
 # core library
 CORELIB := AndoEngine
 CORELIB_PATH := ../Library
-CORELIB_FILE := $(CORELIB_PATH)/lib$(CORELIB).a
 
 CXXFLAGS += -I$(CORELIB_PATH)/source -I$(CORELIB_PATH)/generated
 LDFLAGS += -L$(CORELIB_PATH)
@@ -49,7 +48,7 @@ all: $(TARGET)
 
 .PHONY: directories
 directories:
-	@$(MKDIR) $(sort $(patsubst %/, %, $(dir $(BUILD_OBJ))))
+	@-$(MKDIR) $(sort $(patsubst %/, %, $(dir $(BUILD_OBJ))))
 
 .PHONY: clean
 clean:
@@ -57,22 +56,18 @@ clean:
 	@$(RM) $(TARGET) $(DIR_BUILD)/*
 
 # main target
-$(TARGET): $(BUILD_OBJ) $(CORELIB_FILE)
+$(TARGET): $(BUILD_OBJ)
 	$(info > Building $(TARGETTYPE) $(NAME)...)
 	@$(RM) $@
 	@$(CXX) $(LDFLAGS) $(LDLIBS) $(BUILD_OBJ) -o $@
 
-# core library
-$(CORELIB_FILE):
-	@$(MAKE) -C $(CORELIB_PATH)
-
 # normal source files
-$(DIR_BUILD)/%.o: $(DIR_SOURCE)/%.cpp $(CORELIB_FILE) | directories
+$(DIR_BUILD)/%.o: $(DIR_SOURCE)/%.cpp | directories
 	$(info > Compiling $(basename $<)...)
 	@$(CXX) $(CXXFLAGS) $< -o $@
 
 # generated source files
-$(DIR_BUILD)/%.o: $(DIR_GENERATED)/%.cpp $(CORELIB_FILE) | directories
+$(DIR_BUILD)/%.o: $(DIR_GENERATED)/%.cpp | directories
 	$(info > Compiling $(basename $<)...)
 	@$(CXX) $(CXXFLAGS) $< -o $@
 
