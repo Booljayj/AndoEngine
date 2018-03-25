@@ -13,7 +13,7 @@ ComponentCollectionSystem::Searcher::Searcher( ComponentCollectionSystem const& 
 
 ComponentInfo const* ComponentCollectionSystem::Searcher::Get() const
 {
-	size_t const Index = ( CurrentIter - Collection.RegisteredTypeIDs.begin() );
+	size_t const Index = std::distance( Collection.RegisteredTypeIDs.begin(),  CurrentIter );
 	return Collection.RegisteredInfos[Index];
 }
 
@@ -120,7 +120,7 @@ ComponentInfo const* ComponentCollectionSystem::GetComponentInfo( CTX_ARG, Compo
 {
 	auto const FoundIter = std::lower_bound( RegisteredTypeIDs.begin(), RegisteredTypeIDs.end(), TypeID );
 	if( FoundIter != RegisteredTypeIDs.end() ) {
-		size_t const Index = FoundIter - RegisteredTypeIDs.begin();
+		size_t const Index = std::distance( RegisteredTypeIDs.begin(), FoundIter );
 		return RegisteredInfos[Index];
 
 	} else {
@@ -135,7 +135,7 @@ ComponentInfo const* ComponentCollectionSystem::GetComponentInfo( CTX_ARG, char 
 	auto const FoundIter = std::find_if( RegisteredNames.begin(), RegisteredNames.end(), Compare );
 
 	if( FoundIter != RegisteredNames.end() ) {
-		size_t const Index = FoundIter - RegisteredNames.begin();
+		size_t const Index = std::distance( RegisteredNames.begin(), FoundIter );
 		return RegisteredInfos[Index];
 
 	} else {

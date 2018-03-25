@@ -1,8 +1,9 @@
 #include <algorithm>
+#include <cstdarg>
 #include <cstring>
 #include "Engine/LinearStrings.h"
 
-void l_printf_internal( LinearAllocatorData& Alloc, char const* Format, va_list args, char*& OutPtr, size_t& OutLength )
+void l_printf_internal( LinearAllocatorData& Alloc, char const* Format, std::va_list args, char*& OutPtr, size_t& OutLength )
 {
 	OutPtr = reinterpret_cast<char*>( Alloc.GetData( Alloc.GetUsed() ) );
 	const size_t MaxLength = Alloc.GetCapacity() - Alloc.GetUsed();
@@ -13,7 +14,7 @@ void l_printf_internal( LinearAllocatorData& Alloc, char const* Format, va_list 
 
 const char* l_printf( LinearAllocatorData& Alloc, char const* Format, ... )
 {
-	va_list args;
+	std::va_list args;
 	va_start( args, Format );
 
 	char* DataPtr;
@@ -27,7 +28,7 @@ const char* l_printf( LinearAllocatorData& Alloc, char const* Format, ... )
 
 l_string l_sprintf( LinearAllocatorData& Alloc, char const* Format, ... )
 {
-	va_list args;
+	std::va_list args;
 	va_start( args, Format );
 
 	char* DataPtr;
