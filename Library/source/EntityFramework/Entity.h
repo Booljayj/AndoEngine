@@ -10,10 +10,11 @@
 
 struct EntityOwnedComponent
 {
-	ComponentTypeID TypeID;
 	ptr_t CompPtr;
+	ComponentTypeID TypeID;
 
-	bool operator==( const ComponentTypeID& InTypeID ) const { return TypeID == InTypeID; }
+	bool operator==( const ComponentTypeID& OtherTypeID ) const { return TypeID == OtherTypeID; }
+	bool operator<( const ComponentTypeID& OtherTypeID ) const { return TypeID < OtherTypeID; }
 	bool operator<( const EntityOwnedComponent& Other ) const { return TypeID < Other.TypeID; }
 };
 
@@ -42,7 +43,9 @@ struct Entity
 	/** Returns true if this entity contains a component of the specified type */
 	bool Has( ComponentTypeID TypeID ) const;
 	/** Returns true if this entity contains all of the component types in the vector */
-	bool HasAll( std::vector<ComponentTypeID> const& TypeIDs ) const;
+	bool HasAll( ComponentTypeID const* TypeIDs, size_t Count ) const;
+	template< typename TALLOC >
+	bool HasAll( std::vector<ComponentTypeID, TALLOC> const& TypeIDs ) const { return HasAll( TypeIDs.data(), TypeIDs.size() ); }
 
 	/** Returns a pointer to a component this entity owns of the specified type */
 	ptr_t Get( ComponentTypeID TypeID ) const;

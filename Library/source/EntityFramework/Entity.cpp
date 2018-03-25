@@ -14,7 +14,9 @@ void Entity::Reserve( size_t ComponentCount )
 
 void Entity::Add( ComponentTypeID TypeID, ptr_t Component )
 {
-	Owned.push_back( EntityOwnedComponent{ TypeID, Component } );
+	EntityOwnedComponent NewOwnedComponent{ Component, TypeID };
+	const auto Iter = std::upper_bound( Owned.begin(), Owned.end(), NewOwnedComponent );
+	Owned.insert( Iter, NewOwnedComponent );
 }
 
 void Entity::Reset( std::vector<EntityOwnedComponent>& OutComponents )
@@ -26,25 +28,12 @@ void Entity::Reset( std::vector<EntityOwnedComponent>& OutComponents )
 
 bool Entity::Has( ComponentTypeID TypeID ) const
 {
-	return std::find( Owned.begin(), Owned.end(), TypeID ) != Owned.end();
+	auto const Iter = std::lower_bound( Owned.begin(), Owned.end(), TypeID );
+	return ( Iter != Owned.end() ) && ( Iter->TypeID == TypeID );
 }
 
-bool Entity::HasAll( std::vector<ComponentTypeID> const& TypeIDs ) const
+bool Entity::HasAll( ComponentTypeID const* TypeIDs, size_t Count ) const
 {
-	//@todo: finish this later when sorting is established. Loop through each TypeID and increment the Owned iterator for each one.
-	//		If we encounter an Owned ID that is higher than the TypeID or reach the end of the Owned components, the test fails.
-	//		If we encounter the correct TypeID, we increment the TypeID iterator and keep the same Owned iterator.
-
-	// vector<ComponentTypeID>::iterator TypeIDIterator = TypeIDs.begin();
-	// vector<OwnedComponentsEntityComponent>::iterator OwnedComponentsIterator = Owned.begin();
-	// for(; TypeIDIterator < TypeIDs.end(); ++TypeIDIterator )
-	// {
-	// 	bool FoundComponentType = false;
-	// 	for(; OwnedComponentsIterator < Owned.end(); ++OwnedComponentsIterator )
-	// 	{
-	// 		if( Owned)
-	// 	}
-	// }
 	return false;
 }
 
