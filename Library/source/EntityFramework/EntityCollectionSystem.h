@@ -1,10 +1,12 @@
 #pragma once
 #include <initializer_list>
+#include <memory>
 #include <vector>
 #include "Engine/UtilityMacros.h"
 #include "Engine/LinearContainers.h"
 #include "Engine/Print.h"
 #include "EntityFramework/ComponentCollectionSystem.h"
+#include "EntityFramework/EntityFilter.h"
 #include "EntityFramework/Types.h"
 
 struct Entity;
@@ -26,6 +28,12 @@ public:
 	/** Create an entity that contains the components with optional loaded data */
 	Entity const* Create( CTX_ARG, EntityID const& NewID, ComponentInfo const* const* Infos, ByteStream const* ByteStreams, size_t Count );
 	Entity const* Create( CTX_ARG, EntityID const& NewID, std::initializer_list<ComponentInfo const*> const& Infos );
+
+	template<size_t SIZE>
+	std::shared_ptr<EntityFilter<SIZE>> MakeFilter( ComponentInfo const* (&Infos)[SIZE] );
+
+	/** Update the entity filters with any new entities that have been created or entities which were destroyed. */
+	void UpdateFilters();
 
 	/** Destroy the entity with the provided ID */
 	bool Destroy( EntityID const& DeletedID );
@@ -53,6 +61,11 @@ private:
 	std::vector<Entity> Entities;
 	std::vector<EntityID> EntityIDs;
 
+	std::vector<EntityID> AddedEntities;
+	std::vector<EntityID> RemovedEntities;
+
+	std::vector<std::shared_ptr<EntityFilterBase>> Filters;
+
 	std::vector<EntityOwnedComponent> ReclaimedComponentBuffer;
 
 	/** Insert a new entity with the specified ID */
@@ -64,3 +77,12 @@ private:
 };
 
 DESCRIPTION( EntityCollectionSystem );
+
+template<size_t SIZE>
+std::shared_ptr<EntityFilter<SIZE>> EntityCollectionSystem::MakeFilter( ComponentInfo const* (&Infos)[SIZE] )
+{
+	std::shared_ptr<EntityFilter<SIZE>> NewSharedFilter = std::make_shared<EntityFilter<SIZE>>( Infos );
+	std::shared_ptr<EntityFilterBase> NewSharedFilterBase =  std::static_pointer_cast<EntityFilterBase>( NewSharedFilter );
+	Filters.push_back( NewSharedFilterBase );
+	return NewSharedFilter;
+}

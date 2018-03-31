@@ -60,7 +60,7 @@ bool Startup( CTX_ARG )
 	STARTUP_SYSTEM( SDLFramework );
 	STARTUP_SYSTEM( SDLEvent );
 	STARTUP_SYSTEM( SDLWindow );
-	STARTUP_SYSTEM( Rendering, &MeshRendererManager );
+	STARTUP_SYSTEM( Rendering, &EntityCollection, &Transform, &MeshRenderer );
 	return true;
 }
 
@@ -88,10 +88,14 @@ void MainLoop( CTX_ARG )
 		SDLEvent.PollEvents( bShutdownRequested );
 
 		while( TimeController.StartUpdateFrame() ) {
-			//const Time& T = TimeController.GetTime();
 			CTX.Temp.Reset();
+			//const Time& T = TimeController.GetTime();
 			//CTX.Log->Message( DESC( TimeController ) );
+			EntityCollection.UpdateFilters();
 
+			//Game Update
+
+			EntityCollection.RecycleGarbage( CTX );
 			TimeController.FinishUpdateFrame();
 		}
 

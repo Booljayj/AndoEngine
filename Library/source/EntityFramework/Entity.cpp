@@ -34,7 +34,12 @@ bool Entity::Has( ComponentTypeID TypeID ) const
 
 bool Entity::HasAll( ComponentTypeID const* TypeIDs, size_t Count ) const
 {
-	return false;
+	for( size_t Index = 0; Index < Count; ++Index ) {
+		if( !Has( TypeIDs[Index] ) ) {
+			return false;
+		}
+	}
+	return true;
 }
 
 ptr_t Entity::Get( ComponentTypeID TypeID ) const

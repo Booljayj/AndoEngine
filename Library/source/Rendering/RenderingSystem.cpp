@@ -1,16 +1,35 @@
 #include <cassert>
 #include <glm/vec3.hpp>
 #include "Rendering/RenderingSystem.h"
+#include "Engine/BasicComponents.h"
+#include "EntityFramework/EntityCollectionSystem.h"
+#include "Rendering/MeshRendererComponent.h"
 
-bool RenderingSystem::Startup( CTX_ARG, MeshRendererComponentManager const* InMeshRendererManager )
+bool RenderingSystem::Startup( CTX_ARG,
+		EntityCollectionSystem* EntityCollection,
+		TComponentInfo<TransformComponent>* Transform,
+		TComponentInfo<MeshRendererComponent>* MeshRenderer
+)
 {
-	MeshRendererManager = InMeshRendererManager;
-	return !!MeshRendererManager;
+	ComponentInfo const* Infos[] = { Transform, MeshRenderer };
+	Filter = EntityCollection->MakeFilter( Infos );
+	if( Filter )
+	{
+		TransformHandle = Filter->GetMatchComponentHandle( Transform );
+		MeshRendererHandle = Filter->GetMatchComponentHandle( MeshRenderer );
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }
 
 void RenderingSystem::RenderFrame( float InterpolationAlpha ) const
 {
-	MeshRendererManager->ForEach( &RenderingSystem::RenderComponent );
+	for( EntityFilter<FILTER_SIZE>::FilterMatch const& Match : *Filter ) {
+		RenderComponent( Match.Get( MeshRendererHandle ) );
+	}
 }
 
 void RenderingSystem::RenderComponent( MeshRendererComponent const* MeshRenderer )
