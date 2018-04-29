@@ -1,0 +1,16 @@
+Design goals for the reflection system:
+- Type metadata is stored in an instance of a metadata class
+- Different type metadata specializations for different categories of types are easy to access
+- Type metadata can be obtained through a template that accepts the type as a parameter
+- Type metadata can be obtained through some type of unique ID
+	- Includes binary and text (human-readable) formatting
+- Given an instance of the metadata for a type, you can:
+	- Serialize and deserialize a pointer to an instance of that type
+	- Access the name, description, and extra metadata for the type
+	- Check against another metadata object to see if the two types are equal or form a hierarchy
+	- Read and write individual variables of a struct
+	- Iterate through the elements of a container
+	- Read and write elements of a container, if possible
+	- Add and remove elements in a container
+	- Get a human-readable text string for fundamental data types (int, string, float, etc)
+	- Parse a human-readable text string for fundamental data types
