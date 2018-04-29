@@ -1,9 +1,8 @@
-#include "Reflection/ObjectTypeInfo.h"
+#include "Reflection/StructTypeInfo.h"
 #include "Reflection/Resolver.h"
 
 namespace Reflection {
-	void ObjectTypeInfo::OnLoaded( bool bLoadDependencies )
-	{
+	void StructTypeInfo::OnLoaded( bool bLoadDependencies ) {
 		TypeInfo::OnLoaded( bLoadDependencies );
 
 		//ensures that arrays are sorted based on NameHash for quick lookups.

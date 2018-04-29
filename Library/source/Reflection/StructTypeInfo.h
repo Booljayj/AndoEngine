@@ -2,22 +2,22 @@
 #include <memory>
 #include <vector>
 #include "Reflection/TypeInfo.h"
-#include "Reflection/ConstantInfo.h"
-#include "Reflection/VariableInfo.h"
+#include "Reflection/Components/ConstantInfo.h"
+#include "Reflection/Components/VariableInfo.h"
 
 namespace Reflection {
-	struct ObjectTypeInfo : public TypeInfo
+	struct StructTypeInfo : public TypeInfo
 	{
-		static constexpr ETypeClassification CLASSIFICATION = ETypeClassification::Primitive;
+		static constexpr ETypeClassification CLASSIFICATION = ETypeClassification::Struct;
 
-		ObjectTypeInfo() = delete;
-		ObjectTypeInfo( void (*InInitializer)( TypeInfo* ) )
-		: TypeInfo( InInitializer, CLASSIFICATION )
+		StructTypeInfo() = delete;
+		StructTypeInfo( char const* InName, size_t InSize, void (*InInitializer)( TypeInfo* ) )
+		: TypeInfo( InName, InSize, InInitializer, CLASSIFICATION )
 		{}
-		virtual ~ObjectTypeInfo() {}
+		virtual ~StructTypeInfo() {}
 
 		/** The type that this type inherits from. Only single-inheritance from another object type is supported. */
-		ObjectTypeInfo* BaseType = nullptr;
+		StructTypeInfo* BaseType = nullptr;
 		/** Constants */
 		std::vector<std::unique_ptr<StaticConstantInfo>> StaticConstants;
 		std::vector<std::unique_ptr<MemberConstantInfo>> MemberConstants;

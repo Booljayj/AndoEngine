@@ -1,10 +1,12 @@
 #pragma once
 #include <cstdint>
+#include <memory>
 #include <string>
+#include <vector>
 #include <utility>
 #include "Engine/MemoryView.h"
-#include "Reflection/ArgumentInfo.h"
-#include "Reflection/Types.h"
+#include "Reflection/Components/ArgumentInfo.h"
+#include "Reflection/Resolver.h"
 
 namespace Reflection
 {
@@ -29,9 +31,9 @@ namespace Reflection
 		std::string Name;
 		std::string Description;
 
-		TypeInfo const* InstanceType = nullptr;
-		TypeInfo const* ReturnType = nullptr;
-		ArrayView<ArgumentInfo const*> ArgumentInfos;
+		TypeInfo* InstanceType = nullptr;
+		TypeInfo* ReturnType = nullptr;
+		std::vector<std::unique_ptr<ArgumentInfo>> ArgumentInfos;
 
 		uint16_t NameHash = 0;
 		FFunctionFlags Flags = FFunctionFlags::None;

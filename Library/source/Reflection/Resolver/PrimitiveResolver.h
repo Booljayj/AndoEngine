@@ -11,6 +11,7 @@ template<> struct TypeResolver<std::decay<__TYPE__>::type> {\
 }
 
 namespace Reflection {
+
 	//============================================================
 	// Standard primitive types
 

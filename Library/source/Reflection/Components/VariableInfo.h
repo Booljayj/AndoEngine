@@ -3,7 +3,6 @@
 #include <string>
 #include <type_traits>
 #include "Engine/StringID.h"
-#include "Reflection/Resolver/TypeResolver.h"
 
 namespace Reflection {
 	struct TypeInfo;
@@ -33,13 +32,6 @@ namespace Reflection {
 		uint16_t NameHash = 0;
 		FVariableFlags Flags = FVariableFlags::None;
 
-		template<typename TVAR>
-		TVAR* GetValuePointer() const {
-			if( TypeResolver<TVAR>::Get() == Type ) return GetValuePointer();
-			else return nullptr;
-		}
-
-	protected:
 		virtual void* GetValuePointer() const = 0;
 	};
 
@@ -57,7 +49,6 @@ namespace Reflection {
 
 		TVAR* StaticPointer;
 
-	protected:
 		void* GetValuePointer() const final { return StaticPointer; }
 	};
 
@@ -80,18 +71,8 @@ namespace Reflection {
 		uint16_t NameHash = 0;
 		FVariableFlags Flags = FVariableFlags::None;
 
-		template<typename TVAR>
-		TVAR const* GetValuePointer( void const* Instance ) const {
-			if( TypeResolver<TVAR>::Get() == Type ) return GetValuePointer( Instance );
-			else return nullptr;
-		}
-		template<typename TVAR>
-		TVAR* GetValuePointer( void* Instance ) const {
-			return const_cast<void*>( GetValuePointer( static_cast<void const*>( Instance ) ) );
-		}
-
-	protected:
 		virtual void const* GetValuePointer( void const* Instance ) const = 0;
+		virtual void* GetValuePointer( void* Instance ) const = 0;
 	};
 
 	template<typename TCLASS, typename TVAR>
@@ -108,8 +89,8 @@ namespace Reflection {
 
 		TVAR TCLASS::* MemberPointer;
 
-	protected:
 		void const* GetValuePointer( void const* Instance ) const final { return &( ((TCLASS const*)Instance)->*MemberPointer ); }
+		void* GetValuePointer( void* Instance ) const final { return &( ((TCLASS*)Instance)->*MemberPointer ); }
 	};
 }
 

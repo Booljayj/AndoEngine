@@ -7,13 +7,19 @@
 
 namespace Reflection
 {
-	enum class ETypeClassification : uint8_t
-	{
-		Primitive, //Primitive types are fundamental data
-		Object, //Objects are types that hold a number of properties of different types
-		Sequence, //Containers are types that hold a number of elements of the same type that can be accessed with a number index
-		Table, //Tables are types that hold a number of elements of the same type that can be accessed using a key type
-		Enumeration, //Enumerations are types which can be a fixed number of predefined values
+	enum class ETypeClassification : uint8_t {
+		//Basic construct types
+		Primitive,
+		Struct,
+		Enumeration,
+		//Heterogeneous collection types
+		Tuple,
+		Variant,
+		//Homogeneous collection types
+		FixedArray,
+		DynamicArray,
+		Map,
+		Set,
 	};
 
 	/** Flags to describe aspects of a particular type */
@@ -26,9 +32,11 @@ namespace Reflection
 		static constexpr ETypeClassification CLASSIFICATION = ETypeClassification::Primitive;
 
 	protected:
-		TypeInfo( void (*InInitializer)( TypeInfo* ), ETypeClassification InClassification )
+		TypeInfo( char const* InName, size_t InSize, void (*InInitializer)( TypeInfo* ), ETypeClassification InClassification )
 		: Initializer( InInitializer )
 		, Classification( InClassification )
+		, Name( InName )
+		, Size( InSize )
 		{}
 
 		void (*Initializer)( TypeInfo* );
@@ -38,23 +46,23 @@ namespace Reflection
 
 	public:
 		TypeInfo() = delete;
-		TypeInfo( void (*InInitializer)( TypeInfo* ) )
-		: TypeInfo( InInitializer, CLASSIFICATION )
+		TypeInfo( char const* InName, size_t InSize, void (*InInitializer)( TypeInfo* ) )
+		: TypeInfo( InName, InSize, InInitializer, CLASSIFICATION )
 		{}
 		virtual ~TypeInfo() {}
 
 		//If this is false, none of the following data will be available because the initializer has not run yet.
 		bool bIsLoaded = false;
 
-		std::string Name;
-		std::string Description;
+		char const* Name;
 		size_t Size = 0;
+		uint16_t NameHash = 0;
+
+		std::string Description;
+		FTypeFlags Flags = FTypeFlags::None;
 
 		/** The interface used to serialize this type. If null, this type cannot be serialized. */
 		std::unique_ptr<ISerializer> Serializer = nullptr;
-
-		uint16_t NameHash = 0;
-		FTypeFlags Flags = FTypeFlags::None;
 
 		/** Load all the data for this type */
 		void Load( bool bLoadDependencies = true );

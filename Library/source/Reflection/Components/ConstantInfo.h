@@ -31,13 +31,6 @@ namespace Reflection {
 		uint16_t NameHash = 0;
 		FConstantFlags Flags = FConstantFlags::None;
 
-		template<typename TVAR>
-		TVAR const* GetValuePointer() const {
-			if( TypeResolver<TVAR>::Get() == Type ) return GetValuePointer();
-			else return nullptr;
-		}
-
-	protected:
 		virtual void const* GetValuePointer() const = 0;
 	};
 
@@ -55,7 +48,6 @@ namespace Reflection {
 
 		TVAR const* StaticPointer;
 
-	protected:
 		void const* GetValuePointer() const final { return StaticPointer; }
 	};
 
@@ -78,13 +70,6 @@ namespace Reflection {
 		uint16_t NameHash = 0;
 		FConstantFlags Flags = FConstantFlags::None;
 
-		template<typename TVAR>
-		TVAR const* GetValuePointer( void const* Instance ) const {
-			if( TypeResolver<TVAR>::Get() == Type ) return GetValuePointer( Instance );
-			else return nullptr;
-		}
-
-	protected:
 		virtual void const* GetValuePointer( void const* Instance ) const = 0;
 	};
 
@@ -102,7 +87,6 @@ namespace Reflection {
 
 		TVAR const TCLASS::* MemberPointer;
 
-	protected:
 		void const* GetValuePointer( void const* Instance ) const final { return &( ((TCLASS const*)Instance)->*MemberPointer ); }
 	};
 }

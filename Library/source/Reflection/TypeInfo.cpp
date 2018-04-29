@@ -4,18 +4,15 @@
 namespace Reflection {
 	void TypeInfo::OnLoaded( bool bLoadDependencies /*= true */ )
 	{
-		if( Name.empty() ) {
-			Name = "UNDEFINED";
-		}
-		NameHash = id( Name.c_str() );
+		NameHash = id( Name );
 	}
 
 	void TypeInfo::Load( bool bLoadDependencies /*= true */ )
 	{
 		if( !bIsLoaded ) {
+			bIsLoaded = true;
 			if( !!Initializer ) Initializer( this );
 			OnLoaded( bLoadDependencies );
-			bIsLoaded = true;
 		}
 	}
 }

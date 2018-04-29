@@ -2,41 +2,44 @@
 #include <memory>
 #include "Reflection/ReflectionTest.h"
 #include "Reflection/Resolver.h"
-#include "Reflection/ObjectTypeInfo.h"
-#include "Reflection/VariableInfo.h"
-#include "Reflection/ConstantInfo.h"
+#include "Reflection/StructTypeInfo.h"
+#include "Reflection/Components/VariableInfo.h"
+#include "Reflection/Components/ConstantInfo.h"
 #include "Engine/MemoryView.h"
 
 int16_t ReflectedType::StaticShortValue = 4;
 const uint16_t ReflectedType::StaticImmutableShortValue = 15;
 
 #define MEMBER_CONST( __NAME__, __DESC__ )\
-new Reflection::TMemberConstantInfo<T, decltype(T::__NAME__)>( #__NAME__, #__DESC__, &T::__NAME__ )
+new TMemberConstantInfo<T, decltype(T::__NAME__)>( #__NAME__, #__DESC__, &T::__NAME__ )
 #define STATIC_CONST( __NAME__, __DESC__ )\
-new Reflection::TStaticConstantInfo<decltype(T::__NAME__)>( #__NAME__, #__DESC__, &T::__NAME__ )
+new TStaticConstantInfo<decltype(T::__NAME__)>( #__NAME__, #__DESC__, &T::__NAME__ )
 #define MEMBER_VAR( __NAME__, __DESC__ )\
-new Reflection::TMemberVariableInfo<T, decltype(T::__NAME__)>( #__NAME__, #__DESC__, &T::__NAME__ )
+new TMemberVariableInfo<T, decltype(T::__NAME__)>( #__NAME__, #__DESC__, &T::__NAME__ )
 #define STATIC_VAR( __NAME__, __DESC__ )\
-new Reflection::TStaticVariableInfo<decltype(T::__NAME__)>( #__NAME__, #__DESC__, &T::__NAME__ )
+new TStaticVariableInfo<decltype(T::__NAME__)>( #__NAME__, #__DESC__, &T::__NAME__ )
 
-Reflection::ObjectTypeInfo TypeInfo__ReflectedType{
-	[]( Reflection::TypeInfo* Info ) {
+namespace Reflection {
+	namespace {
 		using T = ReflectedType;
-		Info->Name = "ReflectedType";
-		Info->Description = "A simple struct to test reflection";
-		Info->Size = sizeof( T );
+		StructTypeInfo TypeInfo__ReflectedType{
+			"ReflectedType",
+			sizeof( T ),
+			[]( TypeInfo* Info ) {
+				Info->Description = "A simple struct to test reflection";
 
-		if( Reflection::ObjectTypeInfo* ObjectInfo = Info->As<Reflection::ObjectTypeInfo>() ) {
-			ObjectInfo->StaticConstants.emplace_back( STATIC_CONST( StaticImmutableShortValue, Test Static Immutable Short Value ) );
-			ObjectInfo->MemberConstants.emplace_back( MEMBER_CONST( ImmutableByteValue, Test Immutable Byte Value ) );
-			ObjectInfo->StaticVariables.emplace_back( STATIC_VAR( StaticShortValue, Test Static Short Value ) );
-			ObjectInfo->MemberVariables.emplace_back( MEMBER_VAR( IntegerValue, Test Integer Value ) );
-			ObjectInfo->MemberVariables.emplace_back( MEMBER_VAR( BooleanValue, Test Boolean Value ) );
-		}
+				if( auto* StructInfo = Info->As<Reflection::StructTypeInfo>() ) {
+					StructInfo->StaticConstants.emplace_back( STATIC_CONST( StaticImmutableShortValue, Test Static Immutable Short Value ) );
+					StructInfo->MemberConstants.emplace_back( MEMBER_CONST( ImmutableByteValue, Test Immutable Byte Value ) );
+					StructInfo->StaticVariables.emplace_back( STATIC_VAR( StaticShortValue, Test Static Short Value ) );
+					StructInfo->MemberVariables.emplace_back( MEMBER_VAR( IntegerValue, Test Integer Value ) );
+					StructInfo->MemberVariables.emplace_back( MEMBER_VAR( BooleanValue, Test Boolean Value ) );
+				}
+			}
+		};
 	}
-};
+}
 
-Reflection::TypeInfo* ReflectedType::GetTypeInfo()
-{
-	return &TypeInfo__ReflectedType;
+Reflection::TypeInfo* ReflectedType::GetTypeInfo() {
+	return &Reflection::TypeInfo__ReflectedType;
 }

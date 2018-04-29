@@ -5,22 +5,14 @@
 #define NAME( __TYPE__ ) TypeInfo__##__TYPE__
 #define TYPEINFO( __TYPE__ )\
 TypeInfo NAME( __TYPE__ ) {\
-	[]( TypeInfo* Info ) {\
-		Info->Name = #__TYPE__;\
-		Info->Description = "";\
-		Info->Size = sizeof( __TYPE__ );\
-	}\
+	#__TYPE__,\
+	sizeof( __TYPE__ ),\
+	nullptr\
 }
 
 namespace Reflection
 {
-	TypeInfo NAME( void ) {
-		[]( TypeInfo* Info ) {
-			Info->Name = "void";
-			Info->Description = "";
-			Info->Size = 0;
-		}
-	};
+	TypeInfo NAME( void ) { "void", 0, nullptr }; //cannot use sizeof( void )
 
 	TYPEINFO( bool );
 	TYPEINFO( char );
