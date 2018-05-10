@@ -1,4 +1,5 @@
 #pragma once
+#include <string_view>
 #include <vector>
 #include <list>
 #include <forward_list>
@@ -6,6 +7,7 @@
 #include "Reflection/Resolver/TypeResolver.h"
 #include "Reflection/TypeInfo.h"
 #include "Reflection/DynamicArrayTypeInfo.h"
+#include "Reflection/TypeUtility.h"
 
 namespace Reflection {
 	//============================================================
@@ -18,8 +20,6 @@ namespace Reflection {
 
 		static TypeInfo* Get() {
 			static TVECTOR_INFO InstancedTypeInfo{
-				"std::vector",
-				sizeof( TVECTOR ),
 				[]( TypeInfo* Info ) {
 					Info->Description = "dynamic array";
 					//Info->Serializer = make_unique<DynamicArraySerializer>();
@@ -27,7 +27,8 @@ namespace Reflection {
 					if( DynamicArrayTypeInfo* DynamicArrayInfo = Info->As<DynamicArrayTypeInfo>() ) {
 						DynamicArrayInfo->ElementType = TypeResolver<TELEMENT>::Get();
 					}
-				}
+				},
+				MakeTemplateName( "std::vector", { TypeResolver<TELEMENT>::Get() } ), sizeof( TVECTOR )
 			};
 			return &InstancedTypeInfo;
 		}
@@ -40,8 +41,6 @@ namespace Reflection {
 
 		static TypeInfo* Get() {
 			static TLIST_INFO InstancedTypeInfo{
-				"std::forward_list",
-				sizeof( TLIST ),
 				[]( TypeInfo* Info ) {
 					Info->Description = "singly-linked list";
 					//Info->Serializer = make_unique<DynamicArraySerializer>();
@@ -49,7 +48,8 @@ namespace Reflection {
 					if( DynamicArrayTypeInfo* DynamicArrayInfo = Info->As<DynamicArrayTypeInfo>() ) {
 						DynamicArrayInfo->ElementType = TypeResolver<TELEMENT>::Get();
 					}
-				}
+				},
+				MakeTemplateName( "std::forward_list", { TypeResolver<TELEMENT>::Get() } ), sizeof( TLIST )
 			};
 			return &InstancedTypeInfo;
 		}
@@ -62,8 +62,6 @@ namespace Reflection {
 
 		static TypeInfo* Get() {
 			static TLIST_INFO InstancedTypeInfo{
-				"std::list",
-				sizeof( TLIST ),
 				[]( TypeInfo* Info ) {
 					Info->Description = "doubly-linked list";
 					//Info->Serializer = make_unique<DynamicArraySerializer>();
@@ -71,7 +69,8 @@ namespace Reflection {
 					if( DynamicArrayTypeInfo* DynamicArrayInfo = Info->As<DynamicArrayTypeInfo>() ) {
 						DynamicArrayInfo->ElementType = TypeResolver<TELEMENT>::Get();
 					}
-				}
+				},
+				MakeTemplateName( "std::list", { TypeResolver<TELEMENT>::Get() } ), sizeof( TLIST )
 			};
 			return &InstancedTypeInfo;
 		}
@@ -84,8 +83,6 @@ namespace Reflection {
 
 		static TypeInfo* Get() {
 			static TDEQUE_INFO InstancedTypeInfo{
-				"std::deque",
-				sizeof( TDEQUE ),
 				[]( TypeInfo* Info ) {
 					Info->Description = "double-ended queue";
 					//Info->Serializer = make_unique<DynamicArraySerializer>();
@@ -93,7 +90,8 @@ namespace Reflection {
 					if( auto* DynamicArrayInfo = Info->As<DynamicArrayTypeInfo>() ) {
 						DynamicArrayInfo->ElementType = TypeResolver<TELEMENT>::Get();
 					}
-				}
+				},
+				MakeTemplateName( "std::deque", { TypeResolver<TELEMENT>::Get() } ), sizeof( TDEQUE )
 			};
 			return &InstancedTypeInfo;
 		}

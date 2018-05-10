@@ -9,14 +9,10 @@ namespace Reflection {
 		static constexpr ETypeClassification CLASSIFICATION = ETypeClassification::DynamicArray;
 
 		DynamicArrayTypeInfo() = delete;
-		DynamicArrayTypeInfo( char const* InName, size_t InSize, void (*InInitializer)( TypeInfo* ) )
-		: TypeInfo( InName, InSize, InInitializer, CLASSIFICATION )
-		{}
+		DynamicArrayTypeInfo( void (*InInitializer)( TypeInfo* ), std::string&& InName, size_t InSize );
 		virtual ~DynamicArrayTypeInfo() {}
 
 		TypeInfo* ElementType = nullptr;
-
-		virtual void OnLoaded( bool bLoadDependencies ) override;
 
 		//Get the number of elements that are in the array
 		virtual size_t GetCount( void const* Instance ) const = 0;
@@ -42,8 +38,8 @@ namespace Reflection {
 	struct TDynamicArrayTypeInfo : public DynamicArrayTypeInfo
 	{
 		TDynamicArrayTypeInfo() = delete;
-		TDynamicArrayTypeInfo( char const* InName, size_t InSize, void (*InInitializer)( TypeInfo* ) )
-		: DynamicArrayTypeInfo( InName, InSize, InInitializer )
+		TDynamicArrayTypeInfo( void (*InInitializer)( TypeInfo* ), std::string&& InName, size_t InSize )
+		: DynamicArrayTypeInfo( InInitializer, std::forward<std::string>( InName ), InSize )
 		{}
 		virtual ~TDynamicArrayTypeInfo() {}
 

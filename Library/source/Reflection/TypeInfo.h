@@ -1,9 +1,14 @@
 #pragma once
 #include <cstdint>
 #include <string>
+#include <string_view>
 #include <vector>
 #include <iostream>
 #include "Serialization/Serializer.h"
+
+#define REFLECT()\
+static Reflection::TypeInfo* StaticGetTypeInfo();\
+virtual Reflection::TypeInfo* GetTypeInfo() const
 
 namespace Reflection
 {
@@ -29,51 +34,56 @@ namespace Reflection
 
 	struct TypeInfo
 	{
+	public:
 		static constexpr ETypeClassification CLASSIFICATION = ETypeClassification::Primitive;
 
-	protected:
-		TypeInfo( char const* InName, size_t InSize, void (*InInitializer)( TypeInfo* ), ETypeClassification InClassification )
-		: Initializer( InInitializer )
-		, Classification( InClassification )
-		, Name( InName )
-		, Size( InSize )
-		{}
-
-		void (*Initializer)( TypeInfo* );
-		ETypeClassification Classification = ETypeClassification::Primitive;
-		/** called when loading this type, after the initializer has been executed */
-		virtual void OnLoaded( bool bLoadDependencies );
-
-	public:
 		TypeInfo() = delete;
-		TypeInfo( char const* InName, size_t InSize, void (*InInitializer)( TypeInfo* ) )
-		: TypeInfo( InName, InSize, InInitializer, CLASSIFICATION )
-		{}
+		TypeInfo( void (*InInitializer)( TypeInfo* ), std::string&& InName, size_t InSize );
 		virtual ~TypeInfo() {}
 
-		//If this is false, none of the following data will be available because the initializer has not run yet.
+	protected:
+		TypeInfo( ETypeClassification InClassification, void (*InInitializer)( TypeInfo* ), std::string&& InName, size_t InSize );
+
+		//TypeInfo required setup data
+		ETypeClassification Classification = ETypeClassification::Primitive;
+		void (*Initializer)( TypeInfo* ) = nullptr;
+
+		//Basic type information
+		std::string Name;
+		uint32_t NameHash = 0;
+		size_t Size = 0;
+
+		//Flag that tracks if this type was already loaded
 		bool bIsLoaded = false;
 
-		char const* Name;
-		size_t Size = 0;
-		uint16_t NameHash = 0;
-
+	public:
+		/** Human-readable description of this type */
 		std::string Description;
+		/** Flags that provide additional information about this type */
 		FTypeFlags Flags = FTypeFlags::None;
-
 		/** The interface used to serialize this type. If null, this type cannot be serialized. */
 		std::unique_ptr<ISerializer> Serializer = nullptr;
 
-		/** Load all the data for this type */
-		void Load( bool bLoadDependencies = true );
+		/** Load all the data for this type, allowing it to be fully used. */
+		void Load();
+		/** Get the name of this type */
+		inline std::string_view GetName() const { return Name; }
+		/** Get the unique identifier for this type */
+		inline uint16_t GetNameHash() const { return NameHash; }
+		/** Get the size in bytes of this type */
+		inline size_t GetSize() const { return Size; }
 
 		/** Get a pointer to a specific kind of type. Will return nullptr if the conversion is not possible */
-		template<typename TDATA>
-		TDATA const* As() const {
-			if( TDATA::CLASSIFICATION == Classification ) return (TDATA const*)this;
+		template<typename TTYPE>
+		TTYPE const* As() const {
+			if( TTYPE::CLASSIFICATION == Classification ) return (TTYPE const*)this;
 			else return nullptr;
 		}
-		template<typename TDATA>
-		TDATA* As() { return const_cast<TDATA*>( static_cast<TypeInfo const*>( this )->As<TDATA>() ); }
+		template<typename TTYPE>
+		TTYPE* As() { return const_cast<TTYPE*>( static_cast<TypeInfo const*>( this )->As<TTYPE>() ); }
+
+	protected:
+		/** called when loading this type, after the initializer has been executed */
+		virtual void OnLoaded();
 	};
 }

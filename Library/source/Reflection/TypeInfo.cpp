@@ -2,17 +2,25 @@
 #include "Engine/StringID.h"
 
 namespace Reflection {
-	void TypeInfo::OnLoaded( bool bLoadDependencies /*= true */ )
-	{
-		NameHash = id( Name );
-	}
+	TypeInfo::TypeInfo( void (*InInitializer)( TypeInfo* ), std::string&& InName, size_t InSize )
+		: TypeInfo( CLASSIFICATION, InInitializer, std::forward<std::string>( InName ), InSize )
+	{}
 
-	void TypeInfo::Load( bool bLoadDependencies /*= true */ )
-	{
+	TypeInfo::TypeInfo( ETypeClassification InClassification, void (*InInitializer)( TypeInfo* ), std::string&& InName, size_t InSize )
+		: Classification( InClassification )
+		, Initializer( InInitializer )
+		, Name( InName )
+		, NameHash( id( InName.data() ) )
+		, Size( InSize )
+	{}
+
+	void TypeInfo::Load() {
 		if( !bIsLoaded ) {
 			bIsLoaded = true;
 			if( !!Initializer ) Initializer( this );
-			OnLoaded( bLoadDependencies );
+			OnLoaded();
 		}
 	}
+
+	void TypeInfo::OnLoaded() {}
 }

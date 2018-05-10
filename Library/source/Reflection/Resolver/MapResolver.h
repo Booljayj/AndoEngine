@@ -4,6 +4,7 @@
 #include "Reflection/Resolver/TypeResolver.h"
 #include "Reflection/TypeInfo.h"
 #include "Reflection/MapTypeInfo.h"
+#include "Reflection/TypeUtility.h"
 
 namespace Reflection {
 	//============================================================
@@ -16,8 +17,6 @@ namespace Reflection {
 
 		static TypeInfo* Get() {
 			static TMAP_INFO InstancedTypeInfo{
-				"std::map",
-				sizeof( TMAP ),
 				[]( TypeInfo* Info ) {
 					Info->Description = "ordered map";
 					//Info->Serializer = make_unique<TableSerializer>();
@@ -26,7 +25,8 @@ namespace Reflection {
 						MapInfo->KeyType = TypeResolver<TKEY>::Get();
 						MapInfo->ValueType = TypeResolver<TVALUE>::Get();
 					}
-				}
+				},
+				MakeTemplateName( "std::map", { TypeResolver<TKEY>::Get(), TypeResolver<TVALUE>::Get() } ), sizeof( TMAP )
 			};
 			return &InstancedTypeInfo;
 		}
@@ -39,8 +39,6 @@ namespace Reflection {
 
 		static TypeInfo* Get() {
 			static TMAP_INFO InstancedTypeInfo{
-				"std::unordered_map",
-				sizeof( TMAP ),
 				[]( TypeInfo* Info ) {
 					Info->Description = "unordered map";
 					//Info->Serializer = make_unique<TableSerializer>();
@@ -49,7 +47,8 @@ namespace Reflection {
 						MapInfo->KeyType = TypeResolver<TKEY>::Get();
 						MapInfo->ValueType = TypeResolver<TVALUE>::Get();
 					}
-				}
+				},
+				MakeTemplateName( "std::unordered_map", { TypeResolver<TKEY>::Get(), TypeResolver<TVALUE>::Get() } ), sizeof( TMAP )
 			};
 			return &InstancedTypeInfo;
 		}

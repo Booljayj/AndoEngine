@@ -3,16 +3,12 @@
 #include "Reflection/TypeInfo.h"
 
 #define NAME( __TYPE__ ) TypeInfo__##__TYPE__
-#define TYPEINFO( __TYPE__ )\
-TypeInfo NAME( __TYPE__ ) {\
-	#__TYPE__,\
-	sizeof( __TYPE__ ),\
-	nullptr\
-}
+
+#define TYPEINFO( __TYPE__ ) TypeInfo NAME( __TYPE__ ) { nullptr, #__TYPE__, sizeof( __TYPE__ ) }
 
 namespace Reflection
 {
-	TypeInfo NAME( void ) { "void", 0, nullptr }; //cannot use sizeof( void )
+	TypeInfo NAME( void ) { nullptr, "void", 0 }; //cannot use sizeof( void )
 
 	TYPEINFO( bool );
 	TYPEINFO( char );

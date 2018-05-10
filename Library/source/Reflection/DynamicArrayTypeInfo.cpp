@@ -1,10 +1,7 @@
 #include "Reflection/DynamicArrayTypeInfo.h"
 
 namespace Reflection {
-	void DynamicArrayTypeInfo::OnLoaded( bool bLoadDependencies ) {
-		TypeInfo::OnLoaded( bLoadDependencies );
-		if( bLoadDependencies ) {
-			ElementType->Load( bLoadDependencies );
-		}
-	}
+	DynamicArrayTypeInfo::DynamicArrayTypeInfo( void (*InInitializer)( TypeInfo* ), std::string&& InName, size_t InSize )
+		: TypeInfo( CLASSIFICATION, InInitializer, std::forward<std::string>( InName ), InSize )
+	{}
 }

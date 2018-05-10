@@ -11,9 +11,7 @@ namespace Reflection {
 		static constexpr ETypeClassification CLASSIFICATION = ETypeClassification::Struct;
 
 		StructTypeInfo() = delete;
-		StructTypeInfo( char const* InName, size_t InSize, void (*InInitializer)( TypeInfo* ) )
-		: TypeInfo( InName, InSize, InInitializer, CLASSIFICATION )
-		{}
+		StructTypeInfo( void (*InInitializer)( TypeInfo* ), std::string&& InName, size_t InSize );
 		virtual ~StructTypeInfo() {}
 
 		/** The type that this type inherits from. Only single-inheritance from another object type is supported. */
@@ -29,15 +27,23 @@ namespace Reflection {
 		/** Actions */
 		//functions without return values, essentially
 
-		virtual void OnLoaded( bool bLoadDependencies ) override;
+		virtual void OnLoaded() override;
 
+		/** Returns true if the chain of base types includes the provided type */
 		bool DerivesFrom( TypeInfo const* Base ) const { return true; }
 
+		/** Get a list of all constants, including those from base classes */
+		void GetStaticConstantsRecursive( std::vector<StaticConstantInfo const*>& OutStaticConstants ) const {}
+		void GetMemberConstantsRecursive( std::vector<MemberConstantInfo const*>& OutMemberConstants ) const {}
+		/** Get a list of all variables, including those from base classes */
+		void GetStaticVariablesRecursive( std::vector<StaticVariableInfo const*>& OutStaticVariables ) const {}
+		void GetMemberVariablesRecursive( std::vector<MemberVariableInfo const*>& OutMemberVariables ) const {}
+
 		//Find a constant that has the provided name hash
-		StaticConstantInfo const* FindStaticConstantInfo( uint16_t NameHash ) { return nullptr; }
-		MemberConstantInfo const* FindMemberConstantInfo( uint16_t NameHash ) { return nullptr; }
+		StaticConstantInfo const* FindStaticConstantInfo( uint16_t NameHash ) const { return nullptr; }
+		MemberConstantInfo const* FindMemberConstantInfo( uint16_t NameHash ) const { return nullptr; }
 		//Find a variable that has the provided name hash
-		StaticVariableInfo const* FindStaticVariableInfo( uint16_t NameHash ) { return nullptr; }
-		MemberVariableInfo const* FindMemberVariableInfo( uint16_t NameHash ) { return nullptr; }
+		StaticVariableInfo const* FindStaticVariableInfo( uint16_t NameHash ) const { return nullptr; }
+		MemberVariableInfo const* FindMemberVariableInfo( uint16_t NameHash ) const { return nullptr; }
 	};
 }

@@ -1,10 +1,7 @@
 #include "Reflection/FixedArrayTypeInfo.h"
 
 namespace Reflection {
-	void FixedArrayTypeInfo::OnLoaded( bool bLoadDependencies ) {
-		TypeInfo::OnLoaded( bLoadDependencies );
-		if( bLoadDependencies ) {
-			ElementType->Load( bLoadDependencies );
-		}
-	}
+	FixedArrayTypeInfo::FixedArrayTypeInfo( void (*InInitializer)( TypeInfo* ), std::string&& InName, size_t InSize )
+		: TypeInfo( CLASSIFICATION, InInitializer, std::forward<std::string>( InName ), InSize )
+	{}
 }

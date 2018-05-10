@@ -3,6 +3,7 @@
 #include "Reflection/Resolver/TypeResolver.h"
 #include "Reflection/TypeInfo.h"
 #include "Reflection/FixedArrayTypeInfo.h"
+#include "Reflection/TypeUtility.h"
 
 namespace Reflection {
 	//============================================================
@@ -15,8 +16,6 @@ namespace Reflection {
 
 		static TypeInfo* Get() {
 			static TSEQUENCE_INFO InstancedTypeInfo{
-				"std::array",
-				sizeof( std::array<TELEMENT, SIZE> ),
 				[]( TypeInfo* Info ) {
 					Info->Description = "fixed array";
 					//Info->Serializer = make_unique<ArraySerializer>();
@@ -24,7 +23,8 @@ namespace Reflection {
 					if( auto* FixedArrayInfo = Info->As<FixedArrayTypeInfo>() ) {
 						FixedArrayInfo->ElementType = TypeResolver<TELEMENT>::Get();
 					}
-				}
+				},
+				MakeArrayName( TypeResolver<TELEMENT>::Get(), SIZE ), sizeof( std::array<TELEMENT, SIZE> )
 			};
 			return &InstancedTypeInfo;
 		}

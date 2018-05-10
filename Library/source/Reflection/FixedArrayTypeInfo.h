@@ -7,14 +7,10 @@ namespace Reflection {
 		static constexpr ETypeClassification CLASSIFICATION = ETypeClassification::FixedArray;
 
 		FixedArrayTypeInfo() = delete;
-		FixedArrayTypeInfo( char const* InName, size_t InSize, void (*InInitializer)( TypeInfo* ) )
-		: TypeInfo( InName, InSize, InInitializer, CLASSIFICATION )
-		{}
+		FixedArrayTypeInfo( void (*InInitializer)( TypeInfo* ), std::string&& InName, size_t InSize );
 		virtual ~FixedArrayTypeInfo() {}
 
 		TypeInfo* ElementType = nullptr;
-
-		virtual void OnLoaded( bool bLoadDependencies ) override;
 
 		//Get the number of elements that are in the array
 		virtual size_t GetCount( void const* Instance ) const = 0;
@@ -27,8 +23,8 @@ namespace Reflection {
 	struct TFixedArrayTypeInfo : public FixedArrayTypeInfo
 	{
 		TFixedArrayTypeInfo() = delete;
-		TFixedArrayTypeInfo( char const* InName, size_t InSize, void (*InInitializer)( TypeInfo* ) )
-		: FixedArrayTypeInfo( InName, InSize, InInitializer )
+		TFixedArrayTypeInfo( void (*InInitializer)( TypeInfo* ), std::string&& InName, size_t InSize )
+		: FixedArrayTypeInfo( InInitializer, std::forward<std::string>( InName ), InSize )
 		{}
 		virtual ~TFixedArrayTypeInfo() {}
 

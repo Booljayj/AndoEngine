@@ -19,6 +19,11 @@
 #include "Rendering/VertexData.h"
 #include "Rendering/Shader.h"
 
+#include "Reflection/Resolver.h"
+#include "Reflection/StructTypeInfo.h"
+#include "Reflection/ReflectionTest.h"
+#include "Reflection/TypeUtility.h"
+
 // Components and managers
 
 CREATE_COMPONENT(   1, Transform, TransformComponent, TransformComponentManager{} );
@@ -119,6 +124,14 @@ int main( int argc, const char * argv[] )
 	CTX.Log->Message( TERM_Cyan "Hello, World! This is AndoEngine." );
 	CTX.Log->Message( TERM_Cyan "Compiled with " __VERSION__ "\n" );
 
+	auto* TA = Reflection::TypeResolver<ReflectedType>::Get()->As<Reflection::StructTypeInfo>();
+	PrintType( std::cout, *TA );
+	auto* TB = Reflection::TypeResolver<SecondReflectedType>::Get()->As<Reflection::StructTypeInfo>();
+	PrintType( std::cout, *TB );
+	auto* TC = Reflection::TypeResolver<RecursiveType>::Get()->As<Reflection::StructTypeInfo>();
+	PrintType( std::cout, *TC );
+
+	return 0;
 	if( Startup( CTX ) )
 	{
 		CTX.Log->Message( "Creating entities" );
