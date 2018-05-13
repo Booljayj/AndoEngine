@@ -3,12 +3,19 @@
 #include <istream>
 #include <sstream>
 
-struct ISerializer {
-	virtual ~ISerializer() {}
+namespace Serialization {
+	struct ISerializer {
+		virtual ~ISerializer() {}
 
-	virtual void SerializeBinary( void const* Data, std::ostream& Stream ) const = 0;
-	virtual bool DeserializeBinary( std::istream const& Stream, void* Data ) const = 0;
+		//Prepare this serializer to begin serializing data, caching any appropriate data
+		virtual void Load() {}
 
-	virtual void SerializeText( void const* Data, std::ostringstream& Stream ) const = 0;
-	virtual bool DeserializeText( std::istringstream const& Stream, void* Data ) const = 0;
-};
+		//Serialize to and from binary data streams
+		virtual void SerializeBinary( void const* Data, std::ostream& Stream ) const = 0;
+		virtual bool DeserializeBinary( void* Data, std::istream& Stream, uint32_t NumBytes = UINT32_MAX ) const = 0;
+
+		//Serialize to and from human-readable text streams
+		virtual void SerializeText( void const* Data, std::ostringstream& Stream ) const = 0;
+		virtual bool DeserializeText( void* Data, std::istringstream& Stream ) const = 0;
+	};
+}

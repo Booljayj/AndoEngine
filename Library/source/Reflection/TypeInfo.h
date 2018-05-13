@@ -62,7 +62,7 @@ namespace Reflection
 		/** Flags that provide additional information about this type */
 		FTypeFlags Flags = FTypeFlags::None;
 		/** The interface used to serialize this type. If null, this type cannot be serialized. */
-		std::unique_ptr<ISerializer> Serializer = nullptr;
+		std::unique_ptr<Serialization::ISerializer> Serializer = nullptr;
 
 		/** The function used to compare two instances of this type */
 		int8_t (*Compare)( TypeInfo*, void const*, void const* ) = nullptr;
