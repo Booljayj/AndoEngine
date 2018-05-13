@@ -29,6 +29,7 @@ namespace Reflection {
 		Info->Description = "A simple struct to test reflection";
 
 		STRUCT_TYPE() {
+			MAKE_DEFAULT();
 			ADD_STATIC_CONSTANT( StaticImmutableShortValue, "Test Static Immutable Short Value" );
 			ADD_MEMBER_CONSTANT( ImmutableByteValue, "Test Immutable Byte Value" );
 			ADD_STATIC_VARIABLE( StaticShortValue, "Test Static Short Value" );
@@ -46,6 +47,7 @@ namespace Reflection {
 		Info->Description = "Another struct to test reflection, in particular nesting";
 
 		STRUCT_TYPE() {
+			MAKE_DEFAULT();
 			ADD_MEMBER_VARIABLE( VectorValue, "A vector that contains another reflected type" );
 			ADD_MEMBER_VARIABLE( MapValue, "A map that contains strings" );
 		}
@@ -60,6 +62,7 @@ namespace Reflection {
 		Info->Description = "Recursive struct example";
 
 		STRUCT_TYPE() {
+			MAKE_DEFAULT();
 			ADD_MEMBER_VARIABLE( Data, "Some data" );
 			ADD_MEMBER_VARIABLE( Nodes, "Recursive list of the same type" );
 		}
