@@ -1,10 +1,16 @@
+#include <memory>
 #include "Reflection/Resolver/PrimitiveResolver.h"
 #include "Engine/StringID.h"
 #include "Reflection/TypeInfo.h"
+#include "Serialization/PrimitiveSerializer.h"
 
 #define NAME( __TYPE__ ) TypeInfo__##__TYPE__
 
-#define TYPEINFO( __TYPE__ ) TypeInfo NAME( __TYPE__ ) { nullptr, #__TYPE__, sizeof( __TYPE__ ) }
+#define TYPEINFO( __TYPE__ ) TypeInfo NAME( __TYPE__ ) {\
+	[]( TypeInfo* Info ){ Info->Serializer = std::make_unique<Serialization::TPrimitiveSerializer<__TYPE__>>(); },\
+	#__TYPE__,\
+	sizeof( __TYPE__ )\
+}
 
 namespace Reflection
 {
