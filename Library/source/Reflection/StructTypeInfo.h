@@ -16,6 +16,10 @@ namespace Reflection {
 
 		/** The type that this type inherits from. Only single-inheritance from another object type is supported. */
 		StructTypeInfo* BaseType = nullptr;
+
+		/** A default-constructed instance of this struct type, used to find default values for variables */
+		std::unique_ptr<char[]> Default;
+
 		/** Constants */
 		std::vector<std::unique_ptr<StaticConstantInfo>> StaticConstants;
 		std::vector<std::unique_ptr<MemberConstantInfo>> MemberConstants;

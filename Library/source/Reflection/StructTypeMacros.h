@@ -15,6 +15,10 @@ StructTypeInfo TypeInfo__ ## __TYPE_NAME__{\
 #define STRUCT_TYPE()\
 if( auto* StructInfo = Info->As<Reflection::StructTypeInfo>() )
 
+#define MAKE_DEFAULT()\
+StructInfo->Default = std::make_unique<char[]>( sizeof( T ) );\
+new (StructInfo->Default.get()) T
+
 /** End the type reflection block */
 #define TYPE_REFLECT_END( __TYPE__, __TYPE_NAME_STR__ )\
 	},\
