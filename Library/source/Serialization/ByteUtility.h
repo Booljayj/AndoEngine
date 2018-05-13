@@ -23,9 +23,8 @@ namespace Serialization {
 			static inline void Write( char const* Data, std::ostream& Stream ) {
 				Stream.write( Data, SIZE );
 			}
-			static inline bool Read( char* Data, std::istream& Stream ) {
+			static inline void Read( char* Data, std::istream& Stream ) {
 				Stream.read( Data, SIZE );
-				return Stream.good();
 			}
 		};
 		template<size_t SIZE>
@@ -38,16 +37,11 @@ namespace Serialization {
 				}
 				Stream.write( ReversedData, SIZE );
 			}
-			static inline bool Read( char* Data, std::istream& Stream ) {
+			static inline void Read( char* Data, std::istream& Stream ) {
 				char ReversedData[SIZE];
 				Stream.read( ReversedData, SIZE );
-				if( Stream.good() ) {
-					for( uint8_t Index = 0; Index < SIZE; ++Index ) {
-						Data[Index] = ReversedData[7-Index];
-					}
-					return true;
-				} else {
-					return false;
+				for( uint8_t Index = 0; Index < SIZE; ++Index ) {
+					Data[Index] = ReversedData[7-Index];
 				}
 			}
 		};
@@ -58,10 +52,10 @@ namespace Serialization {
 	struct LittleEndianByteSerializer
 	{
 		static inline void Write( char const* Data, std::ostream& Stream ) {
-			return ByteSerializer<SIZE, IsPlatformLittleEndian()>::Write( Data, Stream );
+			ByteSerializer<SIZE, IsPlatformLittleEndian()>::Write( Data, Stream );
 		}
-		static inline bool Read( char* Data, std::istream& Stream ) {
-			return ByteSerializer<SIZE, IsPlatformLittleEndian()>::Read( Data, Stream );
+		static inline void Read( char* Data, std::istream& Stream ) {
+			ByteSerializer<SIZE, IsPlatformLittleEndian()>::Read( Data, Stream );
 		}
 	};
 }
