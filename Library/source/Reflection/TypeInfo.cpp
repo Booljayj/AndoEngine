@@ -12,7 +12,13 @@ namespace Reflection {
 		, Name( InName )
 		, NameHash( id( InName.data() ) )
 		, Size( InSize )
-	{}
+	{
+		Compare = &DefaultCompare;
+	}
+
+	int8_t TypeInfo::DefaultCompare( TypeInfo* Info, void const* A, void const* B ) {
+		return memcmp( A, B, Info->GetSize() );
+	}
 
 	void TypeInfo::Load() {
 		if( !bIsLoaded ) {

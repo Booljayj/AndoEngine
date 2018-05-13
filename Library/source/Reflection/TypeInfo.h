@@ -64,8 +64,15 @@ namespace Reflection
 		/** The interface used to serialize this type. If null, this type cannot be serialized. */
 		std::unique_ptr<ISerializer> Serializer = nullptr;
 
+		/** The function used to compare two instances of this type */
+		int8_t (*Compare)( TypeInfo*, void const*, void const* ) = nullptr;
+
+		/** Default comparison function that compares memory contents */
+		static int8_t DefaultCompare( TypeInfo* Info, void const* A, void const* B );
+
 		/** Load all the data for this type, allowing it to be fully used. */
 		void Load();
+
 		/** Get the name of this type */
 		inline std::string_view GetName() const { return Name; }
 		/** Get the unique identifier for this type */
