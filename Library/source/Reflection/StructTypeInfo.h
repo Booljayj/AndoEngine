@@ -37,11 +37,11 @@ namespace Reflection {
 		bool DerivesFrom( TypeInfo const* Base ) const { return true; }
 
 		/** Get a list of all constants, including those from base classes */
-		void GetStaticConstantsRecursive( std::vector<StaticConstantInfo const*>& OutStaticConstants ) const {}
-		void GetMemberConstantsRecursive( std::vector<MemberConstantInfo const*>& OutMemberConstants ) const {}
+		void GetStaticConstantsRecursive( std::vector<StaticConstantInfo const*>& OutStaticConstants ) const;
+		void GetMemberConstantsRecursive( std::vector<MemberConstantInfo const*>& OutMemberConstants ) const;
 		/** Get a list of all variables, including those from base classes */
-		void GetStaticVariablesRecursive( std::vector<StaticVariableInfo const*>& OutStaticVariables ) const {}
-		void GetMemberVariablesRecursive( std::vector<MemberVariableInfo const*>& OutMemberVariables ) const {}
+		void GetStaticVariablesRecursive( std::vector<StaticVariableInfo const*>& OutStaticVariables ) const;
+		void GetMemberVariablesRecursive( std::vector<MemberVariableInfo const*>& OutMemberVariables ) const;
 
 		//Find a constant that has the provided name hash
 		StaticConstantInfo const* FindStaticConstantInfo( uint16_t NameHash ) const { return nullptr; }

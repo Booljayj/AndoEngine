@@ -51,11 +51,11 @@ namespace Serialization {
 	template<size_t SIZE>
 	struct LittleEndianByteSerializer
 	{
-		static inline void Write( char const* Data, std::ostream& Stream ) {
-			ByteSerializer<SIZE, IsPlatformLittleEndian()>::Write( Data, Stream );
+		static inline void Write( void const* Data, std::ostream& Stream ) {
+			ByteSerializer<SIZE, IsPlatformLittleEndian()>::Write( static_cast<char const*>( Data ), Stream );
 		}
-		static inline void Read( char* Data, std::istream& Stream ) {
-			ByteSerializer<SIZE, IsPlatformLittleEndian()>::Read( Data, Stream );
+		static inline void Read( void* Data, std::istream& Stream ) {
+			ByteSerializer<SIZE, IsPlatformLittleEndian()>::Read( static_cast<char*>( Data ), Stream );
 		}
 	};
 }

@@ -19,6 +19,9 @@ if( auto* StructInfo = Info->As<Reflection::StructTypeInfo>() )
 StructInfo->Default = std::make_unique<char[]>( sizeof( T ) );\
 new (StructInfo->Default.get()) T
 
+#define MAKE_SERIALIZER()\
+StructInfo->Serializer = std::make_unique<Serialization::StructSerializer>( StructInfo )
+
 /** End the type reflection block */
 #define TYPE_REFLECT_END( __TYPE__, __TYPE_NAME_STR__ )\
 	},\

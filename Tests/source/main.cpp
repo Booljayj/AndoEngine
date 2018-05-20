@@ -124,12 +124,37 @@ int main( int argc, const char * argv[] )
 	CTX.Log->Message( TERM_Cyan "Hello, World! This is AndoEngine." );
 	CTX.Log->Message( TERM_Cyan "Compiled with " __VERSION__ "\n" );
 
-	auto* TA = Reflection::TypeResolver<ReflectedType>::Get()->As<Reflection::StructTypeInfo>();
-	PrintType( std::cout, *TA );
-	auto* TB = Reflection::TypeResolver<SecondReflectedType>::Get()->As<Reflection::StructTypeInfo>();
-	PrintType( std::cout, *TB );
-	auto* TC = Reflection::TypeResolver<RecursiveType>::Get()->As<Reflection::StructTypeInfo>();
-	PrintType( std::cout, *TC );
+	std::cout << "\n\nCreating streams and loading types" << std::endl;
+	std::stringstream Stream;
+	SerializedTypeA A1;
+	SerializedTypeA A2;
+	SerializedTypeB B;
+	auto* TA = Reflection::TypeResolver<SerializedTypeA>::Get();
+	auto* TB = Reflection::TypeResolver<SerializedTypeB>::Get();
+	TA->Load();
+	TB->Load();
+	Reflection::PrintType( std::cout, *TA );
+	Reflection::PrintType( std::cout, *TB );
+
+	A1.CharValue = 'x';
+	A1.ShortValue = 9999;
+	A1.FloatValue = 99.99;
+
+	std::cout << "Serializing A1" << std::endl;
+	TA->Serializer->SerializeBinary( &A1, Stream );
+	std::cout << "Deserializing A1 to A2" << std::endl;
+	Stream.seekg( 0 );
+	const bool SuccessA = TA->Serializer->DeserializeBinary( &A2, Stream );
+	std::cout << "Result: " << SuccessA << (A1 == A2) << std::endl;
+
+	Stream.str( "" );
+	Stream.clear();
+
+	std::cout << "Serializing A1 again" << std::endl;
+	TA->Serializer->SerializeBinary( &A1, Stream );
+	std::cout << "Deserializing A1 to B" << std::endl;
+	const bool SuccessB = TB->Serializer->DeserializeBinary( &B, Stream );
+	std::cout << "Result: " << SuccessB << (B == A1) << std::endl;
 
 	return 0;
 	if( Startup( CTX ) )
