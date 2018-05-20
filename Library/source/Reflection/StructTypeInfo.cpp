@@ -2,13 +2,10 @@
 #include "Reflection/Resolver.h"
 
 namespace Reflection {
-	StructTypeInfo::StructTypeInfo( void (*InInitializer)( TypeInfo* ), std::string&& InName, size_t InSize )
-		: TypeInfo( CLASSIFICATION, InInitializer, std::forward<std::string>( InName ), InSize )
-	{}
-
-	void StructTypeInfo::OnLoaded() {
-		TypeInfo::OnLoaded();
-
+	StructTypeInfo::StructTypeInfo( void (*Initializer)( StructTypeInfo* ), std::string&& InName, size_t InSize )
+		: TypeInfo( CLASSIFICATION, std::forward<std::string>( InName ), InSize )
+	{
+		if( Initializer ) Initializer( this );
 		//ensures that arrays are sorted based on NameHash for quick lookups.
 		auto ByNameHash = []( auto const& A, auto const& B) {
 			return A->NameHash < B->NameHash;

@@ -3,16 +3,17 @@
 #include "Reflection/StructTypeInfo.h"
 
 namespace Reflection {
-	StructTypeInfo TypeInfo__std_string{
+	StringTypeInfo::StringTypeInfo( void (*InInitializer)( TypeInfo* ), std::string&& InName, size_t InSize )
+	: TypeInfo( InInitializer, std::forward<std::string>( InName ), InSize )
+	{}
+	int8_t StringTypeInfo::Compare( void const* A, void const* B ) const {
+		return static_cast<std::string const*>( A )->compare( *static_cast<std::string const*>( B ) );
+	}
+
+	StringTypeInfo const TypeInfo__std_string{
 		[]( TypeInfo* Info ) {
 			Info->Description = "dynamic string";
-			Info->Compare = []( TypeInfo* Info, void const* A, void const* B ) -> int8_t {
-				return static_cast<std::string const*>( A )->compare( *static_cast<std::string const*>( B ) );
-			};
-
-			if( auto* StructInfo = Info->As<StructTypeInfo>() ) {
-				//@todo Fill out function info for std::string
-			}
+			//Info->Serializer = make_unique<StringSerializer>();
 		},
 		"std::string", sizeof( std::string )
 	};

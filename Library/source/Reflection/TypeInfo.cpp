@@ -2,31 +2,20 @@
 #include "Engine/StringID.h"
 
 namespace Reflection {
-	TypeInfo::TypeInfo( void (*InInitializer)( TypeInfo* ), std::string&& InName, size_t InSize )
-		: TypeInfo( CLASSIFICATION, InInitializer, std::forward<std::string>( InName ), InSize )
-	{}
+	TypeInfo::TypeInfo( void (*Initializer)( TypeInfo* ), std::string&& InName, size_t InSize )
+		: TypeInfo( CLASSIFICATION, std::forward<std::string>( InName ), InSize )
+	{
+		if( Initializer ) Initializer( this );
+	}
 
-	TypeInfo::TypeInfo( ETypeClassification InClassification, void (*InInitializer)( TypeInfo* ), std::string&& InName, size_t InSize )
+	TypeInfo::TypeInfo( ETypeClassification InClassification, std::string&& InName, size_t InSize )
 		: Classification( InClassification )
-		, Initializer( InInitializer )
 		, Name( InName )
 		, NameHash( id( InName.data() ) )
 		, Size( InSize )
-	{
-		Compare = &DefaultCompare;
-	}
+	{}
 
-	int8_t TypeInfo::DefaultCompare( TypeInfo* Info, void const* A, void const* B ) {
-		return memcmp( A, B, Info->GetSize() );
+	int8_t TypeInfo::Compare( void const* A, void const* B ) const {
+		return memcmp( A, B, Size );
 	}
-
-	void TypeInfo::Load() {
-		if( !bIsLoaded ) {
-			bIsLoaded = true;
-			if( !!Initializer ) Initializer( this );
-			OnLoaded();
-		}
-	}
-
-	void TypeInfo::OnLoaded() {}
 }

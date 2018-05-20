@@ -5,9 +5,9 @@
 #include "Reflection/Resolver/TypeResolver.h"
 
 #define L_DECLARE_TYPE( __TYPE__ )\
-extern TypeInfo TypeInfo__##__TYPE__;\
+extern TypeInfo const TypeInfo__##__TYPE__;\
 template<> struct TypeResolver<std::decay<__TYPE__>::type> {\
-	static TypeInfo* Get() { return &TypeInfo__##__TYPE__; }\
+	static TypeInfo const* Get() { return &TypeInfo__##__TYPE__; }\
 }
 
 namespace Reflection {

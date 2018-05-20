@@ -7,8 +7,8 @@
 #include "Serialization/Serializer.h"
 
 #define REFLECT()\
-static Reflection::TypeInfo* StaticGetTypeInfo();\
-virtual Reflection::TypeInfo* GetTypeInfo() const
+static Reflection::TypeInfo const* StaticGetTypeInfo();\
+virtual Reflection::TypeInfo const* GetTypeInfo() const
 
 namespace Reflection
 {
@@ -34,29 +34,26 @@ namespace Reflection
 
 	struct TypeInfo
 	{
-	public:
 		static constexpr ETypeClassification CLASSIFICATION = ETypeClassification::Primitive;
 
 		TypeInfo() = delete;
-		TypeInfo( void (*InInitializer)( TypeInfo* ), std::string&& InName, size_t InSize );
+		TypeInfo( void (*Initializer)( TypeInfo* ), std::string&& InName, size_t InSize );
+		TypeInfo( ETypeClassification InClassification, std::string&& InName, size_t InSize );
 		virtual ~TypeInfo() {}
 
-	protected:
-		TypeInfo( ETypeClassification InClassification, void (*InInitializer)( TypeInfo* ), std::string&& InName, size_t InSize );
-
-		//TypeInfo required setup data
+		//============================================================
+		// Basic required type information
+		/** The classification of this TypeInfo, defining what kinds of type information it contains */
 		ETypeClassification Classification = ETypeClassification::Primitive;
-		void (*Initializer)( TypeInfo* ) = nullptr;
-
-		//Basic type information
+		/** The fully qualified name of the type, including namespaces. If this is a template, does not include template arguments */
 		std::string Name;
+		/** The hash of the fully qualified name, serves as a unique identifier */
 		uint32_t NameHash = 0;
+		/** The size in bytes of an instance of this type */
 		size_t Size = 0;
 
-		//Flag that tracks if this type was already loaded
-		bool bIsLoaded = false;
-
-	public:
+		//============================================================
+		// Optional type information
 		/** Human-readable description of this type */
 		std::string Description;
 		/** Flags that provide additional information about this type */
@@ -64,21 +61,10 @@ namespace Reflection
 		/** The interface used to serialize this type. If null, this type cannot be serialized. */
 		std::unique_ptr<Serialization::ISerializer> Serializer = nullptr;
 
-		/** The function used to compare two instances of this type */
-		int8_t (*Compare)( TypeInfo*, void const*, void const* ) = nullptr;
-
-		/** Default comparison function that compares memory contents */
-		static int8_t DefaultCompare( TypeInfo* Info, void const* A, void const* B );
-
-		/** Load all the data for this type, allowing it to be fully used. */
-		void Load();
-
-		/** Get the name of this type */
-		inline std::string_view GetName() const { return Name; }
-		/** Get the unique identifier for this type */
-		inline uint16_t GetNameHash() const { return NameHash; }
-		/** Get the size in bytes of this type */
-		inline size_t GetSize() const { return Size; }
+		/** Get the full name of this type, including template arguments if it is a template */
+		virtual std::string_view GetName() const { return Name; }
+		/** Compare two instances of this type, similar to standard compare functions */
+		virtual int8_t Compare( void const*, void const* ) const;
 
 		/** Get a pointer to a specific kind of type. Will return nullptr if the conversion is not possible */
 		template<typename TTYPE>
@@ -88,9 +74,5 @@ namespace Reflection
 		}
 		template<typename TTYPE>
 		TTYPE* As() { return const_cast<TTYPE*>( static_cast<TypeInfo const*>( this )->As<TTYPE>() ); }
-
-	protected:
-		/** called when loading this type, after the initializer has been executed */
-		virtual void OnLoaded();
 	};
 }

@@ -14,5 +14,5 @@ namespace Serialization {
 	/** Reset the stringstream contents */
 	void ResetStream( std::stringstream& Stream );
 	/** True if the data in the two pointers are equal */
-	bool AreValuesEqual( Reflection::TypeInfo* Info, void const* ValueA, void const* ValueB );
+	bool AreValuesEqual( Reflection::TypeInfo const* Info, void const* ValueA, void const* ValueB );
 }

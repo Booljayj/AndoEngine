@@ -5,28 +5,27 @@
 #include "Reflection/StructTypeInfo.h"
 
 namespace Reflection {
-	std::string MakeTemplateName( std::string_view TemplateName, std::initializer_list<TypeInfo*> const& Types ) {
+	std::string MakeTemplateName( std::string_view TemplateName, std::initializer_list<TypeInfo const*> const& Types ) {
 		std::ostringstream Stream;
 		Stream << TemplateName << "<";
-		for( TypeInfo* Info : Types ) {
-			Stream << Info->GetName() << ",";
+		for( TypeInfo const* Info : Types ) {
+			Stream << Info->Name << ",";
 		}
 		Stream.seekp( -1, std::ios_base::cur ) << ">"; //back up one char to overwrite the last "," with a ">"
 		return Stream.str();
 	}
 
-	std::string MakeArrayName( TypeInfo* Type, size_t Size ) {
+	std::string MakeArrayName( TypeInfo const* Type, size_t Size ) {
 		std::ostringstream Stream;
-		Stream << "std::array<" << Type->GetName() << "," << Size << ">";
+		Stream << "std::array<" << Type->Name << "," << Size << ">";
 		return Stream.str();
 	}
 
-	void PrintType( std::ostream& Stream, TypeInfo& Type ) {
-		Type.Load();
+	void PrintType( std::ostream& Stream, TypeInfo const& Type ) {
 		if( Type.Serializer ) {
 			Stream << "[Serializable]\n";
 		}
-		if( StructTypeInfo* StructInfo = Type.As<StructTypeInfo>() ) {
+		if( StructTypeInfo const* StructInfo = Type.As<StructTypeInfo>() ) {
 			Stream << "struct " << StructInfo->GetName() << " {\n";
 			for( auto const& StaticConstant : StructInfo->StaticConstants ) {
 				Stream << "\t" << StaticConstant->Name << " : " << StaticConstant->Type->GetName() << " const static\n";

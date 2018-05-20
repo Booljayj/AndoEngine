@@ -17,9 +17,7 @@ namespace Serialization {
 		void const* DefaultData = Type->Default.get();
 
 		for( Reflection::MemberVariableInfo const* Variable : CachedMemberVariables ) {
-			Reflection::TypeInfo* Type = Variable->Type;
-			Type->Load();
-
+			Reflection::TypeInfo const* Type = Variable->Type;
 			if( Type->Serializer ) {
 				//Get a pointer to the value we want to serialize, and a pointer to the default version of that value
 				void const* VariableDataPointer = Variable->GetValuePointer( Data );
@@ -69,8 +67,7 @@ namespace Serialization {
 
 			//If the struct has a variable with this ID, and it can be serialized, attempt to deserialize it.
 			if( Reflection::MemberVariableInfo const* Variable = FindVariableWithNameHash( VariableNameHash ) ) {
-				Reflection::TypeInfo* Type = Variable->Type;
-				Type->Load();
+				Reflection::TypeInfo const* Type = Variable->Type;
 				if( Type->Serializer ) {
 					void* VariableDataPointer = Variable->GetValuePointer( Data );
 					bool const bSuccess = Variable->Type->Serializer->DeserializeBinary( VariableDataPointer, Stream, VariableDataSize );

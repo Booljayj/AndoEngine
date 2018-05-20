@@ -16,7 +16,7 @@ namespace Reflection {
 	{
 		std::string Name;
 		std::string Description;
-		TypeInfo* Type = nullptr;
+		TypeInfo const* Type = nullptr;
 
 		FArgumentFlags Flags = FArgumentFlags::None;
 	};

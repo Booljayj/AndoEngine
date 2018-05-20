@@ -2,18 +2,14 @@
 
 /** Implement the master reflection functions for the type */
 #define DEFINE_REFLECTION( __TYPE__, __TYPE_NAME__ )\
-Reflection::TypeInfo* __TYPE__::StaticGetTypeInfo() { return &Reflection::TypeInfo__ ## __TYPE_NAME__; }\
-Reflection::TypeInfo* __TYPE__::GetTypeInfo() const { return __TYPE__::StaticGetTypeInfo(); }
+Reflection::TypeInfo const* __TYPE__::StaticGetTypeInfo() { return &Reflection::TypeInfo__ ## __TYPE_NAME__; }\
+Reflection::TypeInfo const* __TYPE__::GetTypeInfo() const { return __TYPE__::StaticGetTypeInfo(); }
 
 /** Begin the type reflection block */
-#define TYPE_REFLECT_BEGIN( __TYPE__, __TYPE_NAME__ )\
+#define STRUCT_TYPE_REFLECT_BEGIN( __TYPE__, __TYPE_NAME__ )\
 StructTypeInfo TypeInfo__ ## __TYPE_NAME__{\
-	[]( TypeInfo* Info ) {\
+	[]( StructTypeInfo* StructInfo ) {\
 		using T = __TYPE__;\
-
-/** Begin the block that defines struct type info */
-#define STRUCT_TYPE()\
-if( auto* StructInfo = Info->As<Reflection::StructTypeInfo>() )
 
 #define MAKE_DEFAULT()\
 StructInfo->Default = std::make_unique<char[]>( sizeof( T ) );\
@@ -23,7 +19,7 @@ new (StructInfo->Default.get()) T
 StructInfo->Serializer = std::make_unique<Serialization::StructSerializer>( StructInfo )
 
 /** End the type reflection block */
-#define TYPE_REFLECT_END( __TYPE__, __TYPE_NAME_STR__ )\
+#define STRUCT_TYPE_REFLECT_END( __TYPE__, __TYPE_NAME_STR__ )\
 	},\
 	__TYPE_NAME_STR__, sizeof( __TYPE__ ),\
 };\

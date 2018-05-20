@@ -20,9 +20,9 @@ namespace Serialization {
 		Stream.clear();
 	}
 
-	bool AreValuesEqual( Reflection::TypeInfo* Info, void const* ValueA, void const* ValueB ) {
-		if( ValueA && ValueB && Info->Compare ) {
-			return Info->Compare( Info, ValueA, ValueB ) == 0;
+	bool AreValuesEqual( Reflection::TypeInfo const* Info, void const* ValueA, void const* ValueB ) {
+		if( ValueA && ValueB ) {
+			return Info->Compare( ValueA, ValueB ) == 0;
 		}
 		return false;
 	}

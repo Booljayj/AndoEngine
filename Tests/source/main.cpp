@@ -131,8 +131,6 @@ int main( int argc, const char * argv[] )
 	SerializedTypeB B;
 	auto* TA = Reflection::TypeResolver<SerializedTypeA>::Get();
 	auto* TB = Reflection::TypeResolver<SerializedTypeB>::Get();
-	TA->Load();
-	TB->Load();
 	Reflection::PrintType( std::cout, *TA );
 	Reflection::PrintType( std::cout, *TB );
 

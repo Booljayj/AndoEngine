@@ -27,7 +27,7 @@ namespace Reflection {
 		std::string Name;
 		std::string Description;
 
-		TypeInfo* Type = nullptr;
+		TypeInfo const* Type = nullptr;
 
 		uint16_t NameHash = 0;
 		FVariableFlags Flags = FVariableFlags::None;
@@ -66,7 +66,7 @@ namespace Reflection {
 		std::string Name;
 		std::string Description;
 
-		TypeInfo* Type = nullptr;
+		TypeInfo const* Type = nullptr;
 
 		uint16_t NameHash = 0;
 		FVariableFlags Flags = FVariableFlags::None;

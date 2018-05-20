@@ -11,12 +11,11 @@ namespace Reflection {
 		static constexpr ETypeClassification CLASSIFICATION = ETypeClassification::Struct;
 
 		StructTypeInfo() = delete;
-		StructTypeInfo( void (*InInitializer)( TypeInfo* ), std::string&& InName, size_t InSize );
+		StructTypeInfo( void (*Initializer)( StructTypeInfo* ), std::string&& InName, size_t InSize );
 		virtual ~StructTypeInfo() {}
 
 		/** The type that this type inherits from. Only single-inheritance from another object type is supported. */
-		StructTypeInfo* BaseType = nullptr;
-
+		StructTypeInfo const* BaseType = nullptr;
 		/** A default-constructed instance of this struct type, used to find default values for variables */
 		std::unique_ptr<char[]> Default;
 
@@ -30,8 +29,6 @@ namespace Reflection {
 		//std::vector<std::unique_ptr<FunctionInfo>> Functions; //@todo This will change when the FunctionInfo implementation is better fleshed out.
 		/** Actions */
 		//functions without return values, essentially
-
-		virtual void OnLoaded() override;
 
 		/** Returns true if the chain of base types includes the provided type */
 		bool DerivesFrom( TypeInfo const* Base ) const { return true; }

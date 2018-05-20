@@ -8,14 +8,13 @@ namespace Reflection {
 		static constexpr ETypeClassification CLASSIFICATION = ETypeClassification::Map;
 
 		MapTypeInfo() = delete;
-		MapTypeInfo( void (*InInitializer)( TypeInfo* ), std::string&& InName, size_t InSize )
-		: TypeInfo( CLASSIFICATION, InInitializer, std::forward<std::string>( InName ), InSize )
-		{}
+		MapTypeInfo( void (*InInitializer)( MapTypeInfo* ), std::string&& InName, size_t InSize );
 		virtual ~MapTypeInfo() {}
 
-		TypeInfo* KeyType = nullptr;
-		TypeInfo* ValueType = nullptr;
+		TypeInfo const* KeyType = nullptr;
+		TypeInfo const* ValueType = nullptr;
 
+		virtual std::string_view GetName() const override;
 		virtual size_t GetCount( void const* Instance ) const = 0;
 	};
 
@@ -23,8 +22,8 @@ namespace Reflection {
 	struct TMapTypeInfo : public MapTypeInfo
 	{
 		TMapTypeInfo() = delete;
-		TMapTypeInfo( void (*InInitializer)( TypeInfo* ), std::string&& InName, size_t InSize )
-		: MapTypeInfo( InInitializer, std::forward<std::string>( InName ), InSize )
+		TMapTypeInfo( void (*Initializer)( MapTypeInfo* ), std::string&& InName, size_t InSize )
+		: MapTypeInfo( Initializer, std::forward<std::string>( InName ), InSize )
 		{}
 		virtual ~TMapTypeInfo() {}
 

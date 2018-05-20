@@ -6,51 +6,28 @@
 #include "Reflection/MapTypeInfo.h"
 #include "Reflection/TypeUtility.h"
 
+#define L_MAP_TYPE_RESOLVER( __TEMPLATE__, __NAME__, __DESCRIPTION__ )\
+template<typename TKEY, typename TVALUE>\
+struct TypeResolver<__TEMPLATE__<TKEY, TVALUE>> {\
+	static TMapTypeInfo<TKEY, TVALUE, __TEMPLATE__<TKEY, TVALUE>> const InstancedTypeInfo;\
+	static TypeInfo const* Get() { return &InstancedTypeInfo; }\
+};\
+template<typename TKEY, typename TVALUE>\
+TMapTypeInfo<TKEY, TVALUE, __TEMPLATE__<TKEY, TVALUE>> const TypeResolver<__TEMPLATE__<TKEY, TVALUE>>::InstancedTypeInfo{\
+	[]( MapTypeInfo* MapInfo ) {\
+		MapInfo->Description = __DESCRIPTION__;\
+		MapInfo->KeyType = TypeResolver<TKEY>::Get();\
+		MapInfo->ValueType = TypeResolver<TVALUE>::Get();\
+	},\
+	__NAME__, sizeof( __TEMPLATE__<TKEY, TVALUE> )\
+}
+
 namespace Reflection {
 	//============================================================
 	// Standard map type specializations
 
-	template<typename TKEY, typename TVALUE>
-	struct TypeResolver<std::map<TKEY, TVALUE>> {
-		using TMAP = std::map<TKEY, TVALUE>;
-		using TMAP_INFO = TMapTypeInfo<TKEY, TVALUE, TMAP>;
-
-		static TypeInfo* Get() {
-			static TMAP_INFO InstancedTypeInfo{
-				[]( TypeInfo* Info ) {
-					Info->Description = "ordered map";
-					//Info->Serializer = make_unique<TableSerializer>();
-
-					if( auto* MapInfo = Info->As<MapTypeInfo>() ) {
-						MapInfo->KeyType = TypeResolver<TKEY>::Get();
-						MapInfo->ValueType = TypeResolver<TVALUE>::Get();
-					}
-				},
-				MakeTemplateName( "std::map", { TypeResolver<TKEY>::Get(), TypeResolver<TVALUE>::Get() } ), sizeof( TMAP )
-			};
-			return &InstancedTypeInfo;
-		}
-	};
-
-	template<typename TKEY, typename TVALUE>
-	struct TypeResolver<std::unordered_map<TKEY, TVALUE>> {
-		using TMAP = std::unordered_map<TKEY, TVALUE>;
-		using TMAP_INFO = TMapTypeInfo<TKEY, TVALUE, TMAP>;
-
-		static TypeInfo* Get() {
-			static TMAP_INFO InstancedTypeInfo{
-				[]( TypeInfo* Info ) {
-					Info->Description = "unordered map";
-					//Info->Serializer = make_unique<TableSerializer>();
-
-					if( auto* MapInfo = Info->As<MapTypeInfo>() ) {
-						MapInfo->KeyType = TypeResolver<TKEY>::Get();
-						MapInfo->ValueType = TypeResolver<TVALUE>::Get();
-					}
-				},
-				MakeTemplateName( "std::unordered_map", { TypeResolver<TKEY>::Get(), TypeResolver<TVALUE>::Get() } ), sizeof( TMAP )
-			};
-			return &InstancedTypeInfo;
-		}
-	};
+	L_MAP_TYPE_RESOLVER( std::map, "std::map", "ordered map" );
+	L_MAP_TYPE_RESOLVER( std::unordered_map, "std::unordered_map", "unordered map" );
 }
+
+#undef L_MAP_TYPE_RESOLVER

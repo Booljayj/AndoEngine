@@ -31,8 +31,8 @@ namespace Reflection
 		std::string Name;
 		std::string Description;
 
-		TypeInfo* InstanceType = nullptr;
-		TypeInfo* ReturnType = nullptr;
+		TypeInfo const* InstanceType = nullptr;
+		TypeInfo const* ReturnType = nullptr;
 		std::vector<std::unique_ptr<ArgumentInfo>> ArgumentInfos;
 
 		uint16_t NameHash = 0;

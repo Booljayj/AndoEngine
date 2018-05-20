@@ -26,7 +26,7 @@ namespace Reflection {
 		std::string Name;
 		std::string Description;
 
-		TypeInfo* Type = nullptr;
+		TypeInfo const* Type = nullptr;
 
 		uint16_t NameHash = 0;
 		FConstantFlags Flags = FConstantFlags::None;
@@ -65,7 +65,7 @@ namespace Reflection {
 		std::string Name;
 		std::string Description;
 
-		TypeInfo* Type = nullptr;
+		TypeInfo const* Type = nullptr;
 
 		uint16_t NameHash = 0;
 		FConstantFlags Flags = FConstantFlags::None;

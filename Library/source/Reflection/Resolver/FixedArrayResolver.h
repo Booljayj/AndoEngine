@@ -11,22 +11,15 @@ namespace Reflection {
 
 	template<typename TELEMENT, size_t SIZE>
 	struct TypeResolver<std::array<TELEMENT, SIZE>> {
-		using TSEQUENCE = std::array<TELEMENT, SIZE>;
-		using TSEQUENCE_INFO = TFixedArrayTypeInfo<TELEMENT, TSEQUENCE>;
-
-		static TypeInfo* Get() {
-			static TSEQUENCE_INFO InstancedTypeInfo{
-				[]( TypeInfo* Info ) {
-					Info->Description = "fixed array";
-					//Info->Serializer = make_unique<ArraySerializer>();
-
-					if( auto* FixedArrayInfo = Info->As<FixedArrayTypeInfo>() ) {
-						FixedArrayInfo->ElementType = TypeResolver<TELEMENT>::Get();
-					}
-				},
-				MakeArrayName( TypeResolver<TELEMENT>::Get(), SIZE ), sizeof( std::array<TELEMENT, SIZE> )
-			};
-			return &InstancedTypeInfo;
-		}
+		static TFixedArrayTypeInfo<TELEMENT, std::array<TELEMENT, SIZE>> const InstancedTypeInfo;
+		static TypeInfo const* Get() { return &InstancedTypeInfo; }
+	};
+	template<typename TELEMENT, size_t SIZE>
+	TFixedArrayTypeInfo<TELEMENT, std::array<TELEMENT, SIZE>> const TypeResolver<std::array<TELEMENT, SIZE>>::InstancedTypeInfo{
+		[]( FixedArrayTypeInfo* FixedArrayInfo ) {
+			FixedArrayInfo->Description = "fixed array";
+			FixedArrayInfo->ElementType = TypeResolver<TELEMENT>::Get();
+		},
+		"std::array", sizeof( std::array<TELEMENT, SIZE> )
 	};
 }

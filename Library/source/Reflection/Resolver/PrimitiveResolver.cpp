@@ -6,7 +6,7 @@
 
 #define NAME( __TYPE__ ) TypeInfo__##__TYPE__
 
-#define TYPEINFO( __TYPE__ ) TypeInfo NAME( __TYPE__ ) {\
+#define TYPEINFO( __TYPE__ ) TypeInfo const NAME( __TYPE__ ) {\
 	[]( TypeInfo* Info ){ Info->Serializer = std::make_unique<Serialization::TPrimitiveSerializer<__TYPE__>>(); },\
 	#__TYPE__,\
 	sizeof( __TYPE__ )\
@@ -14,7 +14,7 @@
 
 namespace Reflection
 {
-	TypeInfo NAME( void ) { nullptr, "void", 0 }; //cannot use sizeof( void )
+	TypeInfo const NAME( void ) { nullptr, "void", 0 }; //cannot use sizeof( void )
 
 	TYPEINFO( bool );
 	TYPEINFO( char );
