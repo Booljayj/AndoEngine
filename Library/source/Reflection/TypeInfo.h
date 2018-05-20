@@ -6,10 +6,6 @@
 #include <iostream>
 #include "Serialization/Serializer.h"
 
-#define REFLECT()\
-static Reflection::TypeInfo const* StaticGetTypeInfo();\
-virtual Reflection::TypeInfo const* GetTypeInfo() const
-
 namespace Reflection
 {
 	enum class ETypeClassification : uint8_t {

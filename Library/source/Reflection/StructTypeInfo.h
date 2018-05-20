@@ -5,6 +5,10 @@
 #include "Reflection/Components/ConstantInfo.h"
 #include "Reflection/Components/VariableInfo.h"
 
+#define REFLECT()\
+static Reflection::StructTypeInfo const __TypeInfo__;\
+virtual Reflection::TypeInfo const* GetTypeInfo() const
+
 namespace Reflection {
 	struct StructTypeInfo : public TypeInfo
 	{

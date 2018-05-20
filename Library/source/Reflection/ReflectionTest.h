@@ -5,7 +5,7 @@
 #include <map>
 #include <string>
 #include <list>
-#include "Reflection/TypeInfo.h"
+#include "Reflection/StructTypeInfo.h"
 
 struct ReflectedType {
 	REFLECT();
