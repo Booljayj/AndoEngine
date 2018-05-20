@@ -15,8 +15,8 @@ AR := libtool
 RM := rm -rf
 MKDIR := mkdir -p
 
-CXXFLAGS := -std=c++14 -Wall -c -MMD -MP -I./$(DIR_SOURCE) -I./$(DIR_GENERATED) -I/usr/local/include/
-ARFLAGS := -static -o
+CXXFLAGS := -std=c++14 -g -Wall -c -MMD -MP -I./$(DIR_SOURCE) -I./$(DIR_GENERATED) -I/usr/local/include/
+ARFLAGS := -static -g -o
 
 # source files
 CPP_SOURCE := $(patsubst ./%, %, $(shell find ./$(DIR_SOURCE) -name "*.cpp"))

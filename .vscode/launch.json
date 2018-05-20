@@ -5,14 +5,14 @@
 				"name": "(lldb) Launch",
 				"type": "cppdbg",
 				"request": "launch",
-				"program": "${workspaceRoot}/build/AndoEngine.out",
+				"program": "${workspaceRoot}/Tests/Tests.out",
 				"args": [],
 				"stopAtEntry": false,
-				"cwd": "${workspaceRoot}/build/",
+				"cwd": "${workspaceRoot}/Tests/",
 				"environment": [],
 				"externalConsole": true,
 				"MIMode": "lldb",
-				"preLaunchTask": "build AndoEngine"
+				"preLaunchTask": "build"
 			}
 		]
 	}
