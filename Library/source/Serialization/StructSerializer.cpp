@@ -26,19 +26,11 @@ namespace Serialization {
 				//Compare the variable to the default (if a compare is available). If the value is the same as the default, then we don't need to write anything
 				if( !AreValuesEqual( Type, VariableDataPointer, DefaultDataPointer ) )
 				{
-					//Write all the variable's data to the variable data stream using the serializer
 					ResetStream( VariableDataStream );
-					Type->Serializer->SerializeBinary( VariableDataPointer, VariableDataStream );
-
-					//Find the metadata that will be preceed the data block
+					//Write a binary data block to the stream for this variable
 					uint16_t const VariableNameHash = Variable->NameHash;
-					uint32_t const VariableDataSize = GetDataBlockSize( VariableDataStream );
-
-					if( IsDataBlockSizeValid( VariableDataSize ) ) {
-						LittleEndianByteSerializer<sizeof( VariableNameHash )>::Write( &VariableNameHash, Stream );
-						LittleEndianByteSerializer<sizeof( VariableDataSize )>::Write( &VariableDataSize, Stream );
-						Stream << VariableDataStream.rdbuf();
-					}
+					LittleEndianByteSerializer<sizeof( VariableNameHash )>::Write( &VariableNameHash, Stream );
+					WriteBinaryDataBlock( *Type->Serializer, VariableDataPointer, Stream, VariableDataStream );
 				}
 			}
 		}

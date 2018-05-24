@@ -1,7 +1,16 @@
 #include "Serialization/SerializationUtility.h"
+#include "Serialization/ByteUtility.h"
 #include "Reflection/TypeInfo.h"
 
 namespace Serialization {
+	void WriteBinaryDataBlock( ISerializer& Serializer, void const* Value, std::ostream& Stream, std::stringstream& ScratchStream ) {
+		Serializer.SerializeBinary( Value, ScratchStream );
+		uint32_t const DataBlockSize = GetDataBlockSize( ScratchStream );
+
+		LittleEndianByteSerializer<sizeof( DataBlockSize )>::Write( &DataBlockSize, Stream );
+		Stream << ScratchStream.rdbuf();
+	}
+
 	uint32_t GetDataBlockSize( std::ostream& Stream ) {
 		size_t StreamSize = Stream.tellp();
 		if( StreamSize > UINT32_MAX ) {
