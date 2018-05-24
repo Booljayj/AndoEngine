@@ -124,15 +124,22 @@ int main( int argc, const char * argv[] )
 	CTX.Log->Message( TERM_Cyan "Hello, World! This is AndoEngine." );
 	CTX.Log->Message( TERM_Cyan "Compiled with " __VERSION__ "\n" );
 
-	std::cout << "\n\nCreating streams and loading types" << std::endl;
+	std::cout << "\nGlobal types:" << std::endl;
+	for( Reflection::TypeInfo const* Info : Reflection::TypeInfo::GlobalTypeCollection ) {
+		if( Info ) {
+			std::cout << Info->Name << " (" << Info->Size << ")" << std::endl;
+		} else {
+			std::cout << "NULL TYPEINFO FOUND!!" << std::endl;
+		}
+	}
+
+	std::cout << "\nCreating streams and loading types" << std::endl;
 	std::stringstream Stream;
 	SerializedTypeA A1;
 	SerializedTypeA A2;
 	SerializedTypeB B;
 	auto* TA = Reflection::TypeResolver<SerializedTypeA>::Get();
 	auto* TB = Reflection::TypeResolver<SerializedTypeB>::Get();
-	Reflection::PrintType( std::cout, *TA );
-	Reflection::PrintType( std::cout, *TB );
 
 	A1.CharValue = 'x';
 	A1.ShortValue = 9999;

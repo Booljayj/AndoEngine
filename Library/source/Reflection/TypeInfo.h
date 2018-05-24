@@ -4,6 +4,7 @@
 #include <string_view>
 #include <vector>
 #include <iostream>
+#include <deque>
 #include "Serialization/Serializer.h"
 
 namespace Reflection
@@ -31,11 +32,8 @@ namespace Reflection
 	struct TypeInfo
 	{
 		static constexpr ETypeClassification CLASSIFICATION = ETypeClassification::Primitive;
-
-		TypeInfo() = delete;
-		TypeInfo( void (*Initializer)( TypeInfo* ), std::string&& InName, size_t InSize );
-		TypeInfo( ETypeClassification InClassification, std::string&& InName, size_t InSize );
-		virtual ~TypeInfo() {}
+		/** The global list of all TypeInfo objects that have been created */
+		static std::deque<TypeInfo const*> GlobalTypeCollection;
 
 		//============================================================
 		// Basic required type information
@@ -56,6 +54,16 @@ namespace Reflection
 		FTypeFlags Flags = FTypeFlags::None;
 		/** The interface used to serialize this type. If null, this type cannot be serialized. */
 		std::unique_ptr<Serialization::ISerializer> Serializer = nullptr;
+
+		/** Find a TypeInfo object using the hash of its name */
+		static TypeInfo const* FindTypeByNameHash( uint32_t NameHash );
+		/** Find a TypeInfo object using its name */
+		static TypeInfo const* FindTypeByName( std::string_view Name );
+
+		TypeInfo() = delete;
+		TypeInfo( void (*Initializer)( TypeInfo* ), std::string&& InName, size_t InSize );
+		TypeInfo( ETypeClassification InClassification, std::string&& InName, size_t InSize );
+		virtual ~TypeInfo() {}
 
 		/** Get the full name of this type, including template arguments if it is a template */
 		virtual std::string_view GetName() const { return Name; }
