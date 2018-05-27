@@ -12,7 +12,7 @@ namespace Serialization {
 	void FixedArraySerializer::SerializeBinary( void const* Data, std::ostream& Stream )
 	{
 		//Get the size of the array and write it to the stream
-		uint32_t const ArraySize = Type->GetCount( Data );
+		uint32_t const ArraySize = Type->Count;
 		LittleEndianByteSerializer<sizeof( uint32_t )>::Write( &ArraySize, Stream );
 		//Get an array of pointers to all the elements
 		std::vector<void const*> Elements;
@@ -30,7 +30,7 @@ namespace Serialization {
 		//Get the serialized size of the array from the data block and the actual size of the array
 		uint32_t SerializedArraySize;
 		LittleEndianByteSerializer<sizeof( SerializedArraySize )>::Read( &SerializedArraySize, Stream );
-		uint32_t ActualArraySize = Type->GetCount( Data );
+		uint32_t const ActualArraySize = Type->Count;
 		//Get an array of pointers to all the elements
 		std::vector<void*> Elements;
 		Type->GetElements( Elements, Data );

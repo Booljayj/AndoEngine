@@ -5,11 +5,10 @@
 #include <forward_list>
 #include <deque>
 #include "Reflection/Resolver/TypeResolver.h"
-#include "Reflection/TypeInfo.h"
-#include "Reflection/TypeUtility.h"
 #include "Reflection/DynamicArrayTypeInfo.h"
+#include "Reflection/TypeUtility.h"
 
-#define L_DYNAMIC_ARRAY_RESOLVER( __TEMPLATE__, __DESCRIPTION__ )\
+#define L_DYNAMIC_ARRAY_RESOLVER( __TEMPLATE__, __DESCRIPTION__, __FLAGS__ )\
 template<typename TELEMENT>\
 struct TypeResolver<__TEMPLATE__<TELEMENT>> {\
 	static TDynamicArrayTypeInfo<TELEMENT, __TEMPLATE__<TELEMENT>> const InstancedTypeInfo;\
@@ -21,20 +20,17 @@ struct TypeResolver<__TEMPLATE__<TELEMENT>> {\
 };\
 template<typename TELEMENT>\
 TDynamicArrayTypeInfo<TELEMENT, __TEMPLATE__<TELEMENT>> const TypeResolver<__TEMPLATE__<TELEMENT>>::InstancedTypeInfo{\
-	[]( DynamicArrayTypeInfo* DynamicArrayInfo ) {\
-		DynamicArrayInfo->Description = __DESCRIPTION__;\
-		DynamicArrayInfo->ElementType = TypeResolver<TELEMENT>::Get();\
-	}\
+	__DESCRIPTION__, __FLAGS__\
 }
 
 namespace Reflection {
 	//============================================================
 	// Standard dynamic array type specializations
 
-	L_DYNAMIC_ARRAY_RESOLVER( std::vector, "dynamic array" );
-	L_DYNAMIC_ARRAY_RESOLVER( std::forward_list, "singly-linked list" );
-	L_DYNAMIC_ARRAY_RESOLVER( std::list, "doubly-linked list" );
-	L_DYNAMIC_ARRAY_RESOLVER( std::deque, "double-ended queue" );
+	L_DYNAMIC_ARRAY_RESOLVER( std::vector, "dynamic array", FTypeFlags::None );
+	L_DYNAMIC_ARRAY_RESOLVER( std::forward_list, "singly-linked list", FTypeFlags::None );
+	L_DYNAMIC_ARRAY_RESOLVER( std::list, "doubly-linked list", FTypeFlags::None );
+	L_DYNAMIC_ARRAY_RESOLVER( std::deque, "double-ended queue", FTypeFlags::None );
 }
 
 #undef L_DYNAMIC_ARRAY_RESOLVER

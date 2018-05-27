@@ -23,14 +23,20 @@ namespace Reflection {
 		return nullptr;
 	}
 
-	TypeInfo::TypeInfo( ETypeClassification InClassification, std::string_view InName, size_t InSize )
+	TypeInfo::TypeInfo( ETypeClassification InClassification, std::string_view InName, size_t InSize, std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer )
 		: Classification( InClassification )
 		, Name( InName )
 		, NameHash( id( InName ) )
 		, Size( InSize )
+		, Description( InDescription )
+		, Flags( InFlags )
+		, Serializer( InSerializer )
 	{
 		GlobalTypeCollection.push_back( this );
 	}
+	TypeInfo::TypeInfo( ETypeClassification InClassification, std::string_view InName, size_t InSize )
+		: TypeInfo( InClassification, InName, InSize, "", (FTypeFlags)0, nullptr )
+	{}
 
 	int8_t TypeInfo::Compare( void const* A, void const* B ) const {
 		return memcmp( A, B, Size );

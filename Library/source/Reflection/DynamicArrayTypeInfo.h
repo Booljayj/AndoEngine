@@ -1,6 +1,7 @@
 #pragma once
 #include <cstddef>
 #include <memory>
+#include <vector>
 #include "Reflection/Resolver/TypeResolver.h"
 #include "Reflection/TypeInfo.h"
 
@@ -9,10 +10,15 @@ namespace Reflection {
 	{
 		static constexpr ETypeClassification CLASSIFICATION = ETypeClassification::DynamicArray;
 
+		/** The type of the elements in the array */
 		TypeInfo const* ElementType = nullptr;
 
 		DynamicArrayTypeInfo() = delete;
-		DynamicArrayTypeInfo( std::string_view InName, size_t InSize );
+		DynamicArrayTypeInfo(
+			std::string_view InName, size_t InSize, std::string_view InDescription,
+			FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
+			TypeInfo const* InElementType
+		);
 		virtual ~DynamicArrayTypeInfo() {}
 
 		//Get the number of elements that are in the array
@@ -39,11 +45,13 @@ namespace Reflection {
 	struct TDynamicArrayTypeInfo : public DynamicArrayTypeInfo
 	{
 		TDynamicArrayTypeInfo() = delete;
-		TDynamicArrayTypeInfo( void (*Initializer)( DynamicArrayTypeInfo* ) )
-		: DynamicArrayTypeInfo( TypeResolver<TARRAY>::GetName(), sizeof( TARRAY ) )
-		{
-			if( Initializer ) Initializer( this );
-		}
+		TDynamicArrayTypeInfo( std::string_view InDescription, FTypeFlags InFlags )
+		: DynamicArrayTypeInfo(
+			TypeResolver<TARRAY>::GetName(), sizeof( TARRAY ), InDescription,
+			InFlags, nullptr,
+			TypeResolver<TELEMENT>::Get()
+		)
+		{}
 		virtual ~TDynamicArrayTypeInfo() {}
 
 		static TARRAY const& Cast( void const* Instance ) { return *static_cast<TARRAY const*>( Instance ); }

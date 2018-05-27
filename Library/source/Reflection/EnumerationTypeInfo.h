@@ -10,11 +10,9 @@ namespace Reflection {
 		static constexpr ETypeClassification CLASSIFICATION = ETypeClassification::Enumeration;
 
 		EnumerationTypeInfo() = delete;
-		EnumerationTypeInfo( std::string_view InName, size_t InSize, void (*Initializer)( TypeInfo* ) )
+		EnumerationTypeInfo( std::string_view InName, size_t InSize )
 		: TypeInfo( CLASSIFICATION, InName, InSize )
-		{
-			if( Initializer ) Initializer( this );
-		}
+		{}
 		virtual ~EnumerationTypeInfo() {}
 
 		TypeInfo const* UnderlyingType;

@@ -3,9 +3,11 @@
 #include "Reflection/Components/VariableInfo.h"
 
 namespace Reflection {
-	StructTypeInfo::StructTypeInfo( std::string_view InName, size_t InSize )
+	StructTypeInfo::StructTypeInfo( std::string_view InName, size_t InSize, void (*Initializer)( StructTypeInfo* ) )
 	: TypeInfo( StructTypeInfo::CLASSIFICATION, InName, InSize )
-	{}
+	{
+		if( Initializer ) Initializer( this );
+	}
 
 	void StructTypeInfo::GetStaticConstantsRecursive( std::vector<StaticConstantInfo const*>& OutStaticConstants ) const {
 		if( BaseType ) {

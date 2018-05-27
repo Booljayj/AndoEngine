@@ -2,11 +2,8 @@
 #include <cstdint>
 #include <string>
 #include <string_view>
-#include <vector>
-#include <iostream>
 #include <deque>
 #include "Serialization/Serializer.h"
-#include "Reflection/Resolver/TypeResolver.h"
 
 namespace Reflection
 {
@@ -62,6 +59,7 @@ namespace Reflection
 		static TypeInfo const* FindTypeByName( std::string_view Name );
 
 		TypeInfo() = delete;
+		TypeInfo( ETypeClassification InClassification, std::string_view InName, size_t InSize, std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer );
 		TypeInfo( ETypeClassification InClassification, std::string_view InName, size_t InSize );
 		virtual ~TypeInfo() {}
 
@@ -76,15 +74,5 @@ namespace Reflection
 		}
 		template<typename TTYPE>
 		TTYPE* As() { return const_cast<TTYPE*>( static_cast<TypeInfo const*>( this )->As<TTYPE>() ); }
-	};
-
-	template<typename T>
-	struct TTypeInfo : public TypeInfo
-	{
-		TTypeInfo( void (*Initializer)( TypeInfo* ) )
-		: TypeInfo( TypeInfo::CLASSIFICATION, TypeResolver<T>::GetName(), sizeof( T ) )
-		{
-			if( Initializer ) Initializer( this );
-		}
 	};
 }
