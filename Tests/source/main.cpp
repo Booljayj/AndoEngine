@@ -1,5 +1,6 @@
 #include <iostream>
 #include <GL/glew.h>
+#include "Engine/StringID.h"
 #include "Engine/BasicComponents.h"
 #include "Engine/LinearAllocator.h"
 #include "Engine/LinearContainers.h"
@@ -127,11 +128,21 @@ int main( int argc, const char * argv[] )
 	std::cout << "\nGlobal types:" << std::endl;
 	for( Reflection::TypeInfo const* Info : Reflection::TypeInfo::GlobalTypeCollection ) {
 		if( Info ) {
-			std::cout << Info->Name << " (" << Info->Size << ")" << std::endl;
+			std::cout <<
+				std::hex << Info->NameHash << " " <<
+				Info->Name << " (" <<
+				std::dec << Info->Size << ")" << std::endl;
 		} else {
 			std::cout << "NULL TYPEINFO FOUND!!" << std::endl;
 		}
 	}
+
+	std::cout << "Name of std::map<size_t,std::vector<std::array<char,3>>>: " << std::endl;
+	std::cout << "        " << Reflection::TypeResolver<std::map<size_t,std::vector<std::array<char,3>>>>::GetName() << std::endl;
+
+	std::cout << "ID of std::string should be: 35c5c55b" << std::endl;
+	std::cout << "ID of void should be: 7c9faa57" << std::endl;
+	std::cout << "ID of std::list<std::array<RecursiveType,5>> should be: b5e4752d" << std::endl;
 
 	std::cout << "\nCreating streams and loading types" << std::endl;
 	std::stringstream Stream;

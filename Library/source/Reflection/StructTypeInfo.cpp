@@ -1,20 +1,11 @@
 #include "Reflection/StructTypeInfo.h"
-#include "Reflection/Resolver.h"
+#include "Reflection/Components/ConstantInfo.h"
+#include "Reflection/Components/VariableInfo.h"
 
 namespace Reflection {
-	StructTypeInfo::StructTypeInfo( void (*Initializer)( StructTypeInfo* ), std::string&& InName, size_t InSize )
-		: TypeInfo( CLASSIFICATION, std::forward<std::string>( InName ), InSize )
-	{
-		if( Initializer ) Initializer( this );
-		//ensures that arrays are sorted based on NameHash for quick lookups.
-		auto ByNameHash = []( auto const& A, auto const& B) {
-			return A->NameHash < B->NameHash;
-		};
-		std::sort( StaticConstants.begin(), StaticConstants.end(), ByNameHash );
-		std::sort( MemberConstants.begin(), MemberConstants.end(), ByNameHash );
-		std::sort( StaticVariables.begin(), StaticVariables.end(), ByNameHash );
-		std::sort( MemberVariables.begin(), MemberVariables.end(), ByNameHash );
-	}
+	StructTypeInfo::StructTypeInfo( std::string_view InName, size_t InSize )
+	: TypeInfo( StructTypeInfo::CLASSIFICATION, InName, InSize )
+	{}
 
 	void StructTypeInfo::GetStaticConstantsRecursive( std::vector<StaticConstantInfo const*>& OutStaticConstants ) const {
 		if( BaseType ) {

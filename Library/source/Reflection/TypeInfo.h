@@ -6,6 +6,7 @@
 #include <iostream>
 #include <deque>
 #include "Serialization/Serializer.h"
+#include "Reflection/Resolver/TypeResolver.h"
 
 namespace Reflection
 {
@@ -39,9 +40,9 @@ namespace Reflection
 		// Basic required type information
 		/** The classification of this TypeInfo, defining what kinds of type information it contains */
 		ETypeClassification Classification = ETypeClassification::Primitive;
-		/** The fully qualified name of the type, including namespaces. If this is a template, does not include template arguments */
+		/** The human-readable name of this type */
 		std::string Name;
-		/** The hash of the fully qualified name, serves as a unique identifier */
+		/** The hash of the name, serves as a unique identifier */
 		uint32_t NameHash = 0;
 		/** The size in bytes of an instance of this type */
 		size_t Size = 0;
@@ -61,12 +62,9 @@ namespace Reflection
 		static TypeInfo const* FindTypeByName( std::string_view Name );
 
 		TypeInfo() = delete;
-		TypeInfo( void (*Initializer)( TypeInfo* ), std::string&& InName, size_t InSize );
-		TypeInfo( ETypeClassification InClassification, std::string&& InName, size_t InSize );
+		TypeInfo( ETypeClassification InClassification, std::string_view InName, size_t InSize );
 		virtual ~TypeInfo() {}
 
-		/** Get the full name of this type, including template arguments if it is a template */
-		virtual std::string_view GetName() const { return Name; }
 		/** Compare two instances of this type, similar to standard compare functions */
 		virtual int8_t Compare( void const*, void const* ) const;
 
@@ -78,5 +76,15 @@ namespace Reflection
 		}
 		template<typename TTYPE>
 		TTYPE* As() { return const_cast<TTYPE*>( static_cast<TypeInfo const*>( this )->As<TTYPE>() ); }
+	};
+
+	template<typename T>
+	struct TTypeInfo : public TypeInfo
+	{
+		TTypeInfo( void (*Initializer)( TypeInfo* ) )
+		: TypeInfo( TypeInfo::CLASSIFICATION, TypeResolver<T>::GetName(), sizeof( T ) )
+		{
+			if( Initializer ) Initializer( this );
+		}
 	};
 }

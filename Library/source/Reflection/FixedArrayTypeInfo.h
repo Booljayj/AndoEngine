@@ -1,4 +1,5 @@
 #pragma once
+#include "Reflection/Resolver/TypeResolver.h"
 #include "Reflection/TypeInfo.h"
 
 namespace Reflection {
@@ -6,13 +7,11 @@ namespace Reflection {
 	{
 		static constexpr ETypeClassification CLASSIFICATION = ETypeClassification::FixedArray;
 
-		FixedArrayTypeInfo() = delete;
-		FixedArrayTypeInfo( void (*Initializer)( FixedArrayTypeInfo* ), std::string&& InName, size_t InSize );
-		virtual ~FixedArrayTypeInfo() {}
-
 		TypeInfo const* ElementType = nullptr;
 
-		virtual std::string_view GetName() const override;
+		FixedArrayTypeInfo() = delete;
+		FixedArrayTypeInfo( std::string_view InName, size_t InSize );
+		virtual ~FixedArrayTypeInfo() {}
 
 		//Get the number of elements that are in the array
 		virtual size_t GetCount( void const* Instance ) const = 0;
@@ -25,10 +24,11 @@ namespace Reflection {
 	struct TFixedArrayTypeInfo : public FixedArrayTypeInfo
 	{
 		TFixedArrayTypeInfo() = delete;
-		TFixedArrayTypeInfo( void (*Initializer)( FixedArrayTypeInfo* ), std::string&& InName, size_t InSize )
-		: FixedArrayTypeInfo( Initializer, std::forward<std::string>( InName ), InSize )
-		{}
-		virtual ~TFixedArrayTypeInfo() {}
+		TFixedArrayTypeInfo( void (*Initializer)( FixedArrayTypeInfo* ) )
+		: FixedArrayTypeInfo( TypeResolver<TARRAY>::GetName(), sizeof( TARRAY ) )
+		{
+			if( Initializer ) Initializer( this );
+		}
 
 		static TARRAY const& Cast( void const* Instance ) { return *static_cast<TARRAY const*>( Instance ); }
 		static TARRAY& Cast( void* Instance ) { return *static_cast<TARRAY*>( Instance ); }

@@ -23,16 +23,10 @@ namespace Reflection {
 		return nullptr;
 	}
 
-	TypeInfo::TypeInfo( void (*Initializer)( TypeInfo* ), std::string&& InName, size_t InSize )
-		: TypeInfo( CLASSIFICATION, std::forward<std::string>( InName ), InSize )
-	{
-		if( Initializer ) Initializer( this );
-	}
-
-	TypeInfo::TypeInfo( ETypeClassification InClassification, std::string&& InName, size_t InSize )
+	TypeInfo::TypeInfo( ETypeClassification InClassification, std::string_view InName, size_t InSize )
 		: Classification( InClassification )
 		, Name( InName )
-		, NameHash( id( InName.data() ) )
+		, NameHash( id( InName ) )
 		, Size( InSize )
 	{
 		GlobalTypeCollection.push_back( this );

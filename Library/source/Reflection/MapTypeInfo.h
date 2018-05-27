@@ -1,5 +1,6 @@
 #pragma once
 #include <cstddef>
+#include "Reflection/Resolver/TypeResolver.h"
 #include "Reflection/TypeInfo.h"
 
 namespace Reflection {
@@ -8,13 +9,12 @@ namespace Reflection {
 		static constexpr ETypeClassification CLASSIFICATION = ETypeClassification::Map;
 
 		MapTypeInfo() = delete;
-		MapTypeInfo( void (*InInitializer)( MapTypeInfo* ), std::string&& InName, size_t InSize );
+		MapTypeInfo( std::string_view InName, size_t InSize );
 		virtual ~MapTypeInfo() {}
 
 		TypeInfo const* KeyType = nullptr;
 		TypeInfo const* ValueType = nullptr;
 
-		virtual std::string_view GetName() const override;
 		virtual size_t GetCount( void const* Instance ) const = 0;
 	};
 
@@ -22,10 +22,11 @@ namespace Reflection {
 	struct TMapTypeInfo : public MapTypeInfo
 	{
 		TMapTypeInfo() = delete;
-		TMapTypeInfo( void (*Initializer)( MapTypeInfo* ), std::string&& InName, size_t InSize )
-		: MapTypeInfo( Initializer, std::forward<std::string>( InName ), InSize )
-		{}
-		virtual ~TMapTypeInfo() {}
+		TMapTypeInfo( void (*Initializer)( MapTypeInfo* ) )
+		: MapTypeInfo( TypeResolver<TTABLE>::GetName(), sizeof( TTABLE ) )
+		{
+			if( Initializer ) Initializer( this );
+		}
 
 		static TTABLE const& Cast( void const* Instance ) { return *static_cast<TTABLE const*>( Instance ); }
 		static TTABLE& Cast( void* Instance ) { return *static_cast<TTABLE*>( Instance ); }

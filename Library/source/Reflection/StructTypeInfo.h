@@ -5,18 +5,22 @@
 #include "Reflection/Components/ConstantInfo.h"
 #include "Reflection/Components/VariableInfo.h"
 
-#define REFLECT()\
-static Reflection::StructTypeInfo const __TypeInfo__;\
+#define REFLECT( __TYPE__ )\
+namespace Reflection {\
+template<> struct TypeResolver<__TYPE__> {\
+	static TypeInfo const* Get() { return &__TYPE__::__TypeInfo__; }\
+	static char const* GetName() { return #__TYPE__; }\
+};\
+}
+
+#define REFLECTION_MEMBERS( __TYPE__ )\
+static Reflection::TStructTypeInfo<__TYPE__> const __TypeInfo__;\
 virtual Reflection::TypeInfo const* GetTypeInfo() const
 
 namespace Reflection {
 	struct StructTypeInfo : public TypeInfo
 	{
 		static constexpr ETypeClassification CLASSIFICATION = ETypeClassification::Struct;
-
-		StructTypeInfo() = delete;
-		StructTypeInfo( void (*Initializer)( StructTypeInfo* ), std::string&& InName, size_t InSize );
-		virtual ~StructTypeInfo() {}
 
 		/** The type that this type inherits from. Only single-inheritance from another object type is supported. */
 		StructTypeInfo const* BaseType = nullptr;
@@ -34,6 +38,10 @@ namespace Reflection {
 		/** Actions */
 		//functions without return values, essentially
 
+		StructTypeInfo() = delete;
+		StructTypeInfo( std::string_view InName, size_t InSize );
+		virtual ~StructTypeInfo() {}
+
 		/** Returns true if the chain of base types includes the provided type */
 		bool DerivesFrom( TypeInfo const* Base ) const { return true; }
 
@@ -50,5 +58,15 @@ namespace Reflection {
 		//Find a variable that has the provided name hash
 		StaticVariableInfo const* FindStaticVariableInfo( uint16_t NameHash ) const { return nullptr; }
 		MemberVariableInfo const* FindMemberVariableInfo( uint16_t NameHash ) const { return nullptr; }
+	};
+
+	template<typename T>
+	struct TStructTypeInfo : public StructTypeInfo
+	{
+		TStructTypeInfo( void (*Initializer)( StructTypeInfo* ) )
+		: StructTypeInfo( TypeResolver<T>::GetName(), sizeof( T ) )
+		{
+			if( Initializer ) Initializer( this );
+		}
 	};
 }

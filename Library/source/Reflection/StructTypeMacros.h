@@ -2,7 +2,7 @@
 
 /** Begin the type reflection block */
 #define STRUCT_TYPE_BEGIN( __TYPE__ )\
-Reflection::StructTypeInfo const __TYPE__::__TypeInfo__{\
+Reflection::TStructTypeInfo<__TYPE__> const __TYPE__::__TypeInfo__{\
 	[]( Reflection::StructTypeInfo* StructInfo ) {\
 		using T = __TYPE__;\
 
@@ -14,9 +14,8 @@ new (StructInfo->Default.get()) T
 StructInfo->Serializer = std::make_unique<Serialization::StructSerializer>( StructInfo )
 
 /** End the type reflection block */
-#define STRUCT_TYPE_END( __TYPE__, __TYPE_NAME_STR__ )\
-	},\
-	__TYPE_NAME_STR__, sizeof( __TYPE__ ),\
+#define STRUCT_TYPE_END( __TYPE__ )\
+	}\
 };\
 Reflection::TypeInfo const* __TYPE__::GetTypeInfo() const { return &__TYPE__::__TypeInfo__; }
 

@@ -3,14 +3,27 @@
 #include <string>
 #include <string_view>
 #include <ostream>
+#include <sstream>
+#include "Reflection/Resolver/TypeResolver.h"
 
 namespace Reflection {
 	struct TypeInfo;
 
 	/** Make a name string for a template that is using the provided types, in order */
-	std::string MakeTemplateName( std::string_view TemplateName, std::initializer_list<TypeInfo const*> const& Types );
-	/** Make a name string for a fixed-size standard array */
-	std::string MakeArrayName( TypeInfo const* Type, size_t Size );
+	template< typename... TYPES >
+	std::string MakeTemplateName( std::string_view TemplateName )
+	{
+		std::stringstream Stream;
+		std::array<std::string_view, sizeof...( TYPES )> ArgumentNames = { { TypeResolver<TYPES>::GetName() ... } };
+		//Build the name from each part in the same way it would be written in a code file
+		Stream << TemplateName << "<";
+		for( std::string_view const& ArgumentName : ArgumentNames ) {
+			Stream << ArgumentName << ",";
+		}
+		//Convert the last character from ',' to '>'
+		Stream.seekp( -1, std::ios_base::end ) << ">";
+		return Stream.str();
+	}
 
 	/** Print the type information to the output stream */
 	void PrintType( std::ostream& Stream, TypeInfo const& Type );

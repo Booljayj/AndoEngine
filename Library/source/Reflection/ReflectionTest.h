@@ -6,9 +6,10 @@
 #include <string>
 #include <list>
 #include "Reflection/StructTypeInfo.h"
+#include "Reflection/Resolver/TypeResolver.h"
 
 struct ReflectedType {
-	REFLECT();
+	REFLECTION_MEMBERS( ReflectedType );
 
 	ReflectedType() = default;
 	ReflectedType( const ReflectedType& Other );
@@ -21,24 +22,27 @@ struct ReflectedType {
 	static int16_t StaticShortValue;
 	static const uint16_t StaticImmutableShortValue;
 };
+REFLECT( ReflectedType );
 
 struct SecondReflectedType {
-	REFLECT();
+	REFLECTION_MEMBERS( SecondReflectedType );
 
 	std::vector<ReflectedType> VectorValue;
 	std::map<uint8_t, std::string> MapValue;
 };
+REFLECT( SecondReflectedType );
 
 struct RecursiveType {
-	REFLECT();
+	REFLECTION_MEMBERS( RecursiveType );
 
 	size_t Data;
 	std::list<std::array<RecursiveType,5>> Nodes;
 };
+REFLECT( RecursiveType );
 
 
 struct SerializedTypeA {
-	REFLECT();
+	REFLECTION_MEMBERS( SerializedTypeA );
 
 	char CharValue = 'a';
 	int8_t ByteValue = 12;
@@ -60,9 +64,10 @@ struct SerializedTypeA {
 			DoubleValue != Other.DoubleValue);
 	};
 };
+REFLECT( SerializedTypeA );
 
 struct SerializedTypeB {
-	REFLECT();
+	REFLECTION_MEMBERS( SerializedTypeB );
 
 	char CharValue = 'b';
 	//int8_t ByteValue = 23;
@@ -81,3 +86,4 @@ struct SerializedTypeB {
 			DoubleValue != Other.DoubleValue);
 	};
 };
+REFLECT( SerializedTypeB );
