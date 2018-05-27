@@ -1,3 +1,4 @@
+#pragma once
 #include "Serialization/Serializer.h"
 #include "Serialization/ByteUtility.h"
 
