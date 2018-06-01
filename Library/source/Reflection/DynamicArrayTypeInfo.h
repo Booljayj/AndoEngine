@@ -35,9 +35,9 @@ namespace Reflection {
 		//Add a new element to the "end" of the array
 		virtual void AddElement( void* Instance, void const* Value ) const = 0;
 
-		//Remove the element that equals the pointer
+		//Remove the pointed-at element
 		virtual void RemoveElement( void* Instance, void const* ElementPointer ) const = 0;
-		//Insert a new element at the position of the element that equals the pointer, equal to the value
+		//Insert a new element at the position of the pointed-at element, equal to the value
 		virtual void InsertElement( void* Instance, void const* ElementPointer, void const* Value ) const = 0;
 	};
 
