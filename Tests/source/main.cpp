@@ -126,16 +126,7 @@ int main( int argc, const char * argv[] )
 	CTX.Log->Message( TERM_Cyan "Compiled with " __VERSION__ "\n" );
 
 	std::cout << "\nGlobal types:" << std::endl;
-	for( Reflection::TypeInfo const* Info : Reflection::TypeInfo::GlobalTypeCollection ) {
-		if( Info ) {
-			std::cout <<
-				std::hex << Info->NameHash << " " <<
-				Info->Name << " (" <<
-				std::dec << Info->Size << ")" << std::endl;
-		} else {
-			std::cout << "NULL TYPEINFO FOUND!!" << std::endl;
-		}
-	}
+	Reflection::TypeInfo::PrintAll( std::cout );
 
 	std::cout << "Name of std::map<size_t,std::vector<std::array<char,3>>>: " << std::endl;
 	std::cout << "        " << Reflection::TypeResolver<std::map<size_t,std::vector<std::array<char,3>>>>::GetName() << std::endl;

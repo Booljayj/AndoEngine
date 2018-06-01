@@ -3,6 +3,7 @@
 #include <string>
 #include <string_view>
 #include <deque>
+#include <ostream>
 #include "Serialization/Serializer.h"
 
 namespace Reflection
@@ -27,6 +28,7 @@ namespace Reflection
 		None = 0,
 	};
 
+	/** Provides a set of runtime information about a type */
 	struct TypeInfo
 	{
 		static constexpr ETypeClassification CLASSIFICATION = ETypeClassification::Primitive;
@@ -52,6 +54,11 @@ namespace Reflection
 		FTypeFlags Flags = FTypeFlags::None;
 		/** The interface used to serialize this type. If null, this type cannot be serialized. */
 		std::unique_ptr<Serialization::ISerializer> Serializer = nullptr;
+
+		/** Print a description of a TypeInfo to a stream */
+		static void Print( TypeInfo const* Info, std::ostream& Stream );
+		/** Print basic information about all TypeInfos to a stream */
+		static void PrintAll( std::ostream& Stream );
 
 		/** Find a TypeInfo object using the hash of its name */
 		static TypeInfo const* FindTypeByNameHash( uint32_t NameHash );

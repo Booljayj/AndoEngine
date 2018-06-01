@@ -11,8 +11,7 @@ namespace Reflection {
 
 	/** Make a name string for a template that is using the provided types, in order */
 	template< typename... TYPES >
-	std::string MakeTemplateName( std::string_view TemplateName )
-	{
+	std::string MakeTemplateName( std::string_view TemplateName ) {
 		std::stringstream Stream;
 		std::array<std::string_view, sizeof...( TYPES )> ArgumentNames = { { TypeResolver<TYPES>::GetName() ... } };
 		//Build the name from each part in the same way it would be written in a code file
@@ -24,7 +23,4 @@ namespace Reflection {
 		Stream.seekp( -1, std::ios_base::end ) << ">";
 		return Stream.str();
 	}
-
-	/** Print the type information to the output stream */
-	void PrintType( std::ostream& Stream, TypeInfo const& Type );
 }
