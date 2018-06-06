@@ -16,7 +16,7 @@ namespace Serialization {
 		LittleEndianByteSerializer<sizeof( uint32_t )>::Write( &ArraySize, Stream );
 		//Get an array of pointers to all the elements
 		std::vector<void const*> Elements;
-		Type->GetElements( Elements, Data );
+		Type->GetElements( Data, Elements );
 		//Write a data block for each element to the stream
 		std::stringstream ElementDataStream;
 		for( int32_t Index = 0; Index < ArraySize; ++Index ) {
@@ -33,7 +33,7 @@ namespace Serialization {
 		uint32_t const ActualArraySize = Type->Count;
 		//Get an array of pointers to all the elements
 		std::vector<void*> Elements;
-		Type->GetElements( Elements, Data );
+		Type->GetElements( Data, Elements );
 		//Read a data block for each element from the stream
 		for( int32_t Index = 0; Index < ActualArraySize; ++Index ) {
 			uint32_t ElementSize;

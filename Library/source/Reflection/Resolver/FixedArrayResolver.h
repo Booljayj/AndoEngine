@@ -20,7 +20,5 @@ namespace Reflection {
 		}
 	};
 	template<typename TELEMENT, size_t SIZE>
-	TFixedArrayTypeInfo<TELEMENT, SIZE, std::array<TELEMENT, SIZE>> const TypeResolver<std::array<TELEMENT, SIZE>>::InstancedTypeInfo{
-		"fixed array", FTypeFlags::None
-	};
+	TFixedArrayTypeInfo<TELEMENT, SIZE, std::array<TELEMENT, SIZE>> const TypeResolver<std::array<TELEMENT, SIZE>>::InstancedTypeInfo{ "fixed array" };
 }
