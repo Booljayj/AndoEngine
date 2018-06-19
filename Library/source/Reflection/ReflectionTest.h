@@ -55,13 +55,13 @@ struct SerializedTypeA {
 	double DoubleValue = 1234567.8;
 
 	inline bool operator==( const SerializedTypeA& Other ) const {
-		return !(CharValue != Other.CharValue ||
-			ByteValue != Other.ByteValue ||
-			ShortValue != Other.ShortValue ||
-			IntegerValue != Other.IntegerValue ||
-			BooleanValue != Other.BooleanValue ||
-			FloatValue != Other.FloatValue ||
-			DoubleValue != Other.DoubleValue);
+		return (CharValue == Other.CharValue &&
+			ByteValue == Other.ByteValue &&
+			ShortValue == Other.ShortValue &&
+			IntegerValue == Other.IntegerValue &&
+			BooleanValue == Other.BooleanValue &&
+			FloatValue == Other.FloatValue &&
+			DoubleValue == Other.DoubleValue);
 	};
 };
 REFLECT( SerializedTypeA );
@@ -80,10 +80,10 @@ struct SerializedTypeB {
 	double DoubleValue = 123456.78;
 
 	inline bool operator==( const SerializedTypeA& Other ) const {
-		return !(CharValue != Other.CharValue ||
-			ShortValue != Other.ShortValue ||
-			BooleanValue != Other.BooleanValue ||
-			DoubleValue != Other.DoubleValue);
+		return (CharValue == Other.CharValue &&
+			ShortValue == Other.ShortValue &&
+			BooleanValue == Other.BooleanValue &&
+			DoubleValue == Other.DoubleValue);
 	};
 };
 REFLECT( SerializedTypeB );

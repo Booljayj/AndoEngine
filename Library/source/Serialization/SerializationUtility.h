@@ -5,19 +5,20 @@
 
 namespace Reflection {
 	struct TypeInfo;
+	struct MemberVariableInfo;
 }
 
 namespace Serialization {
-	// Binary data blocks consist of a size followed by a package of serialized data. The serialized data may recursively contain other data blocks.
-	/** Write a binary data block */
-	void WriteBinaryDataBlock( ISerializer& Serializer, void const* Value, std::ostream& Stream, std::stringstream& ScratchStream );
-	/** Read a binary data block */
-	//void ReadBinaryDataBlock( Reflection::TypeInfo const& Info, void* Value, std::istream& Stream );
+	//@todo Make this a contextual function so that it can print an error if there is too much data in the source stream to form a data block.
+	/** Write a binary data block composed of the data in the source stream to the target stream */
+	void WriteDataBlock( std::stringstream& SourceStream, std::ostream& TargetStream );
 
-	/** Get the size of the data block encoded in the stream as a uint32_t */
-	uint32_t GetDataBlockSize( std::ostream& Stream );
-	/** True if the data block size does not exceed limits */
-	bool IsDataBlockSizeValid( uint32_t Size );
+	/** Read the end of the data block from the stream */
+	std::streampos ReadDataBlockEndPosition( std::istream& Stream );
+
+	/** True if the amount of bytes can be read from the stream without going past the end position */
+	bool CanReadBytesFromStream( uint32_t NumBytes, std::istream& Stream, std::streampos const& EndPosition );
+
 	/** Reset the stringstream contents */
 	void ResetStream( std::stringstream& Stream );
 	/** True if the data in the two pointers are equal */

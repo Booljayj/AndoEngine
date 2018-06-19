@@ -6,14 +6,22 @@ namespace Serialization {
 	template<typename T>
 	struct TPrimitiveSerializer : public ISerializer
 	{
+		static_assert( sizeof( T ) < UINT32_MAX, "Serializing primitive types that are larger than UINT32_MAX is not supported" );
+
 		virtual void SerializeBinary( void const* Data, std::ostream& Stream ) override {
-			LittleEndianByteSerializer<sizeof(T)>::Write( static_cast<char const*>( Data ), Stream );
+			uint32_t const SIZE = sizeof( T );
+			WriteLE<uint32_t>( &SIZE, Stream );
+			WriteLE<T>( Data, Stream );
 		}
-		virtual bool DeserializeBinary( void* Data, std::istream& Stream, uint32_t NumBytes ) override {
+
+		virtual bool DeserializeBinary( void* Data, std::istream& Stream ) override {
+			uint32_t NumBytes = 0;
+			ReadLE<uint32_t>( &NumBytes, Stream );
 			if( NumBytes == sizeof( T ) ) {
-				LittleEndianByteSerializer<sizeof(T)>::Read( static_cast<char*>( Data ), Stream );
+				ReadLE<T>( Data, Stream );
 				return true;
 			} else {
+				Stream.seekg( Stream.tellg() + std::streamoff{ NumBytes } );
 				return false;
 			}
 		}

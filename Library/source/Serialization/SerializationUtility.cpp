@@ -1,27 +1,31 @@
 #include "Serialization/SerializationUtility.h"
 #include "Serialization/ByteUtility.h"
 #include "Reflection/TypeInfo.h"
+#include "Reflection/Components/VariableInfo.h"
 
 namespace Serialization {
-	void WriteBinaryDataBlock( ISerializer& Serializer, void const* Value, std::ostream& Stream, std::stringstream& ScratchStream ) {
-		Serializer.SerializeBinary( Value, ScratchStream );
-		uint32_t const DataBlockSize = GetDataBlockSize( ScratchStream );
+	void WriteDataBlock( std::stringstream& SourceStream, std::ostream& TargetStream ) {
+		size_t SourceStreamSize = SourceStream.tellp();
 
-		LittleEndianByteSerializer<sizeof( DataBlockSize )>::Write( &DataBlockSize, Stream );
-		Stream << ScratchStream.rdbuf();
-	}
+		if( SourceStreamSize > UINT32_MAX ) {
+			//There is too much data in the source stream to form a data block, so write an empty block
+			char Zero[sizeof(uint32_t)] = { 0 };
+			TargetStream.write( Zero, sizeof( uint32_t ) );
 
-	uint32_t GetDataBlockSize( std::ostream& Stream ) {
-		size_t StreamSize = Stream.tellp();
-		if( StreamSize > UINT32_MAX ) {
-			return UINT32_MAX;
 		} else {
-			return StreamSize;
+			WriteLE<uint32_t>( &SourceStreamSize, TargetStream );
+			TargetStream << SourceStream.rdbuf();
 		}
 	}
 
-	bool IsDataBlockSizeValid( uint32_t Size ) {
-		return Size > 0 && Size < UINT32_MAX;
+	std::streampos ReadDataBlockEndPosition( std::istream& Stream ) {
+		uint32_t NumBytes = 0;
+		ReadLE<uint32_t>( &NumBytes, Stream );
+		return ( Stream.tellg() + std::streamoff{ NumBytes } );
+	}
+
+	bool CanReadBytesFromStream( uint32_t NumBytes, std::istream& Stream, std::streampos const& EndPosition ) {
+		return ( Stream.tellg() + std::streamoff{ NumBytes } ) <= EndPosition;
 	}
 
 	void ResetStream( std::stringstream& Stream ) {

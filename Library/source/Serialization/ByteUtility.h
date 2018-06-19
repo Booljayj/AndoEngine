@@ -14,10 +14,10 @@ namespace Serialization {
 
 	namespace {
 		/** Template for structs which define byte-order serialization routines */
-		template<size_t SIZE, bool ORDERED>
+		template<uint32_t SIZE, bool FORWARD>
 		struct ByteSerializer;
 
-		template<size_t SIZE>
+		template<uint32_t SIZE>
 		struct ByteSerializer<SIZE, true>
 		{
 			static inline void Write( char const* Data, std::ostream& Stream ) {
@@ -27,13 +27,14 @@ namespace Serialization {
 				Stream.read( Data, SIZE );
 			}
 		};
-		template<size_t SIZE>
+		template<uint32_t SIZE>
 		struct ByteSerializer<SIZE, false>
 		{
+			static constexpr size_t LAST = SIZE - 1;
 			static inline void Write( char const* Data, std::ostream& Stream ) {
 				char ReversedData[SIZE];
 				for( uint8_t Index = 0; Index < SIZE; ++Index ) {
-					ReversedData[7-Index] = Data[Index];
+					ReversedData[LAST - Index] = Data[Index];
 				}
 				Stream.write( ReversedData, SIZE );
 			}
@@ -41,21 +42,20 @@ namespace Serialization {
 				char ReversedData[SIZE];
 				Stream.read( ReversedData, SIZE );
 				for( uint8_t Index = 0; Index < SIZE; ++Index ) {
-					Data[Index] = ReversedData[7-Index];
+					Data[Index] = ReversedData[LAST - Index];
 				}
 			}
 		};
 	}
 
-	/** Struct which implements serialization routines that read and write in little-endian format */
-	template<size_t SIZE>
-	struct LittleEndianByteSerializer
-	{
-		static inline void Write( void const* Data, std::ostream& Stream ) {
-			ByteSerializer<SIZE, IsPlatformLittleEndian()>::Write( static_cast<char const*>( Data ), Stream );
-		}
-		static inline void Read( void* Data, std::istream& Stream ) {
-			ByteSerializer<SIZE, IsPlatformLittleEndian()>::Read( static_cast<char*>( Data ), Stream );
-		}
-	};
+	/** Functions which implement serialization routines that read and write in little-endian format */
+	template<typename T>
+	void WriteLE( void const* Data, std::ostream& Stream ) {
+		ByteSerializer<sizeof(T), IsPlatformLittleEndian()>::Write( static_cast<char const*>( Data ), Stream );
+	}
+
+	template<typename T>
+	void ReadLE( void* Data, std::istream& Stream ) {
+		ByteSerializer<sizeof(T), IsPlatformLittleEndian()>::Read( static_cast<char*>( Data ), Stream );
+	}
 }

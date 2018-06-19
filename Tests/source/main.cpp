@@ -147,12 +147,14 @@ int main( int argc, const char * argv[] )
 	A1.ShortValue = 9999;
 	A1.FloatValue = 99.99;
 
+	std::cout << std::boolalpha;
+
 	std::cout << "Serializing A1" << std::endl;
 	TA->Serializer->SerializeBinary( &A1, Stream );
 	std::cout << "Deserializing A1 to A2" << std::endl;
-	Stream.seekg( 0 );
+
 	const bool SuccessA = TA->Serializer->DeserializeBinary( &A2, Stream );
-	std::cout << "Result: " << SuccessA << (A1 == A2) << std::endl;
+	std::cout << "Result: " << SuccessA << " " << (A1 == A2) << std::endl;
 
 	Stream.str( "" );
 	Stream.clear();
@@ -161,7 +163,7 @@ int main( int argc, const char * argv[] )
 	TA->Serializer->SerializeBinary( &A1, Stream );
 	std::cout << "Deserializing A1 to B" << std::endl;
 	const bool SuccessB = TB->Serializer->DeserializeBinary( &B, Stream );
-	std::cout << "Result: " << SuccessB << (B == A1) << std::endl;
+	std::cout << "Result: " << SuccessB << " " << (B == A1) << std::endl;
 
 	return 0;
 	if( Startup( CTX ) )
