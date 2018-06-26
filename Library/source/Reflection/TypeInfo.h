@@ -17,8 +17,7 @@ namespace Reflection
 		Tuple,
 		Variant,
 		//Homogeneous collection types
-		FixedArray,
-		DynamicArray,
+		Array,
 		Map,
 		Set,
 	};

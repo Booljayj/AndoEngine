@@ -23,6 +23,22 @@ TDynamicArrayTypeInfo<TELEMENT, __TEMPLATE__<TELEMENT>> const TypeResolver<__TEM
 
 namespace Reflection {
 	//============================================================
+	// Standard fixed array type specializations
+
+	template<typename TELEMENT, size_t SIZE>
+	struct TypeResolver<std::array<TELEMENT, SIZE>> {
+		static_assert( SIZE < UINT32_MAX, "Fixed-size arrays larger than the capacity of a uint32 are not supported" );
+		static TFixedArrayTypeInfo<TELEMENT, SIZE, std::array<TELEMENT, SIZE>> const InstancedTypeInfo;
+		static TypeInfo const* Get() { return &InstancedTypeInfo; }
+		static std::string_view GetName() {
+			static std::string const Name = MakeTemplateName<TELEMENT, std::integral_constant<size_t, SIZE>>( "std::array" );
+			return Name;
+		}
+	};
+	template<typename TELEMENT, size_t SIZE>
+	TFixedArrayTypeInfo<TELEMENT, SIZE, std::array<TELEMENT, SIZE>> const TypeResolver<std::array<TELEMENT, SIZE>>::InstancedTypeInfo{ "fixed array" };
+
+	//============================================================
 	// Standard dynamic array type specializations
 
 	L_DYNAMIC_ARRAY_RESOLVER( std::vector, "dynamic array" );

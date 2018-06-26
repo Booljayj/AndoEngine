@@ -3,18 +3,18 @@
 #include "Serialization/Serializer.h"
 
 namespace Reflection {
-	struct FixedArrayTypeInfo;
+	struct ArrayTypeInfo;
 }
 
 namespace Serialization {
-	struct FixedArraySerializer : public ISerializer
+	struct ArraySerializer : public ISerializer
 	{
 	private:
-		Reflection::FixedArrayTypeInfo const* Type;
+		Reflection::ArrayTypeInfo const* Type;
 
 	public:
-		FixedArraySerializer() = delete;
-		FixedArraySerializer( Reflection::FixedArrayTypeInfo const* InType );
+		ArraySerializer() = delete;
+		ArraySerializer( Reflection::ArrayTypeInfo const* InType );
 
 		virtual void SerializeBinary( void const* Data, std::ostream& Stream ) override;
 		virtual bool DeserializeBinary( void* Data, std::istream& Stream ) override;
@@ -25,7 +25,7 @@ namespace Serialization {
 	private:
 		bool CanReadNextElementHeader( std::istream& Stream, std::streampos const& EndPosition ) const;
 
-		void WriteArraySize( std::ostream& Stream, void const* Data ) const;
-		uint32_t ReadArraySize( std::istream& Stream ) const;
+		void WriteArrayCount( std::ostream& Stream, void const* Data ) const;
+		uint32_t ReadArrayCount( std::istream& Stream ) const;
 	};
 }
