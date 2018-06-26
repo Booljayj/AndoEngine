@@ -20,7 +20,7 @@
 #include "Rendering/VertexData.h"
 #include "Rendering/Shader.h"
 
-#include "Reflection/Resolver.h"
+#include "Reflection/Resolver/Resolver.h"
 #include "Reflection/StructTypeInfo.h"
 #include "Reflection/ReflectionTest.h"
 #include "Reflection/TypeUtility.h"

@@ -1,7 +1,7 @@
 #pragma once
 #include <string_view>
 #include <string>
-#include "Reflection/Resolver/BaseResolver.h"
+#include "Reflection/BaseResolver.h"
 #include "Reflection/TypeInfo.h"
 #include "Reflection/StringTypeInfo.h"
 

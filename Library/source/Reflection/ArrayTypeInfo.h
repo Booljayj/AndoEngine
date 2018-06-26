@@ -2,7 +2,7 @@
 #include <cstddef>
 #include <memory>
 #include <vector>
-#include "Reflection/Resolver/BaseResolver.h"
+#include "Reflection/BaseResolver.h"
 #include "Reflection/TypeInfo.h"
 
 namespace Reflection {

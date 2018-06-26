@@ -3,7 +3,7 @@
 #include <string>
 #include <type_traits>
 #include "Engine/StringID.h"
-#include "Reflection/Resolver/BaseResolver.h"
+#include "Reflection/BaseResolver.h"
 
 namespace Reflection {
 	struct TypeInfo;
