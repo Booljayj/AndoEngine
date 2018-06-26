@@ -4,7 +4,7 @@
 #include <list>
 #include <forward_list>
 #include <deque>
-#include "Reflection/Resolver/TypeResolver.h"
+#include "Reflection/Resolver/BaseResolver.h"
 #include "Reflection/ArrayTypeInfo.h"
 #include "Reflection/TypeUtility.h"
 

@@ -1,8 +1,7 @@
 #pragma once
 #include <map>
 #include <unordered_map>
-#include "Reflection/Resolver/TypeResolver.h"
-#include "Reflection/TypeInfo.h"
+#include "Reflection/Resolver/BaseResolver.h"
 #include "Reflection/MapTypeInfo.h"
 #include "Reflection/TypeUtility.h"
 

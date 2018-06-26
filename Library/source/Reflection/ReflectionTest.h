@@ -6,7 +6,7 @@
 #include <string>
 #include <list>
 #include "Reflection/StructTypeInfo.h"
-#include "Reflection/Resolver/TypeResolver.h"
+#include "Reflection/Resolver/BaseResolver.h"
 
 struct ReflectedType {
 	REFLECTION_MEMBERS( ReflectedType );

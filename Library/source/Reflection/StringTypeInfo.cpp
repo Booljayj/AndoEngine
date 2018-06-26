@@ -1,5 +1,5 @@
 #include "Reflection/StringTypeInfo.h"
-#include "Reflection/Resolver/TypeResolver.h"
+#include "Reflection/Resolver/PrimitiveResolver.h"
 
 namespace Reflection {
 	StringTypeInfo::StringTypeInfo()

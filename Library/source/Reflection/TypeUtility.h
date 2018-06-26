@@ -4,7 +4,7 @@
 #include <string_view>
 #include <ostream>
 #include <sstream>
-#include "Reflection/Resolver/TypeResolver.h"
+#include "Reflection/Resolver/BaseResolver.h"
 
 namespace Reflection {
 	struct TypeInfo;

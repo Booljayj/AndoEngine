@@ -1,6 +1,7 @@
 #pragma once
 #include <string_view>
 #include <string>
+#include "Reflection/Resolver/BaseResolver.h"
 #include "Reflection/TypeInfo.h"
 #include "Reflection/StringTypeInfo.h"
 
@@ -11,15 +12,7 @@ template<> struct TypeResolver<__TYPE__> {\
 	static std::string_view GetName() { return #__TYPE__; }\
 }
 
-namespace Reflection
-{
-	/** Global reflection accessor type, specialized for types which are known to the reflection system */
-	template<typename TTYPE>
-	struct TypeResolver {
-		static TypeInfo const* Get() { return nullptr; }
-		static std::string_view GetName() { return "{{UNKNOWN}}"; }
-	};
-
+namespace Reflection {
 	//============================================================
 	// Standard primitive type specializations
 
