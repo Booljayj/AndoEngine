@@ -5,7 +5,7 @@
 #include <forward_list>
 #include <deque>
 #include "Reflection/Resolver/TypeResolver.h"
-#include "Reflection/DynamicArrayTypeInfo.h"
+#include "Reflection/ArrayTypeInfo.h"
 #include "Reflection/TypeUtility.h"
 
 #define L_DYNAMIC_ARRAY_RESOLVER( __TEMPLATE__, __DESCRIPTION__ )\

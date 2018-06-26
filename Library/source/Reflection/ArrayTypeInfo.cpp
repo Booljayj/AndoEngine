@@ -1,4 +1,4 @@
-#include "Reflection/DynamicArrayTypeInfo.h"
+#include "Reflection/ArrayTypeInfo.h"
 #include "Reflection/TypeUtility.h"
 
 namespace Reflection {
