@@ -32,5 +32,7 @@ namespace Serialization {
 
 		bool CanReadNextVariableHeader( std::istream& Stream, std::streampos const& EndPosition ) const;
 		Reflection::MemberVariableInfo const* ReadVariableIdentifier( std::istream& Stream ) const;
+		/** Handle a data block for an unknown variable */
+		void HandleUnknownDataBlock( std::istream& Stream ) const;
 	};
 }

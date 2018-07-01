@@ -11,24 +11,21 @@ namespace Serialization {
 
 	void ArraySerializer::SerializeBinary( void const* Data, std::ostream& Stream )
 	{
-		std::stringstream ArrayDataStream;
-		std::stringstream ElementDataStream;
+		std::streampos const StartPosition = StartDataBlockWrite( Stream );
 		std::vector<void const*> Elements;
 
 		//Write the size of the array to the stream (handles cases where array size changes)
-		WriteArrayCount( ArrayDataStream, Data );
+		WriteArrayCount( Stream, Data );
 
 		//Get an array of pointers to all the elements
 		Type->GetElements( Data, Elements );
 
 		//Write a data block for each element to the stream
 		for( uint32_t Index = 0; Index < Elements.size(); ++Index ) {
-			ResetStream( ElementDataStream );
-			Type->ElementType->Serializer->SerializeBinary( Elements[Index], ElementDataStream );
-			WriteDataBlock( ElementDataStream, ArrayDataStream );
+			Type->ElementType->Serializer->SerializeBinary( Elements[Index], Stream );
 		}
 
-		WriteDataBlock( ArrayDataStream, Stream );
+		FinishDataBlockWrite( Stream, StartPosition );
 	}
 
 	bool ArraySerializer::DeserializeBinary( void* Data, std::istream& Stream )

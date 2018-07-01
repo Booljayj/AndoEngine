@@ -9,9 +9,10 @@ namespace Reflection {
 }
 
 namespace Serialization {
-	//@todo Make this a contextual function so that it can print an error if there is too much data in the source stream to form a data block.
-	/** Write a binary data block composed of the data in the source stream to the target stream */
-	void WriteDataBlock( std::stringstream& SourceStream, std::ostream& TargetStream );
+	/** Start a data block in the stream. Returns the position where the block starts */
+	std::streampos StartDataBlockWrite( std::ostream& Stream );
+	/** Finish a data block in the stream */
+	void FinishDataBlockWrite( std::ostream& Stream, std::streampos StartPosition );
 
 	/** Read the end of the data block from the stream */
 	std::streampos ReadDataBlockEndPosition( std::istream& Stream );

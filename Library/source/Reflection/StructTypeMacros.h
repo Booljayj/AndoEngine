@@ -11,7 +11,7 @@ StructInfo->Default = std::make_unique<char[]>( sizeof( T ) );\
 new (StructInfo->Default.get()) T
 
 #define MAKE_SERIALIZER()\
-StructInfo->Serializer = std::make_unique<Serialization::StructSerializer>( StructInfo )
+StructInfo->Serializer = std::make_unique<Serialization::StructSerializer>( StructInfo );// StructInfo->Serializer->CacheVariables();
 
 /** End the type reflection block */
 #define STRUCT_TYPE_END( __TYPE__ )\
