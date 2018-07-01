@@ -64,12 +64,12 @@ namespace Serialization {
 	void ArraySerializer::WriteArrayCount( std::ostream& Stream, void const* Data ) const {
 		//@todo Impose a limit on the size of serialized arrays, arrays that are too large should just write nothing
 		uint32_t ArraySize = Type->GetCount( Data );
-		WriteLE<uint32_t>( &ArraySize, Stream );
+		WriteLE( &ArraySize, Stream );
 	}
 
 	uint32_t ArraySerializer::ReadArrayCount( std::istream& Stream ) const {
 		uint32_t ArraySize = 0;
-		ReadLE<uint32_t>( &ArraySize, Stream );
+		ReadLE( &ArraySize, Stream );
 		return ArraySize;
 	}
 }

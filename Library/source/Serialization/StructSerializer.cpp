@@ -83,7 +83,7 @@ namespace Serialization {
 	}
 
 	void StructSerializer::WriteVariableIdentifier( Reflection::MemberVariableInfo const* VariableInfo, std::ostream& Stream ) const {
-		WriteLE<uint16_t>( &(VariableInfo->NameHash), Stream );
+		WriteLE( &(VariableInfo->NameHash), Stream );
 	}
 
 	void StructSerializer::WriteVariableStream( std::istream& VariableStream, std::ostream& Stream ) const {
@@ -96,7 +96,7 @@ namespace Serialization {
 
 	Reflection::MemberVariableInfo const* StructSerializer::ReadVariableIdentifier( std::istream& Stream ) const {
 		uint16_t NameHash = 0;
-		ReadLE<uint16_t>( &NameHash, Stream );
+		ReadLE( &NameHash, Stream );
 
 		auto const FoundVariable = std::find_if(
 			CachedMemberVariables.begin(), CachedMemberVariables.end(),

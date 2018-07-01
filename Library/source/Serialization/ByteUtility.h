@@ -50,12 +50,12 @@ namespace Serialization {
 
 	/** Functions which implement serialization routines that read and write in little-endian format */
 	template<typename T>
-	void WriteLE( void const* Data, std::ostream& Stream ) {
-		ByteSerializer<sizeof(T), IsPlatformLittleEndian()>::Write( static_cast<char const*>( Data ), Stream );
+	void WriteLE( T const* Data, std::ostream& Stream ) {
+		ByteSerializer<sizeof(T), IsPlatformLittleEndian()>::Write( reinterpret_cast<char const*>( Data ), Stream );
 	}
 
 	template<typename T>
-	void ReadLE( void* Data, std::istream& Stream ) {
-		ByteSerializer<sizeof(T), IsPlatformLittleEndian()>::Read( static_cast<char*>( Data ), Stream );
+	void ReadLE( T* Data, std::istream& Stream ) {
+		ByteSerializer<sizeof(T), IsPlatformLittleEndian()>::Read( reinterpret_cast<char*>( Data ), Stream );
 	}
 }
