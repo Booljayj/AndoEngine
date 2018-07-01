@@ -18,15 +18,15 @@ namespace Serialization {
 		StructSerializer() = delete;
 		StructSerializer( Reflection::StructTypeInfo const* InType );
 
-		virtual void SerializeBinary( void const* Data, std::ostream& Stream ) override;
-		virtual bool DeserializeBinary( void* Data, std::istream& Stream ) override;
+		virtual void SerializeBinary( void const* Data, std::ostream& Stream ) const override;
+		virtual bool DeserializeBinary( void* Data, std::istream& Stream ) const override;
 
-		virtual void SerializeText( void const* Data, std::ostringstream& Stream ) override;
-		virtual bool DeserializeText( void* Data, std::istringstream& Stream ) override;
+		virtual void SerializeText( void const* Data, std::ostringstream& Stream ) const override;
+		virtual bool DeserializeText( void* Data, std::istringstream& Stream ) const override;
+
+		void Initialize();
 
 	private:
-		void CacheVariables();
-
 		void WriteVariableIdentifier( Reflection::MemberVariableInfo const* VariableInfo, std::ostream& Stream ) const;
 		void WriteVariableStream( std::istream& VariableStream, std::ostream& Stream ) const;
 

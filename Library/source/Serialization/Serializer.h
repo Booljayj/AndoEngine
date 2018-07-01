@@ -32,16 +32,16 @@ namespace Serialization {
 		virtual ~ISerializer() {}
 
 		//Serialize to and from binary data streams
-		virtual void SerializeBinary( void const* Data, std::ostream& Stream ) = 0;
-		virtual bool DeserializeBinary( void* Data, std::istream& Stream ) = 0;
+		virtual void SerializeBinary( void const* Data, std::ostream& Stream ) const = 0;
+		virtual bool DeserializeBinary( void* Data, std::istream& Stream ) const = 0;
 
 		//Serialize to and from human-readable text streams
-		virtual void SerializeText( void const* Data, std::ostringstream& Stream ) = 0;
-		virtual bool DeserializeText( void* Data, std::istringstream& Stream ) = 0;
+		virtual void SerializeText( void const* Data, std::ostringstream& Stream ) const = 0;
+		virtual bool DeserializeText( void* Data, std::istringstream& Stream ) const = 0;
 
 		//Serialize to and from a fast binary data stream
 		//These methods should only be used if the reading and writing are done by the same binary version.
-		virtual void SerializeFastBinary( void const* Data, std::ostream& Stream ) {}
-		virtual void DeserializeFastBinary( void* Data, std::istream& Stream ) {}
+		virtual void SerializeFastBinary( void const* Data, std::ostream& Stream ) const {}
+		virtual void DeserializeFastBinary( void* Data, std::istream& Stream ) const {}
 	};
 }

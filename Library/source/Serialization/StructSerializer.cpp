@@ -9,10 +9,7 @@ namespace Serialization {
 	: Type( InType )
 	{}
 
-	void StructSerializer::SerializeBinary( void const* Data, std::ostream& Stream ) {
-		//Set up the list of variables that this type contains
-		CacheVariables();
-
+	void StructSerializer::SerializeBinary( void const* Data, std::ostream& Stream ) const {
 		std::streampos const StartPosition = StartDataBlockWrite( Stream );
 		void const* DefaultData = Type->Default.get();
 
@@ -36,7 +33,7 @@ namespace Serialization {
 		FinishDataBlockWrite( Stream, StartPosition );
 	}
 
-	bool StructSerializer::DeserializeBinary( void* Data, std::istream& Stream ) {
+	bool StructSerializer::DeserializeBinary( void* Data, std::istream& Stream ) const {
 		std::streampos const EndPosition = ReadDataBlockEndPosition( Stream );
 
 		while( Stream.good() && CanReadNextVariableHeader( Stream, EndPosition ) ) {
@@ -62,24 +59,22 @@ namespace Serialization {
 		return true;
 	}
 
-	void StructSerializer::SerializeText( void const* Data, std::ostringstream& Stream ) {}
-	bool StructSerializer::DeserializeText( void* Data, std::istringstream& Stream ) { return false; }
+	void StructSerializer::SerializeText( void const* Data, std::ostringstream& Stream ) const {}
+	bool StructSerializer::DeserializeText( void* Data, std::istringstream& Stream ) const { return false; }
 
-	void StructSerializer::CacheVariables() {
-		if( CachedMemberVariables.size() == 0 ) {
-			Type->GetMemberVariablesRecursive( CachedMemberVariables );
-			//Remove invalid variables
-			auto const NewEnd = std::remove_if(
-				CachedMemberVariables.begin(), CachedMemberVariables.end(),
-				[]( auto const* A ){ return !A || !A->Type; }
-			);
-			CachedMemberVariables.erase( NewEnd, CachedMemberVariables.end() );
-			//Sort the remaining variables by NameHash for quick lookups
-			std::sort(
-				CachedMemberVariables.begin(), CachedMemberVariables.end(),
-				[]( auto const* A, auto const* B ){ return A->NameHash < B->NameHash; }
-			);
-		}
+	void StructSerializer::Initialize() {
+		Type->GetMemberVariablesRecursive( CachedMemberVariables );
+		//Remove invalid variables
+		auto const NewEnd = std::remove_if(
+			CachedMemberVariables.begin(), CachedMemberVariables.end(),
+			[]( auto const* A ){ return !A || !A->Type; }
+		);
+		CachedMemberVariables.erase( NewEnd, CachedMemberVariables.end() );
+		//Sort the remaining variables by NameHash for quick lookups
+		std::sort(
+			CachedMemberVariables.begin(), CachedMemberVariables.end(),
+			[]( auto const* A, auto const* B ){ return A->NameHash < B->NameHash; }
+		);
 	}
 
 	void StructSerializer::WriteVariableIdentifier( Reflection::MemberVariableInfo const* VariableInfo, std::ostream& Stream ) const {

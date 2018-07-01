@@ -58,7 +58,6 @@ STRUCT_TYPE_BEGIN( SerializedTypeA )
 {
 	StructInfo->Description = "Serialized type example A";
 	MAKE_DEFAULT();
-	MAKE_SERIALIZER();
 	ADD_MEMBER_VARIABLE( CharValue, "" );
 	ADD_MEMBER_VARIABLE( ByteValue, "" );
 	ADD_MEMBER_VARIABLE( ShortValue, "" );
@@ -66,6 +65,7 @@ STRUCT_TYPE_BEGIN( SerializedTypeA )
 	ADD_MEMBER_VARIABLE( BooleanValue, "" );
 	ADD_MEMBER_VARIABLE( FloatValue, "" );
 	ADD_MEMBER_VARIABLE( DoubleValue, "" );
+	MAKE_SERIALIZER();
 }
 STRUCT_TYPE_END( SerializedTypeA )
 
@@ -73,10 +73,10 @@ STRUCT_TYPE_BEGIN( SerializedTypeB )
 {
 	StructInfo->Description = "Serialized type example B";
 	MAKE_DEFAULT();
-	MAKE_SERIALIZER();
 	ADD_MEMBER_VARIABLE( CharValue, "" );
 	ADD_MEMBER_VARIABLE( ShortValue, "" );
 	ADD_MEMBER_VARIABLE( BooleanValue, "" );
 	ADD_MEMBER_VARIABLE( DoubleValue, "" );
+	MAKE_SERIALIZER();
 }
 STRUCT_TYPE_END( SerializedTypeB )

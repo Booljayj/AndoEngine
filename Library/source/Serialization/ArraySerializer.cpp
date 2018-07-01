@@ -9,7 +9,7 @@ namespace Serialization {
 	: Type( InType )
 	{}
 
-	void ArraySerializer::SerializeBinary( void const* Data, std::ostream& Stream )
+	void ArraySerializer::SerializeBinary( void const* Data, std::ostream& Stream ) const
 	{
 		std::streampos const StartPosition = StartDataBlockWrite( Stream );
 		std::vector<void const*> Elements;
@@ -28,7 +28,7 @@ namespace Serialization {
 		FinishDataBlockWrite( Stream, StartPosition );
 	}
 
-	bool ArraySerializer::DeserializeBinary( void* Data, std::istream& Stream )
+	bool ArraySerializer::DeserializeBinary( void* Data, std::istream& Stream ) const
 	{
 		std::streampos const EndPosition = ReadDataBlockEndPosition( Stream );
 
@@ -54,8 +54,8 @@ namespace Serialization {
 		return Stream.good();
 	}
 
-	void ArraySerializer::SerializeText( void const* Data, std::ostringstream& Stream ) {}
-	bool ArraySerializer::DeserializeText( void* Data, std::istringstream& Stream ) { return false; }
+	void ArraySerializer::SerializeText( void const* Data, std::ostringstream& Stream ) const {}
+	bool ArraySerializer::DeserializeText( void* Data, std::istringstream& Stream ) const { return false; }
 
 	bool ArraySerializer::CanReadNextElementHeader( std::istream& Stream, std::streampos const& EndPosition ) const {
 		return CanReadBytesFromStream( sizeof( uint32_t ), Stream, EndPosition );

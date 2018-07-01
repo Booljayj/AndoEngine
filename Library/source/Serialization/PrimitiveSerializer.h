@@ -8,13 +8,13 @@ namespace Serialization {
 	{
 		static_assert( sizeof( T ) < UINT32_MAX, "Serializing primitive types that are larger than UINT32_MAX is not supported" );
 
-		virtual void SerializeBinary( void const* Data, std::ostream& Stream ) override {
+		virtual void SerializeBinary( void const* Data, std::ostream& Stream ) const override {
 			uint32_t const SIZE = sizeof( T );
 			WriteLE( &SIZE, Stream );
 			WriteLE( reinterpret_cast<T const*>( Data ), Stream );
 		}
 
-		virtual bool DeserializeBinary( void* Data, std::istream& Stream ) override {
+		virtual bool DeserializeBinary( void* Data, std::istream& Stream ) const override {
 			uint32_t NumBytes = 0;
 			ReadLE( &NumBytes, Stream );
 			if( NumBytes == sizeof( T ) ) {
@@ -26,10 +26,10 @@ namespace Serialization {
 			}
 		}
 
-		virtual void SerializeText( void const* Data, std::ostringstream& Stream ) override {
+		virtual void SerializeText( void const* Data, std::ostringstream& Stream ) const override {
 			Stream << *static_cast<T const*>( Data );
 		}
-		virtual bool DeserializeText( void* Data, std::istringstream& Stream ) override {
+		virtual bool DeserializeText( void* Data, std::istringstream& Stream ) const override {
 			Stream >> *static_cast<T*>( Data );
 			return true;
 		}
