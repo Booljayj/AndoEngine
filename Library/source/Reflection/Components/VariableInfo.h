@@ -14,14 +14,22 @@ namespace Reflection {
 		Hidden = 1 << 1,
 	};
 
+	namespace VariableInfo
+	{
+
+	}
+
 	/** Info that describes a variable value */
 	struct StaticVariableInfo
 	{
+		/** Type used to store name hashes */
+		using HASH_T = uint16_t;
+
 		StaticVariableInfo() = delete;
 		StaticVariableInfo( const char* InName, const char* InDescription )
 		: Name( InName )
 		, Description( InDescription )
-		, NameHash( static_cast<uint16_t>( id( InName ) ) )
+		, NameHash( static_cast<HASH_T>( id( InName ) ) )
 		{}
 		virtual ~StaticVariableInfo() {};
 
@@ -30,7 +38,7 @@ namespace Reflection {
 
 		TypeInfo const* Type = nullptr;
 
-		uint16_t NameHash = 0;
+		HASH_T NameHash = 0;
 		FVariableFlags Flags = FVariableFlags::None;
 
 		virtual void* GetValuePointer() const = 0;
@@ -56,11 +64,14 @@ namespace Reflection {
 	/** Info that describes a variable within a struct */
 	struct MemberVariableInfo
 	{
+		/** Type used to store name hashes */
+		using HASH_T = uint16_t;
+
 		MemberVariableInfo() = delete;
 		MemberVariableInfo( const char* InName, const char* InDescription )
 		: Name( InName )
 		, Description( InDescription )
-		, NameHash( static_cast<uint16_t>( id( InName ) ) )
+		, NameHash( static_cast<HASH_T>( id( InName ) ) )
 		{}
 		virtual ~MemberVariableInfo() {};
 
@@ -69,7 +80,7 @@ namespace Reflection {
 
 		TypeInfo const* Type = nullptr;
 
-		uint16_t NameHash = 0;
+		HASH_T NameHash = 0;
 		FVariableFlags Flags = FVariableFlags::None;
 
 		virtual void const* GetValuePointer( void const* Instance ) const = 0;

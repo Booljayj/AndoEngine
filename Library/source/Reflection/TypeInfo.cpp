@@ -61,7 +61,7 @@ namespace Reflection {
 		}
 	}
 
-	TypeInfo const* TypeInfo::FindTypeByNameHash( uint32_t NameHash ) {
+	TypeInfo const* TypeInfo::FindTypeByNameHash( HASH_T NameHash ) {
 		for( TypeInfo const* Info : GlobalTypeCollection ) {
 			if( Info && Info->NameHash == NameHash ) {
 				return Info;
@@ -81,7 +81,7 @@ namespace Reflection {
 	TypeInfo::TypeInfo( ETypeClassification InClassification, std::string_view InName, size_t InSize, std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer )
 		: Classification( InClassification )
 		, Name( InName )
-		, NameHash( id( InName ) )
+		, NameHash( static_cast<HASH_T>( id( InName ) ) )
 		, Size( InSize )
 		, Description( InDescription )
 		, Flags( InFlags )

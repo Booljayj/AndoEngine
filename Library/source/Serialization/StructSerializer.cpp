@@ -86,11 +86,11 @@ namespace Serialization {
 	}
 
 	bool StructSerializer::CanReadNextVariableHeader( std::istream& Stream, std::streampos const& EndPosition ) const {
-		return CanReadBytesFromStream( sizeof( uint16_t ) + sizeof( uint32_t ), Stream, EndPosition );
+		return CanReadBytesFromStream( sizeof( Reflection::MemberVariableInfo::HASH_T ) + sizeof( DataBlock::BLOCK_SIZE_T ), Stream, EndPosition );
 	}
 
 	Reflection::MemberVariableInfo const* StructSerializer::ReadVariableIdentifier( std::istream& Stream ) const {
-		uint16_t NameHash = 0;
+		Reflection::MemberVariableInfo::HASH_T NameHash = 0;
 		ReadLE( &NameHash, Stream );
 
 		auto const FoundVariable = std::find_if(

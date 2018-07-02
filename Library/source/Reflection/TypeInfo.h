@@ -30,6 +30,9 @@ namespace Reflection
 	/** Provides a set of runtime information about a type */
 	struct TypeInfo
 	{
+		//Type used to store the type name hash
+		using HASH_T = uint32_t;
+
 		static constexpr ETypeClassification CLASSIFICATION = ETypeClassification::Primitive;
 		/** The global list of all TypeInfo objects that have been created */
 		static std::deque<TypeInfo const*> GlobalTypeCollection;
@@ -41,7 +44,7 @@ namespace Reflection
 		/** The human-readable name of this type */
 		std::string Name;
 		/** The hash of the name, serves as a unique identifier */
-		uint32_t NameHash = 0;
+		HASH_T NameHash = 0;
 		/** The size in bytes of an instance of this type */
 		size_t Size = 0;
 
@@ -60,7 +63,7 @@ namespace Reflection
 		static void PrintAll( std::ostream& Stream );
 
 		/** Find a TypeInfo object using the hash of its name */
-		static TypeInfo const* FindTypeByNameHash( uint32_t NameHash );
+		static TypeInfo const* FindTypeByNameHash( HASH_T NameHash );
 		/** Find a TypeInfo object using its name */
 		static TypeInfo const* FindTypeByName( std::string_view Name );
 

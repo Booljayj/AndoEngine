@@ -4,12 +4,10 @@
 #include "Reflection/Components/VariableInfo.h"
 
 namespace Serialization {
-	using BLOCK_SIZE_TYPE = uint32_t;
-
 	std::streampos StartDataBlockWrite( std::ostream& Stream ) {
 		std::streampos const StartPosition = Stream.tellp();
 		//Write zeros to the stream to reserve a space where the block size will eventually be written
-		BLOCK_SIZE_TYPE const Zero = 0;
+		DataBlock::BLOCK_SIZE_T const Zero = 0;
 		WriteLE( &Zero, Stream ); //Endianness doesn't matter, but kept this way for parity.
 		//Return where the block starts so we can seek back here when finishing
 		return StartPosition;
@@ -17,7 +15,7 @@ namespace Serialization {
 
 	void FinishDataBlockWrite( std::ostream& Stream, std::streampos StartPosition ) {
 		std::streampos const EndPosition = Stream.tellp();
-		BLOCK_SIZE_TYPE const BlockDataSize = EndPosition - StartPosition - sizeof( BLOCK_SIZE_TYPE );
+		DataBlock::BLOCK_SIZE_T const BlockDataSize = EndPosition - StartPosition - sizeof( DataBlock::BLOCK_SIZE_T );
 		//Reverse back to the start of the block and write the size to the reserved bytes
 		Stream.seekp( StartPosition );
 		WriteLE( &BlockDataSize, Stream );
@@ -26,7 +24,7 @@ namespace Serialization {
 	}
 
 	std::streampos ReadDataBlockEndPosition( std::istream& Stream ) {
-		BLOCK_SIZE_TYPE NumBytes = 0;
+		DataBlock::BLOCK_SIZE_T NumBytes = 0;
 		ReadLE( &NumBytes, Stream );
 		return ( Stream.tellg() + std::streamoff{ NumBytes } );
 	}

@@ -9,6 +9,11 @@ namespace Reflection {
 }
 
 namespace Serialization {
+	namespace DataBlock {
+		/** Type used to store the size of a data block */
+		using BLOCK_SIZE_T = uint32_t;
+	}
+
 	/** Start a data block in the stream. Returns the position where the block starts */
 	std::streampos StartDataBlockWrite( std::ostream& Stream );
 	/** Finish a data block in the stream */
