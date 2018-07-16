@@ -7,8 +7,8 @@ template< typename TCOMP, size_t BLOCK_SIZE >
 struct TInlineManagedComponentBlock
 {
 	size_t LowestFreeIndex;
-	std::array<TCOMP, BLOCK_SIZE> Data;
 	std::bitset<BLOCK_SIZE> Used;
+	std::array<TCOMP, BLOCK_SIZE> Data;
 
 	TInlineManagedComponentBlock()
 	: LowestFreeIndex( 0 )
@@ -20,8 +20,7 @@ struct TInlineManagedComponentBlock
 	size_t IndexOf( TCOMP const* Value ) const { return ( Value - Data.begin() ); }
 	bool IsUsed( TCOMP const* Value ) const { return Used[IndexOf(Value)]; }
 
-	TCOMP* Retain()
-	{
+	TCOMP* Retain() {
 		assert( HasAnyFree() );
 		TCOMP* Retained = &Data[LowestFreeIndex];
 		Used.set( LowestFreeIndex );
@@ -30,18 +29,18 @@ struct TInlineManagedComponentBlock
 		return Retained;
 	}
 
-	void Release( TCOMP* Released )
-	{
+	void Release( TCOMP* Released ) {
 		assert( Contains( Released ) );
 		size_t ReleasedIndex = IndexOf( Released );
 		Used.reset( ReleasedIndex );
 		if( ReleasedIndex < LowestFreeIndex ) LowestFreeIndex = ReleasedIndex;
 	}
 
-	typename std::array<TCOMP, BLOCK_SIZE>::iterator begin() { return Data.begin(); }
-	typename std::array<TCOMP, BLOCK_SIZE>::iterator end() { return Data.end(); }
+	size_t size() const { return Data.size(); }
 	typename std::array<TCOMP, BLOCK_SIZE>::const_iterator begin() const { return Data.begin(); }
 	typename std::array<TCOMP, BLOCK_SIZE>::const_iterator end() const { return Data.end(); }
+	typename std::array<TCOMP, BLOCK_SIZE>::iterator begin() { return Data.begin(); }
+	typename std::array<TCOMP, BLOCK_SIZE>::iterator end() { return Data.end(); }
 };
 
 template< typename TCOMP >

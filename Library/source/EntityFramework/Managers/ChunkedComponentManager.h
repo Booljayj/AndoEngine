@@ -2,13 +2,14 @@
 #include <vector>
 #include <array>
 #include <bitset>
+#include <memory>
 #include "Engine/UtilityMacros.h"
 #include "EntityFramework/Internal/ManagedComponentBlock.h"
 #include "EntityFramework/ComponentManager.h"
 #include "EntityFramework/Serializer.h"
 
 /** A component manager which allocates fixed-size component chunks dynamically as needed and uses standardized manipulation */
-template< class TIMPL, class TCOMP, size_t BLOCK_SIZE>
+template<class TCOMP, size_t BLOCK_SIZE>
 struct TChunkedComponentManager : public ComponentManager
 {
 	using BlockType = TInlineManagedComponentBlock<TCOMP, BLOCK_SIZE>;
@@ -19,40 +20,35 @@ protected:
 
 public:
 	TChunkedComponentManager() = default;
-	~TChunkedComponentManager()
+	virtual ~TChunkedComponentManager()
 	{
-		for( BlockType* Block : Blocks ) { std::free( static_cast<void*>( Block ) ); }
+		for( BlockType* BlockPtr : Blocks ) {
+			delete BlockPtr;
+		}
 	}
 
 	static TCOMP* Cast( ptr_t Comp ) { return static_cast<TCOMP*>( Comp ); }
 	static TCOMP const* Cast( cptr_t Comp ) { return static_cast<TCOMP const*>( Comp ); }
 
-	virtual void Setup( Entity const& NewEntity, ptr_t NewComponent ) const override
-	{
-		static_cast<TIMPL const*>( this )->OnSetup( NewEntity, Cast( NewComponent ) );
-	}
+	virtual void Setup( Entity const& NewEntity, ptr_t NewComponent ) const override {}
 
-	ptr_t Retain() override final
-	{
+	virtual ptr_t Retain() override {
 		//Grow the number of managed blocks if we don't currently have any free components
 		if( LowestFreeBlockIndex == Blocks.size() ) {
-			Blocks.push_back( new BlockType() );
+			Blocks.emplace_back( new BlockType() );
 		}
+		//Get an unused component from a block and reinitialize it.
 		TCOMP* RetainedComponent = Blocks[LowestFreeBlockIndex]->Retain();
-
+		new(RetainedComponent) TCOMP{};
 		//Seek ahead if we've run out of free components in the lowest block
 		while( LowestFreeBlockIndex < Blocks.size() && !Blocks[LowestFreeBlockIndex]->HasAnyFree() ) {
 			++LowestFreeBlockIndex;
 		}
-
-		static_cast<TIMPL*>( this )->OnRetained( RetainedComponent );
 		return RetainedComponent;
 	}
 
-	void Release( ptr_t RawReleasedComponent ) override final
-	{
+	virtual void Release( ptr_t RawReleasedComponent ) override {
 		TCOMP* ReleasedComponent = Cast( RawReleasedComponent );
-		static_cast<TIMPL*>( this )->OnReleased( ReleasedComponent );
 		for( size_t ContainingBlockIndex = 0; ContainingBlockIndex < Blocks.size(); ++ContainingBlockIndex ) {
 			BlockType* Block = Blocks[ContainingBlockIndex];
 			if( Block->Contains( ReleasedComponent ) ) {
@@ -71,18 +67,15 @@ public:
 	virtual void Copy( cptr_t CompA, ptr_t CompB ) override { *Cast( CompB ) = *Cast( CompA ); }
 	virtual void Wipe( ptr_t Comp ) override { new (Comp) TCOMP{}; }
 
-	size_t CountTotal() const override final
-	{
+	size_t CountTotal() const override final {
 		return BLOCK_SIZE * Blocks.size();
 	}
 
-	size_t CountFree() const override final
-	{
+	size_t CountFree() const override final {
 		return CountTotal() - CountUsed();
 	}
 
-	size_t CountUsed() const override
-	{
+	size_t CountUsed() const override final {
 		size_t RunningTotal = 0;
 		for( size_t Index = 0; Index < Blocks.size(); ++Index ) {
 			RunningTotal += Blocks[Index]->CountUsed();
@@ -90,9 +83,8 @@ public:
 		return RunningTotal;
 	}
 
-	template< typename TPRED >
-	void ForEach( TPRED const& Predicate ) const
-	{
+	template<typename TPRED>
+	void ForEach( TPRED const& Predicate ) const {
 		for( BlockType* Block : Blocks ) {
 			for( TCOMP& Comp : *Block ) {
 				if( Block->IsUsed( &Comp ) ) Predicate( &Comp );
@@ -100,9 +92,9 @@ public:
 		}
 	}
 
-	template< typename TPRED >
+	template<typename TPRED>
 	void ForEachAll( TPRED const& Predicate ) const {
-		for( auto* Block : Blocks ) {
+		for( std::unique_ptr<BlockType>& Block : Blocks ) {
 			for( TCOMP& Comp : *Block ) {
 				Predicate( &Comp );
 			}
