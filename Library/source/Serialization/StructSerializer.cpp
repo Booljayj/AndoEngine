@@ -1,3 +1,4 @@
+#include <set>
 #include "Serialization/StructSerializer.h"
 #include "Reflection/StructTypeInfo.h"
 #include "Reflection/Components/VariableInfo.h"
@@ -63,18 +64,12 @@ namespace Serialization {
 	bool StructSerializer::DeserializeText( void* Data, std::istringstream& Stream ) const { return false; }
 
 	void StructSerializer::Initialize() {
+		CachedMemberVariables.empty();
 		Type->GetMemberVariablesRecursive( CachedMemberVariables );
-		//Remove invalid variables
-		auto const NewEnd = std::remove_if(
-			CachedMemberVariables.begin(), CachedMemberVariables.end(),
-			[]( auto const* A ){ return !A || !A->Type; }
-		);
-		CachedMemberVariables.erase( NewEnd, CachedMemberVariables.end() );
-		//Sort the remaining variables by NameHash for quick lookups
-		std::sort(
-			CachedMemberVariables.begin(), CachedMemberVariables.end(),
-			[]( auto const* A, auto const* B ){ return A->NameHash < B->NameHash; }
-		);
+		struct MemberVariableInfoCompare {
+			inline bool operator()( Reflection::MemberVariableInfo const* A, Reflection::MemberVariableInfo const* B ) const { return A->NameHash < B->NameHash; }
+		};
+		std::sort( CachedMemberVariables.begin(), CachedMemberVariables.end(), MemberVariableInfoCompare{} );
 	}
 
 	void StructSerializer::WriteVariableIdentifier( Reflection::MemberVariableInfo const* VariableInfo, std::ostream& Stream ) const {

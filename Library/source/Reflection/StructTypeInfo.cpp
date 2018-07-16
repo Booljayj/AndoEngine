@@ -10,38 +10,34 @@ namespace Reflection {
 	}
 
 	void StructTypeInfo::GetStaticConstantsRecursive( std::vector<StaticConstantInfo const*>& OutStaticConstants ) const {
-		if( BaseType ) {
-			BaseType->GetStaticConstantsRecursive( OutStaticConstants );
-		}
+		OutStaticConstants.reserve( OutStaticConstants.size() + StaticConstants.size() );
 		for( auto const& StaticConstant : StaticConstants ) {
 			OutStaticConstants.push_back( StaticConstant.get() );
 		}
-	}
-
-	void StructTypeInfo::GetStaticVariablesRecursive( std::vector<StaticVariableInfo const*>& OutStaticVariables ) const {
-		if( BaseType ) {
-			BaseType->GetStaticVariablesRecursive( OutStaticVariables );
-		}
-		for( auto const& StaticVariable : StaticVariables ) {
-			OutStaticVariables.push_back( StaticVariable.get() );
-		}
+		if( BaseType ) BaseType->GetStaticConstantsRecursive( OutStaticConstants );
 	}
 
 	void StructTypeInfo::GetMemberConstantsRecursive( std::vector<MemberConstantInfo const*>& OutMemberConstants ) const {
-		if( BaseType ) {
-			BaseType->GetMemberConstantsRecursive( OutMemberConstants );
-		}
+		OutMemberConstants.reserve( OutMemberConstants.size() + MemberConstants.size() );
 		for( auto const& MemberConstant : MemberConstants ) {
 			OutMemberConstants.push_back( MemberConstant.get() );
 		}
+		if( BaseType ) BaseType->GetMemberConstantsRecursive( OutMemberConstants );
+	}
+
+	void StructTypeInfo::GetStaticVariablesRecursive( std::vector<StaticVariableInfo const*>& OutStaticVariables ) const {
+		OutStaticVariables.reserve( OutStaticVariables.size() + StaticVariables.size() );
+		for( auto const& StaticVariable : StaticVariables ) {
+			OutStaticVariables.push_back( StaticVariable.get() );
+		}
+		if( BaseType ) BaseType->GetStaticVariablesRecursive( OutStaticVariables );
 	}
 
 	void StructTypeInfo::GetMemberVariablesRecursive( std::vector<MemberVariableInfo const*>& OutMemberVariables ) const {
-		if( BaseType ) {
-			BaseType->GetMemberVariablesRecursive( OutMemberVariables );
-		}
+		OutMemberVariables.reserve( OutMemberVariables.size() + MemberVariables.size() );
 		for( auto const& MemberVariable : MemberVariables ) {
 			OutMemberVariables.push_back( MemberVariable.get() );
 		}
+		if( BaseType ) BaseType->GetMemberVariablesRecursive( OutMemberVariables );
 	}
 }
