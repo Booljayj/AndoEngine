@@ -3,6 +3,9 @@
 #include "Engine/Context.h"
 #include "Engine/Logger.h"
 #include "Engine/LinearStrings.h"
+#include "UI/IMGUI/imgui.h"
+#include "UI/IMGUI/imgui_impl_sdl.h"
+#include "UI/IMGUI/imgui_impl_opengl3.h"
 
 bool SDLFrameworkSystem::Startup( CTX_ARG )
 {
@@ -35,6 +38,7 @@ void SDLEventSystem::PollEvents( bool& bRequestShutdown )
 
 	while( SDL_PollEvent( &CurrentEvent ) )
 	{
+		ImGui_ImplSDL2_ProcessEvent( &CurrentEvent );
 		FrameEvents.push_back( CurrentEvent );
 		if( CurrentEvent.type == SDL_QUIT )
 		{
@@ -59,6 +63,11 @@ bool SDLWindowSystem::Startup( CTX_ARG )
 
 			if( glewInit() == GLEW_OK )
 			{
+				ImGui::CreateContext();
+				ImGui_ImplSDL2_InitForOpenGL( MainWindow, MainContext );
+				ImGui_ImplOpenGL3_Init( "#version 150" );
+				ImGui::StyleColorsDark();
+
 				glClearColor(0.0, 0.5, 0.5, 1.0);
 				Clear();
 				Swap();
@@ -80,6 +89,10 @@ bool SDLWindowSystem::Startup( CTX_ARG )
 
 bool SDLWindowSystem::Shutdown( CTX_ARG )
 {
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplSDL2_Shutdown();
+	ImGui::DestroyContext();
+
 	SDL_GL_DeleteContext( MainContext );
 	SDL_DestroyWindow( MainWindow );
 	return true;
@@ -92,6 +105,16 @@ void SDLWindowSystem::Clear()
 
 void SDLWindowSystem::Swap()
 {
+	ImGui_ImplOpenGL3_NewFrame();
+	ImGui_ImplSDL2_NewFrame( MainWindow );
+	ImGui::NewFrame();
+
+	bool show_demo_window = true;
+	ImGui::ShowDemoWindow(&show_demo_window);
+
+	ImGui::Render();
+	ImGui_ImplOpenGL3_RenderDrawData( ImGui::GetDrawData() );
+
 	SDL_GL_SwapWindow( MainWindow );
 }
 
@@ -99,9 +122,11 @@ void SDLWindowSystem::SetupGLAttributes()
 {
 	SDL_GL_SetAttribute( SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG );
 	SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE );
-	//SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
-	//SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 24 );
-	//SDL_GL_SetAttribute( SDL_GL_STENCIL_SIZE, 8 );
+
 	SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 3 );
 	SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 3 );
+
+	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
+	SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 24 );
+	SDL_GL_SetAttribute( SDL_GL_STENCIL_SIZE, 8 );
 }

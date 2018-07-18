@@ -165,7 +165,6 @@ int main( int argc, const char * argv[] )
 	const bool SuccessB = TB->Serializer->DeserializeBinary( &B, Stream );
 	std::cout << "Result: " << SuccessB << " " << (B == A1) << std::endl;
 
-	return 0;
 	if( Startup( CTX ) )
 	{
 		CTX.Log->Message( "Creating entities" );
