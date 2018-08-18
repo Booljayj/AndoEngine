@@ -15,7 +15,7 @@ AR := libtool
 RM := rm -rf
 MKDIR := mkdir -p
 
-CXXFLAGS := -std=c++14 -g -Wall -c -MMD -MP -I./$(DIR_SOURCE) -I./$(DIR_GENERATED) -I/usr/local/include/
+CXXFLAGS := -std=c++14 -g -Wall -c -MMD -MP -I./$(DIR_SOURCE) -I./$(DIR_GENERATED) -I/usr/local/include/ -I/usr/local/include/freetype2/
 ARFLAGS := -static -g -o
 
 # source files
