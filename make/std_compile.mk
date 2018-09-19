@@ -16,6 +16,11 @@ else
 $(error TARGETTYPE must be "library" or "executable")
 endif
 
+# directories
+DIR_SOURCE := source
+DIR_GENERATED := generated
+DIR_BUILD := build
+
 # tools
 ifdef DIR_RESOURCES
 CXX := $(DIR_RESOURCES)/bin/clang++
@@ -30,9 +35,9 @@ RM := rm -rf
 MKDIR := mkdir -p
 
 # flags (appended to existing defined flags)
-CXXFLAGS := $(CXXFLAGS) -std=gnu++14 -g -Wall -Wno-unknown-attributes -c -MMD -MP
+CXXFLAGS := $(CXXFLAGS) -std=gnu++14 -g -Wall -c -MMD -MP -I./$(DIR_SOURCE) -I./$(DIR_GENERATED)
 LDFLAGS := $(LDFLAGS)
-ARFLAGS := $(ARFLAGS) -static -g -o
+ARFLAGS := -static -o
 
 # compilation defines
 ifdef DEFINE
@@ -48,11 +53,6 @@ endif
 ifdef FRAMEWORKS
 LDLIBS += -framework $(FRAMEWORKS)
 endif
-
-# directories
-DIR_SOURCE := source
-DIR_GENERATED := generated
-DIR_BUILD := build
 
 # source files
 CPP_SOURCE := $(patsubst ./%, %, $(shell find ./$(DIR_SOURCE) -name "*.cpp"))
