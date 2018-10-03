@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <ostream>
 
-struct LinearAllocatorData
+struct HeapBuffer
 {
 private:
 	uint8_t* Data;
@@ -14,16 +14,20 @@ private:
 	size_t Peak;
 
 public:
-	LinearAllocatorData( size_t Capacity );
-	~LinearAllocatorData();
+	HeapBuffer( size_t Capacity );
+	~HeapBuffer();
 
-	inline uint8_t* GetData( size_t Offset = 0 ) const { return Data + Offset; }
+	inline void* GetData( size_t Offset = 0 ) const { return Data + Offset; }
 	inline size_t GetCapacity() const { return Capacity; }
 	inline size_t GetUsed() const { return Used; }
 	inline size_t GetPeak() const { return Peak; }
 
 	inline bool IsValid() const { return Used <= Capacity; }
-	inline bool Contains( uint8_t* Pointer ) const { return ( Pointer >= Data ) && ( Pointer < ( Data + Capacity ) ); }
+	inline bool Contains( void* Pointer ) const {
+		return true &&
+			static_cast<uint8_t*>( Pointer ) >= Data &&
+			static_cast<uint8_t*>( Pointer ) < ( Data + Capacity );
+	}
 
 	inline void SetUsed( size_t NewUsed )
 	{
@@ -32,9 +36,29 @@ public:
 	}
 
 	inline void Reset() { Used = 0; }
+
+	/** Returns an aligned array of elements inside this buffer, or nullptr if the buffer does not have enough space */
+	template<typename T>
+	T* Request( size_t Count = 1 ) noexcept {
+		static_assert( sizeof(T) > 0, "Template type has zero size" );
+		constexpr size_t ElementSize = sizeof( T );
+		constexpr size_t ElementAlignment = alignof( T );
+
+		const size_t CurrentUsed = GetUsed();
+		//Find the difference between the current used point and the next aligned point
+		const size_t AlignedCurrentUsed = CurrentUsed + ( ElementAlignment - ( CurrentUsed % ElementAlignment ) ) % ElementAlignment;
+		const size_t NewUsed = AlignedCurrentUsed + ( ElementSize * Count );
+
+		if( NewUsed <= Capacity ) {
+			SetUsed( NewUsed );
+			return static_cast<T*>( GetData( AlignedCurrentUsed ) );
+		} else {
+			return nullptr;
+		}
+	}
 };
 
-/** std allocator that uses a linear allocator data struct to manage allocations. */
+/** std allocator that uses a buffer to manage allocations. */
 template< typename T >
 class TLinearAllocator
 {
@@ -42,7 +66,7 @@ class TLinearAllocator
 	friend class TLinearAllocator;
 
 protected:
-	LinearAllocatorData* Allocator = nullptr;
+	HeapBuffer* Allocator = nullptr;
 
 	static constexpr size_t ElementSize = sizeof( T );
 	static constexpr size_t ElementAlignment = alignof( T );
@@ -52,7 +76,7 @@ public:
 	using propagate_on_container_move_assignment = std::true_type;
 
 	TLinearAllocator() = delete;
-	TLinearAllocator( LinearAllocatorData& InAllocator )
+	TLinearAllocator( HeapBuffer& InAllocator )
 	: Allocator( &InAllocator )
 	{}
 
@@ -67,23 +91,18 @@ public:
 
 	T* allocate( size_t Count, void const* Hint = nullptr )
 	{
-		const size_t PrevUsed = Allocator->GetUsed();
-		const size_t AlignmentCorrection = ( ElementAlignment - ( PrevUsed % ElementAlignment ) ) % ElementAlignment;
-		const size_t NewUsed = PrevUsed + AlignmentCorrection + ( ElementSize * Count );
-
-		Allocator->SetUsed( NewUsed );
-		if( !Allocator->IsValid() ) {
-			//default to heap allocation, we have exceeded the capacity of the temp allocator
-			return reinterpret_cast<T*>( ::operator new( ElementSize * Count ) );
+		if( T* BufferRequest = Allocator->Request<T>( Count ) ) {
+			return BufferRequest;
 		} else {
-			return reinterpret_cast<T*>( Allocator->GetData( PrevUsed + AlignmentCorrection ) );
+			//default to heap allocation, we have exceeded the capacity of the temp allocator
+			return static_cast<T*>( ::operator new( ElementSize * Count ) );
 		}
 	}
 
 	void deallocate( T* Pointer, size_t Count )
 	{
-		if( !Allocator->Contains( reinterpret_cast<uint8_t*>( Pointer ) ) ) {
-			::operator delete( reinterpret_cast<void*>( Pointer ) );
+		if( !Allocator->Contains( Pointer ) ) {
+			::operator delete( Pointer );
 		}
 	}
 

@@ -3,7 +3,7 @@
 #include "Engine/Context.h"
 #include "Engine/LinearStrings.h"
 
-LinearAllocatorData::LinearAllocatorData( size_t Capacity )
+HeapBuffer::HeapBuffer( size_t Capacity )
 : Capacity( Capacity )
 , Used( 0 )
 , Peak( 0 )
@@ -12,7 +12,7 @@ LinearAllocatorData::LinearAllocatorData( size_t Capacity )
 	Data[Capacity] = '\0'; //zero terminate the final byte
 }
 
-LinearAllocatorData::~LinearAllocatorData()
+HeapBuffer::~HeapBuffer()
 {
 	std::free( static_cast<void*>( Data ) );
 }

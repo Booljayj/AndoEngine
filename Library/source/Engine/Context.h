@@ -22,6 +22,6 @@ struct Context
 	uint32_t ThreadID;
 	/** Logger object used to print output */
 	Logger* Log;
-	/** Linear Allocator object used for dynamic allocation of small objects within the thread */
-	mutable LinearAllocatorData Temp;
+	/** Buffer used for dynamic allocation of small objects within the thread */
+	mutable HeapBuffer Temp;
 };

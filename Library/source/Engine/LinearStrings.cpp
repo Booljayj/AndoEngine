@@ -3,7 +3,7 @@
 #include <cstring>
 #include "Engine/LinearStrings.h"
 
-std::string_view l_printf( LinearAllocatorData& Allocator, char const* Format, ... )
+std::string_view l_printf( HeapBuffer& Allocator, char const* Format, ... )
 {
 	std::va_list args;
 	va_start( args, Format );
