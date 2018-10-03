@@ -1,31 +1,27 @@
 #include <iostream>
 #include "Logger.h"
 
-void StandardLogger::Debug( char const* M )
+void StandardLogger::Debug( std::string_view Message )
 {
-	if( CurrentLevel > ELogLevel::Debug ) return;
-	TerminalOutput( TERM_Cyan, M );
+	TerminalOutput( TERM_Cyan, Message );
 }
 
-void StandardLogger::Message( char const* M )
+void StandardLogger::Message( std::string_view Message )
 {
-	if( CurrentLevel > ELogLevel::Message ) return;
-	TerminalOutput( "", M );
+	TerminalOutput( "", Message );
 }
 
-void StandardLogger::Warning( char const* M )
+void StandardLogger::Warning( std::string_view Message )
 {
-	if( CurrentLevel > ELogLevel::Warning ) return;
-	TerminalOutput( TERM_Yellow "Warning: ", M );
+	TerminalOutput( TERM_Yellow "Warning: ", Message );
 }
 
-void StandardLogger::Error( char const* M )
+void StandardLogger::Error( std::string_view Message )
 {
-	if( CurrentLevel > ELogLevel::Error ) return;
-	TerminalOutput( TERM_Red "Error: ", M );
+	TerminalOutput( TERM_Red "Error: ", Message );
 }
 
-void StandardLogger::TerminalOutput( char const* Prefix, char const* M )
+void StandardLogger::TerminalOutput( std::string_view Prefix, std::string_view Message )
 {
-	std::cout << Prefix << M << TERM_NoColor << std::endl;
+	std::cout << Prefix << Message << TERM_NoColor << std::endl;
 }

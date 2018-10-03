@@ -157,16 +157,3 @@ void ComponentCollectionSystem::GetComponentInfos( CTX_ARG, char const* const* N
 		OutInfos[Index] = GetComponentInfo( CTX, Names[Index] );
 	}
 }
-
-void ComponentCollectionSystem::DescribeComponents( CTX_ARG ) const
-{
-	TEMP_SCOPE;
-	for( ComponentInfo const* Info : RegisteredInfos ) {
-		CTX.Log->Message( l_printf( CTX.Temp, "\t%s", DESC( *Info ) ) );
-	}
-}
-
-DESCRIPTION( ComponentCollectionSystem )
-{
-	return l_printf( CTX.Temp, "[ComponentCollection]{ Count: %i }", Value.RegisteredTypeIDs.size() );
-}

@@ -4,12 +4,9 @@
 #include <cassert>
 #include <algorithm>
 #include <ostream>
-#include "Engine/Print.h"
 
 struct LinearAllocatorData
 {
-	CAN_DESCRIBE( LinearAllocatorData );
-
 private:
 	uint8_t* Data;
 	size_t Capacity;
@@ -36,8 +33,6 @@ public:
 
 	inline void Reset() { Used = 0; }
 };
-
-DESCRIPTION( LinearAllocatorData );
 
 /** std allocator that uses a linear allocator data struct to manage allocations. */
 template< typename T >

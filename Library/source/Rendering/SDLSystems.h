@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 #include <SDL2/SDL.h>
-#include "Engine/UtilityMacros.h"
+#include "Engine/Context.h"
 
 class SDLFrameworkSystem
 {

@@ -3,7 +3,7 @@
 #include <array>
 #include <bitset>
 #include <memory>
-#include "Engine/UtilityMacros.h"
+#include "Engine/BitflagMacros.h"
 #include "EntityFramework/Internal/ManagedComponentBlock.h"
 #include "EntityFramework/ComponentManager.h"
 #include "EntityFramework/Serializer.h"

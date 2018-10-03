@@ -1,6 +1,5 @@
 #pragma once
 #include <iostream>
-#include "Engine/Print.h"
 #include "EntityFramework/Types.h"
 #include "EntityFramework/ComponentManager.h"
 
@@ -11,8 +10,6 @@ TComponentInfo<__TYPE__> __NAME__{ __ID__, #__NAME__, &__NAME__##Manager }
 /** Represents a component that can be owned by an entity */
 struct ComponentInfo
 {
-	CAN_DESCRIBE( ComponentInfo );
-
 public:
 	virtual ~ComponentInfo() {}
 
@@ -50,5 +47,3 @@ public:
 	/** The type of the component */
 	using TYPE = TDATA;
 };
-
-DESCRIPTION( ComponentInfo );

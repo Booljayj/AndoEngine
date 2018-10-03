@@ -47,8 +47,3 @@ ptr_t Entity::Get( ComponentTypeID TypeID ) const
 	auto FoundIter = std::find( Owned.begin(), Owned.end(), TypeID );
 	return FoundIter != Owned.end() ? FoundIter->CompPtr : nullptr;
 }
-
-DESCRIPTION( Entity )
-{
-	return l_printf( CTX.Temp, "[Entity]{ Components: %i }", Value.Owned.size() );
-}

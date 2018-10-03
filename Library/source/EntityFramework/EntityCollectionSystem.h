@@ -2,9 +2,8 @@
 #include <initializer_list>
 #include <memory>
 #include <vector>
-#include "Engine/UtilityMacros.h"
+#include "Engine/Context.h"
 #include "Engine/LinearContainers.h"
-#include "Engine/Print.h"
 #include "EntityFramework/ComponentCollectionSystem.h"
 #include "EntityFramework/EntityFilter.h"
 #include "EntityFramework/Types.h"
@@ -18,8 +17,6 @@ constexpr EntityID Entity_Root = 1;
 
 struct EntityCollectionSystem
 {
-	CAN_DESCRIBE( EntityCollectionSystem );
-
 public:
 	bool Startup( CTX_ARG, ComponentCollectionSystem const* InComponentCollection, size_t InitialCount );
 	bool Shutdown( CTX_ARG );
@@ -75,8 +72,6 @@ private:
 	/** Find the index of an entity in the master entity list */
 	size_t FindPositionByEntity( Entity const& EntityRef ) const noexcept;
 };
-
-DESCRIPTION( EntityCollectionSystem );
 
 template<size_t SIZE>
 std::shared_ptr<EntityFilter<SIZE>> EntityCollectionSystem::MakeFilter( ComponentInfo const* (&Infos)[SIZE] )

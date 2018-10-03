@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string_view>
 #include <GL/glew.h>
 #include "Engine/StringID.h"
 #include "Engine/BasicComponents.h"
@@ -7,8 +8,7 @@
 #include "Engine/LinearStrings.h"
 #include "Engine/ScopedTempBlock.h"
 #include "Engine/Time.h"
-#include "Engine/UtilityMacros.h"
-#include "Engine/Print.h"
+#include "Engine/Context.h"
 #include "EntityFramework/ComponentCollectionSystem.h"
 #include "EntityFramework/Entity.h"
 #include "EntityFramework/EntityCollectionSystem.h"
@@ -123,7 +123,7 @@ int main( int argc, const char * argv[] )
 	Context CTX{ 0, &MainLogger, 10000 };
 
 	CTX.Log->Message( TERM_Cyan "Hello, World! This is AndoEngine." );
-	CTX.Log->Message( TERM_Cyan "Compiled with " __VERSION__ "\n" );
+	CTX.Log->Message( TERM_Cyan "Compiled with " __VERSION__ " on " __DATE__ "\n" );
 
 	std::cout << "\nGlobal types:" << std::endl;
 	Reflection::TypeInfo::PrintAll( std::cout );
@@ -213,14 +213,17 @@ int main( int argc, const char * argv[] )
 		GL::Link( *TestProgram );
 		GL::Use( *TestProgram );
 
-		CTX.Log->Message( DESC( EntityCollection ) );
-		CTX.Log->Message( DESC( ComponentCollection ) );
-		ComponentCollection.DescribeComponents( CTX );
-
 		MainLoop( CTX );
 	}
 
 	Shutdown( CTX );
-	CTX.Log->Message( DESC( CTX.Temp ) );
+
+	CTX.Log->Message(
+		l_printf(
+			CTX.Temp, "[TempBuffer]{ Current: %i/%i, Peak: %i/%i }",
+			CTX.Temp.GetUsed(), CTX.Temp.GetCapacity(), CTX.Temp.GetPeak(), CTX.Temp.GetCapacity()
+		)
+	);
+
 	return 0;
 }

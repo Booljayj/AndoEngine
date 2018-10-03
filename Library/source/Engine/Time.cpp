@@ -57,11 +57,3 @@ void TimeController_FixedUpdateVariableRendering::FinishUpdateFrame()
 {
 	T.ConsumeAccumulatedTime();
 }
-
-DESCRIPTION( TimeController_FixedUpdateVariableRendering )
-{
-	return l_printf(
-		CTX.Temp, "[TimeController_FUVR]{ DeltaTime: %.4f, TotalTime: %.2f, Scale: %.2f }",
-		Value.T.DeltaTime, Value.T.TotalTime, Value.TControl.Scale
-	);
-}

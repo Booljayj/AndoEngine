@@ -1,7 +1,6 @@
 #pragma once
 #include <vector>
-#include "Engine/Print.h"
-#include "Engine/UtilityMacros.h"
+#include "Engine/Context.h"
 #include "EntityFramework/Types.h"
 
 struct ComponentInfo;
@@ -9,8 +8,6 @@ struct ComponentInfo;
 /** Manages a collection of components, and can be used for fast queries that provide component information */
 struct ComponentCollectionSystem
 {
-	CAN_DESCRIBE( ComponentCollectionSystem );
-
 public:
 	/** A searcher is a kind of forward iterator that returns sequential infos from a collection by feeding in sorted type IDs one at a time. */
 	struct Searcher {
@@ -44,13 +41,8 @@ public:
 	/** Fill the output array with the infos that correspond to the names */
 	void GetComponentInfos( CTX_ARG, char const* const* Names, ComponentInfo const** OutInfos, size_t Count ) const;
 
-	/** Describe each of the components inside this collection */
-	void DescribeComponents( CTX_ARG ) const;
-
 private:
 	std::vector<ComponentInfo const*> RegisteredInfos;
 	std::vector<ComponentTypeID> RegisteredTypeIDs;
 	std::vector<char const*> RegisteredNames;
 };
-
-DESCRIPTION( ComponentCollectionSystem );

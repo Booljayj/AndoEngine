@@ -1,6 +1,6 @@
 #pragma once
 #include <memory>
-#include "Engine/UtilityMacros.h"
+#include "Engine/Context.h"
 #include "EntityFramework/ComponentInfo.h"
 #include "EntityFramework/EntityFilter.h"
 

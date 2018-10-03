@@ -1,6 +1,5 @@
 #pragma once
 #include <chrono>
-#include "Engine/Print.h"
 
 //Used to hold current time information that can be used by systems
 struct Time
@@ -54,8 +53,6 @@ struct TimeControl
 
 struct TimeController_FixedUpdateVariableRendering
 {
-	CAN_DESCRIBE( TimeController_FixedUpdateVariableRendering );
-
 private:
 	Time T;
 	TimeControl TControl;
@@ -71,5 +68,3 @@ public:
 	bool StartUpdateFrame();
 	void FinishUpdateFrame();
 };
-
-DESCRIPTION( TimeController_FixedUpdateVariableRendering );

@@ -4,7 +4,6 @@
 #include "Engine/LinearContainers.h"
 #include "Engine/LinearStrings.h"
 #include "Engine/Logger.h"
-#include "Engine/Print.h"
 #include "Engine/ScopedTempBlock.h"
 #include "EntityFramework/ComponentInfo.h"
 #include "EntityFramework/Entity.h"
@@ -166,9 +165,4 @@ size_t EntityCollectionSystem::FindPositionByEntity( Entity const& EntityRef ) c
 {
 	//The referenced entity should be in our internal array, so calculate the position with the address
 	return &EntityRef - &( *Entities.begin() );
-}
-
-DESCRIPTION( EntityCollectionSystem )
-{
-	return l_printf( CTX.Temp, "[EntityFramework]{ Count: %i }", Value.EntityIDs.size() );
 }

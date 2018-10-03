@@ -16,11 +16,3 @@ LinearAllocatorData::~LinearAllocatorData()
 {
 	std::free( static_cast<void*>( Data ) );
 }
-
-DESCRIPTION( LinearAllocatorData )
-{
-	return l_printf(
-		CTX.Temp, "[LinearAllocatorData]{ Current: %i/%i, Peak: %i/%i }",
-		Value.GetUsed(), Value.GetCapacity(), Value.GetPeak(), Value.GetCapacity()
-	);
-}

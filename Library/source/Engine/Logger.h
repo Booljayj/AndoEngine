@@ -1,4 +1,5 @@
 #pragma once
+#include <string_view>
 
 #define TERM_NoColor "\033[0m"
 
@@ -72,39 +73,28 @@
 #define TERM_On_ICyan "\033[0;106m"
 #define TERM_On_IWhite "\033[0;107m"
 
-enum class ELogLevel : uint8_t
-{
-	Debug,
-	Message,
-	Warning,
-	Error,
-};
-
 struct Logger
 {
 	virtual ~Logger() {}
 
 	//Information messages
-	virtual void Debug( char const* M ) {}
-	virtual void Message( char const* M ) {}
+	virtual void Debug( std::string_view Message ) {}
+	virtual void Message( std::string_view Message ) {}
 
 	//Issue messages
-	virtual void Warning( char const* M ) {}
-	virtual void Error( char const* M ) {}
-
-	//Only messages at or higher than the current level will be displayed
-	ELogLevel CurrentLevel = ELogLevel::Message;
+	virtual void Warning( std::string_view Message ) {}
+	virtual void Error( std::string_view Message ) {}
 };
 
 //A logger which prints to std::out
 struct StandardLogger : public Logger
 {
-	virtual void Debug( char const* M ) override;
-	virtual void Message( char const* M ) override;
+	virtual void Debug( std::string_view Message ) override;
+	virtual void Message( std::string_view Message ) override;
 
-	virtual void Warning( char const* M ) override;
-	virtual void Error( char const* M ) override;
+	virtual void Warning( std::string_view Message ) override;
+	virtual void Error( std::string_view Message ) override;
 
 protected:
-	void TerminalOutput( char const* Prefix, char const* M );
+	void TerminalOutput( std::string_view Prefix, std::string_view Message );
 };

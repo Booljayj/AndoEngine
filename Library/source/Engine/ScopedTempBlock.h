@@ -1,5 +1,4 @@
 #pragma once
-#include "Engine/UtilityMacros.h"
 #include "Engine/Context.h"
 
 //Scope object that sets the context temporary allocator to the provided mark when going out of scope. Should typically be used through the macro that auto-sets the original used level upon creation.

@@ -5,7 +5,7 @@
 #include <array>
 #include <vector>
 #include <bitset>
-#include "Engine/UtilityMacros.h"
+#include "Engine/Context.h"
 #include "EntityFramework/Types.h"
 
 struct Entity;
