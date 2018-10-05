@@ -8,53 +8,54 @@
 struct HeapBuffer
 {
 private:
-	uint8_t* Data;
-	size_t Capacity;
-	size_t Used;
-	size_t Peak;
+	char* Begin;
+	char* End;
+	char* Current;
+
+	size_t PeakUsage;
+	size_t PeakOverflow;
 
 public:
 	HeapBuffer( size_t Capacity );
 	~HeapBuffer();
 
-	inline void* GetData( size_t Offset = 0 ) const { return Data + Offset; }
-	inline size_t GetCapacity() const { return Capacity; }
-	inline size_t GetUsed() const { return Used; }
-	inline size_t GetPeak() const { return Peak; }
+	inline void Reset() noexcept { Current = Begin; }
 
-	inline bool IsValid() const { return Used <= Capacity; }
-	inline bool Contains( void* Pointer ) const {
+	inline char* GetCursor() const noexcept { return Current; }
+	inline void SetCursor( char* NewCurrent ) noexcept {
+		Current = std::min( std::max( NewCurrent, Begin ), End ); //Clamp the input to ensure it's inside the buffer
+		PeakUsage = std::max( PeakUsage, GetUsed() );
+	}
+
+	inline size_t GetCapacity() const noexcept { return End - Begin; }
+	inline size_t GetAvailable() const noexcept { return End - Current; }
+	inline size_t GetUsed() const noexcept { return Current - Begin; }
+	inline size_t GetPeakUsage() const noexcept { return PeakUsage; }
+	inline size_t GetPeakOverflow() const noexcept { return PeakOverflow; }
+
+	inline bool Contains( void* Pointer ) const noexcept {
 		return true &&
-			static_cast<uint8_t*>( Pointer ) >= Data &&
-			static_cast<uint8_t*>( Pointer ) < ( Data + Capacity );
+			static_cast<char*>( Pointer ) >= Begin &&
+			static_cast<char*>( Pointer ) < End;
 	}
-
-	inline void SetUsed( size_t NewUsed )
-	{
-		Peak = std::max( NewUsed, Peak );
-		Used = NewUsed;
-	}
-
-	inline void Reset() { Used = 0; }
 
 	/** Returns an aligned array of elements inside this buffer, or nullptr if the buffer does not have enough space */
 	template<typename T>
-	T* Request( size_t Count = 1 ) noexcept {
+	inline T* Request( size_t Count = 1 ) noexcept {
 		static_assert( sizeof(T) > 0, "Template type has zero size" );
-		constexpr size_t ElementSize = sizeof( T );
-		constexpr size_t ElementAlignment = alignof( T );
 
-		const size_t CurrentUsed = GetUsed();
-		//Find the difference between the current used point and the next aligned point
-		const size_t AlignedCurrentUsed = CurrentUsed + ( ElementAlignment - ( CurrentUsed % ElementAlignment ) ) % ElementAlignment;
-		const size_t NewUsed = AlignedCurrentUsed + ( ElementSize * Count );
-
-		if( NewUsed <= Capacity ) {
-			SetUsed( NewUsed );
-			return static_cast<T*>( GetData( AlignedCurrentUsed ) );
-		} else {
-			return nullptr;
+		if( size_t const RequestedBytes = sizeof(T) * Count ) {
+			size_t AvailableBytes = GetAvailable();
+			void* AlignedCurrent = GetCursor();
+			if( std::align( alignof(T), RequestedBytes, AlignedCurrent, AvailableBytes ) ) {
+				SetCursor( static_cast<char*>( AlignedCurrent ) + RequestedBytes );
+				return static_cast<T*>( AlignedCurrent );
+			} else {
+				//The actual overflow is probably a bit higher due to alignment, but this number does not need to be exact.
+				PeakOverflow = std::max( PeakOverflow, RequestedBytes );
+			}
 		}
+		return nullptr;
 	}
 };
 
@@ -66,42 +67,39 @@ class TLinearAllocator
 	friend class TLinearAllocator;
 
 protected:
-	HeapBuffer* Allocator = nullptr;
-
-	static constexpr size_t ElementSize = sizeof( T );
-	static constexpr size_t ElementAlignment = alignof( T );
+	HeapBuffer* Buffer = nullptr;
 
 public:
 	using value_type = T;
 	using propagate_on_container_move_assignment = std::true_type;
 
 	TLinearAllocator() = delete;
-	TLinearAllocator( HeapBuffer& InAllocator )
-	: Allocator( &InAllocator )
+	TLinearAllocator( HeapBuffer& InBuffer )
+	: Buffer( &InBuffer )
 	{}
 
 	TLinearAllocator( TLinearAllocator const& ) = default;
 
 	template<typename U>
 	TLinearAllocator( TLinearAllocator<U> const& Other )
-	: Allocator( Other.Allocator )
+	: Buffer( Other.Buffer )
 	{}
 
 	~TLinearAllocator() = default;
 
 	T* allocate( size_t Count, void const* Hint = nullptr )
 	{
-		if( T* BufferRequest = Allocator->Request<T>( Count ) ) {
+		if( T* BufferRequest = Buffer->Request<T>( Count ) ) {
 			return BufferRequest;
 		} else {
 			//default to heap allocation, we have exceeded the capacity of the temp allocator
-			return static_cast<T*>( ::operator new( ElementSize * Count ) );
+			return static_cast<T*>( ::operator new( sizeof(T) * Count ) );
 		}
 	}
 
 	void deallocate( T* Pointer, size_t Count )
 	{
-		if( !Allocator->Contains( Pointer ) ) {
+		if( !Buffer->Contains( Pointer ) ) {
 			::operator delete( Pointer );
 		}
 	}
@@ -120,7 +118,7 @@ public:
 
 	pointer address( reference x ) const noexcept { return &x; }
 	const_pointer address( const_reference x ) const noexcept { return &x; }
-	size_type max_size() const { return Allocator->GetCapacity(); }
+	size_type max_size() const { return Buffer->GetCapacity(); }
 
 	template< class U, class... Args >
 	void construct( U* Pointer, Args&&... args )

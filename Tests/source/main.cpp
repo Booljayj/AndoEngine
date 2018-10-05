@@ -221,7 +221,7 @@ int main( int argc, const char * argv[] )
 	CTX.Log->Message(
 		l_printf(
 			CTX.Temp, "[TempBuffer]{ Current: %i/%i, Peak: %i/%i }",
-			CTX.Temp.GetUsed(), CTX.Temp.GetCapacity(), CTX.Temp.GetPeak(), CTX.Temp.GetCapacity()
+			CTX.Temp.GetUsed(), CTX.Temp.GetCapacity(), CTX.Temp.GetPeakUsage(), CTX.Temp.GetCapacity()
 		)
 	);
 

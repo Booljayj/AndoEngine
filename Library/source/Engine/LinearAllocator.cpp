@@ -4,15 +4,15 @@
 #include "Engine/LinearStrings.h"
 
 HeapBuffer::HeapBuffer( size_t Capacity )
-: Capacity( Capacity )
-, Used( 0 )
-, Peak( 0 )
+: PeakUsage( 0 )
 {
-	Data = static_cast<uint8_t*>( std::malloc( Capacity + 1 ) );
-	Data[Capacity] = '\0'; //zero terminate the final byte
+	Begin = static_cast<char*>( std::malloc( Capacity + 1 ) );
+	End = Begin + Capacity;
+	*End = '\0'; //zero terminate the final byte
+	Current = Begin;
 }
 
 HeapBuffer::~HeapBuffer()
 {
-	std::free( static_cast<void*>( Data ) );
+	std::free( static_cast<void*>( Begin ) );
 }

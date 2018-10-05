@@ -1,7 +1,7 @@
 #include "Engine/ScopedTempBlock.h"
 
-ScopedTempBlock::ScopedTempBlock( CTX_ARG, size_t InMark )
-	: CTX_Cached( CTX ), Mark( InMark )
+ScopedTempBlock::ScopedTempBlock( CTX_ARG, char* InStartCursor )
+	: CTX_Cached( CTX ), StartCursor( InStartCursor )
 {}
 
 ScopedTempBlock::~ScopedTempBlock()
@@ -11,5 +11,5 @@ ScopedTempBlock::~ScopedTempBlock()
 
 void ScopedTempBlock::Reset() const
 {
-	CTX_Cached.Temp.SetUsed( Mark );
+	CTX_Cached.Temp.SetCursor( StartCursor );
 }

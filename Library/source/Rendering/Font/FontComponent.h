@@ -36,8 +36,8 @@ struct CodePointFrequencyTracker {
 
 	/** Returns a temporary array of all code points in this set, ordered with the most frequent code points first */
 	l_vector<char32_t> GetOrderedCodePoints( CTX_ARG ) const {
-		const size_t Count = CodePointFrequencyMap.size();
-		const size_t StartingTempUsed = CTX.Temp.GetUsed();
+		size_t const Count = CodePointFrequencyMap.size();
+		void* const StartingCurrent = CTX.Temp.GetCursor();
 		//Create a temporary array to hold all the pairs in the map
 		l_vector<std::pair<char32_t, uint32_t>> Pairs{ CTX.Temp };
 		Pairs.reserve( Count );
@@ -53,7 +53,7 @@ struct CodePointFrequencyTracker {
 			}
 		);
 		//Reset the temporary storage so that Pairs and Characters start at the same offset
-		CTX.Temp.SetUsed( StartingTempUsed );
+		CTX.Temp.SetCursor( StartingCurrent );
 		l_vector<char32_t> Characters{ CTX.Temp };
 		Characters.resize( Count );
 		//Copy the first value of each pair to the return array. Since Pairs and Characters occupy the same memory but the
