@@ -47,6 +47,8 @@ namespace Reflection
 		HASH_T NameHash = 0;
 		/** The size in bytes of an instance of this type */
 		size_t Size = 0;
+		/** The alignment in bytes of an instance of this type */
+		size_t Alignment = 0;
 
 		//============================================================
 		// Optional type information
@@ -68,8 +70,8 @@ namespace Reflection
 		static TypeInfo const* FindTypeByName( std::string_view Name );
 
 		TypeInfo() = delete;
-		TypeInfo( ETypeClassification InClassification, std::string_view InName, size_t InSize, std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer );
-		TypeInfo( ETypeClassification InClassification, std::string_view InName, size_t InSize );
+		TypeInfo( ETypeClassification InClassification, std::string_view InName, size_t InSize, size_t InAlignment, std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer );
+		TypeInfo( ETypeClassification InClassification, std::string_view InName, size_t InSize, size_t InAlignment );
 		virtual ~TypeInfo() {}
 
 		/** Compare two instances of this type, similar to standard compare functions */

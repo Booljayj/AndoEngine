@@ -5,7 +5,7 @@ namespace Reflection {
 	StringTypeInfo::StringTypeInfo()
 	: TypeInfo(
 		TypeInfo::CLASSIFICATION,
-		TypeResolver<std::string>::GetName(), sizeof( std::string ), "dynamic string",
+		TypeResolver<std::string>::GetName(), sizeof( std::string ), alignof( std::string ), "dynamic string",
 		FTypeFlags::None, nullptr
 	)
 	{}

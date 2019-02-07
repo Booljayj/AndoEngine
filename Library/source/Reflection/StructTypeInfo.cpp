@@ -3,8 +3,8 @@
 #include "Reflection/Components/VariableInfo.h"
 
 namespace Reflection {
-	StructTypeInfo::StructTypeInfo( std::string_view InName, size_t InSize, void (*Initializer)( StructTypeInfo* ) )
-	: TypeInfo( StructTypeInfo::CLASSIFICATION, InName, InSize )
+	StructTypeInfo::StructTypeInfo( std::string_view InName, size_t InSize, size_t InAlignment, void (*Initializer)( StructTypeInfo* ) )
+	: TypeInfo( StructTypeInfo::CLASSIFICATION, InName, InSize, InAlignment )
 	{
 		if( Initializer ) Initializer( this );
 	}

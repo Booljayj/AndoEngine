@@ -39,7 +39,7 @@ namespace Reflection {
 		//functions without return values, essentially
 
 		StructTypeInfo() = delete;
-		StructTypeInfo( std::string_view InName, size_t InSize, void (*Initializer)( StructTypeInfo* ) );
+		StructTypeInfo( std::string_view InName, size_t InSize, size_t InAlignment, void (*Initializer)( StructTypeInfo* ) );
 		virtual ~StructTypeInfo() {}
 
 		/** Returns true if the chain of base types includes the provided type */
@@ -64,7 +64,7 @@ namespace Reflection {
 	struct TStructTypeInfo : public StructTypeInfo
 	{
 		TStructTypeInfo( void (*Initializer)( StructTypeInfo* ) )
-		: StructTypeInfo( TypeResolver<T>::GetName(), sizeof( T ), Initializer )
+		: StructTypeInfo( TypeResolver<T>::GetName(), sizeof( T ), alignof( T ), Initializer )
 		{}
 	};
 }

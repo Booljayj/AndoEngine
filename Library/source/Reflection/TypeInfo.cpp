@@ -9,7 +9,9 @@ namespace Reflection {
 	void TypeInfo::Print( TypeInfo const* Info, std::ostream& Stream ) {
 		if( !Info) {
 			Stream << "{{INVALID TYPE}}";
+			return;
 		}
+
 		//Print attributes
 		if( Info->Serializer ) {
 			Stream << "[Serializable]\n";
@@ -41,8 +43,9 @@ namespace Reflection {
 				for( auto const& MemberVariable : StructInfo->MemberVariables ) {
 					Stream << "\t" << MemberVariable->Name << " : " << MemberVariable->Type->Name << "\n";
 				}
-				Stream << "}\n";
+				Stream << "\n";
 			}
+			Stream << "}\n";
 
 		} else {
 			Stream << Info->Name;
@@ -78,19 +81,20 @@ namespace Reflection {
 		return nullptr;
 	}
 
-	TypeInfo::TypeInfo( ETypeClassification InClassification, std::string_view InName, size_t InSize, std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer )
+	TypeInfo::TypeInfo( ETypeClassification InClassification, std::string_view InName, size_t InSize, size_t InAlignment, std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer )
 		: Classification( InClassification )
 		, Name( InName )
 		, NameHash( static_cast<HASH_T>( id( InName ) ) )
 		, Size( InSize )
+		, Alignment( InAlignment )
 		, Description( InDescription )
 		, Flags( InFlags )
 		, Serializer( InSerializer )
 	{
 		GlobalTypeCollection.push_back( this );
 	}
-	TypeInfo::TypeInfo( ETypeClassification InClassification, std::string_view InName, size_t InSize )
-		: TypeInfo( InClassification, InName, InSize, "", (FTypeFlags)0, nullptr )
+	TypeInfo::TypeInfo( ETypeClassification InClassification, std::string_view InName, size_t InSize, size_t InAlignment )
+		: TypeInfo( InClassification, InName, InSize, InAlignment, "", (FTypeFlags)0, nullptr )
 	{}
 
 	int8_t TypeInfo::Compare( void const* A, void const* B ) const {

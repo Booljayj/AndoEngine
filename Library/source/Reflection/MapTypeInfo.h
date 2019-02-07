@@ -16,7 +16,7 @@ namespace Reflection {
 		TypeInfo const* ValueType = nullptr;
 
 		MapTypeInfo() = delete;
-		MapTypeInfo( std::string_view InName, size_t InSize, std::string_view InDescription, TypeInfo const* InKeyType, TypeInfo const* InValueType );
+		MapTypeInfo( std::string_view InName, size_t InSize, size_t InAlignment, std::string_view InDescription, TypeInfo const* InKeyType, TypeInfo const* InValueType );
 		virtual ~MapTypeInfo() {}
 
 		// Get the number of entries in this map
@@ -44,7 +44,7 @@ namespace Reflection {
 	{
 		TMapTypeInfo() = delete;
 		TMapTypeInfo( std::string_view InDescription )
-		: MapTypeInfo( TypeResolver<TMAP>::GetName(), sizeof( TMAP ), InDescription, TypeResolver<TKEY>::Get(), TypeResolver<TVALUE>::Get() )
+		: MapTypeInfo( TypeResolver<TMAP>::GetName(), sizeof( TMAP ), alignof( TMAP ), InDescription, TypeResolver<TKEY>::Get(), TypeResolver<TVALUE>::Get() )
 		{}
 
 		static constexpr TMAP const& Cast( void const* Instance ) { return *static_cast<TMAP const*>( Instance ); }

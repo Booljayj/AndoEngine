@@ -17,7 +17,7 @@ namespace Reflection {
 		TypeInfo const* ElementType = nullptr;
 
 		ArrayTypeInfo() = delete;
-		ArrayTypeInfo( std::string_view InName, size_t InSize, std::string_view InDescription, bool InIsFixedSize, TypeInfo const* InElementType );
+		ArrayTypeInfo( std::string_view InName, size_t InSize, size_t InAlignment, std::string_view InDescription, bool InIsFixedSize, TypeInfo const* InElementType );
 		virtual ~ArrayTypeInfo() {}
 
 		//Get the number of elements that are in the array
@@ -47,7 +47,7 @@ namespace Reflection {
 	{
 		TFixedArrayTypeInfo() = delete;
 		TFixedArrayTypeInfo( std::string_view InDescription )
-		: ArrayTypeInfo( TypeResolver<TARRAY>::GetName(), sizeof( TARRAY ), InDescription, true, TypeResolver<TELEMENT>::Get() )
+		: ArrayTypeInfo( TypeResolver<TARRAY>::GetName(), sizeof( TARRAY ), alignof( TARRAY ), InDescription, true, TypeResolver<TELEMENT>::Get() )
 		{}
 
 		static constexpr TARRAY const& Cast( void const* Instance ) { return *static_cast<TARRAY const*>( Instance ); }
@@ -81,7 +81,7 @@ namespace Reflection {
 	{
 		TDynamicArrayTypeInfo() = delete;
 		TDynamicArrayTypeInfo( std::string_view InDescription )
-		: ArrayTypeInfo( TypeResolver<TARRAY>::GetName(), sizeof( TARRAY ), InDescription, false, TypeResolver<TELEMENT>::Get() )
+		: ArrayTypeInfo( TypeResolver<TARRAY>::GetName(), sizeof( TARRAY ), alignof( TARRAY ), InDescription, false, TypeResolver<TELEMENT>::Get() )
 		{}
 		virtual ~TDynamicArrayTypeInfo() {}
 
