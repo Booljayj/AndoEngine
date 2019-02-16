@@ -128,42 +128,18 @@ int main( int argc, const char * argv[] )
 	std::cout << "\nGlobal types:" << std::endl;
 	Reflection::TypeInfo::PrintAll( std::cout );
 
-	std::cout << "Name of std::map<size_t,std::vector<std::array<char,3>>>: " << std::endl;
-	std::cout << "        " << Reflection::TypeResolver<std::map<size_t,std::vector<std::array<char,3>>>>::GetName() << std::endl;
+	Reflection::TypeInfo const* A = Reflection::TypeResolver<std::map<char, size_t>>::Get();
+
+	std::cout << "ID of std::map<size_t,std::vector<std::array<char,3>>>: " << std::endl;
+	std::cout << "        " << Reflection::TypeResolver<std::map<size_t,std::vector<std::array<char,3>>>>::GetID() << std::endl;
 
 	std::cout << "ID of std::string should be: 35c5c55b" << std::endl;
 	std::cout << "ID of void should be: 7c9faa57" << std::endl;
 	std::cout << "ID of std::list<std::array<RecursiveType,5>> should be: b5e4752d" << std::endl;
+	std::cout << std::hex << Reflection::TypeResolver<std::list<std::array<RecursiveType, 5>>>::GetID() << std::endl;
 
-	std::cout << "\nCreating streams and loading types" << std::endl;
-	std::stringstream Stream;
-	SerializedTypeA A1;
-	SerializedTypeA A2;
-	SerializedTypeB B;
-	auto* TA = Reflection::TypeResolver<SerializedTypeA>::Get();
-	auto* TB = Reflection::TypeResolver<SerializedTypeB>::Get();
-
-	A1.CharValue = 'x';
-	A1.ShortValue = 9999;
-	A1.FloatValue = 99.99;
-
-	std::cout << std::boolalpha;
-
-	std::cout << "Serializing A1" << std::endl;
-	TA->Serializer->SerializeBinary( &A1, Stream );
-	std::cout << "Deserializing A1 to A2" << std::endl;
-
-	const bool SuccessA = TA->Serializer->DeserializeBinary( &A2, Stream );
-	std::cout << "Result: " << SuccessA << " " << (A1 == A2) << std::endl;
-
-	Stream.str( "" );
-	Stream.clear();
-
-	std::cout << "Serializing A1 again" << std::endl;
-	TA->Serializer->SerializeBinary( &A1, Stream );
-	std::cout << "Deserializing A1 to B" << std::endl;
-	const bool SuccessB = TB->Serializer->DeserializeBinary( &B, Stream );
-	std::cout << "Result: " << SuccessB << " " << (B == A1) << std::endl;
+	std::cout << "\nGlobal types:" << std::endl;
+	Reflection::TypeInfo::PrintAll( std::cout );
 
 	if( Startup( CTX ) )
 	{

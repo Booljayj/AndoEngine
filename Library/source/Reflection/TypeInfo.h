@@ -4,6 +4,7 @@
 #include <string_view>
 #include <deque>
 #include <ostream>
+#include "Engine/StringID.h"
 #include "Serialization/Serializer.h"
 
 namespace Reflection
@@ -13,74 +14,86 @@ namespace Reflection
 		Primitive,
 		Struct,
 		Enumeration,
-		//Heterogeneous collection types
-		Tuple,
-		Variant,
 		//Homogeneous collection types
 		Array,
 		Map,
 		Set,
+		//Heterogeneous collection types
+		Tuple,
+		Variant,
 	};
 
 	/** Flags to describe aspects of a particular type */
 	enum class FTypeFlags : uint8_t {
 		None = 0,
+		//The type supports more advanced comparisons (less than, greater than) in addition to simple equality
+		HasCompare = 1 << 0,
 	};
 
 	/** Provides a set of runtime information about a type */
-	struct TypeInfo
-	{
-		//Type used to store the type name hash
-		using HASH_T = uint32_t;
-
+	struct TypeInfo {
 		static constexpr ETypeClassification CLASSIFICATION = ETypeClassification::Primitive;
-		/** The global list of all TypeInfo objects that have been created */
-		static std::deque<TypeInfo const*> GlobalTypeCollection;
 
+	public:
 		//============================================================
 		// Basic required type information
 		/** The classification of this TypeInfo, defining what kinds of type information it contains */
 		ETypeClassification Classification = ETypeClassification::Primitive;
-		/** The human-readable name of this type */
-		std::string Name;
-		/** The hash of the name, serves as a unique identifier */
-		HASH_T NameHash = 0;
+		/** The identifier for this type. Always unique and stable. */
+		sid_t UniqueID = 0;
 		/** The size in bytes of an instance of this type */
 		size_t Size = 0;
 		/** The alignment in bytes of an instance of this type */
 		size_t Alignment = 0;
+		/** The compiler-generated name of this type. Not expected to be human-readable or stable between compilations. */
+		const char* MangledName = nullptr;
 
 		//============================================================
 		// Optional type information
 		/** Human-readable description of this type */
-		std::string Description;
+		const char* Description;
 		/** Flags that provide additional information about this type */
 		FTypeFlags Flags = FTypeFlags::None;
 		/** The interface used to serialize this type. If null, this type cannot be serialized. */
-		std::unique_ptr<Serialization::ISerializer> Serializer = nullptr;
+		Serialization::ISerializer* Serializer = nullptr;
 
 		/** Print a description of a TypeInfo to a stream */
 		static void Print( TypeInfo const* Info, std::ostream& Stream );
 		/** Print basic information about all TypeInfos to a stream */
 		static void PrintAll( std::ostream& Stream );
+		/** Get an iterator that can iterate through all TypeInfo objects */
+		static std::deque<TypeInfo const*>::const_iterator GetTypeInfoIterator();
 
-		/** Find a TypeInfo object using the hash of its name */
-		static TypeInfo const* FindTypeByNameHash( HASH_T NameHash );
-		/** Find a TypeInfo object using its name */
-		static TypeInfo const* FindTypeByName( std::string_view Name );
+		/** Find a TypeInfo object using its unique ID */
+		static TypeInfo const* FindTypeByID( sid_t UniqueID );
 
 		TypeInfo() = delete;
-		TypeInfo( ETypeClassification InClassification, std::string_view InName, size_t InSize, size_t InAlignment, std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer );
-		TypeInfo( ETypeClassification InClassification, std::string_view InName, size_t InSize, size_t InAlignment );
+		TypeInfo(
+			ETypeClassification InClassification,
+			sid_t InUniqueID,
+			size_t InSize,
+			size_t InAlignment,
+			const char* InMangledName,
+			const char* InDescription,
+			FTypeFlags InFlags,
+			Serialization::ISerializer* InSerializer
+		);
 		virtual ~TypeInfo() {}
 
-		/** Compare two instances of this type, similar to standard compare functions */
-		virtual int8_t Compare( void const*, void const* ) const;
+		/** Construct an instance of this type at the address using the default constructor. Assumes enough space has been allocated to fit this type */
+		virtual void Construct( void* A ) const = 0;
+		/** Destruct an instance of this type at the address. Assumes the instance was properly constructed and won't be destructed again */
+		virtual void Destruct( void* A ) const = 0;
+
+		/** Compare two instances of this type and return true if they should be considered equal */
+		virtual bool Equal( void const* A, void const* B ) const = 0;
+		/** Compare two instances of this type and indicate which one is greater or if they are equal */
+		virtual int8_t Compare( void const* A, void const* B ) const { return 0; }
 
 		/** Get a pointer to a specific kind of type. Will return nullptr if the conversion is not possible */
 		template<typename TTYPE>
 		TTYPE const* As() const {
-			if( TTYPE::CLASSIFICATION == Classification ) return (TTYPE const*)this;
+			if( TTYPE::CLASSIFICATION == Classification ) return static_cast<TTYPE const*>( this );
 			else return nullptr;
 		}
 		template<typename TTYPE>

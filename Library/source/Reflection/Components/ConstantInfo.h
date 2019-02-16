@@ -13,76 +13,53 @@ namespace Reflection {
 	};
 
 	/** Info that describes a constant value */
-	struct StaticConstantInfo
+	struct ConstantInfo
 	{
-		StaticConstantInfo() = delete;
-		StaticConstantInfo( const char* InName, const char* InDescription )
+		ConstantInfo() = delete;
+		ConstantInfo( const char* InName, TypeInfo const* InType, const char* InDescription, FConstantFlags InFlags )
 		: Name( InName )
+		, NameHash( id( InName ) )
+		, Type( InType )
 		, Description( InDescription )
-		, NameHash( static_cast<uint16_t>( id( InName ) ) )
+		, Flags( InFlags )
 		{}
-		virtual ~StaticConstantInfo() {};
+		virtual ~ConstantInfo() {};
 
 		std::string Name;
-		std::string Description;
-
+		sid_t NameHash = 0;
 		TypeInfo const* Type = nullptr;
 
-		uint16_t NameHash = 0;
-		FConstantFlags Flags = FConstantFlags::None;
-
-		virtual void const* GetValuePointer() const = 0;
-	};
-
-	template<typename TVAR>
-	struct TStaticConstantInfo : public StaticConstantInfo
-	{
-		TStaticConstantInfo() = delete;
-		TStaticConstantInfo( const char* InName, const char* InDescription, TVAR* InStaticPointer )
-		: StaticConstantInfo( InName, InDescription )
-		, StaticPointer( InStaticPointer )
-		{
-			Type = TypeResolver<typename std::decay<TVAR>::type>::Get();
-		}
-		virtual ~TStaticConstantInfo() {};
-
-		TVAR const* StaticPointer;
-
-		void const* GetValuePointer() const final { return StaticPointer; }
-	};
-
-	/** Info that describes a constant value within a struct */
-	struct MemberConstantInfo
-	{
-		MemberConstantInfo() = delete;
-		MemberConstantInfo( const char* InName, const char* InDescription )
-		: Name( InName )
-		, Description( InDescription )
-		, NameHash( static_cast<uint16_t>( id( InName ) ) )
-		{}
-		virtual ~MemberConstantInfo() {};
-
-		std::string Name;
 		std::string Description;
-
-		TypeInfo const* Type = nullptr;
-
-		uint16_t NameHash = 0;
 		FConstantFlags Flags = FConstantFlags::None;
 
 		virtual void const* GetValuePointer( void const* Instance ) const = 0;
 	};
 
+	/** Info that describes a constant value that is global */
+	template<typename TVAR>
+	struct TStaticConstantInfo : public ConstantInfo
+	{
+		TStaticConstantInfo() = delete;
+		TStaticConstantInfo( const char* InName, const char* InDescription, TVAR* InStaticPointer )
+		: ConstantInfo( InName, TypeResolver<typename std::decay<TVAR>::type>::Get(), InDescription, FConstantFlags::None )
+		, StaticPointer( InStaticPointer )
+		{}
+		virtual ~TStaticConstantInfo() {};
+
+		TVAR const* StaticPointer;
+
+		void const* GetValuePointer( void const* Instance ) const final { return StaticPointer; }
+	};
+
+	/** Info that describes a constant value that is contained within a struct instance */
 	template<typename TCLASS, typename TVAR>
-	struct TMemberConstantInfo : public MemberConstantInfo
+	struct TMemberConstantInfo : public ConstantInfo
 	{
 		TMemberConstantInfo() = delete;
 		TMemberConstantInfo( const char* InName, const char* InDescription, TVAR const TCLASS::* InMemberPointer )
-		: MemberConstantInfo( InName, InDescription )
+		: ConstantInfo( InName, TypeResolver<typename std::decay<TVAR>::type>::Get(), InDescription, FConstantFlags::None )
 		, MemberPointer( InMemberPointer )
-		{
-			Type = TypeResolver<typename std::decay<TVAR>::type>::Get();
-		}
+		{}
 		virtual ~TMemberConstantInfo() {};
 
 		TVAR const TCLASS::* MemberPointer;

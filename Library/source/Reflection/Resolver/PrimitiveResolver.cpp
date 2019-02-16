@@ -4,19 +4,11 @@
 #include "Serialization/PrimitiveSerializer.h"
 
 #define DEFINE_PRIMITIVE_TYPEINFO( __TYPE__, __DESCRIPTION__ )\
-TypeInfo const TypeInfo__##__TYPE__ {\
-	TypeInfo::CLASSIFICATION,\
-	TypeResolver<__TYPE__>::GetName(), sizeof( __TYPE__ ), __DESCRIPTION__,\
-	FTypeFlags::None, new Serialization::TPrimitiveSerializer<__TYPE__>()\
-}
+TPrimitiveTypeInfo<__TYPE__> const TypeInfo__##__TYPE__ { __DESCRIPTION__, nullptr }
 
 namespace Reflection
 {
-	TypeInfo const TypeInfo__void{
-		TypeInfo::CLASSIFICATION,
-		TypeResolver<void>::GetName(), 0, "not a type",
-		FTypeFlags::None, nullptr
-	};
+	TPrimitiveTypeInfo<void> const TypeInfo__void{};
 
 	DEFINE_PRIMITIVE_TYPEINFO( bool, "boolean value" );
 	DEFINE_PRIMITIVE_TYPEINFO( char, "single-byte value" );
@@ -33,6 +25,4 @@ namespace Reflection
 
 	DEFINE_PRIMITIVE_TYPEINFO( float, "single-precision number" );
 	DEFINE_PRIMITIVE_TYPEINFO( double, "double-precision number" );
-
-	StringTypeInfo const TypeInfo__std_string{};
 }

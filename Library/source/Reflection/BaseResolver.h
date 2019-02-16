@@ -1,13 +1,13 @@
 #pragma once
 #include <string_view>
+#include "Engine/StringID.h"
 #include "Reflection/TypeInfo.h"
 
-namespace Reflection
-{
+namespace Reflection {
 	/** Global reflection accessor type, specialized for types which are known to the reflection system */
-	template<typename TTYPE>
+	template<typename TTYPE = void>
 	struct TypeResolver {
 		static TypeInfo const* Get() { return nullptr; }
-		static std::string_view GetName() { return "{{UNKNOWN}}"; }
+		static constexpr sid_t GetID() { return 0; }
 	};
 }

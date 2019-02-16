@@ -4,7 +4,7 @@
 
 namespace Reflection {
 	struct StructTypeInfo;
-	struct MemberVariableInfo;
+	struct VariableInfo;
 }
 
 namespace Serialization {
@@ -12,7 +12,7 @@ namespace Serialization {
 	{
 	private:
 		Reflection::StructTypeInfo const* Type;
-		std::vector<Reflection::MemberVariableInfo const*> CachedMemberVariables;
+		std::vector<Reflection::VariableInfo const*> CachedMemberVariables;
 
 	public:
 		StructSerializer() = delete;
@@ -27,11 +27,11 @@ namespace Serialization {
 		void Initialize();
 
 	private:
-		void WriteVariableIdentifier( Reflection::MemberVariableInfo const* VariableInfo, std::ostream& Stream ) const;
+		void WriteVariableIdentifier( Reflection::VariableInfo const* VariableInfo, std::ostream& Stream ) const;
 		void WriteVariableStream( std::istream& VariableStream, std::ostream& Stream ) const;
 
 		bool CanReadNextVariableHeader( std::istream& Stream, std::streampos const& EndPosition ) const;
-		Reflection::MemberVariableInfo const* ReadVariableIdentifier( std::istream& Stream ) const;
+		Reflection::VariableInfo const* ReadVariableIdentifier( std::istream& Stream ) const;
 		/** Handle a data block for an unknown variable */
 		void HandleUnknownDataBlock( std::istream& Stream ) const;
 	};

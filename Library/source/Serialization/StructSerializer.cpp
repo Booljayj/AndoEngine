@@ -12,15 +12,15 @@ namespace Serialization {
 
 	void StructSerializer::SerializeBinary( void const* Data, std::ostream& Stream ) const {
 		std::streampos const StartPosition = StartDataBlockWrite( Stream );
-		void const* DefaultData = Type->Default.get();
+		void const* DefaultData = Type->Default;
 
 		//Write an identifier and a data block for each non-default variable in the struct
-		for( Reflection::MemberVariableInfo const* VariableInfo : CachedMemberVariables ) {
+		for( Reflection::VariableInfo const* VariableInfo : CachedMemberVariables ) {
 			Reflection::TypeInfo const* Type = VariableInfo->Type;
 			if( Type->Serializer ) {
 				//Get a pointer to the value we want to serialize, and a pointer to the default version of that value
-				void const* VariablePointer = VariableInfo->GetValuePointer( Data );
-				void const* DefaultVariablePointer = VariableInfo->GetValuePointer( DefaultData );
+				void const* VariablePointer = VariableInfo->GetImmutableValuePointer( Data );
+				void const* DefaultVariablePointer = VariableInfo->GetImmutableValuePointer( DefaultData );
 
 				//Compare the variable to the default. If the value is the same as the default, then we don't need to write anything
 				if( !AreValuesEqual( Type, VariablePointer, DefaultVariablePointer ) )
@@ -39,12 +39,12 @@ namespace Serialization {
 
 		while( Stream.good() && CanReadNextVariableHeader( Stream, EndPosition ) ) {
 			//Get the next variable to deserialize
-			Reflection::MemberVariableInfo const* Variable = ReadVariableIdentifier( Stream );
+			Reflection::VariableInfo const* Variable = ReadVariableIdentifier( Stream );
 			if( !Stream.good() ) return false; //Make sure the read was successful
 
 			//If the struct has a variable with this ID, and it can be serialized, attempt to deserialize it.
 			if( Variable && Variable->Type->Serializer ) {
-				void* VariablePointer = Variable->GetValuePointer( Data );
+				void* VariablePointer = Variable->GetMutableValuePointer( Data );
 				bool const bSuccess = Variable->Type->Serializer->DeserializeBinary( VariablePointer, Stream );
 				if( !bSuccess ) return false; //@todo Report an error just for this variable instead of returning false
 
@@ -67,12 +67,12 @@ namespace Serialization {
 		CachedMemberVariables.empty();
 		Type->GetMemberVariablesRecursive( CachedMemberVariables );
 		struct MemberVariableInfoCompare {
-			inline bool operator()( Reflection::MemberVariableInfo const* A, Reflection::MemberVariableInfo const* B ) const { return A->NameHash < B->NameHash; }
+			inline bool operator()( Reflection::VariableInfo const* A, Reflection::VariableInfo const* B ) const { return A->NameHash < B->NameHash; }
 		};
 		std::sort( CachedMemberVariables.begin(), CachedMemberVariables.end(), MemberVariableInfoCompare{} );
 	}
 
-	void StructSerializer::WriteVariableIdentifier( Reflection::MemberVariableInfo const* VariableInfo, std::ostream& Stream ) const {
+	void StructSerializer::WriteVariableIdentifier( Reflection::VariableInfo const* VariableInfo, std::ostream& Stream ) const {
 		WriteLE( &(VariableInfo->NameHash), Stream );
 	}
 
@@ -81,11 +81,11 @@ namespace Serialization {
 	}
 
 	bool StructSerializer::CanReadNextVariableHeader( std::istream& Stream, std::streampos const& EndPosition ) const {
-		return CanReadBytesFromStream( sizeof( Reflection::MemberVariableInfo::HASH_T ) + sizeof( DataBlock::BLOCK_SIZE_T ), Stream, EndPosition );
+		return CanReadBytesFromStream( sizeof( Reflection::VariableInfo::HASH_T ) + sizeof( DataBlock::BLOCK_SIZE_T ), Stream, EndPosition );
 	}
 
-	Reflection::MemberVariableInfo const* StructSerializer::ReadVariableIdentifier( std::istream& Stream ) const {
-		Reflection::MemberVariableInfo::HASH_T NameHash = 0;
+	Reflection::VariableInfo const* StructSerializer::ReadVariableIdentifier( std::istream& Stream ) const {
+		Reflection::VariableInfo::HASH_T NameHash = 0;
 		ReadLE( &NameHash, Stream );
 
 		auto const FoundVariable = std::find_if(

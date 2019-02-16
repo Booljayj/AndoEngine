@@ -1,10 +1,12 @@
 #include <iomanip>
 #include "Reflection/TypeInfo.h"
+#include "Reflection/TypeUtility.h"
 #include "Reflection/StructTypeInfo.h"
 #include "Engine/StringID.h"
 
 namespace Reflection {
-	std::deque<TypeInfo const*> TypeInfo::GlobalTypeCollection{};
+	/** The global list of all TypeInfo objects that have been created */
+	std::deque<TypeInfo const*> GlobalTypeCollection{};
 
 	void TypeInfo::Print( TypeInfo const* Info, std::ostream& Stream ) {
 		if( !Info) {
@@ -19,85 +21,76 @@ namespace Reflection {
 		//Print type and subtype information
 		if( StructTypeInfo const* StructInfo = Info->As<StructTypeInfo>() ) {
 			//Print struct header
-			Stream << "struct " << StructInfo->Name;
+			Stream << "struct " << StructInfo->MangledName;
 			if( StructInfo->BaseType ) {
-				Stream << " : " << StructInfo->BaseType->Name;
+				Stream << " : " << StructInfo->BaseType->MangledName;
 			}
 			Stream << " {\n";
 
 			//Print constants
-			if( StructInfo->StaticConstants.size() > 0 || StructInfo->MemberConstants.size() > 0 ) {
-				for( auto const& StaticConstant : StructInfo->StaticConstants ) {
-					Stream << "\t" << StaticConstant->Name << " : " << StaticConstant->Type->Name << " const static\n";
+			if( StructInfo->Static.Constants.size() > 0 || StructInfo->Member.Constants.size() > 0 ) {
+				for( auto const& StaticConstant : StructInfo->Static.Constants ) {
+					Stream << "\t" << StaticConstant->Name << " : " << StaticConstant->Type->MangledName << " const static\n";
 				}
-				for( auto const& MemberConstant : StructInfo->MemberConstants ) {
-					Stream << "\t" << MemberConstant->Name << " : " << MemberConstant->Type->Name << " const\n";
+				for( auto const& MemberConstant : StructInfo->Member.Constants ) {
+					Stream << "\t" << MemberConstant->Name << " : " << MemberConstant->Type->MangledName << " const\n";
 				}
 				Stream << "\n";
 			}
 			//Print variables
-			if( StructInfo->StaticVariables.size() > 0 || StructInfo->MemberVariables.size() > 0 ) {
-				for( auto const& StaticVariable : StructInfo->StaticVariables ) {
-					Stream << "\t" << StaticVariable->Name << " : " << StaticVariable->Type->Name << " static\n";
+			if( StructInfo->Static.Variables.size() > 0 || StructInfo->Member.Variables.size() > 0 ) {
+				for( auto const& StaticVariable : StructInfo->Static.Variables ) {
+					Stream << "\t" << StaticVariable->Name << " : " << StaticVariable->Type->MangledName << " static\n";
 				}
-				for( auto const& MemberVariable : StructInfo->MemberVariables ) {
-					Stream << "\t" << MemberVariable->Name << " : " << MemberVariable->Type->Name << "\n";
+				for( auto const& MemberVariable : StructInfo->Member.Variables ) {
+					Stream << "\t" << MemberVariable->Name << " : " << MemberVariable->Type->MangledName << "\n";
 				}
 				Stream << "\n";
 			}
 			Stream << "}\n";
 
 		} else {
-			Stream << Info->Name;
+			Stream << Info->MangledName;
 		}
 	}
 
 	void TypeInfo::PrintAll( std::ostream& Stream ) {
-		for( Reflection::TypeInfo const* Info : Reflection::TypeInfo::GlobalTypeCollection ) {
+		Demangler D;
+		for( Reflection::TypeInfo const* Info : GlobalTypeCollection ) {
 			if( Info ) {
-				Stream << std::hex << std::right << std::setw( 8 ) << std::setfill( '0' ) << Info->NameHash
+				Stream << std::hex << std::right << std::setw( 8 ) << std::setfill( '0' ) << Info->UniqueID
 					<< std::dec << std::setw( 0 );
-				Stream << " " << Info->Name << " (" << Info->Size << ")" << std::endl;
+				Stream << " " << D.Demangle( *Info ) << " (" << Info->Size << ")" << std::endl;
 			} else {
 				Stream << "{{INVALID TYPE}}" << std::endl;
 			}
 		}
 	}
 
-	TypeInfo const* TypeInfo::FindTypeByNameHash( HASH_T NameHash ) {
-		for( TypeInfo const* Info : GlobalTypeCollection ) {
-			if( Info && Info->NameHash == NameHash ) {
-				return Info;
-			}
-		}
-		return nullptr;
+	std::deque<TypeInfo const*>::const_iterator TypeInfo::GetTypeInfoIterator() {
+		return GlobalTypeCollection.begin();
 	}
-	TypeInfo const* TypeInfo::FindTypeByName( std::string_view Name ) {
+
+	TypeInfo const* TypeInfo::FindTypeByID( sid_t UniqueID ) {
 		for( TypeInfo const* Info : GlobalTypeCollection ) {
-			if( Info && Info->Name == Name ) {
+			if( Info && Info->UniqueID == UniqueID ) {
 				return Info;
 			}
 		}
 		return nullptr;
 	}
 
-	TypeInfo::TypeInfo( ETypeClassification InClassification, std::string_view InName, size_t InSize, size_t InAlignment, std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer )
-		: Classification( InClassification )
-		, Name( InName )
-		, NameHash( static_cast<HASH_T>( id( InName ) ) )
-		, Size( InSize )
-		, Alignment( InAlignment )
-		, Description( InDescription )
-		, Flags( InFlags )
-		, Serializer( InSerializer )
+	TypeInfo::TypeInfo(
+		ETypeClassification InClassification,
+		sid_t InUniqueID, size_t InSize, size_t InAlignment,
+		const char* InMangledName, const char* InDescription,
+		FTypeFlags InFlags, Serialization::ISerializer* InSerializer
+	)
+	: Classification( InClassification )
+	, UniqueID( InUniqueID ), Size( InSize ), Alignment( InAlignment )
+	, MangledName( InMangledName ), Description( InDescription )
+	, Flags( InFlags ), Serializer( InSerializer )
 	{
 		GlobalTypeCollection.push_back( this );
-	}
-	TypeInfo::TypeInfo( ETypeClassification InClassification, std::string_view InName, size_t InSize, size_t InAlignment )
-		: TypeInfo( InClassification, InName, InSize, InAlignment, "", (FTypeFlags)0, nullptr )
-	{}
-
-	int8_t TypeInfo::Compare( void const* A, void const* B ) const {
-		return memcmp( A, B, Size );
 	}
 }

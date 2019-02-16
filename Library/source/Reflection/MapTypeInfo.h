@@ -6,8 +6,7 @@
 #include "Reflection/TypeInfo.h"
 
 namespace Reflection {
-	struct MapTypeInfo : public TypeInfo
-	{
+	struct MapTypeInfo : public TypeInfo {
 		static constexpr ETypeClassification CLASSIFICATION = ETypeClassification::Map;
 
 		/** The type of the keys in the map */
@@ -16,7 +15,12 @@ namespace Reflection {
 		TypeInfo const* ValueType = nullptr;
 
 		MapTypeInfo() = delete;
-		MapTypeInfo( std::string_view InName, size_t InSize, size_t InAlignment, std::string_view InDescription, TypeInfo const* InKeyType, TypeInfo const* InValueType );
+		MapTypeInfo(
+			sid_t InUniqueID, size_t InSize, size_t InAlignment,
+			char const* InMangledName, char const* InDescription,
+			Serialization::ISerializer* InSerializer,
+			TypeInfo const* InKeyType, TypeInfo const* InValueType
+		);
 		virtual ~MapTypeInfo() {}
 
 		// Get the number of entries in this map
@@ -39,47 +43,56 @@ namespace Reflection {
 		virtual bool InsertEntry( void* Instance, void const* Key, void const* Value ) const = 0;
 	};
 
+	//============================================================
+	// Templates
+
 	template<typename TKEY, typename TVALUE, typename TMAP>
-	struct TMapTypeInfo : public MapTypeInfo
-	{
-		TMapTypeInfo() = delete;
-		TMapTypeInfo( std::string_view InDescription )
-		: MapTypeInfo( TypeResolver<TMAP>::GetName(), sizeof( TMAP ), alignof( TMAP ), InDescription, TypeResolver<TKEY>::Get(), TypeResolver<TVALUE>::Get() )
+	struct TMapTypeInfo : public MapTypeInfo {
+		TMapTypeInfo( char const* InDescription, Serialization::ISerializer* InSerializer )
+		: MapTypeInfo(
+			TypeResolver<TMAP>::GetID(), sizeof( TMAP ), alignof( TMAP ),
+			typeid( TMAP ).name(), InDescription,
+			InSerializer,
+			TypeResolver<TKEY>::Get(), TypeResolver<TVALUE>::Get() )
 		{}
 
-		static constexpr TMAP const& Cast( void const* Instance ) { return *static_cast<TMAP const*>( Instance ); }
-		static constexpr TMAP& Cast( void* Instance ) { return *static_cast<TMAP*>( Instance ); }
+		static constexpr TMAP const& CastMap( void const* Instance ) { return *static_cast<TMAP const*>( Instance ); }
+		static constexpr TMAP& CastMap( void* Instance ) { return *static_cast<TMAP*>( Instance ); }
 		static constexpr TKEY const& CastKey( void const* Key ) { return *static_cast<TKEY const*>( Key ); }
 		static constexpr TVALUE const& CastValue( void const* Value ) { return *static_cast<TVALUE const*>( Value ); }
 
+		virtual void Construct( void* P ) const final { new (P) TMAP; }
+		virtual void Destruct( void* P ) const final { static_cast<TMAP*>(P)->~TMAP(); }
+		virtual bool Equal( void const* A, void const* B ) const final { return CastMap(A) == CastMap(B); }
+
 		virtual size_t GetCount( void const* Instance ) const override {
-			return Cast( Instance ).size();
+			return CastMap( Instance ).size();
 		}
 
 		virtual void GetPairs( void* Instance, std::vector<std::pair<void const*, void*>> OutPairs ) const override {
 			OutPairs.clear();
-			for( auto& Iter : Cast( Instance ) ) {
+			for( auto& Iter : CastMap( Instance ) ) {
 				OutPairs.push_back( std::make_pair( &Iter.first, &Iter.second ) );
 			}
 		}
 		virtual void GetPairs( void const* Instance, std::vector<std::pair<void const*, void const*>> OutPairs ) const override {
 			OutPairs.clear();
-			for( auto const& Iter : Cast( Instance ) ) {
+			for( auto const& Iter : CastMap( Instance ) ) {
 				OutPairs.push_back( std::make_pair( &Iter.first, &Iter.second ) );
 			}
 		}
 
 		virtual void* Find( void* Instance, void const* Key ) const override {
-			auto const Iter = Cast( Instance ).find( CastKey( Key ) );
-			if( Iter != Cast( Instance ).end() ) {
+			auto const Iter = CastMap( Instance ).find( CastKey( Key ) );
+			if( Iter != CastMap( Instance ).end() ) {
 				return &( *Iter );
 			} else {
 				return nullptr;
 			}
 		}
 		virtual void const* Find( void const* Instance, void const* Key ) const override {
-			auto const Iter = Cast( Instance ).find( CastKey( Key ) );
-			if( Iter != Cast( Instance ).end() ) {
+			auto const Iter = CastMap( Instance ).find( CastKey( Key ) );
+			if( Iter != CastMap( Instance ).end() ) {
 				return &( *Iter );
 			} else {
 				return nullptr;
@@ -87,18 +100,18 @@ namespace Reflection {
 		}
 
 		virtual void Clear( void* Instance ) const override {
-			Cast( Instance ).clear();
+			CastMap( Instance ).clear();
 		}
 
 		virtual bool RemoveEntry( void* Instance, void const* Key ) const override {
-			size_t RemovedCount = Cast( Instance ).erase( CastKey( Key ) );
+			size_t RemovedCount = CastMap( Instance ).erase( CastKey( Key ) );
 			return RemovedCount > 0;
 		}
 		virtual bool InsertEntry( void* Instance, void const* Key, void const* Value ) const override {
 			if( Value ) {
-				return Cast( Instance ).insert( std::make_pair( CastKey( Key ), CastValue( Value ) ) ).second;
+				return CastMap( Instance ).insert( std::make_pair( CastKey( Key ), CastValue( Value ) ) ).second;
 			} else {
-				return Cast( Instance ).insert( std::make_pair( CastKey( Key ), TVALUE{} ) ).second;
+				return CastMap( Instance ).insert( std::make_pair( CastKey( Key ), TVALUE{} ) ).second;
 			}
 		}
 	};

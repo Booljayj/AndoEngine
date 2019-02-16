@@ -2,8 +2,17 @@
 #include "Reflection/TypeUtility.h"
 
 namespace Reflection {
-	MapTypeInfo::MapTypeInfo( std::string_view InName, size_t InSize, size_t InAlignment, std::string_view InDescription, TypeInfo const* InKeyType, TypeInfo const* InValueType )
-	: TypeInfo( CLASSIFICATION, InName, InSize, InAlignment, InDescription, FTypeFlags::None, nullptr )
+	MapTypeInfo::MapTypeInfo(
+		sid_t InUniqueID, size_t InSize, size_t InAlignment,
+		char const* InMangledName, char const* InDescription,
+		Serialization::ISerializer* InSerializer,
+		TypeInfo const* InKeyType, TypeInfo const* InValueType
+	)
+	: TypeInfo(
+		MapTypeInfo::CLASSIFICATION,
+		InUniqueID, InSize, InAlignment,
+		InMangledName, InDescription,
+		FTypeFlags::None, InSerializer )
 	, KeyType( InKeyType )
 	, ValueType( InValueType )
 	{}

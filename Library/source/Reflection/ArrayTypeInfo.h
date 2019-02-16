@@ -6,24 +6,27 @@
 #include "Reflection/TypeInfo.h"
 
 namespace Reflection {
-	struct ArrayTypeInfo : public TypeInfo
-	{
+	struct ArrayTypeInfo : public TypeInfo {
 		static constexpr ETypeClassification CLASSIFICATION = ETypeClassification::Array;
 
 		/** Whether the number of elements in the array can be manipulated */
 		bool IsFixedSize = false;
-
 		/** The type of the elements in the array */
 		TypeInfo const* ElementType = nullptr;
 
 		ArrayTypeInfo() = delete;
-		ArrayTypeInfo( std::string_view InName, size_t InSize, size_t InAlignment, std::string_view InDescription, bool InIsFixedSize, TypeInfo const* InElementType );
+		ArrayTypeInfo(
+			sid_t InUniqueID, size_t InSize, size_t InAlignment,
+			char const* InMangledName, char const* InDescription,
+			Serialization::ISerializer* InSerializer,
+			bool InIsFixedSize, TypeInfo const* InElementType
+		);
 		virtual ~ArrayTypeInfo() {}
 
 		//Get the number of elements that are in the array
 		virtual size_t GetCount( void const* Instance ) const = 0;
 
-		//Get a vector of all the elements in the dynamic array
+		//Get a vector of all the elements in the array
 		virtual void GetElements( void* Instance, std::vector<void*>& OutElements ) const = 0;
 		virtual void GetElements( void const* Instance, std::vector<void const*>& OutElements ) const = 0;
 
@@ -41,29 +44,38 @@ namespace Reflection {
 		virtual void InsertElement( void* Instance, void const* ElementPointer, void const* Value ) const = 0;
 	};
 
+	//============================================================
+	// Templates
+
 	/** Template that implements the ArrayTypeInfo interface for fixed-size arrays (std::array) */
 	template<typename TELEMENT, size_t SIZE, typename TARRAY>
-	struct TFixedArrayTypeInfo : public ArrayTypeInfo
-	{
-		TFixedArrayTypeInfo() = delete;
-		TFixedArrayTypeInfo( std::string_view InDescription )
-		: ArrayTypeInfo( TypeResolver<TARRAY>::GetName(), sizeof( TARRAY ), alignof( TARRAY ), InDescription, true, TypeResolver<TELEMENT>::Get() )
+	struct TFixedArrayTypeInfo : public ArrayTypeInfo {
+		TFixedArrayTypeInfo( char const* InDescription, Serialization::ISerializer* InSerializer )
+		: ArrayTypeInfo(
+			TypeResolver<TARRAY>::GetID(), sizeof( TARRAY ), alignof( TARRAY ),
+			typeid( TARRAY ).name(), InDescription,
+			InSerializer,
+			true, TypeResolver<TELEMENT>::Get() )
 		{}
 
-		static constexpr TARRAY const& Cast( void const* Instance ) { return *static_cast<TARRAY const*>( Instance ); }
-		static constexpr TARRAY& Cast( void* Instance ) { return *static_cast<TARRAY*>( Instance ); }
+		static constexpr TARRAY const& CastArray( void const* Instance ) { return *static_cast<TARRAY const*>( Instance ); }
+		static constexpr TARRAY& CastArray( void* Instance ) { return *static_cast<TARRAY*>( Instance ); }
+
+		virtual void Construct( void* P ) const final { new (P) TARRAY; }
+		virtual void Destruct( void* P ) const final { static_cast<TARRAY*>(P)->~TARRAY(); }
+		virtual bool Equal( void const* A, void const* B ) const final { return CastArray(A) == CastArray(B); }
 
 		virtual size_t GetCount( void const* Instance ) const override { return SIZE; }
 
 		virtual void GetElements( void* Instance, std::vector<void*>& OutElements ) const override {
 			OutElements.clear();
-			for( TELEMENT& ArrayElement : Cast( Instance ) ) {
+			for( TELEMENT& ArrayElement : CastArray( Instance ) ) {
 				OutElements.push_back( &ArrayElement );
 			}
 		}
 		virtual void GetElements( void const* Instance, std::vector<void const*>& OutElements ) const override {
 			OutElements.clear();
-			for( TELEMENT const& ArrayElement : Cast( Instance ) ) {
+			for( TELEMENT const& ArrayElement : CastArray( Instance ) ) {
 				OutElements.push_back( &ArrayElement );
 			}
 		}
@@ -77,62 +89,67 @@ namespace Reflection {
 
 	/** Template that implements the ArrayTypeInfo interface for dynamic array types (std::vector, std::list, etc) */
 	template<typename TELEMENT, typename TARRAY>
-	struct TDynamicArrayTypeInfo : public ArrayTypeInfo
-	{
-		TDynamicArrayTypeInfo() = delete;
-		TDynamicArrayTypeInfo( std::string_view InDescription )
-		: ArrayTypeInfo( TypeResolver<TARRAY>::GetName(), sizeof( TARRAY ), alignof( TARRAY ), InDescription, false, TypeResolver<TELEMENT>::Get() )
+	struct TDynamicArrayTypeInfo : public ArrayTypeInfo {
+		TDynamicArrayTypeInfo( char const* InDescription )
+		: ArrayTypeInfo(
+			TypeResolver<TARRAY>::GetID(), sizeof( TARRAY ), alignof( TARRAY ),
+			typeid( TARRAY ).name(), InDescription,
+			false, TypeResolver<TELEMENT>::Get() )
 		{}
 		virtual ~TDynamicArrayTypeInfo() {}
 
-		static constexpr TARRAY const& Cast( void const* Instance ) { return *static_cast<TARRAY const*>( Instance ); }
-		static constexpr TARRAY& Cast( void* Instance ) { return *static_cast<TARRAY*>( Instance ); }
+		static constexpr TARRAY const& CastArray( void const* Instance ) { return *static_cast<TARRAY const*>( Instance ); }
+		static constexpr TARRAY& CastArray( void* Instance ) { return *static_cast<TARRAY*>( Instance ); }
 		static constexpr TELEMENT const& CastElement( void const* Element ) { return *static_cast<TELEMENT const*>( Element ); }
 
+		virtual void Construct( void* P ) const final { new (P) TARRAY; }
+		virtual void Destruct( void* P ) const final { static_cast<TARRAY*>(P)->~TARRAY(); }
+		virtual bool Equal( void const* A, void const* B ) const final { return CastArray(A) == CastArray(B); }
+
 		virtual size_t GetCount( void const* Instance ) const override {
-			return Cast( Instance ).size();
+			return CastArray( Instance ).size();
 		}
 
 		virtual void GetElements( void* Instance, std::vector<void*>& OutElements ) const override {
 			OutElements.clear();
-			for( TELEMENT& ArrayElement : Cast( Instance ) ) {
+			for( TELEMENT& ArrayElement : CastArray( Instance ) ) {
 				OutElements.push_back( &ArrayElement );
 			}
 		}
 		virtual void GetElements( void const* Instance, std::vector<void const*>& OutElements ) const override {
 			OutElements.clear();
-			for( TELEMENT const& ArrayElement : Cast( Instance ) ) {
+			for( TELEMENT const& ArrayElement : CastArray( Instance ) ) {
 				OutElements.push_back( &ArrayElement );
 			}
 		}
 
 		virtual void Resize( void* Instance, size_t Count ) const override {
-			Cast( Instance ).resize( Count );
+			CastArray( Instance ).resize( Count );
 		}
 
 		virtual void ClearElements( void* Instance ) const override {
-			Cast( Instance ).clear();
+			CastArray( Instance ).clear();
 		}
 		virtual void AddElement( void* Instance, void const* Value ) const override {
-			Cast( Instance ).push_back( CastElement( Value ) );
+			CastArray( Instance ).push_back( CastElement( Value ) );
 		}
 
 		virtual void RemoveElement( void* Instance, void const* ElementPointer ) const override {
 			typename TARRAY::iterator Position = std::find_if(
-				Cast( Instance ).begin(), Cast( Instance ).end(),
+				CastArray( Instance ).begin(), CastArray( Instance ).end(),
 				[=]( TELEMENT const& Element ){ return &Element == ElementPointer; }
 			);
-			Cast( Instance ).erase( Position );
+			CastArray( Instance ).erase( Position );
 		}
 		virtual void InsertElement( void* Instance, void const* ElementPointer, void const* Value ) const override {
 			typename TARRAY::iterator Position = std::find_if(
-				Cast( Instance ).begin(), Cast( Instance ).end(),
+				CastArray( Instance ).begin(), CastArray( Instance ).end(),
 				[=]( TELEMENT const& Element ){ return &Element == ElementPointer; }
 			);
 			if( Value ) {
-				Cast( Instance ).insert( Position, CastElement( Value ) );
+				CastArray( Instance ).insert( Position, CastElement( Value ) );
 			} else {
-				Cast( Instance ).insert( Position, TELEMENT{} );
+				CastArray( Instance ).insert( Position, TELEMENT{} );
 			}
 		}
 	};

@@ -24,6 +24,7 @@ ReflectedType& ReflectedType::operator=( const ReflectedType& Other )
 	return *this;
 }
 
+/*
 STRUCT_TYPE_BEGIN( ReflectedType )
 {
 	StructInfo->Description = "A simple struct to test reflection";
@@ -80,3 +81,4 @@ STRUCT_TYPE_BEGIN( SerializedTypeB )
 	MAKE_SERIALIZER();
 }
 STRUCT_TYPE_END( SerializedTypeB )
+*/

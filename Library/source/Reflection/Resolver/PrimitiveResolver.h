@@ -1,22 +1,25 @@
 #pragma once
 #include <string_view>
 #include <string>
-#include "Reflection/BaseResolver.h"
-#include "Reflection/TypeInfo.h"
-#include "Reflection/StringTypeInfo.h"
+#include "Reflection/PrimitiveTypeInfo.h"
 
 #define L_DECLARE_PRIMITIVE_TYPEINFO( __TYPE__ )\
-extern TypeInfo const TypeInfo__##__TYPE__;\
+extern TPrimitiveTypeInfo<__TYPE__> const TypeInfo__##__TYPE__;\
 template<> struct TypeResolver<__TYPE__> {\
 	static TypeInfo const* Get() { return &TypeInfo__##__TYPE__; }\
-	static std::string_view GetName() { return #__TYPE__; }\
+	static constexpr sid_t GetID() { return id( #__TYPE__ ); }\
 }
 
 namespace Reflection {
 	//============================================================
 	// Standard primitive type specializations
 
-	L_DECLARE_PRIMITIVE_TYPEINFO( void );
+	//Special definition for void, which is the only primitive type that cannot hold values.
+	extern TPrimitiveTypeInfo<void> const TypeInfo__void;
+	template<> struct TypeResolver<void> {
+		static TypeInfo const* Get() { return &TypeInfo__void; }
+		static constexpr sid_t GetID() { return 0; }
+	};
 
 	L_DECLARE_PRIMITIVE_TYPEINFO( bool );
 	L_DECLARE_PRIMITIVE_TYPEINFO( char );
@@ -34,21 +37,14 @@ namespace Reflection {
 	L_DECLARE_PRIMITIVE_TYPEINFO( float );
 	L_DECLARE_PRIMITIVE_TYPEINFO( double );
 
-	extern StringTypeInfo const TypeInfo__std_string;
-	template<> struct TypeResolver<std::string> {
-		static TypeInfo const* Get() { return &TypeInfo__std_string; }
-		static std::string_view GetName() { return "std::string"; }
-	};
-
 	//============================================================
-	// Numeric template argument partial specialization
+	// String primitive types
 
-	template<typename T, size_t SIZE>
-	struct TypeResolver<std::integral_constant<T, SIZE>> {
-		static std::string_view GetName() {
-			static std::string const Name{ std::to_string( SIZE ) };
-			return Name;
-		}
+	template<typename TCHAR>
+	struct TypeResolver<std::basic_string<TCHAR>> {
+		static TTypeInfo<std::basic_string<TCHAR>> const InstancedTypeInfo{ "dynamic string", nullptr };
+		static TypeInfo const* Get() { return &InstancedTypeInfo; }
+		static constexpr sid_t GetID() { return id_combine( id( "std::basic_string" ), TypeResolver<TCHAR>::GetID() ); }
 	};
 }
 
