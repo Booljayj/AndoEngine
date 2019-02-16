@@ -6,6 +6,7 @@
 #include <ostream>
 #include "Engine/StringID.h"
 #include "Serialization/Serializer.h"
+#include "Reflection/CompilerDefinition.h"
 
 namespace Reflection
 {
@@ -41,12 +42,8 @@ namespace Reflection
 		ETypeClassification Classification = ETypeClassification::Primitive;
 		/** The identifier for this type. Always unique and stable. */
 		sid_t UniqueID = 0;
-		/** The size in bytes of an instance of this type */
-		size_t Size = 0;
-		/** The alignment in bytes of an instance of this type */
-		size_t Alignment = 0;
-		/** The compiler-generated name of this type. Not expected to be human-readable or stable between compilations. */
-		const char* MangledName = nullptr;
+		/** Definitions for this type created by the compiler */
+		CompilerDefinition Definition;
 
 		//============================================================
 		// Optional type information
@@ -71,9 +68,7 @@ namespace Reflection
 		TypeInfo(
 			ETypeClassification InClassification,
 			sid_t InUniqueID,
-			size_t InSize,
-			size_t InAlignment,
-			const char* InMangledName,
+			CompilerDefinition InDefinition,
 			const char* InDescription,
 			FTypeFlags InFlags,
 			Serialization::ISerializer* InSerializer
@@ -90,13 +85,18 @@ namespace Reflection
 		/** Compare two instances of this type and indicate which one is greater or if they are equal */
 		virtual int8_t Compare( void const* A, void const* B ) const { return 0; }
 
-		/** Get a pointer to a specific kind of type. Will return nullptr if the conversion is not possible */
+		/** Convert this TypeInfo to a specific kind of TypeInfo. Will return nullptr if the conversion is not possible */
 		template<typename TTYPE>
 		TTYPE const* As() const {
 			if( TTYPE::CLASSIFICATION == Classification ) return static_cast<TTYPE const*>( this );
 			else return nullptr;
 		}
-		template<typename TTYPE>
-		TTYPE* As() { return const_cast<TTYPE*>( static_cast<TypeInfo const*>( this )->As<TTYPE>() ); }
 	};
+
+	/** Convert a TypeInfo pointer to a specific kind of TypeInfo. Will return nullptr if the conversion is not possible */
+	template<typename TTYPE>
+	TTYPE const* Cast( TypeInfo const* Info ) {
+		if( !Info ) return nullptr;
+		else return Info->As<TTYPE>();
+	}
 }

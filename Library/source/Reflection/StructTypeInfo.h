@@ -2,21 +2,24 @@
 #include <array>
 #include <string_view>
 #include <vector>
+#include <type_traits>
 #include "Reflection/TypeInfo.h"
 #include "Reflection/Components/ConstantInfo.h"
 #include "Reflection/Components/VariableInfo.h"
 
+/** Expose a struct to the reflection system. Must be expanded after the type is declared and includes the REFELCTION_MEMBERS macro */
 #define REFLECT( __TYPE__ )\
 namespace Reflection {\
 	template<> struct TypeResolver<__TYPE__> {\
-		static TypeInfo const* Get() { return &__TYPE__::__TypeInfo__; }\
+		static TypeInfo const* Get() { return &__TYPE__::_TypeInfo; }\
 		static constexpr sid_t GetID() { return id( #__TYPE__ ); }\
 	};\
 }
 
-#define REFLECTION_MEMBERS( __TYPE__ )\
-static Reflection::TStructTypeInfo<__TYPE__> const __TypeInfo__;\
-virtual Reflection::TypeInfo const* GetTypeInfo() const
+/** Define members of the struct used for reflection. The second argument must be either the primary base class of this type or void */
+#define REFLECTION_MEMBERS( __TYPE__, __BASE__ )\
+using Super = __BASE__;\
+static Reflection::TStructTypeInfo<__TYPE__> const _TypeInfo;\
 
 namespace Reflection {
 	/** Views into various field types that the struct defines */
@@ -40,9 +43,8 @@ namespace Reflection {
 
 		StructTypeInfo() = delete;
 		StructTypeInfo(
-			sid_t InUniqueID, size_t InSize, size_t InAlignment,
-			const char* InMangledName, const char* InDescription,
-			FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
+			sid_t InUniqueID, CompilerDefinition InDefinition,
+			const char* InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
 			StructTypeInfo const* InBaseType, void const* InDefault,
 			Fields InStatic, Fields InMember
 		);
@@ -69,31 +71,20 @@ namespace Reflection {
 	//============================================================
 	// Templates
 
-	template<size_t NumConstants, size_t NumVariables>
-	struct TFieldsStorage {
-		std::array<ConstantInfo const*, NumConstants> Constants;
-		std::array<VariableInfo const*, NumVariables> Variables;
-
-		Fields MakeFields() const {
-			Fields Result;
-			Result.Constants = std::basic_string_view<ConstantInfo const*>{ Constants.data(), Constants.size() };
-			Result.Variables = std::basic_string_view<VariableInfo const*>{ Variables.data(), Variables.size() };
-			return Result;
-		}
-	};
-
 	template<typename TYPE>
 	struct TStructTypeInfo : public StructTypeInfo {
+		using Super = typename TYPE::Super;
+		static_assert( std::is_base_of<Super, TYPE>::value || std::is_void<Super>::value, "invalid type inheritance for StructTypeInfo, T::Super is not void or an actual base of T" );
+
 		TStructTypeInfo(
-			const char* InDescription,
-			FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
+			const char* InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
 			void const* InDefault, Fields InStatic, Fields InMember
 		)
 		: StructTypeInfo(
-			TypeResolver<TYPE>::GetID(), sizeof( TYPE ), alignof( TYPE ),
-			typeid( TYPE ).name(), InDescription,
-			InFlags, InSerializer,
-			InDefault, InStatic, InMember )
+			TypeResolver<TYPE>::GetID(), GetCompilerDefinition<TYPE>(),
+			InDescription, InFlags, InSerializer,
+			Cast<StructTypeInfo>( TypeResolver<typename TYPE::Super>::Get() ), InDefault,
+			InStatic, InMember )
 		{}
 
 		static inline TYPE const* CastStruct( void const* P ) { return static_cast<TYPE const*>( P ); }
@@ -103,6 +94,7 @@ namespace Reflection {
 		virtual void Destruct( void* P ) const final { CastStruct(P)->~TYPE(); }
 
 		virtual bool Equal( void const* A, void const* B ) const final { return *CastStruct(A) == *CastStruct(B); }
+		//@todo Not all structs will be comparable. An SFINAE approach is probably required to make sure that the > and < operators actually exist.
 		virtual int8_t Compare( void const* A, void const* B ) const final {
 			if( *CastStruct(A) < *CastStruct(B) ) return -1;
 			else if( *CastStruct(A) == *CastStruct(B) ) return 0;

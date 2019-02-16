@@ -9,11 +9,14 @@
 #include "Reflection/BaseResolver.h"
 
 struct ReflectedType {
-	REFLECTION_MEMBERS( ReflectedType );
+	REFLECTION_MEMBERS( ReflectedType, void );
 
 	ReflectedType() = default;
 	ReflectedType( const ReflectedType& Other );
 	ReflectedType& operator=( const ReflectedType& Other );
+	bool operator==( const ReflectedType& Other ) const { return false; }
+	bool operator<( const ReflectedType& Other ) const { return false; }
+	bool operator>( const ReflectedType& Other ) const { return false; }
 
 	int32_t IntegerValue = 1234;
 	uint8_t const ImmutableByteValue = 3;
@@ -25,7 +28,7 @@ struct ReflectedType {
 REFLECT( ReflectedType );
 
 struct SecondReflectedType {
-	REFLECTION_MEMBERS( SecondReflectedType );
+	REFLECTION_MEMBERS( SecondReflectedType, void );
 
 	std::vector<ReflectedType> VectorValue;
 	std::map<uint8_t, std::string> MapValue;
@@ -33,7 +36,7 @@ struct SecondReflectedType {
 REFLECT( SecondReflectedType );
 
 struct RecursiveType {
-	REFLECTION_MEMBERS( RecursiveType );
+	REFLECTION_MEMBERS( RecursiveType, void );
 
 	size_t Data;
 	std::list<std::array<RecursiveType,5>> Nodes;
@@ -42,7 +45,7 @@ REFLECT( RecursiveType );
 
 
 struct SerializedTypeA {
-	REFLECTION_MEMBERS( SerializedTypeA );
+	REFLECTION_MEMBERS( SerializedTypeA, void );
 
 	char CharValue = 'a';
 	int8_t ByteValue = 12;
@@ -67,7 +70,7 @@ struct SerializedTypeA {
 REFLECT( SerializedTypeA );
 
 struct SerializedTypeB {
-	REFLECTION_MEMBERS( SerializedTypeB );
+	REFLECTION_MEMBERS( SerializedTypeB, void );
 
 	char CharValue = 'b';
 	//int8_t ByteValue = 23;

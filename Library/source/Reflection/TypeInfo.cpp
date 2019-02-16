@@ -21,36 +21,36 @@ namespace Reflection {
 		//Print type and subtype information
 		if( StructTypeInfo const* StructInfo = Info->As<StructTypeInfo>() ) {
 			//Print struct header
-			Stream << "struct " << StructInfo->MangledName;
+			Stream << "struct " << StructInfo->Definition.MangledName;
 			if( StructInfo->BaseType ) {
-				Stream << " : " << StructInfo->BaseType->MangledName;
+				Stream << " : " << StructInfo->BaseType->Definition.MangledName;
 			}
 			Stream << " {\n";
 
 			//Print constants
 			if( StructInfo->Static.Constants.size() > 0 || StructInfo->Member.Constants.size() > 0 ) {
 				for( auto const& StaticConstant : StructInfo->Static.Constants ) {
-					Stream << "\t" << StaticConstant->Name << " : " << StaticConstant->Type->MangledName << " const static\n";
+					Stream << "\t" << StaticConstant->Name << " : " << StaticConstant->Type->Definition.MangledName << " const static\n";
 				}
 				for( auto const& MemberConstant : StructInfo->Member.Constants ) {
-					Stream << "\t" << MemberConstant->Name << " : " << MemberConstant->Type->MangledName << " const\n";
+					Stream << "\t" << MemberConstant->Name << " : " << MemberConstant->Type->Definition.MangledName << " const\n";
 				}
 				Stream << "\n";
 			}
 			//Print variables
 			if( StructInfo->Static.Variables.size() > 0 || StructInfo->Member.Variables.size() > 0 ) {
 				for( auto const& StaticVariable : StructInfo->Static.Variables ) {
-					Stream << "\t" << StaticVariable->Name << " : " << StaticVariable->Type->MangledName << " static\n";
+					Stream << "\t" << StaticVariable->Name << " : " << StaticVariable->Type->Definition.MangledName << " static\n";
 				}
 				for( auto const& MemberVariable : StructInfo->Member.Variables ) {
-					Stream << "\t" << MemberVariable->Name << " : " << MemberVariable->Type->MangledName << "\n";
+					Stream << "\t" << MemberVariable->Name << " : " << MemberVariable->Type->Definition.MangledName << "\n";
 				}
 				Stream << "\n";
 			}
 			Stream << "}\n";
 
 		} else {
-			Stream << Info->MangledName;
+			Stream << Info->Definition.MangledName;
 		}
 	}
 
@@ -60,7 +60,7 @@ namespace Reflection {
 			if( Info ) {
 				Stream << std::hex << std::right << std::setw( 8 ) << std::setfill( '0' ) << Info->UniqueID
 					<< std::dec << std::setw( 0 );
-				Stream << " " << D.Demangle( *Info ) << " (" << Info->Size << ")" << std::endl;
+				Stream << " " << D.Demangle( *Info ) << " (" << Info->Definition.Size << ")" << std::endl;
 			} else {
 				Stream << "{{INVALID TYPE}}" << std::endl;
 			}
@@ -81,15 +81,11 @@ namespace Reflection {
 	}
 
 	TypeInfo::TypeInfo(
-		ETypeClassification InClassification,
-		sid_t InUniqueID, size_t InSize, size_t InAlignment,
-		const char* InMangledName, const char* InDescription,
-		FTypeFlags InFlags, Serialization::ISerializer* InSerializer
+		ETypeClassification InClassification, sid_t InUniqueID, CompilerDefinition InDefinition,
+		const char* InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer
 	)
-	: Classification( InClassification )
-	, UniqueID( InUniqueID ), Size( InSize ), Alignment( InAlignment )
-	, MangledName( InMangledName ), Description( InDescription )
-	, Flags( InFlags ), Serializer( InSerializer )
+	: Classification( InClassification ), UniqueID( InUniqueID ), Definition( InDefinition )
+	, Description( InDescription ), Flags( InFlags ), Serializer( InSerializer )
 	{
 		GlobalTypeCollection.push_back( this );
 	}

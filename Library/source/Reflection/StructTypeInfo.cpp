@@ -4,17 +4,14 @@
 
 namespace Reflection {
 	StructTypeInfo::StructTypeInfo(
-		sid_t InUniqueID, size_t InSize, size_t InAlignment,
-		const char* InMangledName, const char* InDescription,
-		FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
+		sid_t InUniqueID, CompilerDefinition InDefinition,
+		const char* InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
 		StructTypeInfo const* InBaseType, void const* InDefault,
 		Fields InStatic, Fields InMember
 	)
 	: TypeInfo(
-		StructTypeInfo::CLASSIFICATION,
-		InUniqueID, InSize, InAlignment,
-		InMangledName, InDescription,
-		InFlags, InSerializer )
+		StructTypeInfo::CLASSIFICATION, InUniqueID, InDefinition,
+		InDescription, InFlags, InSerializer )
 	, BaseType( InBaseType )
 	, Default( InDefault )
 	, Static( InStatic )

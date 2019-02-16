@@ -16,9 +16,8 @@ namespace Reflection {
 
 		MapTypeInfo() = delete;
 		MapTypeInfo(
-			sid_t InUniqueID, size_t InSize, size_t InAlignment,
-			char const* InMangledName, char const* InDescription,
-			Serialization::ISerializer* InSerializer,
+			sid_t InUniqueID, CompilerDefinition InDefinition,
+			char const* InDescription, Serialization::ISerializer* InSerializer,
 			TypeInfo const* InKeyType, TypeInfo const* InValueType
 		);
 		virtual ~MapTypeInfo() {}
@@ -50,9 +49,8 @@ namespace Reflection {
 	struct TMapTypeInfo : public MapTypeInfo {
 		TMapTypeInfo( char const* InDescription, Serialization::ISerializer* InSerializer )
 		: MapTypeInfo(
-			TypeResolver<TMAP>::GetID(), sizeof( TMAP ), alignof( TMAP ),
-			typeid( TMAP ).name(), InDescription,
-			InSerializer,
+			TypeResolver<TMAP>::GetID(), GetCompilerDefinition<TMAP>(),
+			InDescription, InSerializer,
 			TypeResolver<TKEY>::Get(), TypeResolver<TVALUE>::Get() )
 		{}
 

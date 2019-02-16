@@ -16,9 +16,8 @@ namespace Reflection {
 
 		ArrayTypeInfo() = delete;
 		ArrayTypeInfo(
-			sid_t InUniqueID, size_t InSize, size_t InAlignment,
-			char const* InMangledName, char const* InDescription,
-			Serialization::ISerializer* InSerializer,
+			sid_t InUniqueID, CompilerDefinition InDefinition,
+			char const* InDescription, Serialization::ISerializer* InSerializer,
 			bool InIsFixedSize, TypeInfo const* InElementType
 		);
 		virtual ~ArrayTypeInfo() {}
@@ -52,9 +51,8 @@ namespace Reflection {
 	struct TFixedArrayTypeInfo : public ArrayTypeInfo {
 		TFixedArrayTypeInfo( char const* InDescription, Serialization::ISerializer* InSerializer )
 		: ArrayTypeInfo(
-			TypeResolver<TARRAY>::GetID(), sizeof( TARRAY ), alignof( TARRAY ),
-			typeid( TARRAY ).name(), InDescription,
-			InSerializer,
+			TypeResolver<TARRAY>::GetID(), GetCompilerDefinition<TARRAY>(),
+			InDescription, InSerializer,
 			true, TypeResolver<TELEMENT>::Get() )
 		{}
 
@@ -90,10 +88,10 @@ namespace Reflection {
 	/** Template that implements the ArrayTypeInfo interface for dynamic array types (std::vector, std::list, etc) */
 	template<typename TELEMENT, typename TARRAY>
 	struct TDynamicArrayTypeInfo : public ArrayTypeInfo {
-		TDynamicArrayTypeInfo( char const* InDescription )
+		TDynamicArrayTypeInfo( char const* InDescription, Serialization::ISerializer* InSerializer )
 		: ArrayTypeInfo(
-			TypeResolver<TARRAY>::GetID(), sizeof( TARRAY ), alignof( TARRAY ),
-			typeid( TARRAY ).name(), InDescription,
+			TypeResolver<TARRAY>::GetID(), GetCompilerDefinition<TARRAY>(),
+			InDescription, InSerializer,
 			false, TypeResolver<TELEMENT>::Get() )
 		{}
 		virtual ~TDynamicArrayTypeInfo() {}

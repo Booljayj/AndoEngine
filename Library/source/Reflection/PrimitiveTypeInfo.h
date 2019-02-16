@@ -6,10 +6,8 @@ namespace Reflection {
 	struct TPrimitiveTypeInfo : public TypeInfo {
 		TPrimitiveTypeInfo( char const* InDescription, Serialization::ISerializer* InSerializer )
 		: TypeInfo(
-			TypeInfo::CLASSIFICATION,
-			TypeResolver<TYPE>::GetID(), sizeof( TYPE ), alignof( TYPE ),
-			typeid( TYPE ).name(), InDescription,
-			FTypeFlags::HasCompare, InSerializer )
+			TypeInfo::CLASSIFICATION, TypeResolver<TYPE>::GetID(), GetCompilerDefinition<TYPE>(),
+			InDescription, FTypeFlags::HasCompare, InSerializer )
 		{}
 
 		static inline TYPE const* Cast( void const* P ) { return static_cast<TYPE const*>( P ); }
@@ -26,15 +24,12 @@ namespace Reflection {
 		};
 	};
 
-	//Special type for void, which is not a type that can have values but still needs TypeInfo
+	/** Special type for void, which is not a type that can have values but still needs TypeInfo */
 	template<> struct TPrimitiveTypeInfo<void> : public TypeInfo {
 		TPrimitiveTypeInfo()
 		: TypeInfo(
-			TypeInfo::CLASSIFICATION,
-			0, 0, 0,
-			typeid( void ).name(), "not a type",
-			FTypeFlags::None, nullptr
-		)
+			TypeInfo::CLASSIFICATION, 0, GetCompilerDefinition<void>(),
+			"not a type", FTypeFlags::None, nullptr )
 		{}
 
 		virtual void Construct( void* P ) const final {}

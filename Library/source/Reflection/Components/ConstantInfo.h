@@ -13,8 +13,7 @@ namespace Reflection {
 	};
 
 	/** Info that describes a constant value */
-	struct ConstantInfo
-	{
+	struct ConstantInfo {
 		ConstantInfo() = delete;
 		ConstantInfo( const char* InName, TypeInfo const* InType, const char* InDescription, FConstantFlags InFlags )
 		: Name( InName )
@@ -37,8 +36,7 @@ namespace Reflection {
 
 	/** Info that describes a constant value that is global */
 	template<typename TVAR>
-	struct TStaticConstantInfo : public ConstantInfo
-	{
+	struct TStaticConstantInfo : public ConstantInfo {
 		TStaticConstantInfo() = delete;
 		TStaticConstantInfo( const char* InName, const char* InDescription, TVAR* InStaticPointer )
 		: ConstantInfo( InName, TypeResolver<typename std::decay<TVAR>::type>::Get(), InDescription, FConstantFlags::None )
@@ -53,8 +51,7 @@ namespace Reflection {
 
 	/** Info that describes a constant value that is contained within a struct instance */
 	template<typename TCLASS, typename TVAR>
-	struct TMemberConstantInfo : public ConstantInfo
-	{
+	struct TMemberConstantInfo : public ConstantInfo {
 		TMemberConstantInfo() = delete;
 		TMemberConstantInfo( const char* InName, const char* InDescription, TVAR const TCLASS::* InMemberPointer )
 		: ConstantInfo( InName, TypeResolver<typename std::decay<TVAR>::type>::Get(), InDescription, FConstantFlags::None )

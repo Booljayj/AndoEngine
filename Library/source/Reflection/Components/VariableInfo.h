@@ -15,8 +15,7 @@ namespace Reflection {
 	};
 
 	/** Info that describes a variable value */
-	struct VariableInfo
-	{
+	struct VariableInfo {
 		/** Type used to store name hashes. Smaller than the normal string hash because this value is used in serialization and is more compact */
 		using HASH_T = uint16_t;
 
@@ -42,8 +41,7 @@ namespace Reflection {
 	};
 
 	template<typename TVAR>
-	struct TStaticVariableInfo : public VariableInfo
-	{
+	struct TStaticVariableInfo : public VariableInfo {
 		TStaticVariableInfo() = delete;
 		TStaticVariableInfo( const char* InName, const char* InDescription, TVAR* InStaticPointer )
 		: VariableInfo( InName, TypeResolver<typename std::decay<TVAR>::type>::Get(), InDescription, FVariableFlags::None )
@@ -54,13 +52,12 @@ namespace Reflection {
 		TVAR* StaticPointer;
 
 		virtual void const* GetImmutableValuePointer( void const* Instance ) const final { return StaticPointer; }
-		virtual void* GetMutableValuePointer() const final { return StaticPointer; }
+		virtual void* GetMutableValuePointer( void* Instance ) const final { return StaticPointer; }
 	};
 
 	/** Info that describes a variable within a struct */
 	template<typename TCLASS, typename TVAR>
-	struct TMemberVariableInfo : VariableInfo
-	{
+	struct TMemberVariableInfo : VariableInfo {
 		TMemberVariableInfo() = delete;
 		TMemberVariableInfo( const char* InName, const char* InDescription, TVAR TCLASS::* InMemberPointer )
 		: VariableInfo( InName, TypeResolver<typename std::decay<TVAR>::type>::Get(), InDescription, FVariableFlags::None )

@@ -24,6 +24,22 @@ ReflectedType& ReflectedType::operator=( const ReflectedType& Other )
 	return *this;
 }
 
+REFLECTED_STRUCT_BEGIN( ReflectedType )
+	REFLECT_STATIC_CONSTANT( StaticImmutableShortValue, "An immutable static short" );
+	DEFINE_STATIC_CONSTANT_FIELDS( &StaticImmutableShortValue );
+
+	REFLECT_MEMBER_CONSTANT( ImmutableByteValue, "An immutable byte value" );
+	DEFINE_MEMBER_CONSTANT_FIELDS( &ImmutableByteValue );
+
+	REFLECT_STATIC_VARIABLE( StaticShortValue, "A static short" );
+	DEFINE_STATIC_VARIABLE_FIELDS( &StaticShortValue );
+
+	REFLECT_MEMBER_VARIABLE( IntegerValue, "An integer value" );
+	REFLECT_MEMBER_VARIABLE( BooleanValue, "A boolean value" );
+	DEFINE_MEMBER_VARIABLE_FIELDS( &IntegerValue, &BooleanValue );
+REFLECTED_STRUCT_END()
+DEFINE_REFLECTION_MEMBERS( ReflectedType, "A simple struct to test reflection" );
+
 /*
 STRUCT_TYPE_BEGIN( ReflectedType )
 {
