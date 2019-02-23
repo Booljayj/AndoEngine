@@ -15,20 +15,24 @@ namespace Serialization {
 		void const* DefaultData = Type->Default;
 
 		//Write an identifier and a data block for each non-default variable in the struct
-		for( Reflection::VariableInfo const* VariableInfo : CachedMemberVariables ) {
-			Reflection::TypeInfo const* Type = VariableInfo->Type;
-			if( Type->Serializer ) {
-				//Get a pointer to the value we want to serialize, and a pointer to the default version of that value
-				void const* VariablePointer = VariableInfo->GetImmutableValuePointer( Data );
-				void const* DefaultVariablePointer = VariableInfo->GetImmutableValuePointer( DefaultData );
+		Reflection::StructTypeInfo const* CurrentType = Type;
+		while( CurrentType ) {
+			for( Reflection::VariableInfo const* VariableInfo : CurrentType->Member.Variables ) {
+				Reflection::TypeInfo const* Type = VariableInfo->Type;
+				if( Type->Serializer ) {
+					//Get a pointer to the value we want to serialize, and a pointer to the default version of that value
+					void const* VariablePointer = VariableInfo->GetImmutableValuePointer( Data );
+					void const* DefaultVariablePointer = VariableInfo->GetImmutableValuePointer( DefaultData );
 
-				//Compare the variable to the default. If the value is the same as the default, then we don't need to write anything
-				if( !AreValuesEqual( Type, VariablePointer, DefaultVariablePointer ) )
-				{
-					WriteVariableIdentifier( VariableInfo, Stream );
-					Type->Serializer->SerializeBinary( VariablePointer, Stream );
+					//Compare the variable to the default. If the value is the same as the default, then we don't need to write anything
+					if( !AreValuesEqual( Type, VariablePointer, DefaultVariablePointer ) )
+					{
+						WriteVariableIdentifier( VariableInfo, Stream );
+						Type->Serializer->SerializeBinary( VariablePointer, Stream );
+					}
 				}
 			}
+			CurrentType = CurrentType->BaseType;
 		}
 
 		FinishDataBlockWrite( Stream, StartPosition );
@@ -63,15 +67,6 @@ namespace Serialization {
 	void StructSerializer::SerializeText( void const* Data, std::ostringstream& Stream ) const {}
 	bool StructSerializer::DeserializeText( void* Data, std::istringstream& Stream ) const { return false; }
 
-	void StructSerializer::Initialize() {
-		CachedMemberVariables.empty();
-		Type->GetMemberVariablesRecursive( CachedMemberVariables );
-		struct MemberVariableInfoCompare {
-			inline bool operator()( Reflection::VariableInfo const* A, Reflection::VariableInfo const* B ) const { return A->NameHash < B->NameHash; }
-		};
-		std::sort( CachedMemberVariables.begin(), CachedMemberVariables.end(), MemberVariableInfoCompare{} );
-	}
-
 	void StructSerializer::WriteVariableIdentifier( Reflection::VariableInfo const* VariableInfo, std::ostream& Stream ) const {
 		WriteLE( &(VariableInfo->NameHash), Stream );
 	}
@@ -88,11 +83,14 @@ namespace Serialization {
 		Reflection::VariableInfo::HASH_T NameHash = 0;
 		ReadLE( &NameHash, Stream );
 
-		auto const FoundVariable = std::find_if(
-			CachedMemberVariables.begin(), CachedMemberVariables.end(),
-			[=]( auto const* A ){ return A->NameHash == NameHash; }
-		);
-		return FoundVariable != CachedMemberVariables.end() ? *FoundVariable : nullptr;
+		//Walk up the chain of base classes, searching for a variable with the correct name hash.
+		Reflection::StructTypeInfo const* CurrentType = Type;
+		Reflection::VariableInfo const* FoundVariable = nullptr;
+		while( CurrentType && !FoundVariable ) {
+			FoundVariable = CurrentType->FindMemberVariableInfo( NameHash );
+			CurrentType = CurrentType->BaseType;
+		}
+		return FoundVariable;
 	}
 
 	void StructSerializer::HandleUnknownDataBlock( std::istream& Stream ) const {

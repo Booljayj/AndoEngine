@@ -44,8 +44,7 @@ constexpr size_t __SCOPE__ ## __TYPE__ ## FieldsCount_REFLECTION = sizeof( __SCO
 
 #define DEFINE_REFLECTION_MEMBERS( __STRUCT__, __DESC__ )\
 Reflection::TStructTypeInfo<__STRUCT__> const __STRUCT__::_TypeInfo{\
-	__DESC__,\
-	Reflection::FTypeFlags::None, nullptr,\
+	__DESC__, Reflection::FTypeFlags::None, nullptr,\
 	static_cast<void const*>( &__STRUCT__ ## _REFLECTION::Default_REFLECTION ),\
 	Reflection::Fields{ MakeArrayView( __STRUCT__ ## _REFLECTION::StaticConstantFields_REFLECTION ), MakeArrayView( __STRUCT__ ## _REFLECTION::StaticVariableFields_REFLECTION ) },\
 	Reflection::Fields{ MakeArrayView( __STRUCT__ ## _REFLECTION::MemberConstantFields_REFLECTION ), MakeArrayView( __STRUCT__ ## _REFLECTION::MemberVariableFields_REFLECTION ) }\

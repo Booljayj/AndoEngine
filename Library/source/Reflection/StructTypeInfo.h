@@ -19,7 +19,7 @@ namespace Reflection {\
 /** Define members of the struct used for reflection. The second argument must be either the primary base class of this type or void */
 #define REFLECTION_MEMBERS( __TYPE__, __BASE__ )\
 using Super = __BASE__;\
-static Reflection::TStructTypeInfo<__TYPE__> const _TypeInfo;\
+static Reflection::TStructTypeInfo<__TYPE__> const _TypeInfo
 
 namespace Reflection {
 	/** Views into various field types that the struct defines */
@@ -44,7 +44,7 @@ namespace Reflection {
 		StructTypeInfo() = delete;
 		StructTypeInfo(
 			sid_t InUniqueID, CompilerDefinition InDefinition,
-			const char* InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
+			char const* InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
 			StructTypeInfo const* InBaseType, void const* InDefault,
 			Fields InStatic, Fields InMember
 		);
@@ -77,28 +77,21 @@ namespace Reflection {
 		static_assert( std::is_base_of<Super, TYPE>::value || std::is_void<Super>::value, "invalid type inheritance for StructTypeInfo, T::Super is not void or an actual base of T" );
 
 		TStructTypeInfo(
-			const char* InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
+			char const* InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
 			void const* InDefault, Fields InStatic, Fields InMember
 		)
 		: StructTypeInfo(
 			TypeResolver<TYPE>::GetID(), GetCompilerDefinition<TYPE>(),
 			InDescription, InFlags, InSerializer,
-			Cast<StructTypeInfo>( TypeResolver<typename TYPE::Super>::Get() ), InDefault,
+			Reflection::Cast<StructTypeInfo>( TypeResolver<typename TYPE::Super>::Get() ), InDefault,
 			InStatic, InMember )
 		{}
 
-		static inline TYPE const* CastStruct( void const* P ) { return static_cast<TYPE const*>( P ); }
-		static inline TYPE* CastStruct( void* P ) { return static_cast<TYPE*>( P ); }
+		static constexpr TYPE const& Cast( void const* P ) { return *static_cast<TYPE const*>( P ); }
+		static constexpr TYPE& Cast( void* P ) { return *static_cast<TYPE*>( P ); }
 
 		virtual void Construct( void* P ) const final { new (P) TYPE; }
-		virtual void Destruct( void* P ) const final { CastStruct(P)->~TYPE(); }
-
-		virtual bool Equal( void const* A, void const* B ) const final { return *CastStruct(A) == *CastStruct(B); }
-		//@todo Not all structs will be comparable. An SFINAE approach is probably required to make sure that the > and < operators actually exist.
-		virtual int8_t Compare( void const* A, void const* B ) const final {
-			if( *CastStruct(A) < *CastStruct(B) ) return -1;
-			else if( *CastStruct(A) == *CastStruct(B) ) return 0;
-			else return 1;
-		};
+		virtual void Destruct( void* P ) const final { Cast(P).~TYPE(); }
+		virtual bool Equal( void const* A, void const* B ) const final { return Cast(A) == Cast(B); }
 	};
 }

@@ -20,7 +20,8 @@ namespace Reflection {
 		std::string Demangle( TypeInfo const& Info ) {
 			//Perform the demangling. Will return nullptr if the demangling fails, otherwise will return the buffer that contains the name,
 			// which may be the same as the input buffer if there was enough space. Or a brand new one if
-			char* NewBuffer = abi::__cxa_demangle( Info.Definition.MangledName, Buffer, &Length, &Result );
+			int Result = 1;
+			char* NewBuffer = abi::__cxa_demangle( Info.Definition.GetMangledName(), Buffer, &Length, &Result );
 			if( NewBuffer != nullptr ) Buffer = NewBuffer;
 
 			if( Result == 0 ) return std::string{ Buffer };
@@ -30,6 +31,5 @@ namespace Reflection {
 	private:
 		char* Buffer = nullptr;
 		size_t Length = 0;
-		int Result = 1;
 	};
 }

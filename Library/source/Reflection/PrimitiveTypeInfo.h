@@ -7,21 +7,15 @@ namespace Reflection {
 		TPrimitiveTypeInfo( char const* InDescription, Serialization::ISerializer* InSerializer )
 		: TypeInfo(
 			TypeInfo::CLASSIFICATION, TypeResolver<TYPE>::GetID(), GetCompilerDefinition<TYPE>(),
-			InDescription, FTypeFlags::HasCompare, InSerializer )
+			InDescription, FTypeFlags::None, InSerializer )
 		{}
 
-		static inline TYPE const* Cast( void const* P ) { return static_cast<TYPE const*>( P ); }
-		static inline TYPE* Cast( void* P ) { return static_cast<TYPE*>( P ); }
+		static constexpr TYPE const& Cast( void const* P ) { return *static_cast<TYPE const*>( P ); }
+		static constexpr TYPE& Cast( void* P ) { return *static_cast<TYPE*>( P ); }
 
 		virtual void Construct( void* P ) const final { new (P) TYPE; }
-		virtual void Destruct( void* P ) const final { Cast(P)->~TYPE(); }
-
-		virtual bool Equal( void const* A, void const* B ) const final { return *Cast(A) == *Cast(B); }
-		virtual int8_t Compare( void const* A, void const* B ) const final {
-			if( *Cast(A) < *Cast(B) ) return -1;
-			else if( *Cast(A) == *Cast(B) ) return 0;
-			else return 1;
-		};
+		virtual void Destruct( void* P ) const final { Cast(P).~TYPE(); }
+		virtual bool Equal( void const* A, void const* B ) const final { return Cast(A) == Cast(B); }
 	};
 
 	/** Special type for void, which is not a type that can have values but still needs TypeInfo */

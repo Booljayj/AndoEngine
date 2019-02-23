@@ -21,36 +21,36 @@ namespace Reflection {
 		//Print type and subtype information
 		if( StructTypeInfo const* StructInfo = Info->As<StructTypeInfo>() ) {
 			//Print struct header
-			Stream << "struct " << StructInfo->Definition.MangledName;
+			Stream << "struct " << StructInfo->Definition.GetMangledName();
 			if( StructInfo->BaseType ) {
-				Stream << " : " << StructInfo->BaseType->Definition.MangledName;
+				Stream << " : " << StructInfo->BaseType->Definition.GetMangledName();
 			}
 			Stream << " {\n";
 
 			//Print constants
 			if( StructInfo->Static.Constants.size() > 0 || StructInfo->Member.Constants.size() > 0 ) {
 				for( auto const& StaticConstant : StructInfo->Static.Constants ) {
-					Stream << "\t" << StaticConstant->Name << " : " << StaticConstant->Type->Definition.MangledName << " const static\n";
+					Stream << "\t" << StaticConstant->Name << " : " << StaticConstant->Type->Definition.GetMangledName() << " const static\n";
 				}
 				for( auto const& MemberConstant : StructInfo->Member.Constants ) {
-					Stream << "\t" << MemberConstant->Name << " : " << MemberConstant->Type->Definition.MangledName << " const\n";
+					Stream << "\t" << MemberConstant->Name << " : " << MemberConstant->Type->Definition.GetMangledName() << " const\n";
 				}
 				Stream << "\n";
 			}
 			//Print variables
 			if( StructInfo->Static.Variables.size() > 0 || StructInfo->Member.Variables.size() > 0 ) {
 				for( auto const& StaticVariable : StructInfo->Static.Variables ) {
-					Stream << "\t" << StaticVariable->Name << " : " << StaticVariable->Type->Definition.MangledName << " static\n";
+					Stream << "\t" << StaticVariable->Name << " : " << StaticVariable->Type->Definition.GetMangledName() << " static\n";
 				}
 				for( auto const& MemberVariable : StructInfo->Member.Variables ) {
-					Stream << "\t" << MemberVariable->Name << " : " << MemberVariable->Type->Definition.MangledName << "\n";
+					Stream << "\t" << MemberVariable->Name << " : " << MemberVariable->Type->Definition.GetMangledName() << "\n";
 				}
 				Stream << "\n";
 			}
 			Stream << "}\n";
 
 		} else {
-			Stream << Info->Definition.MangledName;
+			Stream << Info->Definition.GetMangledName();
 		}
 	}
 
@@ -82,7 +82,7 @@ namespace Reflection {
 
 	TypeInfo::TypeInfo(
 		ETypeClassification InClassification, sid_t InUniqueID, CompilerDefinition InDefinition,
-		const char* InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer
+		char const* InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer
 	)
 	: Classification( InClassification ), UniqueID( InUniqueID ), Definition( InDefinition )
 	, Description( InDescription ), Flags( InFlags ), Serializer( InSerializer )

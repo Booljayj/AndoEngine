@@ -5,17 +5,15 @@
 namespace Reflection {
 	StructTypeInfo::StructTypeInfo(
 		sid_t InUniqueID, CompilerDefinition InDefinition,
-		const char* InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
+		char const* InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
 		StructTypeInfo const* InBaseType, void const* InDefault,
 		Fields InStatic, Fields InMember
 	)
 	: TypeInfo(
 		StructTypeInfo::CLASSIFICATION, InUniqueID, InDefinition,
 		InDescription, InFlags, InSerializer )
-	, BaseType( InBaseType )
-	, Default( InDefault )
-	, Static( InStatic )
-	, Member( InMember )
+	, BaseType( InBaseType ), Default( InDefault )
+	, Static( InStatic ), Member( InMember )
 	{}
 
 	void StructTypeInfo::GetStaticConstantsRecursive( std::vector<ConstantInfo const*>& OutStaticConstants ) const {

@@ -8,11 +8,9 @@ namespace Reflection {
 }
 
 namespace Serialization {
-	struct StructSerializer : public ISerializer
-	{
+	struct StructSerializer : public ISerializer {
 	private:
 		Reflection::StructTypeInfo const* Type;
-		std::vector<Reflection::VariableInfo const*> CachedMemberVariables;
 
 	public:
 		StructSerializer() = delete;
@@ -23,8 +21,6 @@ namespace Serialization {
 
 		virtual void SerializeText( void const* Data, std::ostringstream& Stream ) const override;
 		virtual bool DeserializeText( void* Data, std::istringstream& Stream ) const override;
-
-		void Initialize();
 
 	private:
 		void WriteVariableIdentifier( Reflection::VariableInfo const* VariableInfo, std::ostream& Stream ) const;

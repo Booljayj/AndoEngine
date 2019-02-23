@@ -17,8 +17,7 @@ ReflectedType::ReflectedType( const ReflectedType& Other )
 , BooleanValue( Other.BooleanValue )
 {}
 
-ReflectedType& ReflectedType::operator=( const ReflectedType& Other )
-{
+ReflectedType& ReflectedType::operator=( const ReflectedType& Other ) {
 	IntegerValue = Other.IntegerValue;
 	BooleanValue = Other.BooleanValue;
 	return *this;

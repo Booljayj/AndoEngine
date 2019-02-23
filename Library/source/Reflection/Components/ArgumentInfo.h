@@ -12,8 +12,7 @@ namespace Reflection {
 	};
 
 	//Reflection info for an argument to a function
-	struct ArgumentInfo
-	{
+	struct ArgumentInfo {
 		std::string Name;
 		std::string Description;
 		TypeInfo const* Type = nullptr;

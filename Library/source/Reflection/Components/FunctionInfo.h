@@ -8,8 +8,7 @@
 #include "Reflection/Components/ArgumentInfo.h"
 #include "Reflection/Resolver.h"
 
-namespace Reflection
-{
+namespace Reflection {
 	//@todo Experimental. The main reason to have this is for function invocation, and that seems to be a hacky,
 	// non-typesafe mess at the moment. Needs to be thought out more to figure out if there's a better way.
 
@@ -26,8 +25,7 @@ namespace Reflection
 		Hidden = 1 << 2,
 	};
 
-	struct FunctionInfo
-	{
+	struct FunctionInfo {
 		std::string Name;
 		std::string Description;
 
@@ -39,8 +37,7 @@ namespace Reflection
 		FFunctionFlags Flags = FFunctionFlags::None;
 
 		template<typename TCLASS>
-		bool ValidateInstance( TCLASS* Instance ) const
-		{
+		bool ValidateInstance( TCLASS* Instance ) const {
 			if( !InstanceType && !Instance ) {
 				return true;
 			} else if( InstanceType && Instance ) {
@@ -50,13 +47,11 @@ namespace Reflection
 			}
 		}
 		template<typename TRETURN>
-		bool ValidateReturn( TRETURN const& Return ) const
-		{
+		bool ValidateReturn( TRETURN const& Return ) const {
 			return GetTypeInfo<TRETURN> == ReturnType;
 		}
 		template<size_t SIZE>
-		bool ValidateArguments( std::array<TypeInfo const*, SIZE> const& Args )
-		{
+		bool ValidateArguments( std::array<TypeInfo const*, SIZE> const& Args ) {
 			if( SIZE == ArgumentInfos.size() ) {
 				for( size_t Index = 0; Index < SIZE; ++Index ) {
 					if( ArgumentInfos[Index].Type == Args[Index] ) {
@@ -70,8 +65,7 @@ namespace Reflection
 
 		//Safe invocation function that performs reflected type checking and argument packing
 		template<typename TCLASS, typename TRETURN, typename... TARGS>
-		bool InvokeMember( TCLASS* Instance, TRETURN& Return, TARGS&... Args ) const
-		{
+		bool InvokeMember( TCLASS* Instance, TRETURN& Return, TARGS&... Args ) const {
 			if( ValidateInstance( Instance ) && ValidateReturn( Return ) ) {
 				//@todo Verify that the typeinfo of each argument matches this function's definition, and that the number of arguments is also correct
 				std::array<TypeInfo const*, sizeof...( TARGS )> ArgTypes{ { GetTypeInfo<TARGS>()... } };
@@ -85,8 +79,7 @@ namespace Reflection
 
 		//Safe invocation function that performs reflected type checking and argument packing
 		template<typename TCLASS, typename... TARGS>
-		bool Invoke( TCLASS* Instance, TARGS&... Args ) const
-		{
+		bool Invoke( TCLASS* Instance, TARGS&... Args ) const {
 			if( ReturnType == GetTypeInfo<void>() && ValidateInstance( Instance ) ) {
 				//@todo Verify that the typeinfo of each argument matches this function's definition, and that the number of arguments is also correct
 				std::array<TypeInfo const*, sizeof...( TARGS )> ArgTypes{ { GetTypeInfo<TARGS>()... } };
@@ -104,8 +97,7 @@ namespace Reflection
 	};
 
 	template<typename TCLASS, typename TRETURN, typename... TARGS>
-	struct MemberFunctionInfo : public FunctionInfo
-	{
+	struct MemberFunctionInfo : public FunctionInfo {
 		MemberFunctionInfo( TRETURN (TCLASS::* InMember)( TARGS... ) )
 		: Member( InMember )
 		, InstanceType( GetTypeInfo<TCLASS>() )
@@ -115,14 +107,12 @@ namespace Reflection
 		TRETURN (TCLASS::* Member)( TARGS... );
 
 		template<size_t... Is>
-		void InternalInvokeMember_Impl( TCLASS& Instance, TRETURN& Return, void** Args, std::index_sequence<Is...> ) const
-		{
+		void InternalInvokeMember_Impl( TCLASS& Instance, TRETURN& Return, void** Args, std::index_sequence<Is...> ) const {
 			Return = (Instance.*Member)( *static_cast<TARGS*>( Args[Is] )... );
 		}
 
 	protected:
-		bool InternalInvoke( void* Instance, void* Return, void** Args ) const final
-		{
+		bool InternalInvoke( void* Instance, void* Return, void** Args ) const final {
 			if( Instance ) {
 				InternalInvokeMember_Impl( *static_cast<TCLASS*>( Instance ), *static_cast<TRETURN*>( Return ), Args, std::index_sequence_for<TARGS...>{} );
 				return true;

@@ -6,7 +6,7 @@
 #include <string>
 #include <list>
 #include "Reflection/StructTypeInfo.h"
-#include "Reflection/BaseResolver.h"
+#include "Reflection/Resolver/Resolver.h"
 
 struct ReflectedType {
 	REFLECTION_MEMBERS( ReflectedType, void );
@@ -42,7 +42,6 @@ struct RecursiveType {
 	std::list<std::array<RecursiveType,5>> Nodes;
 };
 REFLECT( RecursiveType );
-
 
 struct SerializedTypeA {
 	REFLECTION_MEMBERS( SerializedTypeA, void );

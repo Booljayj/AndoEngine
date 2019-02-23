@@ -40,7 +40,7 @@ namespace Serialization {
 
 	bool AreValuesEqual( Reflection::TypeInfo const* Info, void const* ValueA, void const* ValueB ) {
 		if( ValueA && ValueB ) {
-			return Info->Compare( ValueA, ValueB ) == 0;
+			return Info->Equal( ValueA, ValueB );
 		}
 		return false;
 	}
