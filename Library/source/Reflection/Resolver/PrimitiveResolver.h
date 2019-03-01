@@ -15,11 +15,12 @@ namespace Reflection {
 	// Standard primitive type specializations
 
 	//Special definition for void, which is the only primitive type that cannot hold values.
-	extern TPrimitiveTypeInfo<void> const TypeInfo__void;
 	template<> struct TypeResolver<void> {
-		static TypeInfo const* Get() { return &TypeInfo__void; }
+		static TPrimitiveTypeInfo<void> const _TypeInfo;
+		static TypeInfo const* Get() { return &_TypeInfo; }
 		static constexpr sid_t GetID() { return 0; }
 	};
+	TPrimitiveTypeInfo<void> const TypeResolver<void>::_TypeInfo{};
 
 	L_DECLARE_PRIMITIVE_TYPEINFO( bool );
 	L_DECLARE_PRIMITIVE_TYPEINFO( char );
