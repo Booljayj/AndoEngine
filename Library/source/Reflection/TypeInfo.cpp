@@ -28,7 +28,7 @@ namespace Reflection {
 			Stream << " {\n";
 
 			//Print constants
-			if( StructInfo->Static.Constants.size() > 0 || StructInfo->Member.Constants.size() > 0 ) {
+			if( StructInfo->Static.Constants.Size() > 0 || StructInfo->Member.Constants.Size() > 0 ) {
 				for( auto const& StaticConstant : StructInfo->Static.Constants ) {
 					Stream << "\t" << StaticConstant->Name << " : " << StaticConstant->Type->Definition.GetMangledName() << " const static\n";
 				}
@@ -38,7 +38,7 @@ namespace Reflection {
 				Stream << "\n";
 			}
 			//Print variables
-			if( StructInfo->Static.Variables.size() > 0 || StructInfo->Member.Variables.size() > 0 ) {
+			if( StructInfo->Static.Variables.Size() > 0 || StructInfo->Member.Variables.Size() > 0 ) {
 				for( auto const& StaticVariable : StructInfo->Static.Variables ) {
 					Stream << "\t" << StaticVariable->Name << " : " << StaticVariable->Type->Definition.GetMangledName() << " static\n";
 				}

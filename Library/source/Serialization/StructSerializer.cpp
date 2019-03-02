@@ -85,13 +85,13 @@ namespace Serialization {
 
 		//Walk up the chain of base classes, searching for a variable with the correct name hash.
 		Reflection::StructTypeInfo const* CurrentType = Type;
-		Reflection::VariableInfo const* FoundVariable = nullptr;
-		while( CurrentType && !FoundVariable ) {
-			//@todo Actually implement this. The find method should be placed in the fields struct.
-			//FoundVariable = CurrentType->Members.Variables.( NameHash );
+		while( CurrentType ) {
+			if( Reflection::VariableInfo const* FoundInfo = CurrentType->Member.Variables.Find( NameHash ) ) {
+				return FoundInfo;
+			}
 			CurrentType = CurrentType->BaseType;
 		}
-		return FoundVariable;
+		return nullptr;
 	}
 
 	void StructSerializer::HandleUnknownDataBlock( std::istream& Stream ) const {

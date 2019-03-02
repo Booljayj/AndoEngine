@@ -22,10 +22,42 @@ namespace Reflection {\
 }
 
 namespace Reflection {
+	/** A view type specialized for field components */
+	template<typename T>
+	struct FieldView {
+	private:
+		std::basic_string_view<T const*> InternalView;
+
+	public:
+		constexpr FieldView() = default;
+
+		template<size_t SIZE>
+		constexpr FieldView( std::array<T const*, SIZE> const& Array )
+		: InternalView( Array.data(), Array.size() )
+		{}
+
+		inline T const* operator[]( size_t Index ) const { return InternalView[Index]; }
+		inline typename decltype( InternalView )::const_iterator begin() const { return InternalView.begin(); }
+		inline typename decltype( InternalView )::const_iterator end() const { return InternalView.end(); }
+
+		inline size_t Size() const { return InternalView.size(); }
+
+		T const* Find( sid_t NameHash ) const {
+			typename T::HASH_T ModifiedNameHash = static_cast<typename T::HASH_T>( NameHash );
+			//@todo If we have a way to ensure that the field array is sorted, we can use a binary search here for better speed.
+			const auto Iter = std::find_if( InternalView.begin(), InternalView.end(), [=]( T const* Info ) { return Info->NameHash == ModifiedNameHash; } );
+			if( Iter != InternalView.end() ) {
+				return *Iter;
+			} else {
+				return nullptr;
+			}
+		}
+	};
+
 	/** Views into various field types that the struct defines */
 	struct Fields {
-		std::basic_string_view<ConstantInfo const*> Constants;
-		std::basic_string_view<VariableInfo const*> Variables;
+		FieldView<ConstantInfo> Constants;
+		FieldView<VariableInfo> Variables;
 	};
 
 	/** Info for a struct type, which contains various fields and supports inheritance */

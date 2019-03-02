@@ -70,5 +70,9 @@ namespace Reflection {
 		void const* GetImmutableValuePointer( void const* Instance ) const final { return &( ((TCLASS const*)Instance)->*MemberPointer ); }
 		void* GetMutableValuePointer( void* Instance ) const final { return &( ((TCLASS*)Instance)->*MemberPointer ); }
 	};
+
+	struct VariableView {
+
+	};
 }
 

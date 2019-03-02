@@ -14,6 +14,9 @@ namespace Reflection {
 
 	/** Info that describes a constant value */
 	struct ConstantInfo {
+		/** Type used to store name hashes */
+		using HASH_T = sid_t;
+
 		ConstantInfo() = delete;
 		ConstantInfo( const char* InName, TypeInfo const* InType, const char* InDescription, FConstantFlags InFlags )
 		: Name( InName )
@@ -25,7 +28,7 @@ namespace Reflection {
 		virtual ~ConstantInfo() {};
 
 		std::string Name;
-		sid_t NameHash = 0;
+		HASH_T NameHash = 0;
 		TypeInfo const* Type = nullptr;
 
 		std::string Description;
