@@ -7,6 +7,11 @@
 #include "Reflection/Components/ConstantInfo.h"
 #include "Reflection/Components/VariableInfo.h"
 
+/** Define members of the struct used for reflection. The second argument must be either the primary base class of this type or void */
+#define REFLECTION_MEMBERS( __TYPE__, __BASE__ )\
+using Super = __BASE__;\
+static Reflection::TStructTypeInfo<__TYPE__> const _TypeInfo
+
 /** Expose a struct to the reflection system. Must be expanded after the type is declared and includes the REFELCTION_MEMBERS macro */
 #define REFLECT( __TYPE__ )\
 namespace Reflection {\
@@ -15,11 +20,6 @@ namespace Reflection {\
 		static constexpr sid_t GetID() { return id( #__TYPE__ ); }\
 	};\
 }
-
-/** Define members of the struct used for reflection. The second argument must be either the primary base class of this type or void */
-#define REFLECTION_MEMBERS( __TYPE__, __BASE__ )\
-using Super = __BASE__;\
-static Reflection::TStructTypeInfo<__TYPE__> const _TypeInfo
 
 namespace Reflection {
 	/** Views into various field types that the struct defines */
@@ -52,20 +52,6 @@ namespace Reflection {
 
 		/** Returns true if the chain of base types includes the provided type */
 		bool DerivesFrom( TypeInfo const* Base ) const { return true; }
-
-		/** Get a list of all constants, including those from base classes */
-		void GetStaticConstantsRecursive( std::vector<ConstantInfo const*>& OutStaticConstants ) const;
-		void GetMemberConstantsRecursive( std::vector<ConstantInfo const*>& OutMemberConstants ) const;
-		/** Get a list of all variables, including those from base classes */
-		void GetStaticVariablesRecursive( std::vector<VariableInfo const*>& OutStaticVariables ) const;
-		void GetMemberVariablesRecursive( std::vector<VariableInfo const*>& OutMemberVariables ) const;
-
-		//Find a constant that has the provided name hash
-		ConstantInfo const* FindStaticConstantInfo( uint16_t NameHash ) const { return nullptr; }
-		ConstantInfo const* FindMemberConstantInfo( uint16_t NameHash ) const { return nullptr; }
-		//Find a variable that has the provided name hash
-		VariableInfo const* FindStaticVariableInfo( uint16_t NameHash ) const { return nullptr; }
-		VariableInfo const* FindMemberVariableInfo( uint16_t NameHash ) const { return nullptr; }
 	};
 
 	//============================================================

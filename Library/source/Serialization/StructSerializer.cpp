@@ -87,7 +87,8 @@ namespace Serialization {
 		Reflection::StructTypeInfo const* CurrentType = Type;
 		Reflection::VariableInfo const* FoundVariable = nullptr;
 		while( CurrentType && !FoundVariable ) {
-			FoundVariable = CurrentType->FindMemberVariableInfo( NameHash );
+			//@todo Actually implement this. The find method should be placed in the fields struct.
+			//FoundVariable = CurrentType->Members.Variables.( NameHash );
 			CurrentType = CurrentType->BaseType;
 		}
 		return FoundVariable;

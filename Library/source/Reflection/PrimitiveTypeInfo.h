@@ -1,5 +1,5 @@
 #include "Reflection/TypeInfo.h"
-#include "Reflection/BaseResolver.h"
+#include "Reflection/TypeResolver.h"
 
 namespace Reflection {
 	template<typename TYPE>

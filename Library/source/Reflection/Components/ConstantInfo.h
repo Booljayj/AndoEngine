@@ -2,7 +2,7 @@
 #include <cstdint>
 #include <string>
 #include "Engine/StringID.h"
-#include "Reflection/BaseResolver.h"
+#include "Reflection/TypeResolver.h"
 
 namespace Reflection {
 	struct TypeInfo;

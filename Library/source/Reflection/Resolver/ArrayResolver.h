@@ -4,7 +4,7 @@
 #include <list>
 #include <forward_list>
 #include <deque>
-#include "Reflection/BaseResolver.h"
+#include "Reflection/TypeResolver.h"
 #include "Reflection/ArrayTypeInfo.h"
 
 #define L_DYNAMIC_ARRAY_RESOLVER( __TEMPLATE__, __DESCRIPTION__ )\

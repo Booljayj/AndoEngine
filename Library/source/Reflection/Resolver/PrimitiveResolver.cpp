@@ -7,6 +7,8 @@
 TPrimitiveTypeInfo<__TYPE__> const TypeInfo__##__TYPE__ { __DESCRIPTION__, nullptr }
 
 namespace Reflection {
+	TPrimitiveTypeInfo<void> const TypeInfo__void{};
+
 	DEFINE_PRIMITIVE_TYPEINFO( bool, "boolean value" );
 	DEFINE_PRIMITIVE_TYPEINFO( char, "single-byte value" );
 

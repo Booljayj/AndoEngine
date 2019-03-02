@@ -1,6 +1,7 @@
 #pragma once
 #include <map>
 #include <unordered_map>
+#include "Reflection/TypeResolver.h"
 #include "Reflection/MapTypeInfo.h"
 
 #define L_MAP_TYPE_RESOLVER( __TEMPLATE__, __DESCRIPTION__ )\

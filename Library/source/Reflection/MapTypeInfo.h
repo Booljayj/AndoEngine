@@ -2,7 +2,7 @@
 #include <cstddef>
 #include <utility>
 #include <vector>
-#include "Reflection/BaseResolver.h"
+#include "Reflection/TypeResolver.h"
 #include "Reflection/TypeInfo.h"
 
 namespace Reflection {
@@ -22,23 +22,23 @@ namespace Reflection {
 		);
 		virtual ~MapTypeInfo() {}
 
-		// Get the number of entries in this map
+		/** Get the number of entries in this map */
 		virtual size_t GetCount( void const* Instance ) const = 0;
 
-		// Get a vector of all entry pairs in this map
-		virtual void GetPairs( void* Instance, std::vector<std::pair<void const*, void*>> OutPairs ) const = 0;
-		virtual void GetPairs( void const* Instance, std::vector<std::pair<void const*, void const*>> OutPairs ) const = 0;
+		/** Get a vector of all entry pairs in this map */
+		virtual void GetPairs( void* Instance, std::vector<std::pair<void const*, void*>>& OutPairs ) const = 0;
+		virtual void GetPairs( void const* Instance, std::vector<std::pair<void const*, void const*>>& OutPairs ) const = 0;
 
-		// Find the value for a key. Returns nullptr if the key is not in the map
+		/** Find the value for a key. Returns nullptr if the key is not in the map */
 		virtual void* Find( void* Instance, void const* Key ) const = 0;
 		virtual void const* Find( void const* Instance, void const* Key ) const = 0;
 
-		// Remove all entries from the map
+		/** Remove all entries from the map */
 		virtual void Clear( void* Instance ) const = 0;
 
-		// Remove the entry corresponding to a particular key from the map. Returns true if successful.
+		/** Remove the entry corresponding to a particular key from the map. Returns true if successful. */
 		virtual bool RemoveEntry( void* Instance, void const* Key ) const = 0;
-		// Add a new entry to the map with the specified value. If the key is already in the map, nothing will happen and will return false. If Value is nullptr, the new value will be default constructed
+		/** Add a new entry to the map with the specified value. If the key is already in the map, nothing will happen and will return false. If Value is nullptr, the new value will be default constructed */
 		virtual bool InsertEntry( void* Instance, void const* Key, void const* Value ) const = 0;
 	};
 
@@ -67,13 +67,13 @@ namespace Reflection {
 			return CastMap( Instance ).size();
 		}
 
-		virtual void GetPairs( void* Instance, std::vector<std::pair<void const*, void*>> OutPairs ) const override {
+		virtual void GetPairs( void* Instance, std::vector<std::pair<void const*, void*>>& OutPairs ) const override {
 			OutPairs.clear();
 			for( auto& Iter : CastMap( Instance ) ) {
 				OutPairs.push_back( std::make_pair( &Iter.first, &Iter.second ) );
 			}
 		}
-		virtual void GetPairs( void const* Instance, std::vector<std::pair<void const*, void const*>> OutPairs ) const override {
+		virtual void GetPairs( void const* Instance, std::vector<std::pair<void const*, void const*>>& OutPairs ) const override {
 			OutPairs.clear();
 			for( auto const& Iter : CastMap( Instance ) ) {
 				OutPairs.push_back( std::make_pair( &Iter.first, &Iter.second ) );

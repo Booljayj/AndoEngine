@@ -6,7 +6,7 @@
 #include <sstream>
 #include <cxxabi.h>
 #include "Engine/StringID.h"
-#include "Reflection/BaseResolver.h"
+#include "Reflection/TypeResolver.h"
 
 namespace Reflection {
 	/** Converts compiler-generated names, which are stored in the TypeInfo for types, into human-readable ones similar to how they were originally declared in source */

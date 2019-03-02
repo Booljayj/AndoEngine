@@ -2,7 +2,7 @@
 #include <cstddef>
 #include <memory>
 #include <vector>
-#include "Reflection/BaseResolver.h"
+#include "Reflection/TypeResolver.h"
 #include "Reflection/TypeInfo.h"
 
 namespace Reflection {
@@ -22,24 +22,24 @@ namespace Reflection {
 		);
 		virtual ~ArrayTypeInfo() {}
 
-		//Get the number of elements that are in the array
+		/** Get the number of elements that are in the array */
 		virtual size_t GetCount( void const* Instance ) const = 0;
 
-		//Get a vector of all the elements in the array
+		/** Get a vector of all the elements in the array */
 		virtual void GetElements( void* Instance, std::vector<void*>& OutElements ) const = 0;
 		virtual void GetElements( void const* Instance, std::vector<void const*>& OutElements ) const = 0;
 
-		//Resize the array to hold a specific number of elements
+		/** Resize the array to hold a specific number of elements */
 		virtual void Resize( void* Instance, size_t Count ) const = 0;
 
-		//Remove all elements in the container
+		/** Remove all elements in the container */
 		virtual void ClearElements( void* Instance ) const = 0;
-		//Add a new element to the "end" of the array
+		/** Add a new element to the "end" of the array */
 		virtual void AddElement( void* Instance, void const* Value ) const = 0;
 
-		//Remove the pointed-at element
+		/** Remove the pointed-at element */
 		virtual void RemoveElement( void* Instance, void const* ElementPointer ) const = 0;
-		//Insert a new element at the position of the pointed-at element, equal to the value. If value is nullptr, the new element is default-constructed
+		/** Insert a new element at the position of the pointed-at element, equal to the value. If value is nullptr, the new element is default-constructed */
 		virtual void InsertElement( void* Instance, void const* ElementPointer, void const* Value ) const = 0;
 	};
 
