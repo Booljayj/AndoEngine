@@ -32,4 +32,20 @@ namespace Reflection {
 		char* Buffer = nullptr;
 		size_t Length = 0;
 	};
+
+	std::string_view GetClassificationName( ETypeClassification Classification );
+
+	enum class FDebugPrintFlags : uint8_t {
+		None = 0,
+		DemangleName = 1 << 0,
+		IncludeMetrics = 1 << 1,
+		DetailedInfo = 1 << 2,
+	};
+	//Overloaded | operator to make it easier to combine the print flags
+	constexpr inline FDebugPrintFlags operator|(FDebugPrintFlags A, FDebugPrintFlags B) {
+    	return static_cast<FDebugPrintFlags>(static_cast<std::underlying_type<FDebugPrintFlags>::type>(A) | static_cast<std::underlying_type<FDebugPrintFlags>::type>(B));
+	}
+
+	/** Print a description of a TypeInfo to a stream for debugging purposes. */
+	void DebugPrint( TypeInfo const* Info, std::ostream& Stream, FDebugPrintFlags Flags = FDebugPrintFlags::None );
 }

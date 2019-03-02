@@ -52,12 +52,8 @@ namespace Reflection
 		/** The interface used to serialize this type. If null, this type cannot be serialized. */
 		Serialization::ISerializer* Serializer = nullptr;
 
-		/** Print a description of a TypeInfo to a stream */
-		static void Print( TypeInfo const* Info, std::ostream& Stream );
-		/** Print basic information about all TypeInfos to a stream */
-		static void PrintAll( std::ostream& Stream );
-		/** Get an iterator that can iterate through all TypeInfo objects */
-		static std::deque<TypeInfo const*>::const_iterator GetTypeInfoIterator();
+		/** Get the container that includes all TypeInfo objects that exist. */
+		static std::deque<TypeInfo const*> const& GetGlobalTypeInfoCollection();
 
 		/** Find a TypeInfo object using its unique ID */
 		static TypeInfo const* FindTypeByID( sid_t UniqueID );

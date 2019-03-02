@@ -126,7 +126,9 @@ int main( int argc, const char * argv[] )
 	CTX.Log->Message( TERM_Cyan "Compiled with " __VERSION__ " on " __DATE__ "\n" );
 
 	std::cout << "\nGlobal types:" << std::endl;
-	Reflection::TypeInfo::PrintAll( std::cout );
+	for( Reflection::TypeInfo const* Info : Reflection::TypeInfo::GetGlobalTypeInfoCollection() ) {
+		Reflection::DebugPrint( Info, std::cout, Reflection::FDebugPrintFlags::IncludeMetrics );
+	}
 
 	Reflection::TypeInfo const* A = Reflection::TypeResolver<std::map<char, size_t>>::Get();
 
@@ -137,9 +139,6 @@ int main( int argc, const char * argv[] )
 	std::cout << "ID of void should be: 7c9faa57" << std::endl;
 	std::cout << "ID of std::list<std::array<RecursiveType,5>> should be: b5e4752d" << std::endl;
 	std::cout << std::hex << Reflection::TypeResolver<std::list<std::array<RecursiveType, 5>>>::GetID() << std::endl;
-
-	std::cout << "\nGlobal types:" << std::endl;
-	Reflection::TypeInfo::PrintAll( std::cout );
 
 	if( Startup( CTX ) )
 	{
