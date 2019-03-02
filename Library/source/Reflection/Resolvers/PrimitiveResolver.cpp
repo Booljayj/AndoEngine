@@ -1,5 +1,5 @@
 #include <memory>
-#include "Reflection/Resolver/PrimitiveResolver.h"
+#include "Reflection/Resolvers/PrimitiveResolvers.h"
 #include "Reflection/TypeInfo.h"
 #include "Serialization/PrimitiveSerializer.h"
 

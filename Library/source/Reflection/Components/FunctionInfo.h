@@ -6,7 +6,7 @@
 #include <utility>
 #include "Engine/MemoryView.h"
 #include "Reflection/Components/ArgumentInfo.h"
-#include "Reflection/Resolver.h"
+#include "Reflection/TypeResolver.h"
 
 namespace Reflection {
 	//@todo Experimental. The main reason to have this is for function invocation, and that seems to be a hacky,

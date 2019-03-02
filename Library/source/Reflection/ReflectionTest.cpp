@@ -1,7 +1,7 @@
 #include <iostream>
 #include <memory>
 #include "Reflection/ReflectionTest.h"
-#include "Reflection/Resolver/Resolver.h"
+#include "Reflection/StandardResolvers.h"
 #include "Reflection/StructTypeInfo.h"
 #include "Reflection/StructTypeMacros.h"
 #include "Reflection/Components/VariableInfo.h"
