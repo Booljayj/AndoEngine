@@ -7,6 +7,7 @@
 #include "Engine/LinearContainers.h"
 #include "Engine/LinearStrings.h"
 #include "Engine/ScopedTempBlock.h"
+#include "Engine/TerminalColors.h"
 #include "Engine/Time.h"
 #include "Engine/Context.h"
 #include "EntityFramework/ComponentCollectionSystem.h"
@@ -22,6 +23,7 @@
 
 #include "Reflection/StandardResolvers.h"
 #include "Reflection/StructTypeInfo.h"
+#include "Reflection/TupleTypeInfo.h"
 #include "Reflection/ReflectionTest.h"
 #include "Reflection/TypeUtility.h"
 
@@ -130,7 +132,26 @@ int main( int argc, const char * argv[] )
 		Reflection::DebugPrint( Info, std::cout, Reflection::FDebugPrintFlags::IncludeMetrics );
 	}
 
-	Reflection::TypeInfo const* A = Reflection::TypeResolver<std::map<char, size_t>>::Get();
+	std::cout << "\n\nTuples: " << std::endl;
+	std::tuple<char, std::string, size_t> TupleExample = std::make_tuple( 2, std::string{ "example" }, 0xFFFE );
+	Reflection::TupleTypeInfo const* ExampleTupleInfo = Reflection::Cast<Reflection::TupleTypeInfo>( Reflection::TypeResolver<decltype( TupleExample )>::Get() );
+	if( ExampleTupleInfo ) {
+		Reflection::DebugPrint( ExampleTupleInfo, std::cout );
+		std::cout << *static_cast<std::string const*>( ExampleTupleInfo->GetValue( &TupleExample, 1 ) ) << std::endl;
+	} else {
+		std::cout << "Error!" << std::endl;
+	}
+
+	std::cout << "\n\nSets: " << std::endl;
+	std::set<size_t> SetExample;
+	Reflection::SetTypeInfo const* ExampleSetInfo = Reflection::Cast<Reflection::SetTypeInfo>( Reflection::TypeResolver<decltype( SetExample )>::Get() );
+	Reflection::DebugPrint( ExampleSetInfo, std::cout );
+
+	Reflection::TypeInfo const* A = Reflection::TypeResolver<std::vector<size_t>>::Get();
+	Reflection::DebugPrint( A, std::cout );
+
+	Reflection::TypeInfo const* B = Reflection::TypeResolver<std::unique_ptr<size_t>>::Get();
+	Reflection::DebugPrint( B, std::cout );
 
 	std::cout << "ID of std::map<size_t,std::vector<std::array<char,3>>>: " << std::endl;
 	std::cout << "        " << Reflection::TypeResolver<std::map<size_t,std::vector<std::array<char,3>>>>::GetID() << std::endl;

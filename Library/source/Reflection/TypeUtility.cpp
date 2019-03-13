@@ -6,24 +6,21 @@ namespace Reflection {
 	//A static demangler used by the debug functions in TypeUtility. This mostly exists for convenience.
 	Demangler DebugDemangler{};
 
-	#define CASE_ENUM( __VALUE__ ) case ETypeClassification::__VALUE__: return #__VALUE__;
-	std::string_view GetClassificationName( ETypeClassification Classification ) {
+	#define CASE_ENUM( __VALUE__, __DISPLAY__ ) case ETypeClassification::__VALUE__: return #__DISPLAY__;
+	std::string_view GetClassificationIdentifier( ETypeClassification Classification ) {
 		switch( Classification ) {
-			CASE_ENUM( Primitive );
-			CASE_ENUM( Struct );
-			CASE_ENUM( Enumeration );
-			CASE_ENUM( Array );
-			CASE_ENUM( Map );
-			CASE_ENUM( Set );
-			CASE_ENUM( Tuple );
-			CASE_ENUM( Variant );
+			CASE_ENUM( Primitive, PRIM );
+			CASE_ENUM( Struct, STRU );
+			CASE_ENUM( Enumeration, ENUM );
+			CASE_ENUM( Array, ARRY );
+			CASE_ENUM( Map, MAP_ );
+			CASE_ENUM( Set, SET_ );
+			CASE_ENUM( Poly, POLY );
+			CASE_ENUM( Tuple, TUPL );
+			CASE_ENUM( Variant, VARI );
 		}
 	}
 	#undef CASE_ENUM
-
-	constexpr inline bool operator&(FDebugPrintFlags A, FDebugPrintFlags B) {
-    	return (static_cast<std::underlying_type<FDebugPrintFlags>::type>(A) & static_cast<std::underlying_type<FDebugPrintFlags>::type>(B)) != 0;
-	}
 
 	void DebugPrint( TypeInfo const* Info, std::ostream& Stream, FDebugPrintFlags Flags ) {
 		if( !Info) {
@@ -36,18 +33,11 @@ namespace Reflection {
 		Stream << std::hex << std::right << std::setw( sizeof( Info->UniqueID ) * 2 ) << std::setfill( '0' ) << Info->UniqueID;
 		Stream.flags( f );
 
-		//Print the name of the type, optionally demangled
-		if( Flags & FDebugPrintFlags::DemangleName ) {
-			Stream << " " << DebugDemangler.Demangle( *Info );
-		} else {
-			Stream << " " << Info->Definition.GetMangledName();
-		}
-
 		//Print the kind of TypeInfo this is.
-		Stream << " [" << GetClassificationName( Info->Classification ) << "]";
+		Stream << " [" << GetClassificationIdentifier( Info->Classification ) << "]";
 
 		//Print additional metrics, like size and whether it can be serialized
-		if( Flags & FDebugPrintFlags::IncludeMetrics ) {
+		if( Flags < FDebugPrintFlags::IncludeMetrics ) {
 			Stream << " (" << Info->Definition.Size << ":" << Info->Definition.Alignment;
 			if( Info->Serializer ) {
 				Stream << ", Serializable)";
@@ -56,8 +46,15 @@ namespace Reflection {
 			}
 		}
 
+		//Print the name of the type, optionally demangled
+		if( Flags < FDebugPrintFlags::DemangleName ) {
+			Stream << " " << DebugDemangler.Demangle( *Info );
+		} else {
+			Stream << " " << Info->Definition.GetMangledName();
+		}
+
 		//Print detailed info for this type, depending on the kind
-		if( Flags & FDebugPrintFlags::DetailedInfo ) {
+		if( Flags < FDebugPrintFlags::DetailedInfo ) {
 			if( StructTypeInfo const* StructInfo = Info->As<StructTypeInfo>() ) {
 				//Print constants
 				if( StructInfo->Static.Constants.Size() > 0 || StructInfo->Member.Constants.Size() > 0 ) {

@@ -25,3 +25,5 @@ struct Context
 	/** Buffer used for dynamic allocation of small objects within the thread */
 	mutable HeapBuffer Temp;
 };
+
+/** Standard context macros */

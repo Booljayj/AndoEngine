@@ -1,5 +1,6 @@
 #include <iostream>
-#include "Logger.h"
+#include "Engine/Logger.h"
+#include "Engine/TerminalColors.h"
 
 void StandardLogger::Debug( std::string_view Message )
 {

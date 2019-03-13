@@ -6,6 +6,7 @@
 #include <sstream>
 #include <cxxabi.h>
 #include "Engine/StringID.h"
+#include "Engine/Flags.h"
 #include "Reflection/TypeResolver.h"
 
 namespace Reflection {
@@ -33,7 +34,8 @@ namespace Reflection {
 		size_t Length = 0;
 	};
 
-	std::string_view GetClassificationName( ETypeClassification Classification );
+	/** Returns an identifier code suitable to display the classification */
+	std::string_view GetClassificationIdentifier( ETypeClassification Classification );
 
 	enum class FDebugPrintFlags : uint8_t {
 		None = 0,
@@ -41,10 +43,7 @@ namespace Reflection {
 		IncludeMetrics = 1 << 1,
 		DetailedInfo = 1 << 2,
 	};
-	//Overloaded | operator to make it easier to combine the print flags
-	constexpr inline FDebugPrintFlags operator|(FDebugPrintFlags A, FDebugPrintFlags B) {
-    	return static_cast<FDebugPrintFlags>(static_cast<std::underlying_type<FDebugPrintFlags>::type>(A) | static_cast<std::underlying_type<FDebugPrintFlags>::type>(B));
-	}
+	DEFINE_BITFLAG_OPERATORS( FDebugPrintFlags );
 
 	/** Print a description of a TypeInfo to a stream for debugging purposes. */
 	void DebugPrint( TypeInfo const* Info, std::ostream& Stream, FDebugPrintFlags Flags = FDebugPrintFlags::None );

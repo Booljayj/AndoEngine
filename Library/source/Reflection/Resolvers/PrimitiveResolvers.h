@@ -42,10 +42,12 @@ namespace Reflection {
 
 	template<typename TCHAR>
 	struct TypeResolver<std::basic_string<TCHAR>> {
-		static TPrimitiveTypeInfo<std::basic_string<TCHAR>> const InstancedTypeInfo{ "dynamic string", nullptr };
-		static TypeInfo const* Get() { return &InstancedTypeInfo; }
+		static TPrimitiveTypeInfo<std::basic_string<TCHAR>> const _TypeInfo;
+		static TypeInfo const* Get() { return &_TypeInfo; }
 		static constexpr sid_t GetID() { return id_combine( id( "std::basic_string" ), TypeResolver<TCHAR>::GetID() ); }
 	};
+	template<typename TCHAR>
+	TPrimitiveTypeInfo<std::basic_string<TCHAR>> const TypeResolver<std::basic_string<TCHAR>>::_TypeInfo{ "dynamic string", nullptr };
 }
 
 #undef L_DECLARE_PRIMITIVE_TYPEINFO

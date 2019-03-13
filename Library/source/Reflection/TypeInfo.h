@@ -20,6 +20,7 @@ namespace Reflection
 		Map,
 		Set,
 		//Heterogeneous collection types
+		Poly,
 		Tuple,
 		Variant,
 	};
