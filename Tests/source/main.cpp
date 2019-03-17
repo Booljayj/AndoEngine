@@ -161,6 +161,7 @@ int main( int argc, const char * argv[] )
 	std::cout << "ID of std::list<std::array<RecursiveType,5>> should be: b5e4752d" << std::endl;
 	std::cout << std::hex << Reflection::TypeResolver<std::list<std::array<RecursiveType, 5>>>::GetID() << std::endl;
 
+	return 0;
 	if( Startup( CTX ) )
 	{
 		CTX.Log->Message( "Creating entities" );

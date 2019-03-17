@@ -64,9 +64,6 @@ namespace Serialization {
 		return true;
 	}
 
-	void StructSerializer::SerializeText( void const* Data, std::ostringstream& Stream ) const {}
-	bool StructSerializer::DeserializeText( void* Data, std::istringstream& Stream ) const { return false; }
-
 	void StructSerializer::WriteVariableIdentifier( Reflection::VariableInfo const* VariableInfo, std::ostream& Stream ) const {
 		WriteLE( &(VariableInfo->NameHash), Stream );
 	}

@@ -16,14 +16,15 @@
  * to the Stream, while the Deserialize method is responsible for reading a data block and
  * extracting the information from it into the object.
  *
+ * An example of what a data block looks like if it were directly expressed as a struct:
  *	struct DataBlock {
  *		uint32_t DataSize;
  *		union {
- *			char* Data;
- *			tuple<uint16_t, DataBlock>* IdentifierBasedNestedDataBlocks;
- *			tuple<uint32_t, DataBlock*> ArrayBasedNestedDataBlocks;
+ *			char Data[];
+ *			tuple<uint16_t, DataBlock> IdentifierBasedNestedDataBlocks[];
+ *			tuple<uint32_t, DataBlock[]> ArrayBasedNestedDataBlocks;
  *		}
- *	}
+ *	};
  */
 
 namespace Serialization {
@@ -31,17 +32,17 @@ namespace Serialization {
 	struct ISerializer {
 		virtual ~ISerializer() {}
 
-		//Serialize to and from binary data streams
+		/** Serialize to and from binary data streams */
 		virtual void SerializeBinary( void const* Data, std::ostream& Stream ) const = 0;
 		virtual bool DeserializeBinary( void* Data, std::istream& Stream ) const = 0;
 
-		//Serialize to and from human-readable text streams
-		virtual void SerializeText( void const* Data, std::ostringstream& Stream ) const = 0;
-		virtual bool DeserializeText( void* Data, std::istringstream& Stream ) const = 0;
+		/** Serialize to and from human-readable text streams */
+		//virtual void SerializeText( void const* Data, std::ostringstream& Stream ) const = 0;
+		//virtual bool DeserializeText( void* Data, std::istringstream& Stream ) const = 0;
 
-		//Serialize to and from a fast binary data stream
-		//These methods should only be used if the reading and writing are done by the same binary version.
-		virtual void SerializeFastBinary( void const* Data, std::ostream& Stream ) const {}
-		virtual void DeserializeFastBinary( void* Data, std::istream& Stream ) const {}
+		/** Serialize to and from a fast binary data stream */
+		//These methods should only be used if the reading and writing are done by the same binary version. A lot of information will be omitted, and many assumptions will be made.
+		//virtual void SerializeFastBinary( void const* Data, std::ostream& Stream ) const = 0;
+		//virtual void DeserializeFastBinary( void* Data, std::istream& Stream ) const = 0;
 	};
 }

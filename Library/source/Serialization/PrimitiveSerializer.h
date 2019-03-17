@@ -26,12 +26,12 @@ namespace Serialization {
 			}
 		}
 
-		virtual void SerializeText( void const* Data, std::ostringstream& Stream ) const override {
-			Stream << *static_cast<T const*>( Data );
-		}
-		virtual bool DeserializeText( void* Data, std::istringstream& Stream ) const override {
-			Stream >> *static_cast<T*>( Data );
-			return true;
-		}
+		// virtual void SerializeText( void const* Data, std::ostringstream& Stream ) const override {
+		// 	Stream << *static_cast<T const*>( Data );
+		// }
+		// virtual bool DeserializeText( void* Data, std::istringstream& Stream ) const override {
+		// 	Stream >> *static_cast<T*>( Data );
+		// 	return true;
+		// }
 	};
 }

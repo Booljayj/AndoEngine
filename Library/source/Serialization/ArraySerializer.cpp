@@ -54,9 +54,6 @@ namespace Serialization {
 		return Stream.good();
 	}
 
-	void ArraySerializer::SerializeText( void const* Data, std::ostringstream& Stream ) const {}
-	bool ArraySerializer::DeserializeText( void* Data, std::istringstream& Stream ) const { return false; }
-
 	bool ArraySerializer::CanReadNextElementHeader( std::istream& Stream, std::streampos const& EndPosition ) const {
 		return CanReadBytesFromStream( sizeof( uint32_t ), Stream, EndPosition );
 	}
