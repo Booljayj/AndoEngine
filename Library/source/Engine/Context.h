@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <thread>
 #include "Engine/LinearAllocator.h"
 #include "Engine/Logger.h"
 
@@ -10,16 +11,15 @@
  * It provides a common place to put data that is often considered static or global. It can also expose
  * extremely common utilities, including logging, assertions, and temporary allocations.
  */
-struct Context
-{
-	Context( uint32_t InThreadID, Logger* InLog, size_t InTempCapacity )
-		: ThreadID( InThreadID )
+struct Context {
+	Context( Logger* InLog, size_t InTempCapacity )
+		: ThreadID( std::this_thread::get_id() )
 		, Log( InLog )
 		, Temp( InTempCapacity )
 	{}
 
-	/** ID of the thread this context is being used on. Each thread should have its own context */
-	uint32_t ThreadID;
+	/** ID of the thread this context is being used on. A context should only be used by a single thread. */
+	std::thread::id ThreadID;
 	/** Logger object used to print output */
 	Logger* Log;
 	/** Buffer used for dynamic allocation of small objects within the thread */

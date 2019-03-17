@@ -119,13 +119,12 @@ void MainLoop( CTX_ARG )
 	}
 }
 
-int main( int argc, const char * argv[] )
-{
+int main( int argc, char const* argv[] ) {
 	StandardLogger MainLogger{};
-	Context CTX{ 0, &MainLogger, 10000 };
+	Context CTX{ &MainLogger, 10000 };
 
 	CTX.Log->Message( TERM_Cyan "Hello, World! This is AndoEngine." );
-	CTX.Log->Message( TERM_Cyan "Compiled with " __VERSION__ " on " __DATE__ "\n" );
+	CTX.Log->Message( TERM_Cyan "Compiled with " __VERSION__ " on " __DATE__ );
 
 	std::cout << "\nGlobal types:" << std::endl;
 	for( Reflection::TypeInfo const* Info : Reflection::TypeInfo::GetGlobalTypeInfoCollection() ) {
