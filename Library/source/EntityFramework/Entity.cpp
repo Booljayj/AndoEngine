@@ -4,6 +4,8 @@
 #include "Engine/Context.h"
 #include "Engine/LinearStrings.h"
 
+DEFINE_LOG_CATEGORY( LogEntity );
+
 Entity::Entity()
 {}
 

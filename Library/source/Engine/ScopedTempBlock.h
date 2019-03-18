@@ -2,15 +2,14 @@
 #include "Engine/Context.h"
 
 //Scope object that sets the context temporary allocator to the provided mark when going out of scope. Should typically be used through the macro that auto-sets the original used level upon creation.
-struct ScopedTempBlock
-{
+struct ScopedTempBlock {
 	ScopedTempBlock( CTX_ARG, char* InStartCursor );
 	~ScopedTempBlock();
 
 	void Reset() const;
 
 private:
-	Context const& CTX_Cached;
+	Context* CTX_Cached;
 	char* StartCursor;
 };
 

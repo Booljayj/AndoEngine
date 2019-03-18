@@ -1,18 +1,21 @@
 #include <GL/glew.h>
 #include "Rendering/SDLSystems.h"
 #include "Engine/Context.h"
-#include "Engine/Logger.h"
+#include "Engine/Logging/LogCategory.h"
+#include "Engine/LogCommands.h"
 #include "Engine/LinearStrings.h"
 #include "UI/IMGUI/imgui.h"
 #include "UI/IMGUI/imgui_impl_sdl.h"
 #include "UI/IMGUI/imgui_impl_opengl3.h"
+
+DEFINE_LOG_CATEGORY_STATIC( LogSDL, Debug );
 
 bool SDLFrameworkSystem::Startup( CTX_ARG )
 {
 	if( SDL_Init( SDL_INIT_VIDEO ) == 0 ) {
 		return true;
 	} else {
-		CTX.Log->Error( l_printf( CTX.Temp, "SDL_Init Error: %i", SDL_GetError() ) );
+		LOGF( LogSDL, Error, "SDL_Init Error: %i", SDL_GetError() );
 		return false;
 	}
 }
@@ -73,17 +76,17 @@ bool SDLWindowSystem::Startup( CTX_ARG )
 				Swap();
 				return true;
 			}
-			CTX.Log->Error( "Failed to initialize GLEW" );
+			LOG( LogSDL, Error, "Failed to initialize GLEW" );
 
 			SDL_GL_DeleteContext( MainContext );
 			MainContext = nullptr;
 		}
-		CTX.Log->Error( "Failed to create OpenGL Context" );
+		LOG( LogSDL, Error, "Failed to create OpenGL Context" );
 
 		SDL_DestroyWindow( MainWindow );
 		MainWindow = nullptr;
 	}
-	CTX.Log->Error( l_printf( CTX.Temp, "SDL_Window Error: %i", SDL_GetError() ) );
+	LOGF( LogSDL, Error, "SDL_Window Error: %i", SDL_GetError() );
 	return false;
 }
 

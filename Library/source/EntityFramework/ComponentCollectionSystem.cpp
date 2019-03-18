@@ -1,6 +1,7 @@
 #include "EntityFramework/ComponentCollectionSystem.h"
 #include <cstring>
 #include "Engine/Context.h"
+#include "Engine/LogCommands.h"
 #include "Engine/LinearContainers.h"
 #include "Engine/LinearStrings.h"
 #include "Engine/ScopedTempBlock.h"
@@ -55,20 +56,20 @@ bool ComponentCollectionSystem::Startup( CTX_ARG, ComponentInfo const* const* In
 
 	auto const DuplicateInfoIter = std::adjacent_find( RegisteredInfos.begin(), RegisteredInfos.end() );
 	if( DuplicateInfoIter != RegisteredInfos.end() ) {
-		CTX.Log->Error( l_printf( CTX.Temp, "ComponentCollection has duplicate info: %p", (void*)*DuplicateInfoIter ) );
+		LOGF( LogComponent, Error, "ComponentCollection has duplicate info: %p", (void*)*DuplicateInfoIter );
 		ComponentsAreUnique = false;
 	}
 
 	auto const DuplicateIDIter = std::adjacent_find( RegisteredTypeIDs.begin(), RegisteredTypeIDs.end() );
 	if( DuplicateIDIter != RegisteredTypeIDs.end() ) {
-		CTX.Log->Error( l_printf( CTX.Temp, "ComponentCollection has duplicate ID: %i", *DuplicateIDIter ) );
+		LOGF( LogComponent, Error, "ComponentCollection has duplicate ID: %i", *DuplicateIDIter );
 		ComponentsAreUnique = false;
 	}
 
 	auto const StrEq = []( char const* A, char const* B ){ return std::strcmp( A, B ) == 0; };
 	auto const DuplicateNameIter = std::adjacent_find( RegisteredNames.begin(), RegisteredNames.end(), StrEq );
 	if( DuplicateNameIter != RegisteredNames.end() ) {
-		CTX.Log->Error( l_printf( CTX.Temp, "ComponentCollection has duplicate name: %s", *DuplicateNameIter ) );
+		LOGF( LogComponent, Error, "ComponentCollection has duplicate name: %s", *DuplicateNameIter );
 		ComponentsAreUnique = false;
 	}
 
@@ -85,7 +86,7 @@ bool ComponentCollectionSystem::Startup( CTX_ARG, ComponentInfo const* const* In
 	bool ManagerStartupWasSuccessful = true;
 	for( ComponentInfo const* Info : RegisteredInfos ) {
 		if( !Info->GetManager()->Startup( CTX ) ) {
-			CTX.Log->Error( l_printf( CTX.Temp, "%s manager startup failed", Info->GetName() ) );
+			LOGF( LogComponent, Error, "%s manager startup failed", Info->GetName() );
 			ManagerStartupWasSuccessful = false;
 		}
 	}
@@ -98,7 +99,7 @@ bool ComponentCollectionSystem::Shutdown( CTX_ARG )
 	bool ManagerShutdownWasSuccessful = true;
 	for( auto const* Info : RegisteredInfos ) {
 		if( !Info->GetManager()->Shutdown( CTX ) ) {
-			CTX.Log->Error( l_printf( CTX.Temp, "%s manager shutdown failed", Info->GetName() ) );
+			LOGF( LogComponent, Error, "%s manager shutdown failed", Info->GetName() );
 			ManagerShutdownWasSuccessful = false;
 		}
 	}
@@ -124,7 +125,7 @@ ComponentInfo const* ComponentCollectionSystem::GetComponentInfo( CTX_ARG, Compo
 		return RegisteredInfos[Index];
 
 	} else {
-		CTX.Log->Warning( l_printf( CTX.Temp, "Unknown component type id %i, cannot find info", TypeID ) );
+		LOGF( LogComponent, Warning, "Unknown component type id %i, cannot find info", TypeID );
 		return nullptr;
 	}
 }
@@ -139,7 +140,7 @@ ComponentInfo const* ComponentCollectionSystem::GetComponentInfo( CTX_ARG, char 
 		return RegisteredInfos[Index];
 
 	} else {
-		CTX.Log->Warning( l_printf( CTX.Temp, "Unknown component name %s, cannot find info", Name ) );
+		LOGF( LogComponent, Warning, "Unknown component name %s, cannot find info", Name );
 		return nullptr;
 	}
 }

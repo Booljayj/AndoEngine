@@ -3,7 +3,7 @@
 #include "Engine/Context.h"
 #include "Engine/LinearContainers.h"
 #include "Engine/LinearStrings.h"
-#include "Engine/Logger.h"
+#include "Engine/LogCommands.h"
 #include "Engine/ScopedTempBlock.h"
 #include "EntityFramework/ComponentInfo.h"
 #include "EntityFramework/Entity.h"
@@ -42,10 +42,11 @@ Entity const* EntityCollectionSystem::Create( CTX_ARG, EntityID const& NewID, Co
 					NewEntity->Add( Info->GetID(), NewComponentPtr );
 
 				} else {
-					CTX.Log->Warning( l_printf( CTX.Temp, "Failed to retain new component of type %i", Info->GetID() ) );
+					LOGF( LogEntity, Warning, "Failed to retain new component of type %i", Info->GetID() );
+					//CTX.Log->Warning( l_printf( CTX.Temp, "Failed to retain new component of type %i", Info->GetID() ) );
 				}
 			} else {
-				CTX.Log->Error( "Attempted to create an entity with a null component" );
+				LOG( LogEntity, Error, "Attempted to create an entity with a null component" );
 			}
 		}
 
@@ -118,7 +119,7 @@ void EntityCollectionSystem::RecycleGarbage( CTX_ARG )
 				Searcher.Get()->GetManager()->Release( ReclaimedComponent.CompPtr );
 
 			} else {
-				CTX.Log->Error( l_printf( CTX.Temp, "Cannot find component type %i, garbage for this component will not be released!", ReclaimedComponent.TypeID ) );
+				LOGF( LogEntity, Error, "Cannot find component type %i, garbage for this component will not be released!", ReclaimedComponent.TypeID );
 				Searcher.Reset();
 			}
 		}
@@ -145,7 +146,7 @@ Entity const* EntityCollectionSystem::Find( EntityID const& ID ) const noexcept
 Entity* EntityCollectionSystem::InsertNew( CTX_ARG, EntityID const& NewID )
 {
 	if( std::find( EntityIDs.begin(), EntityIDs.end(), NewID ) != EntityIDs.end() ) {
-		CTX.Log->Error( l_printf( CTX.Temp, "Cannot create new entity with ID '%i', that ID already exists", NewID ) );
+		LOGF( LogEntity, Error, "Cannot create new entity with ID '%i', that ID already exists", NewID );
 		return nullptr;
 	}
 

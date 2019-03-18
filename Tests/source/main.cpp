@@ -10,6 +10,7 @@
 #include "Engine/TerminalColors.h"
 #include "Engine/Time.h"
 #include "Engine/Context.h"
+#include "Engine/LogCommands.h"
 #include "EntityFramework/ComponentCollectionSystem.h"
 #include "EntityFramework/Entity.h"
 #include "EntityFramework/EntityCollectionSystem.h"
@@ -48,13 +49,13 @@ SDLWindowSystem SDLWindow;
 
 RenderingSystem Rendering;
 
-bool Startup( CTX_ARG )
-{
-	TEMP_SCOPE;
-	CTX.Log->Message( "Starting up all systems..." );
+DEFINE_LOG_CATEGORY_STATIC( LogMain, Debug );
 
-	const std::initializer_list<const ComponentInfo*> Components =
-	{
+bool Startup( CTX_ARG ) {
+	TEMP_SCOPE;
+	LOG( LogMain, Message, "Starting up all systems..." );
+
+	const std::initializer_list<const ComponentInfo*> Components = {
 		&Transform,
 		&Hierarchy,
 		&Mesh,
@@ -63,30 +64,28 @@ bool Startup( CTX_ARG )
 		&Program,
 	};
 
-	STARTUP_SYSTEM( ComponentCollection, Components.begin(), Components.size() );
-	STARTUP_SYSTEM( EntityCollection, &ComponentCollection, 100 );
-	STARTUP_SYSTEM( SDLFramework );
-	STARTUP_SYSTEM( SDLEvent );
-	STARTUP_SYSTEM( SDLWindow );
-	STARTUP_SYSTEM( Rendering, &EntityCollection, &Transform, &MeshRenderer );
+	STARTUP_SYSTEM( LogMain, ComponentCollection, Components.begin(), Components.size() );
+	STARTUP_SYSTEM( LogMain, EntityCollection, &ComponentCollection, 100 );
+	STARTUP_SYSTEM( LogMain, SDLFramework );
+	STARTUP_SYSTEM( LogMain, SDLEvent );
+	STARTUP_SYSTEM( LogMain, SDLWindow );
+	STARTUP_SYSTEM( LogMain, Rendering, &EntityCollection, &Transform, &MeshRenderer );
 	return true;
 }
 
-void Shutdown( CTX_ARG )
-{
+void Shutdown( CTX_ARG ) {
 	TEMP_SCOPE;
-	CTX.Log->Message( "Shutting down all systems..." );
+	LOG( LogMain, Message, "Shutting down all systems..." );
 
-	SHUTDOWN_SYSTEM( Rendering );
-	SHUTDOWN_SYSTEM( SDLWindow );
-	SHUTDOWN_SYSTEM( SDLEvent );
-	SHUTDOWN_SYSTEM( SDLFramework );
-	SHUTDOWN_SYSTEM( EntityCollection );
-	SHUTDOWN_SYSTEM( ComponentCollection );
+	SHUTDOWN_SYSTEM( LogMain, Rendering );
+	SHUTDOWN_SYSTEM( LogMain, SDLWindow );
+	SHUTDOWN_SYSTEM( LogMain, SDLEvent );
+	SHUTDOWN_SYSTEM( LogMain, SDLFramework );
+	SHUTDOWN_SYSTEM( LogMain, EntityCollection );
+	SHUTDOWN_SYSTEM( LogMain, ComponentCollection );
 }
 
-void MainLoop( CTX_ARG )
-{
+void MainLoop( CTX_ARG ) {
 	TimeController_FixedUpdateVariableRendering TimeController{ 60.0f, 10.0f };
 
 	bool bShutdownRequested = false;
@@ -107,8 +106,7 @@ void MainLoop( CTX_ARG )
 			TimeController.FinishUpdateFrame();
 		}
 
-		if( !bShutdownRequested )
-		{
+		if( !bShutdownRequested ) {
 			const float InterpolationAlpha = TimeController.FrameInterpolationAlpha();
 			CTX.Temp.Reset();
 
@@ -120,11 +118,11 @@ void MainLoop( CTX_ARG )
 }
 
 int main( int argc, char const* argv[] ) {
-	StandardLogger MainLogger{};
-	Context CTX{ &MainLogger, 10000 };
+	Context CTX{ 10000 };
+	CTX.Log.AddModule( std::make_shared<StandardOutputLoggerModule>() );
 
-	CTX.Log->Message( TERM_Cyan "Hello, World! This is AndoEngine." );
-	CTX.Log->Message( TERM_Cyan "Compiled with " __VERSION__ " on " __DATE__ );
+	LOG( LogMain, Message, TERM_Cyan "Hello, World! This is AndoEngine." );
+	LOG( LogMain, Message, TERM_Cyan "Compiled with " __VERSION__ " on " __DATE__ );
 
 	std::cout << "\nGlobal types:" << std::endl;
 	for( Reflection::TypeInfo const* Info : Reflection::TypeInfo::GetGlobalTypeInfoCollection() ) {
@@ -161,9 +159,8 @@ int main( int argc, char const* argv[] ) {
 	std::cout << std::hex << Reflection::TypeResolver<std::list<std::array<RecursiveType, 5>>>::GetID() << std::endl;
 
 	return 0;
-	if( Startup( CTX ) )
-	{
-		CTX.Log->Message( "Creating entities" );
+	if( Startup( CTX ) ) {
+		LOG( LogMain, Message, "Creating entities" );
 		EntityID EntA = 3;
 		EntityID VertexShaderID = 40;
 		EntityID FragmentShaderID = 45;
@@ -179,8 +176,7 @@ int main( int argc, char const* argv[] ) {
 		Entity const* MeshEntity = EntityCollection.Create( CTX, MeshID, { &Transform, &Mesh, &MeshRenderer } );
 
 		MeshComponent* TestMesh = MeshEntity->Get( Mesh );
-		TestMesh->Vertices =
-		{
+		TestMesh->Vertices = {
 			GL::VertexData{ -1, -1, 0 },
 			GL::VertexData{ 1, -1, 0 },
 			GL::VertexData{ 0, 1, 0 },
@@ -214,11 +210,9 @@ int main( int argc, char const* argv[] ) {
 
 	Shutdown( CTX );
 
-	CTX.Log->Message(
-		l_printf(
-			CTX.Temp, "[TempBuffer]{ Current: %i/%i, Peak: %i/%i }",
-			CTX.Temp.GetUsed(), CTX.Temp.GetCapacity(), CTX.Temp.GetPeakUsage(), CTX.Temp.GetCapacity()
-		)
+	LOGF(
+		LogMain, Message, "[TempBuffer]{ Current: %i/%i, Peak: %i/%i }",
+		CTX.Temp.GetUsed(), CTX.Temp.GetCapacity(), CTX.Temp.GetPeakUsage(), CTX.Temp.GetCapacity()
 	);
 
 	return 0;

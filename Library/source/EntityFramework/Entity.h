@@ -1,10 +1,13 @@
 #pragma once
 #include <vector>
 #include <tuple>
+#include "Engine/Logging/LogCategory.h"
 #include "Engine/LinearContainers.h"
 #include "EntityFramework/Types.h"
 #include "EntityFramework/ComponentInfo.h"
 #include "EntityFramework/ComponentManager.h"
+
+DECLARE_LOG_CATEGORY( LogEntity, Debug );
 
 struct EntityOwnedComponent
 {

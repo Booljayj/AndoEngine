@@ -1,7 +1,10 @@
 #pragma once
 #include <iostream>
+#include "Engine/Logging/LogCategory.h"
 #include "EntityFramework/Types.h"
 #include "EntityFramework/ComponentManager.h"
+
+DECLARE_LOG_CATEGORY( LogComponent, Debug );
 
 #define CREATE_COMPONENT( __ID__, __NAME__, __TYPE__, __MAN_INIT__ )\
 auto __NAME__##Manager = __MAN_INIT__;\
