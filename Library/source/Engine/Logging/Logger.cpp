@@ -31,30 +31,3 @@ void Logger::RemoveModule( std::shared_ptr<LoggerModule> const& Module ) {
 		Modules.pop_back();
 	}
 }
-
-void StandardOutputLoggerModule::InternalProcessMessage( LogOutputData const& OutputData ) {
-	switch( OutputData.Verbosity ) {
-		case ELogVerbosity::Debug:
-		TerminalOutput( TERM_Cyan, "", OutputData );
-		break;
-
-		case ELogVerbosity::Message:
-		TerminalOutput( TERM_NoColor, "", OutputData );
-		break;
-
-		case ELogVerbosity::Warning:
-		TerminalOutput( TERM_Yellow, "[W] ", OutputData );
-		break;
-
-		case ELogVerbosity::Error:
-		TerminalOutput( TERM_Red, "[E] ", OutputData );
-		break;
-
-		default:
-		break;
-	}
-}
-
-void StandardOutputLoggerModule::TerminalOutput( char const* ColorCode, char const* Prefix, LogOutputData const& OutputData  ) {
-	std::cout << ColorCode << OutputData.Category->GetName() << ": " << Prefix << OutputData.Message << TERM_NoColor << std::endl;
-}

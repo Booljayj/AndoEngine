@@ -37,10 +37,3 @@ struct Logger {
 	void AddModule( std::shared_ptr<LoggerModule> const& Module );
 	void RemoveModule( std::shared_ptr<LoggerModule> const& Module );
 };
-
-/** A logger module which prints to std::out */
-struct StandardOutputLoggerModule : public LoggerModule {
-protected:
-	virtual void InternalProcessMessage( LogOutputData const& OutputData ) override;
-	void TerminalOutput( char const* ColorCode, char const* Prefix, LogOutputData const& OutputData );
-};
