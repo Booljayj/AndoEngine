@@ -1,5 +1,6 @@
 */gen/
 */documentation/
+.vscode/ipch
 
 # Build files
 */obj/
