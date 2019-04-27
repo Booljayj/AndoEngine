@@ -10,18 +10,18 @@
 
 /** Defines operators to work with a scoped enum that should act like a set of bitflags */
 #define DEFINE_BITFLAG_OPERATORS( __ENUM__ )\
-constexpr __ENUM__ operator|( __ENUM__ A, __ENUM__ B ) {\
+constexpr inline __ENUM__ operator|( __ENUM__ A, __ENUM__ B ) {\
 	return static_cast<__ENUM__>( static_cast<std::underlying_type<__ENUM__>::type>(A) | static_cast<std::underlying_type<__ENUM__>::type>(B) );\
 }\
-constexpr __ENUM__ operator&( __ENUM__ A, __ENUM__ B ) {\
+constexpr inline __ENUM__ operator&( __ENUM__ A, __ENUM__ B ) {\
 	return static_cast<__ENUM__>( static_cast<std::underlying_type<__ENUM__>::type>(A) & static_cast<std::underlying_type<__ENUM__>::type>(B) );\
 }\
-constexpr __ENUM__ operator^( __ENUM__ A, __ENUM__ B ) {\
+constexpr inline __ENUM__ operator^( __ENUM__ A, __ENUM__ B ) {\
 	return static_cast<__ENUM__>( static_cast<std::underlying_type<__ENUM__>::type>(A) ^ static_cast<std::underlying_type<__ENUM__>::type>(B) );\
 }\
-constexpr __ENUM__& operator|=( __ENUM__& A, __ENUM__ B ) { A = A | B; return A; }\
-constexpr __ENUM__& operator&=( __ENUM__& A, __ENUM__ B ) { A = A & B; return A; }\
-constexpr __ENUM__& operator^=( __ENUM__& A, __ENUM__ B ) { A = A ^ B; return A; }\
-constexpr bool operator<( __ENUM__ A, __ENUM__ B ) {\
-	return !!( static_cast<std::underlying_type<__ENUM__>::type>(A) & static_cast<std::underlying_type<__ENUM__>::type>(B) );\
+constexpr inline __ENUM__& operator|=( __ENUM__& A, __ENUM__ B ) { A = A | B; return A; }\
+constexpr inline __ENUM__& operator&=( __ENUM__& A, __ENUM__ B ) { A = A & B; return A; }\
+constexpr inline __ENUM__& operator^=( __ENUM__& A, __ENUM__ B ) { A = A ^ B; return A; }\
+constexpr inline bool operator<( __ENUM__ A, __ENUM__ B ) {\
+	return bool( static_cast<std::underlying_type<__ENUM__>::type>(A) & static_cast<std::underlying_type<__ENUM__>::type>(B) );\
 }\
