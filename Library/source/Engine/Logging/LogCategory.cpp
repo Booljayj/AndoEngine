@@ -1,3 +1,3 @@
 #include "Engine/Logging/LogCategory.h"
 
-DEFINE_LOG_CATEGORY( LogTemp );
+DEFINE_LOG_CATEGORY( LogTemp, Debug );

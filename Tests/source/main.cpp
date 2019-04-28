@@ -1,7 +1,6 @@
 #include <iostream>
 #include <string_view>
 #include <GL/glew.h>
-#include "Engine/StringID.h"
 #include "Engine/BasicComponents.h"
 #include "Engine/LinearAllocator.h"
 #include "Engine/LinearContainers.h"
@@ -50,7 +49,7 @@ SDLWindowSystem SDLWindow;
 
 RenderingSystem Rendering;
 
-DEFINE_LOG_CATEGORY_STATIC( LogMain, Debug );
+DEFINE_LOG_CATEGORY( LogMain, Debug );
 
 bool Startup( CTX_ARG ) {
 	TEMP_SCOPE;
@@ -150,14 +149,6 @@ int main( int argc, char const* argv[] ) {
 
 	Reflection::TypeInfo const* B = Reflection::TypeResolver<std::unique_ptr<size_t>>::Get();
 	Reflection::DebugPrint( B, std::cout );
-
-	std::cout << "ID of std::map<size_t,std::vector<std::array<char,3>>>: " << std::endl;
-	std::cout << "        " << Reflection::TypeResolver<std::map<size_t,std::vector<std::array<char,3>>>>::GetID() << std::endl;
-
-	std::cout << "ID of std::string should be: 35c5c55b" << std::endl;
-	std::cout << "ID of void should be: 7c9faa57" << std::endl;
-	std::cout << "ID of std::list<std::array<RecursiveType,5>> should be: b5e4752d" << std::endl;
-	std::cout << std::hex << Reflection::TypeResolver<std::list<std::array<RecursiveType, 5>>>::GetID() << std::endl;
 
 	return 0;
 	if( Startup( CTX ) ) {

@@ -9,7 +9,7 @@ void LoggerModule::ProcessMessage( LogOutputData const& OutputData ) {
 }
 
 void Logger::Output( std::string_view Location, LogCategory const& Category, ELogVerbosity Verbosity, std::string_view Message ) const {
-	if( Verbosity >= Category.ShownVerbosity() ) {
+	if( Verbosity >= Category.GetShownVerbosity() ) {
 		LogOutputData OutputData{ Location, &Category, Verbosity, Message };
 		for( std::shared_ptr<LoggerModule> const& Module : Modules ) {
 			Module->ProcessMessage( OutputData );
