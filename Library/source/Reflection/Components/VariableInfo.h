@@ -2,7 +2,7 @@
 #include <cstdint>
 #include <string>
 #include <type_traits>
-#include "Engine/StringID.h"
+#include "Engine/Hash.h"
 #include "Reflection/TypeResolver.h"
 
 namespace Reflection {
@@ -16,13 +16,10 @@ namespace Reflection {
 
 	/** Info that describes a variable value */
 	struct VariableInfo {
-		/** Type used to store name hashes. Smaller than the normal string hash because this value is used in serialization and is more compact */
-		using HASH_T = uint16_t;
-
 		VariableInfo() = delete;
 		VariableInfo( const char* InName, TypeInfo const* InType, const char* InDescription, FVariableFlags InFlags )
 		: Name( InName )
-		, NameHash( static_cast<HASH_T>( id( InName ) ) )
+		, NameHash( InName )
 		, Type( InType )
 		, Description( InDescription )
 		, Flags( InFlags )
@@ -30,7 +27,7 @@ namespace Reflection {
 		virtual ~VariableInfo() {};
 
 		std::string Name;
-		HASH_T NameHash = 0;
+		Hash32 NameHash = Hash32{};
 		TypeInfo const* Type = nullptr;
 
 		std::string Description;

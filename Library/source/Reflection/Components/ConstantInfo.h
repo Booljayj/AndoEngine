@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <string>
-#include "Engine/StringID.h"
+#include "Engine/Hash.h"
 #include "Reflection/TypeResolver.h"
 
 namespace Reflection {
@@ -14,13 +14,10 @@ namespace Reflection {
 
 	/** Info that describes a constant value */
 	struct ConstantInfo {
-		/** Type used to store name hashes */
-		using HASH_T = sid_t;
-
 		ConstantInfo() = delete;
 		ConstantInfo( const char* InName, TypeInfo const* InType, const char* InDescription, FConstantFlags InFlags )
 		: Name( InName )
-		, NameHash( id( InName ) )
+		, NameHash( InName )
 		, Type( InType )
 		, Description( InDescription )
 		, Flags( InFlags )
@@ -28,7 +25,7 @@ namespace Reflection {
 		virtual ~ConstantInfo() {};
 
 		std::string Name;
-		HASH_T NameHash = 0;
+		Hash32 NameHash = Hash32{};
 		TypeInfo const* Type = nullptr;
 
 		std::string Description;

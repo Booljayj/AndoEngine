@@ -1,8 +1,8 @@
 #pragma once
+#include <tuple>
 #include "Engine/TupleUtility.h"
 #include "Reflection/TypeInfo.h"
 #include "Reflection/TypeResolver.h"
-#include <tuple>
 
 namespace Reflection {
 	struct TupleTypeInfo : public TypeInfo {
@@ -13,7 +13,7 @@ namespace Reflection {
 
 		TupleTypeInfo() = delete;
 		TupleTypeInfo(
-			sid_t InUniqueID, CompilerDefinition InDefinition,
+			Hash128 InUniqueID, CompilerDefinition InDefinition,
 			char const* InDescription, Serialization::ISerializer* InSerializer,
 			size_t InSize
 		);

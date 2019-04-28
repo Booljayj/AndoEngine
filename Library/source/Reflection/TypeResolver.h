@@ -1,13 +1,33 @@
 #pragma once
 #include <string_view>
-#include "Engine/StringID.h"
+#include "Engine/Hash.h"
 #include "Reflection/TypeInfo.h"
 
 namespace Reflection {
-	/** Global reflection accessor type, specialized for types which are known to the reflection system */
-	template<typename TTYPE>
-	struct TypeResolver {
-		//static TypeInfo const* Get() { return nullptr; }
-		//static constexpr sid_t GetID() { return 0; }
-	};
+	//The following setup ensures that specializations of TypeResolver are required to implement the concept of a TypeResolver
+	// struct, and that this concept is global. If actual concepts are added to the standard, this can be greatly simplified
+	// and just use that.
+
+	namespace Internal {
+		//Struct which provides the TypeResolver implementation for a particular type. Must be specialized for all resolvable types
+		template<typename TTYPE>
+		struct TypeResolver_Implementation {
+			//static TypeInfo const* Get() { return nullptr; }
+			//static constexpr Hash128 GetID() { return Hash128{}; }
+		};
+
+		//Template which holds the concept of a TypeResolver and passes through to the implementation. This should not be specialized,
+		//though the standard lacks any way to stop that from happening.
+		template<typename TTYPE>
+		struct TypeResolver_Concept {
+			static inline TypeInfo const* Get() { return TypeResolver_Implementation<TTYPE>::Get(); }
+			static inline constexpr Hash128 GetID() { return TypeResolver_Implementation<TTYPE>::GetID(); }
+		};
+	}
+
+	//The primary TypeResolver template used externally. The using statement ensures that this cannot be specialized, and always
+	// uses the correct concept and implementation structure.
+
+	/** Global reflection accessor type */
+	template<typename TTYPE> using TypeResolver = Internal::TypeResolver_Concept<TTYPE>;
 }

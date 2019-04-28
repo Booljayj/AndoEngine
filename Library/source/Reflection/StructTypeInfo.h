@@ -3,6 +3,7 @@
 #include <string_view>
 #include <vector>
 #include <type_traits>
+#include "Engine/Hash.h"
 #include "Reflection/TypeInfo.h"
 #include "Reflection/Components/ConstantInfo.h"
 #include "Reflection/Components/VariableInfo.h"
@@ -15,10 +16,12 @@ static Reflection::TStructTypeInfo<__TYPE__> const _TypeInfo
 /** Expose a struct to the reflection system. Must be expanded after the type is declared and includes the REFELCTION_MEMBERS macro */
 #define REFLECT( __TYPE__ )\
 namespace Reflection {\
-	template<> struct TypeResolver<__TYPE__> {\
-		static TypeInfo const* Get() { return &__TYPE__::_TypeInfo; }\
-		static constexpr sid_t GetID() { return id( #__TYPE__ ); }\
-	};\
+	namespace Internal {\
+		template<> struct TypeResolver_Implementation<__TYPE__> {\
+			static TypeInfo const* Get() { return &__TYPE__::_TypeInfo; }\
+			static constexpr Hash128 GetID() { return Hash128{ #__TYPE__ }; }\
+		};\
+	}\
 }
 
 namespace Reflection {
@@ -42,10 +45,9 @@ namespace Reflection {
 
 		inline size_t Size() const { return InternalView.size(); }
 
-		T const* Find( sid_t NameHash ) const {
-			typename T::HASH_T ModifiedNameHash = static_cast<typename T::HASH_T>( NameHash );
+		T const* Find( Hash32 NameHash ) const {
 			//@todo If we have a way to ensure that the field array is sorted, we can use a binary search here for better speed.
-			const auto Iter = std::find_if( InternalView.begin(), InternalView.end(), [=]( T const* Info ) { return Info->NameHash == ModifiedNameHash; } );
+			const auto Iter = std::find_if( InternalView.begin(), InternalView.end(), [=]( T const* Info ) { return Info->NameHash == NameHash; } );
 			if( Iter != InternalView.end() ) {
 				return *Iter;
 			} else {
@@ -75,7 +77,7 @@ namespace Reflection {
 
 		StructTypeInfo() = delete;
 		StructTypeInfo(
-			sid_t InUniqueID, CompilerDefinition InDefinition,
+			Hash128 InUniqueID, CompilerDefinition InDefinition,
 			char const* InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
 			StructTypeInfo const* InBaseType, void const* InDefault,
 			Fields InStatic, Fields InMember

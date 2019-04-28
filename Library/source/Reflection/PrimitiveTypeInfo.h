@@ -22,7 +22,7 @@ namespace Reflection {
 	template<> struct TPrimitiveTypeInfo<void> : public TypeInfo {
 		TPrimitiveTypeInfo()
 		: TypeInfo(
-			TypeInfo::CLASSIFICATION, 0, GetCompilerDefinition<void>(),
+			TypeInfo::CLASSIFICATION, Hash128{}, GetCompilerDefinition<void>(),
 			"not a type", FTypeFlags::None, nullptr )
 		{}
 

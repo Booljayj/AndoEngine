@@ -4,7 +4,7 @@
 
 namespace Reflection {
 	StructTypeInfo::StructTypeInfo(
-		sid_t InUniqueID, CompilerDefinition InDefinition,
+		Hash128 InUniqueID, CompilerDefinition InDefinition,
 		char const* InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
 		StructTypeInfo const* InBaseType, void const* InDefault,
 		Fields InStatic, Fields InMember

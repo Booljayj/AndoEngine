@@ -12,7 +12,7 @@ namespace Reflection {
 
 		SetTypeInfo() = delete;
 		SetTypeInfo(
-			sid_t InUniqueID, CompilerDefinition InDefinition,
+			Hash128 InUniqueID, CompilerDefinition InDefinition,
 			char const* InDescription, Serialization::ISerializer* InSerializer,
 			TypeInfo const* InValueType
 		);

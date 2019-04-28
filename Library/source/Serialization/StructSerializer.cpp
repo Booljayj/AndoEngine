@@ -65,7 +65,7 @@ namespace Serialization {
 	}
 
 	void StructSerializer::WriteVariableIdentifier( Reflection::VariableInfo const* VariableInfo, std::ostream& Stream ) const {
-		WriteLE( &(VariableInfo->NameHash), Stream );
+		WriteLE( &(VariableInfo->NameHash.Hash), Stream );
 	}
 
 	void StructSerializer::WriteVariableStream( std::istream& VariableStream, std::ostream& Stream ) const {
@@ -73,17 +73,17 @@ namespace Serialization {
 	}
 
 	bool StructSerializer::CanReadNextVariableHeader( std::istream& Stream, std::streampos const& EndPosition ) const {
-		return CanReadBytesFromStream( sizeof( Reflection::VariableInfo::HASH_T ) + sizeof( DataBlock::BLOCK_SIZE_T ), Stream, EndPosition );
+		return CanReadBytesFromStream( sizeof( Hash32 ) + sizeof( DataBlock::BLOCK_SIZE_T ), Stream, EndPosition );
 	}
 
 	Reflection::VariableInfo const* StructSerializer::ReadVariableIdentifier( std::istream& Stream ) const {
-		Reflection::VariableInfo::HASH_T NameHash = 0;
-		ReadLE( &NameHash, Stream );
+		uint32_t NameHashValue = 0;
+		ReadLE( &NameHashValue, Stream );
 
 		//Walk up the chain of base classes, searching for a variable with the correct name hash.
 		Reflection::StructTypeInfo const* CurrentType = Type;
 		while( CurrentType ) {
-			if( Reflection::VariableInfo const* FoundInfo = CurrentType->Member.Variables.Find( NameHash ) ) {
+			if( Reflection::VariableInfo const* FoundInfo = CurrentType->Member.Variables.Find( Hash32{ NameHashValue } ) ) {
 				return FoundInfo;
 			}
 			CurrentType = CurrentType->BaseType;

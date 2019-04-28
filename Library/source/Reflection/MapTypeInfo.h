@@ -16,7 +16,7 @@ namespace Reflection {
 
 		MapTypeInfo() = delete;
 		MapTypeInfo(
-			sid_t InUniqueID, CompilerDefinition InDefinition,
+			Hash128 InUniqueID, CompilerDefinition InDefinition,
 			char const* InDescription, Serialization::ISerializer* InSerializer,
 			TypeInfo const* InKeyType, TypeInfo const* InValueType
 		);

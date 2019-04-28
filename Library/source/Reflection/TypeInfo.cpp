@@ -1,8 +1,5 @@
-#include <iomanip>
+#include <deque>
 #include "Reflection/TypeInfo.h"
-#include "Reflection/TypeUtility.h"
-#include "Reflection/StructTypeInfo.h"
-#include "Engine/StringID.h"
 
 namespace Reflection {
 	//Non-public static accessor that can be used by the TypeInfo constructor
@@ -15,7 +12,7 @@ namespace Reflection {
 		return GetMutableGlobalTypeInfoCollection();
 	}
 
-	TypeInfo const* TypeInfo::FindTypeByID( sid_t UniqueID ) {
+	TypeInfo const* TypeInfo::FindTypeByID( Hash128 UniqueID ) {
 		for( TypeInfo const* Info : GetGlobalTypeInfoCollection() ) {
 			if( Info && Info->UniqueID == UniqueID ) {
 				return Info;
@@ -25,7 +22,7 @@ namespace Reflection {
 	}
 
 	TypeInfo::TypeInfo(
-		ETypeClassification InClassification, sid_t InUniqueID, CompilerDefinition InDefinition,
+		ETypeClassification InClassification, Hash128 InUniqueID, CompilerDefinition InDefinition,
 		char const* InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer
 	)
 	: Classification( InClassification ), UniqueID( InUniqueID ), Definition( InDefinition )

@@ -4,7 +4,7 @@
 #include <string_view>
 #include <deque>
 #include <ostream>
-#include "Engine/StringID.h"
+#include "Engine/Hash.h"
 #include "Serialization/Serializer.h"
 #include "Reflection/CompilerDefinition.h"
 
@@ -40,7 +40,7 @@ namespace Reflection
 		/** The classification of this TypeInfo, defining what kinds of type information it contains */
 		ETypeClassification Classification = ETypeClassification::Primitive;
 		/** The identifier for this type. Always unique and stable. */
-		sid_t UniqueID = 0;
+		Hash128 UniqueID = Hash128{};
 		/** Definitions for this type created by the compiler */
 		CompilerDefinition Definition;
 
@@ -57,11 +57,11 @@ namespace Reflection
 		static std::deque<TypeInfo const*> const& GetGlobalTypeInfoCollection();
 
 		/** Find a TypeInfo object using its unique ID */
-		static TypeInfo const* FindTypeByID( sid_t UniqueID );
+		static TypeInfo const* FindTypeByID( Hash128 UniqueID );
 
 		TypeInfo() = delete;
 		TypeInfo(
-			ETypeClassification InClassification, sid_t InUniqueID, CompilerDefinition InDefinition,
+			ETypeClassification InClassification, Hash128 InUniqueID, CompilerDefinition InDefinition,
 			char const* InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer
 		);
 		virtual ~TypeInfo() {}

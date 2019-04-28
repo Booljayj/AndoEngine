@@ -30,7 +30,7 @@ namespace Reflection {
 
 		//Print the unique ID of this type in hexadecimal
 		std::ios_base::fmtflags f( Stream.flags() );
-		Stream << std::hex << std::right << std::setw( sizeof( Info->UniqueID ) * 2 ) << std::setfill( '0' ) << Info->UniqueID;
+		Stream << std::hex << std::right << std::setw( sizeof( Info->UniqueID.Low ) ) << std::setfill( '0' ) << Info->UniqueID.Low << "-" << Info->UniqueID.High;
 		Stream.flags( f );
 
 		//Print the kind of TypeInfo this is.

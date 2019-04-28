@@ -2,7 +2,7 @@
 
 namespace Reflection {
 	TupleTypeInfo::TupleTypeInfo(
-		sid_t InUniqueID, CompilerDefinition InDefinition,
+		Hash128 InUniqueID, CompilerDefinition InDefinition,
 		char const* InDescription, Serialization::ISerializer* InSerializer,
 		size_t InSize
 	)

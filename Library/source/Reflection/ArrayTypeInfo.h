@@ -16,7 +16,7 @@ namespace Reflection {
 
 		ArrayTypeInfo() = delete;
 		ArrayTypeInfo(
-			sid_t InUniqueID, CompilerDefinition InDefinition,
+			Hash128 InUniqueID, CompilerDefinition InDefinition,
 			char const* InDescription, Serialization::ISerializer* InSerializer,
 			bool InIsFixedSize, TypeInfo const* InElementType
 		);
