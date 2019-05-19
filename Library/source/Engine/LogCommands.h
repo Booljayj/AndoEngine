@@ -35,8 +35,9 @@ namespace LoggingInternal {
 	LogFormattedHelper( CTX_ARG, char const* Location, LogCategory const& Category, char const* Message, TARGS&&... Args ) { /** no-op, removed by compiler */ }
 }
 
-#define STRINGIFY( _X_ ) #_X_
-#define LOCATION (__FILE__ ":" STRINGIFY(__LINE__))
+#define S1( _X_ ) #_X_
+#define S2( _X_ ) S1(_X_)
+#define LOCATION (__FILE__ ":" S2(__LINE__))
 
 /** Log a message to the current context's logger */
 #define LOG( _CAT_, _VERBOSITY_, _MESSAGE_ ) LoggingInternal::LogHelper<ELogVerbosity::_VERBOSITY_>( CTX, LOCATION, _CAT_, _MESSAGE_ )
