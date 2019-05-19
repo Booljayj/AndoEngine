@@ -2,7 +2,7 @@
 #include <atomic>
 #include "Engine/Logging/LogVerbosity.h"
 
-/** A category used to group log output that is related. Output always blongs to a single category */
+/** A category used to group log output that is related. Output always belongs to a single category */
 struct LogCategory {
 private:
 	char const* Name;
@@ -21,9 +21,9 @@ public:
 };
 
 #define DECLARE_LOG_CATEGORY( _NAME_ )\
-extern LogCategory _NAME_
+extern LogCategory Log ## _NAME_
 
 #define DEFINE_LOG_CATEGORY( _NAME_, _INITIAL_VERBOSITY_ )\
-LogCategory _NAME_{ #_NAME_, ELogVerbosity::_INITIAL_VERBOSITY_ }
+LogCategory Log ## _NAME_{ "[" #_NAME_ "]", ELogVerbosity::_INITIAL_VERBOSITY_ }
 
-DECLARE_LOG_CATEGORY( LogTemp );
+DECLARE_LOG_CATEGORY( Temp );

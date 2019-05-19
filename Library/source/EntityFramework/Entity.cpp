@@ -4,7 +4,7 @@
 #include "Engine/Context.h"
 #include "Engine/LinearStrings.h"
 
-DEFINE_LOG_CATEGORY( LogEntity, Debug );
+DEFINE_LOG_CATEGORY( Entity, Debug );
 
 Entity::Entity()
 {}

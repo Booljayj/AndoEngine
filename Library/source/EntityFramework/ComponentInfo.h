@@ -4,7 +4,7 @@
 #include "EntityFramework/Types.h"
 #include "EntityFramework/ComponentManager.h"
 
-DECLARE_LOG_CATEGORY( LogComponent );
+DECLARE_LOG_CATEGORY( Component );
 
 #define CREATE_COMPONENT( __ID__, __NAME__, __TYPE__, __MAN_INIT__ )\
 auto __NAME__##Manager = __MAN_INIT__;\

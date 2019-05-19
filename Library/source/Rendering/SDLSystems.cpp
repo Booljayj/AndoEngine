@@ -8,7 +8,7 @@
 #include "UI/IMGUI/imgui_impl_sdl.h"
 #include "UI/IMGUI/imgui_impl_opengl3.h"
 
-DEFINE_LOG_CATEGORY( LogSDL, Debug );
+DEFINE_LOG_CATEGORY( SDL, Debug );
 
 bool SDLFrameworkSystem::Startup( CTX_ARG )
 {

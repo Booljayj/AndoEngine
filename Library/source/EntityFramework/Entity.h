@@ -7,7 +7,7 @@
 #include "EntityFramework/ComponentInfo.h"
 #include "EntityFramework/ComponentManager.h"
 
-DECLARE_LOG_CATEGORY( LogEntity );
+DECLARE_LOG_CATEGORY( Entity );
 
 struct EntityOwnedComponent
 {
