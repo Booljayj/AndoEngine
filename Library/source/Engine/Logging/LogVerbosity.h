@@ -4,7 +4,7 @@
 /** The verbosity levels for log output */
 enum class ELogVerbosity : uint8_t {
 	Debug,
-	Message,
+	Info,
 	Warning,
 	Error,
 

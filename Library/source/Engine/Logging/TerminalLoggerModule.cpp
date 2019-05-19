@@ -1,23 +1,24 @@
 #include <iostream>
 #include "Engine/Logging/TerminalLoggerModule.h"
+#include "Engine/Logging/LoggerUtility.h"
 #include "Engine/TerminalColors.h"
 
 void TerminalLoggerModule::InternalProcessMessage( LogOutputData const& OutputData ) {
 	switch( OutputData.Verbosity ) {
 		case ELogVerbosity::Debug:
-		std::cout << TERM_Cyan << OutputData.Category->GetName() << ": " << OutputData.Message << TERM_NoColor << std::endl;
+		std::cout << LoggerUtility::GetTerminalColor(ELogVerbosity::Debug) << OutputData << TERM_NoColor << std::endl;
 		break;
 
-		case ELogVerbosity::Message:
-		std::cout << TERM_NoColor << OutputData.Category->GetName() << ": " << OutputData.Message << std::endl;
+		case ELogVerbosity::Info:
+		std::cout << LoggerUtility::GetTerminalColor(ELogVerbosity::Info) << OutputData << std::endl;
 		break;
 
 		case ELogVerbosity::Warning:
-		std::cerr << TERM_Yellow << OutputData.Category->GetName() << ": [W] " << OutputData.Message << TERM_NoColor << std::endl;
+		std::cerr << LoggerUtility::GetTerminalColor(ELogVerbosity::Warning) << OutputData << TERM_NoColor << std::endl;
 		break;
 
 		case ELogVerbosity::Error:
-		std::cerr << TERM_Red << OutputData.Category->GetName() << ": [E] " << OutputData.Message << TERM_NoColor << std::endl;
+		std::cerr << LoggerUtility::GetTerminalColor(ELogVerbosity::Error) << OutputData << TERM_NoColor << std::endl;
 		break;
 
 		default:

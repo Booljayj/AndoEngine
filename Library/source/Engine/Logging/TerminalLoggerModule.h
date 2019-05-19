@@ -1,3 +1,4 @@
+#include <mutex>
 #include "Engine/Logging/Logger.h"
 
 /** A logger module which prints to a stream with terminal formatting */

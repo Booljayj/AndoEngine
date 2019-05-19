@@ -49,11 +49,11 @@ SDLWindowSystem SDLWindow;
 
 RenderingSystem Rendering;
 
-DEFINE_LOG_CATEGORY( LogMain, Debug );
+DEFINE_LOG_CATEGORY( Main, Debug );
 
 bool Startup( CTX_ARG ) {
 	TEMP_SCOPE;
-	LOG( LogMain, Message, "Starting up all systems..." );
+	LOG( LogMain, Info, "Starting up all systems..." );
 
 	const std::initializer_list<const ComponentInfo*> Components = {
 		&Transform,
@@ -75,7 +75,7 @@ bool Startup( CTX_ARG ) {
 
 void Shutdown( CTX_ARG ) {
 	TEMP_SCOPE;
-	LOG( LogMain, Message, "Shutting down all systems..." );
+	LOG( LogMain, Info, "Shutting down all systems..." );
 
 	SHUTDOWN_SYSTEM( LogMain, Rendering );
 	SHUTDOWN_SYSTEM( LogMain, SDLWindow );
@@ -121,38 +121,12 @@ int main( int argc, char const* argv[] ) {
 	Context CTX{ 10000 };
 	CTX.Log.AddModule( std::make_shared<TerminalLoggerModule>() );
 
-	LOG( LogMain, Message, TERM_Cyan "Hello, World! This is AndoEngine." );
-	LOG( LogMain, Message, TERM_Cyan "Compiled with " __VERSION__ " on " __DATE__ );
-
-	std::cout << "\nGlobal types:" << std::endl;
-	for( Reflection::TypeInfo const* Info : Reflection::TypeInfo::GetGlobalTypeInfoCollection() ) {
-		Reflection::DebugPrint( Info, std::cout, Reflection::FDebugPrintFlags::IncludeMetrics );
-	}
-
-	std::cout << "\n\nTuples: " << std::endl;
-	std::tuple<char, std::string, size_t> TupleExample = std::make_tuple( 2, std::string{ "example" }, 0xFFFE );
-	Reflection::TupleTypeInfo const* ExampleTupleInfo = Reflection::Cast<Reflection::TupleTypeInfo>( Reflection::TypeResolver<decltype( TupleExample )>::Get() );
-	if( ExampleTupleInfo ) {
-		Reflection::DebugPrint( ExampleTupleInfo, std::cout );
-		std::cout << *static_cast<std::string const*>( ExampleTupleInfo->GetValue( &TupleExample, 1 ) ) << std::endl;
-	} else {
-		std::cout << "Error!" << std::endl;
-	}
-
-	std::cout << "\n\nSets: " << std::endl;
-	std::set<size_t> SetExample;
-	Reflection::SetTypeInfo const* ExampleSetInfo = Reflection::Cast<Reflection::SetTypeInfo>( Reflection::TypeResolver<decltype( SetExample )>::Get() );
-	Reflection::DebugPrint( ExampleSetInfo, std::cout );
-
-	Reflection::TypeInfo const* A = Reflection::TypeResolver<std::vector<size_t>>::Get();
-	Reflection::DebugPrint( A, std::cout );
-
-	Reflection::TypeInfo const* B = Reflection::TypeResolver<std::unique_ptr<size_t>>::Get();
-	Reflection::DebugPrint( B, std::cout );
+	LOG( LogMain, Info, "Hello, World! This is AndoEngine." );
+	LOG( LogMain, Debug, "Compiled with " __VERSION__ " on " __DATE__ );
 
 	return 0;
 	if( Startup( CTX ) ) {
-		LOG( LogMain, Message, "Creating entities" );
+		LOG( LogMain, Info, "Creating entities" );
 		EntityID EntA = 3;
 		EntityID VertexShaderID = 40;
 		EntityID FragmentShaderID = 45;
@@ -203,7 +177,7 @@ int main( int argc, char const* argv[] ) {
 	Shutdown( CTX );
 
 	LOGF(
-		LogMain, Message, "[TempBuffer]{ Current: %i/%i, Peak: %i/%i }",
+		LogMain, Info, "[TempBuffer]{ Current: %i/%i, Peak: %i/%i }",
 		CTX.Temp.GetUsed(), CTX.Temp.GetCapacity(), CTX.Temp.GetPeakUsage(), CTX.Temp.GetCapacity()
 	);
 
