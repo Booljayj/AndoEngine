@@ -71,19 +71,13 @@ TimeStamp::TimeStamp(std::chrono::system_clock::time_point const& TimePoint) noe
 	Month = MonthPrime + (MonthPrime < 10 ? 3 : -9); //[1-12]
 	//Clamp the year down to the range we care about for TimeStamps
 	//@todo std::clamp is not available until C++17. Replace this when that is available.
-	Year = static_cast<uint16_t>(
-		HighPrecisionYear < 0 ?
-			0 :
-			HighPrecisionYear > 9999 ?
-				9999 :
-				HighPrecisionYear
-	); //[0-9999]
+	Year = static_cast<uint16_t>(std::max<int64_t>(0, std::min<int64_t>(9999, HighPrecisionYear))); //[0-9999]
 
 	static constexpr uint32_t MillisecondsPerMinute = 1000 * 60;
 	static constexpr uint32_t MillisecondsPerHour = MillisecondsPerMinute * 60;
 
 	//Calculate the duration since this day started in milliseconds
-	auto Duration = NowUTC - TodayUTC;
+	auto const Duration = NowUTC - TodayUTC;
 	uint32_t MS = static_cast<uint32_t>( std::chrono::duration_cast<std::chrono::milliseconds>( Duration ).count() );
 
 	Hour = MS / MillisecondsPerHour; //[0-23]

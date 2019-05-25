@@ -4,15 +4,11 @@
 #include "Engine/Context.h"
 #include "Engine/Logging/LogCategory.h"
 
-#ifndef ENABLE_LOGGING
-#define ENABLE_LOGGING 1
-#endif
-
 #ifndef MINIMUM_LOG_VERBOSITY
 #define MINIMUM_LOG_VERBOSITY ELogVerbosity::Debug
 #endif
 
-#if ENABLE_LOGGING
+#ifndef LOG_DISABLE
 namespace LoggingInternal {
 	/** Helper template to resolve compiler-removed output */
 	template<ELogVerbosity Verbosity>

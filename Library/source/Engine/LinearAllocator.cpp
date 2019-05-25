@@ -3,16 +3,13 @@
 #include "Engine/Context.h"
 #include "Engine/LinearStrings.h"
 
-HeapBuffer::HeapBuffer( size_t Capacity )
-: PeakUsage( 0 )
+HeapBuffer::HeapBuffer( size_t InCapacity )
+: Capacity(InCapacity)
+, PeakUsage(0)
+, PeakOverflow(0)
 {
-	Begin = static_cast<char*>( std::malloc( Capacity + 1 ) );
-	End = Begin + Capacity;
-	*End = '\0'; //zero terminate the final byte
-	Current = Begin;
-}
-
-HeapBuffer::~HeapBuffer()
-{
-	std::free( static_cast<void*>( Begin ) );
+	Data = std::make_unique<char[]>(Capacity+1);
+	//Data is uninitialized, except for the last byte, which is 0.
+	*end() = '\0';
+	Current = begin();
 }

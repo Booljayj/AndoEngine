@@ -7,7 +7,4 @@ enum class ELogVerbosity : uint8_t {
 	Info,
 	Warning,
 	Error,
-
-	//Not used for actual output, used to indicate that no output should be produced.
-	Invalid,
 };

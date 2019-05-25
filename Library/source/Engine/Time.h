@@ -2,8 +2,7 @@
 #include <chrono>
 
 //Used to hold current time information that can be used by systems
-struct Time
-{
+struct Time {
 	//Seconds since the last frame
 	float DeltaTime = 1.0f/60.0f;
 
@@ -42,8 +41,7 @@ struct Time
 };
 
 //Used to control the behavior of a time controller
-struct TimeControl
-{
+struct TimeControl {
 	//The scaling factor applied to DeltaTime
 	float Scale = 1.0f;
 };
@@ -51,8 +49,7 @@ struct TimeControl
 //@todo Implement a few other TimeController types, just for the heck of it.
 //@todo Move TimeController implementations into separate files to keep things more segmented and clean.
 
-struct TimeController_FixedUpdateVariableRendering
-{
+struct TimeController_FixedUpdateVariableRendering {
 private:
 	Time T;
 	TimeControl TControl;

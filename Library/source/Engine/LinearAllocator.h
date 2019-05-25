@@ -5,38 +5,44 @@
 #include <algorithm>
 #include <ostream>
 
-struct HeapBuffer
-{
+struct HeapBuffer {
 private:
-	char* Begin;
-	char* End;
+	size_t Capacity;
+	std::unique_ptr<char[]> Data;
 	char* Current;
 
 	size_t PeakUsage;
 	size_t PeakOverflow;
 
 public:
-	HeapBuffer( size_t Capacity );
-	~HeapBuffer();
+	HeapBuffer(size_t InCapacity);
+	HeapBuffer() = delete;
+	HeapBuffer(HeapBuffer&&) = delete;
+	HeapBuffer(HeapBuffer const&) = delete;
 
-	inline void Reset() noexcept { Current = Begin; }
+	inline char* begin() { return Data.get(); }
+	inline char* end() { return Data.get() + Capacity; }
+	inline char const* begin() const { return Data.get(); }
+	inline char const* end() const { return Data.get() + Capacity; }
+
+	inline void Reset() noexcept { Current = begin(); }
 
 	inline char* GetCursor() const noexcept { return Current; }
 	inline void SetCursor( char* NewCurrent ) noexcept {
-		Current = std::min( std::max( NewCurrent, Begin ), End ); //Clamp the input to ensure it's inside the buffer
+		Current = std::min( std::max( NewCurrent, begin() ), end() ); //Clamp the input to ensure it's inside the buffer
 		PeakUsage = std::max( PeakUsage, GetUsed() );
 	}
 
-	inline size_t GetCapacity() const noexcept { return End - Begin; }
-	inline size_t GetAvailable() const noexcept { return End - Current; }
-	inline size_t GetUsed() const noexcept { return Current - Begin; }
+	inline size_t GetCapacity() const noexcept { return Capacity; }
+	inline size_t GetAvailable() const noexcept { return end() - Current; }
+	inline size_t GetUsed() const noexcept { return Current - begin(); }
 	inline size_t GetPeakUsage() const noexcept { return PeakUsage; }
 	inline size_t GetPeakOverflow() const noexcept { return PeakOverflow; }
 
 	inline bool Contains( void* Pointer ) const noexcept {
 		return true &&
-			static_cast<char*>( Pointer ) >= Begin &&
-			static_cast<char*>( Pointer ) < End;
+			static_cast<char*>( Pointer ) >= begin() &&
+			static_cast<char*>( Pointer ) < end();
 	}
 
 	/** Returns an aligned array of elements inside this buffer, or nullptr if the buffer does not have enough space */
@@ -61,8 +67,7 @@ public:
 
 /** std allocator that uses a buffer to manage allocations. */
 template< typename T >
-class TLinearAllocator
-{
+class TLinearAllocator {
 	template< typename U >
 	friend class TLinearAllocator;
 
@@ -87,8 +92,7 @@ public:
 
 	~TLinearAllocator() = default;
 
-	T* allocate( size_t Count, void const* Hint = nullptr )
-	{
+	T* allocate( size_t Count, void const* Hint = nullptr ) {
 		if( T* BufferRequest = Buffer->Request<T>( Count ) ) {
 			return BufferRequest;
 		} else {
@@ -97,13 +101,11 @@ public:
 		}
 	}
 
-	void deallocate( T* Pointer, size_t Count )
-	{
+	void deallocate( T* Pointer, size_t Count ) {
 		if( !Buffer->Contains( Pointer ) ) {
 			::operator delete( Pointer );
 		}
 	}
-
 
 	//-----------------------------------
 	//Boilerplate for older C++ libraries
@@ -121,13 +123,11 @@ public:
 	size_type max_size() const { return Buffer->GetCapacity(); }
 
 	template< class U, class... Args >
-	void construct( U* Pointer, Args&&... args )
-	{
+	void construct( U* Pointer, Args&&... args ) {
 		::new( (void*)Pointer ) U( std::forward<Args>( args )... );
 	}
 	template< class U >
-	void destroy( U* Pointer )
-	{
+	void destroy( U* Pointer ) {
 		Pointer->~U();
 	}
 };

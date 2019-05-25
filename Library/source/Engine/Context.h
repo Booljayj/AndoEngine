@@ -29,5 +29,3 @@ public:
 
 	inline std::thread::id GetThreadID() const { return ThreadID; }
 };
-
-/** Standard context macros */
