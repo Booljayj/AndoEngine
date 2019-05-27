@@ -11,6 +11,7 @@
 #include "Engine/Context.h"
 #include "Engine/LogCommands.h"
 #include "Engine/Logging/TerminalLoggerModule.h"
+#include "Engine/Logging/FileLoggerModule.h"
 #include "EntityFramework/ComponentCollectionSystem.h"
 #include "EntityFramework/Entity.h"
 #include "EntityFramework/EntityCollectionSystem.h"
@@ -120,6 +121,7 @@ void MainLoop( CTX_ARG ) {
 int main( int argc, char const* argv[] ) {
 	Context CTX{ 10000 };
 	CTX.Log.AddModule( std::make_shared<TerminalLoggerModule>() );
+	//CTX.Log.AddModule( std::make_shared<FileLoggerModule>( "Main.log" ) );
 
 	LOG( LogMain, Info, "Hello, World! This is AndoEngine." );
 	LOG( LogMain, Debug, "Compiled with " __VERSION__ " on " __DATE__ );
