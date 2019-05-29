@@ -1,7 +1,7 @@
-#include "Engine/Logging/LoggerUtility.h"
+#include "Engine/Logging/LogUtility.h"
 #include "Engine/TerminalColors.h"
 
-namespace LoggerUtility {
+namespace LogUtility {
 	char const* GetText( ELogVerbosity const Verbosity ) noexcept {
 		switch(Verbosity) {
 			case ELogVerbosity::Debug: return "Debug: ";

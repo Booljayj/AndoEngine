@@ -1,4 +1,5 @@
 #include "Engine/Logging/StreamLoggerModules.h"
+#include "Engine/Logging/LogOutputData.h"
 
 StreamLoggerModule::StreamLoggerModule( std::ostream& Stream )
 : StreamPtr( &Stream )

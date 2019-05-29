@@ -2,34 +2,11 @@
 #include <string_view>
 #include <vector>
 #include <memory>
-#include "Engine/Logging/LogCategory.h"
 #include "Engine/Logging/LogVerbosity.h"
-#include "Engine/LinearAllocator.h"
-#include "Engine/TerminalColors.h"
-#include "Engine/TimeStamp.h"
+#include "Engine/Logging/LoggerModule.h"
 
-/** Data for a log output operation */
-struct LogOutputData {
-	TimeStamp TimeStamp;
-	LogCategory const* Category;
-	ELogVerbosity Verbosity;
-	std::string_view Location;
-	std::string_view Message;
-};
-std::ostream& operator<<( std::ostream& Stream, LogOutputData const& OutputData );
-
-/** A thread-safe module that is responsible for processing the messages sent to a logger object. Created as shared_ptrs that are used by relevant loggers. */
-struct LoggerModule {
-public:
-	virtual ~LoggerModule() {}
-	/** Process a message given to a logger. Thread safe. */
-	void ProcessMessage( LogOutputData const& OutputData );
-
-protected:
-	/** Mutex that locks access to mutable data within this module. Used by normal interface functions, and can also be used by internal thread workers. */
-	std::mutex AccessMutex;
-	virtual void InternalProcessMessage( LogOutputData const& OutputData ) = 0;
-};
+struct LogCategory;
+struct LogOutputData;
 
 /** An object which handles program output from within a single thread */
 struct Logger {

@@ -1,24 +1,8 @@
-#include <chrono>
-#include <ctime>
 #include <cstdlib>
 #include <iostream>
 #include <cstdint>
 #include "Engine/Logging/Logger.h"
-#include "Engine/Logging/LoggerUtility.h"
-#include "Engine/TerminalColors.h"
-
-std::ostream& operator<<( std::ostream& Stream, LogOutputData const& OutputData ) {
-	Stream << OutputData.TimeStamp << " " << OutputData.Category->GetName() << " " << LoggerUtility::GetText(OutputData.Verbosity);
-#ifdef LOG_INCLUDE_SOURCE_LOCATIONS
-	Stream << "(" << OutputData.Location << ") ";
-#endif
-	return Stream << OutputData.Message;
-}
-
-void LoggerModule::ProcessMessage( LogOutputData const& OutputData ) {
-	std::lock_guard<std::mutex> Guard{ AccessMutex };
-	InternalProcessMessage( OutputData );
-}
+#include "Engine/Logging/LogOutputData.h"
 
 void Logger::Output( std::string_view Location, LogCategory const& Category, ELogVerbosity Verbosity, std::string_view Message ) const {
 	if( Verbosity >= Category.GetShownVerbosity() ) {
