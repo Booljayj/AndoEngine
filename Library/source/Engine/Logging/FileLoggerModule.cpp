@@ -1,5 +1,6 @@
 #include <fstream>
 #include "Engine/Logging/FileLoggerModule.h"
+#include "Engine/Logging/LogOutputData.h"
 
 FileLoggerModule::FileLoggerModule( std::string_view FileName )
 : Stream( FileName.data(), std::ios::out | std::ios::app )

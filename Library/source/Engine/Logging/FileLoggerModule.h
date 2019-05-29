@@ -1,6 +1,6 @@
 #include <fstream>
 #include <string_view>
-#include "Engine/Logging/Logger.h"
+#include "Engine/Logging/LoggerModule.h"
 
 struct FileLoggerModule : public LoggerModule {
 public:
