@@ -8,6 +8,26 @@
 //a larger feature set and reduce allocations.
 //https://www.codeproject.com/articles/11015/the-impossibly-fast-c-delegates
 
+//Delegates are defined using the signature of the callable, and are created using static methods
+//on that specialization. For example:
+//- Delegate has signature void(), and is bound to a free function that has that signature
+//		Delagate<void> D = Delegate<void>::Create( &FreeFunction );
+//- Delegate has signature int(std::string), and is bound to a method that has that signature
+//		ClassType Instance;
+//		Delegate<int, std::string> D = Delegate<int, std::string>::Create( &Instance, &ClassType::Method );
+//- Delegate has signature void(char), and is bound to a lambda that also accepts the context object
+//		ClassType Instance;
+//		Delegate<void, char> D = Delegate<void, char>::Create( &Instance, [](ClassType* I){ /*...*/ } );
+
+//Some notes on usage:
+//- Delegate reassignment is allowed using the copy and move assignment operators
+//- Delegates can be default constructed, executing a default delegate will do nothing and return a
+//	default-constructed return value.
+//- Bound parameters are supported by providing a lambda that performs a capture. All lambda types are
+//	supported.
+//- In most cases, no allocations are performed when binding the delegate. Lambdas with a large number
+//	of captured values can cause an allocation to store a copy of the lambda.
+
 struct DelegateBase {
 protected:
 	//DummyClassMethod should be the worst-case-scenario for the size of a method pointer. Because the class is only
@@ -408,3 +428,6 @@ public:
 		*this = Delegate{};
 	}
 };
+
+/** A delegate which has no parameters and returns nothing */
+using SimpleDelegate = Delegate<void>;
