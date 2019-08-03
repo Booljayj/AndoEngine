@@ -74,6 +74,7 @@ protected:
 		virtual void CopyConstruct(DelegateBase& Target, const DelegateBase& Source) const noexcept = 0;
 		virtual void MoveConstruct(DelegateBase& Target, DelegateBase&& Source) const noexcept = 0;
 		virtual void Destruct(DelegateBase& Target) const noexcept = 0;
+		virtual bool IsValid(DelegateBase const& Target) const noexcept = 0;
 	};
 
 	//Wraps the semantics for the context and storage into the generic IDelegateSemantics interface
@@ -90,6 +91,9 @@ protected:
 		virtual void Destruct(DelegateBase& Target) const noexcept override {
 			ContextSemanticsImpl::Destruct(Target.Context);
 			StorageSemanticsImpl::Destruct(Target.Storage);
+		}
+		virtual bool IsValid(DelegateBase const& Target) const noexcept override {
+			return ContextSemanticsImpl::IsValid(Target.Context);
 		}
 	};
 
@@ -132,6 +136,7 @@ struct DelegateBase::TContextSemanticsImpl<void*> {
 	static inline void CopyConstruct(ContextType& Target, ContextType const& Source) noexcept {Target.RawPointer = Source.RawPointer;}
 	static inline void MoveConstruct(ContextType& Target, ContextType&& Source) noexcept {Target.RawPointer = Source.RawPointer;}
 	static inline void Destruct(ContextType& Target) noexcept {}
+	static inline bool IsValid(ContextType const& Target) noexcept { return true; }
 };
 /** Const raw pointer context */
 template<>
@@ -141,6 +146,7 @@ struct DelegateBase::TContextSemanticsImpl<void const*> {
 	static inline void CopyConstruct(ContextType& Target, ContextType const& Source) noexcept {Target.ConstRawPointer = Source.ConstRawPointer;}
 	static inline void MoveConstruct(ContextType& Target, ContextType&& Source) noexcept {Target.ConstRawPointer = Source.ConstRawPointer;}
 	static inline void Destruct(ContextType& Target) noexcept {}
+	static inline bool IsValid(ContextType const& Target) noexcept { return true; }
 };
 /** Smart pointer context */
 template<>
@@ -158,6 +164,7 @@ struct DelegateBase::TContextSemanticsImpl<std::weak_ptr<void>> {
 	static inline void CopyConstruct(ContextType& Target, ContextType const& Source) noexcept { Construct(Target, Get(Source)); }
 	static inline void MoveConstruct(ContextType& Target, ContextType&& Source) noexcept { Construct(Target, std::move(Get(Source))); }
 	static inline void Destruct(ContextType& Target) noexcept { Get(Target).~weak_ptr<void>(); }
+	static inline bool IsValid(ContextType& Target) noexcept { return !Get(Target).expired(); }
 };
 /** Const smart pointer context */
 template<>
@@ -175,6 +182,7 @@ struct DelegateBase::TContextSemanticsImpl<std::weak_ptr<void const>> {
 	static inline void CopyConstruct(ContextType& Target, ContextType const& Source) noexcept { Construct(Target, Get(Source)); }
 	static inline void MoveConstruct(ContextType& Target, ContextType&& Source) noexcept { Construct(Target, std::move(Get(Source))); }
 	static inline void Destruct(ContextType& Target) noexcept { Get(Target).~weak_ptr<void const>(); }
+	static inline bool IsValid(ContextType const& Target) noexcept { return !Get(Target).expired(); }
 };
 /** No context */
 template<>
@@ -182,6 +190,7 @@ struct DelegateBase::TContextSemanticsImpl<void> {
 	static inline void CopyConstruct(ContextType& Target, ContextType const& Source) noexcept {}
 	static inline void MoveConstruct(ContextType& Target, ContextType&& Source) noexcept {}
 	static inline void Destruct(ContextType& Target) noexcept {}
+	static inline bool IsValid(ContextType const& Target) noexcept { return true; }
 };
 
 /** Standard storage */
@@ -217,6 +226,9 @@ struct DelegateBase::TStorageSemanticsImpl {
 		Construct(Target, Get(Source));
 	}
 	static inline void MoveConstruct(StorageType& Target, StorageType&& Source) noexcept {
+		//@todo Maybe rethink this. For external storage, it may be better if the source delegate is left in a
+		//      nulled state and we just capture the storage pointer from it. The downside is that all other
+		//      methods need to check if the pointer is null.
 		Construct(Target, std::move(Get(Source)));
 	}
 	static inline void Destruct(StorageType& Target) noexcept {
@@ -278,6 +290,29 @@ public:
 		StubFunction = Other.StubFunction;
 		Semantics->MoveConstruct(*this, std::move(Other));
 		return *this;
+	}
+
+	/** True if it's safe to execute this delegate, and it will execute a bound functor */
+	inline operator bool() const {
+		return IsValid() && IsBound();
+	}
+	/** Executes the delegate with the provided parameters */
+	inline R operator()(PARAMS... Params) const {
+		return StubFunction(Context, Storage, std::forward<PARAMS>(Params)...);
+	}
+
+	/** Returns true if this delegate is actually bound to a functor that will be executed */
+	inline bool IsBound() const {
+		//We know this delegate is bound if it's not using the special null semantics, since there is nothing in the context or storage.
+		return Semantics != StaticCreateWrappedSemantics<TContextSemanticsImpl<void>, TStorageSemanticsImpl<void>>();
+	}
+	/** Returns true if the context for this delegate is valid. Only meaningful for delegates where the context allows validity checking. */
+	inline bool IsValid() const {
+		return Semantics->IsValid(*this);
+	}
+	/** Unbind the delegate so that it no longer executes any specific behavior, essentially returning it to a default-constructed state. */
+	inline void Reset() {
+		*this = Delegate{};
 	}
 
 	/** Create using a free function */
@@ -417,15 +452,6 @@ public:
 		ContextSemanticsImpl::Construct(NewDelegate.Context, std::forward<std::weak_ptr<C>>(Instance));
 		StorageSemanticsImpl::Construct(NewDelegate.Storage, std::forward<TLAMBDA>(Lambda));
 		return NewDelegate;
-	}
-
-	/** Executes the delegate with the provided parameters */
-	R Execute(PARAMS... Params) const {
-		return StubFunction(Context, Storage, std::forward<PARAMS>(Params)...);
-	}
-	/** Unbind the delegate so that it no longer executes any specific behavior, essentially returning it to a default-constructed state. */
-	void Reset() {
-		*this = Delegate{};
 	}
 };
 
