@@ -8,16 +8,18 @@ namespace Reflection {
 
 	#define CASE_ENUM( __VALUE__, __DISPLAY__ ) case ETypeClassification::__VALUE__: return #__DISPLAY__;
 	std::string_view GetClassificationIdentifier( ETypeClassification Classification ) {
-		switch( Classification ) {
-			CASE_ENUM( Primitive, PRIM );
-			CASE_ENUM( Struct, STRU );
-			CASE_ENUM( Enumeration, ENUM );
-			CASE_ENUM( Array, ARRY );
-			CASE_ENUM( Map, MAP_ );
-			CASE_ENUM( Set, SET_ );
-			CASE_ENUM( Poly, POLY );
-			CASE_ENUM( Tuple, TUPL );
-			CASE_ENUM( Variant, VARI );
+		switch (Classification) {
+			CASE_ENUM(Primitive, PRIM);
+			CASE_ENUM(Struct, STRU);
+			CASE_ENUM(Alias, ALIA);
+			CASE_ENUM(Enumeration, ENUM);
+			CASE_ENUM(Flags, FLAG);
+			CASE_ENUM(Array, ARRY);
+			CASE_ENUM(Map, MAP_);
+			CASE_ENUM(Set, SET_);
+			CASE_ENUM(Poly, POLY);
+			CASE_ENUM(Tuple, TUPL);
+			CASE_ENUM(Variant, VARI);
 		}
 	}
 	#undef CASE_ENUM

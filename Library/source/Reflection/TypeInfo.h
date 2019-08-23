@@ -14,7 +14,9 @@ namespace Reflection
 		//Basic construct types
 		Primitive,
 		Struct,
+		Alias,
 		Enumeration,
+		Flags,
 		//Homogeneous collection types
 		Array,
 		Map,
@@ -64,12 +66,14 @@ namespace Reflection
 			ETypeClassification InClassification, Hash128 InUniqueID, CompilerDefinition InDefinition,
 			char const* InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer
 		);
-		virtual ~TypeInfo() {}
+		virtual ~TypeInfo() = default;
 
 		/** Construct an instance of this type at the address using the default constructor. Assumes enough space has been allocated to fit this type */
 		virtual void Construct( void* A ) const = 0;
 		/** Destruct an instance of this type at the address. Assumes the instance was properly constructed and won't be destructed again */
 		virtual void Destruct( void* A ) const = 0;
+		/** Copy one instance of this type into another. The destination instance must be initialized. Most types will deep copy, but some may shallow copy if appropriate. */
+		virtual void Copy(void* A, void const* B) const {}
 		/** Compare two instances of this type and return true if they should be considered equal */
 		virtual bool Equal( void const* A, void const* B ) const = 0;
 
@@ -88,3 +92,11 @@ namespace Reflection
 		else return Info->As<TTYPE>();
 	}
 }
+
+#define STANDARD_TYPEINFO_METHODS(Type)\
+static constexpr Type const& Cast(void const* P) { return *static_cast<Type const*>(P); }\
+static constexpr Type& Cast(void* P) { return *static_cast<Type*>(P); }\
+virtual void Construct(void* P) const final {new (P) Type;}\
+virtual void Destruct(void* P) const final {Cast(P).~Type();}\
+virtual void Copy(void* A, void const* B) const final {Cast(A) = Cast(B);}\
+virtual bool Equal(void const* A, void const* B) const final {return Cast(A) == Cast(B);}
