@@ -22,7 +22,7 @@ namespace Serialization {
 
 		//Write a data block for each element to the stream
 		for( uint32_t Index = 0; Index < Elements.size(); ++Index ) {
-			Type->ElementType->Serializer->SerializeBinary( Elements[Index], Stream );
+			Type->ElementTypeInfo->Serializer->SerializeBinary( Elements[Index], Stream );
 		}
 
 		FinishDataBlockWrite( Stream, StartPosition );
@@ -45,7 +45,7 @@ namespace Serialization {
 		bool bArrayReadSuccessful = true;
 		for( uint32_t Index = 0; Index < Elements.size(); ++Index ) {
 			if( Index < SerializedArraySize && CanReadNextElementHeader( Stream, EndPosition ) ) {
-				bool const bElementReadSuccessful = Type->ElementType->Serializer->DeserializeBinary( Elements[Index], Stream );
+				bool const bElementReadSuccessful = Type->ElementTypeInfo->Serializer->DeserializeBinary( Elements[Index], Stream );
 				bArrayReadSuccessful &= bElementReadSuccessful;
 			}
 		}

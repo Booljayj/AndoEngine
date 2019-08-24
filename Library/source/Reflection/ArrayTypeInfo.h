@@ -12,143 +12,122 @@ namespace Reflection {
 		/** Whether the number of elements in the array can be manipulated */
 		bool IsFixedSize = false;
 		/** The type of the elements in the array */
-		TypeInfo const* ElementType = nullptr;
+		TypeInfo const* ElementTypeInfo = nullptr;
 
 		ArrayTypeInfo() = delete;
 		ArrayTypeInfo(
 			Hash128 InUniqueID, CompilerDefinition InDefinition,
-			char const* InDescription, Serialization::ISerializer* InSerializer,
-			bool InIsFixedSize, TypeInfo const* InElementType
+			std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
+			bool InIsFixedSize, TypeInfo const* InElementTypeInfo
 		);
-		virtual ~ArrayTypeInfo() {}
+		virtual ~ArrayTypeInfo() = default;
 
 		/** Get the number of elements that are in the array */
-		virtual size_t GetCount( void const* Instance ) const = 0;
+		virtual size_t GetCount(void const* Instance) const = 0;
 
 		/** Get a vector of all the elements in the array */
-		virtual void GetElements( void* Instance, std::vector<void*>& OutElements ) const = 0;
-		virtual void GetElements( void const* Instance, std::vector<void const*>& OutElements ) const = 0;
+		virtual void GetElements(void* Instance, std::vector<void*>& OutElements) const = 0;
+		virtual void GetElements(void const* Instance, std::vector<void const*>& OutElements) const = 0;
 
 		/** Resize the array to hold a specific number of elements */
-		virtual void Resize( void* Instance, size_t Count ) const = 0;
+		virtual void Resize(void* Instance, size_t Count) const = 0;
 
 		/** Remove all elements in the container */
-		virtual void ClearElements( void* Instance ) const = 0;
+		virtual void ClearElements(void* Instance) const = 0;
 		/** Add a new element to the "end" of the array */
-		virtual void AddElement( void* Instance, void const* Value ) const = 0;
+		virtual void AddElement(void* Instance, void const* Value) const = 0;
 
 		/** Remove the pointed-at element */
-		virtual void RemoveElement( void* Instance, void const* ElementPointer ) const = 0;
-		/** Insert a new element at the position of the pointed-at element, equal to the value. If value is nullptr, the new element is default-constructed */
-		virtual void InsertElement( void* Instance, void const* ElementPointer, void const* Value ) const = 0;
+		virtual void RemoveElement(void* Instance, void const* Element) const = 0;
+		/** Insert a new element at the position of the pointed-at element, equal to the value. If Value is nullptr, the new element is default-constructed */
+		virtual void InsertElement(void* Instance, void const* Element, void const* Value) const = 0;
 	};
 
 	//============================================================
 	// Templates
 
 	/** Template that implements the ArrayTypeInfo interface for fixed-size arrays (std::array) */
-	template<typename TELEMENT, size_t SIZE, typename TARRAY>
+	template<typename ElementType, size_t Size, typename ArrayType>
 	struct TFixedArrayTypeInfo : public ArrayTypeInfo {
-		TFixedArrayTypeInfo( char const* InDescription, Serialization::ISerializer* InSerializer )
+		TFixedArrayTypeInfo(std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer)
 		: ArrayTypeInfo(
-			TypeResolver<TARRAY>::GetID(), GetCompilerDefinition<TARRAY>(),
-			InDescription, InSerializer,
-			true, TypeResolver<TELEMENT>::Get() )
+			TypeResolver<ArrayType>::GetID(), GetCompilerDefinition<ArrayType>(),
+			InDescription, InFlags, InSerializer,
+			true, TypeResolver<ElementType>::Get())
 		{}
 
-		static constexpr TARRAY const& CastArray( void const* Instance ) { return *static_cast<TARRAY const*>( Instance ); }
-		static constexpr TARRAY& CastArray( void* Instance ) { return *static_cast<TARRAY*>( Instance ); }
+		STANDARD_TYPEINFO_METHODS(ArrayType)
 
-		virtual void Construct( void* P ) const final { new (P) TARRAY; }
-		virtual void Destruct( void* P ) const final { static_cast<TARRAY*>(P)->~TARRAY(); }
-		virtual bool Equal( void const* A, void const* B ) const final { return CastArray(A) == CastArray(B); }
+		virtual size_t GetCount(void const* Instance) const final { return Size; }
 
-		virtual size_t GetCount( void const* Instance ) const override { return SIZE; }
-
-		virtual void GetElements( void* Instance, std::vector<void*>& OutElements ) const override {
+		virtual void GetElements(void* Instance, std::vector<void*>& OutElements) const final {
 			OutElements.clear();
-			for( TELEMENT& ArrayElement : CastArray( Instance ) ) {
-				OutElements.push_back( &ArrayElement );
+			for (ElementType& ArrayElement : Cast(Instance)) {
+				OutElements.push_back(&ArrayElement);
 			}
 		}
-		virtual void GetElements( void const* Instance, std::vector<void const*>& OutElements ) const override {
+		virtual void GetElements(void const* Instance, std::vector<void const*>& OutElements) const final {
 			OutElements.clear();
-			for( TELEMENT const& ArrayElement : CastArray( Instance ) ) {
-				OutElements.push_back( &ArrayElement );
+			for (ElementType const& ArrayElement : Cast(Instance)) {
+				OutElements.push_back(&ArrayElement);
 			}
 		}
 
-		virtual void Resize( void* Instance, size_t Count ) const override {}
-		virtual void ClearElements( void* Instance ) const override {}
-		virtual void AddElement( void* Instance, void const* Value ) const override {}
-		virtual void RemoveElement( void* Instance, void const* ElementPointer ) const override {}
-		virtual void InsertElement( void* Instance, void const* ElementPointer, void const* Value ) const override {}
+		virtual void Resize(void* Instance, size_t Count) const final {}
+		virtual void ClearElements(void* Instance) const final {}
+		virtual void AddElement(void* Instance, void const* Value) const final {}
+		virtual void RemoveElement(void* Instance, void const* Element) const final {}
+		virtual void InsertElement(void* Instance, void const* Element, void const* Value) const final {}
 	};
 
 	/** Template that implements the ArrayTypeInfo interface for dynamic array types (std::vector, std::list, etc) */
-	template<typename TELEMENT, typename TARRAY>
+	template<typename ElementType, typename ArrayType>
 	struct TDynamicArrayTypeInfo : public ArrayTypeInfo {
-		TDynamicArrayTypeInfo( char const* InDescription, Serialization::ISerializer* InSerializer )
+		TDynamicArrayTypeInfo(std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer)
 		: ArrayTypeInfo(
-			TypeResolver<TARRAY>::GetID(), GetCompilerDefinition<TARRAY>(),
-			InDescription, InSerializer,
-			false, TypeResolver<TELEMENT>::Get() )
+			TypeResolver<ArrayType>::GetID(), GetCompilerDefinition<ArrayType>(),
+			InDescription, InFlags, InSerializer,
+			false, TypeResolver<ElementType>::Get())
 		{}
-		virtual ~TDynamicArrayTypeInfo() {}
 
-		static constexpr TARRAY const& CastArray( void const* Instance ) { return *static_cast<TARRAY const*>( Instance ); }
-		static constexpr TARRAY& CastArray( void* Instance ) { return *static_cast<TARRAY*>( Instance ); }
-		static constexpr TELEMENT const& CastElement( void const* Element ) { return *static_cast<TELEMENT const*>( Element ); }
+		STANDARD_TYPEINFO_METHODS(ArrayType)
 
-		virtual void Construct( void* P ) const final { new (P) TARRAY; }
-		virtual void Destruct( void* P ) const final { static_cast<TARRAY*>(P)->~TARRAY(); }
-		virtual bool Equal( void const* A, void const* B ) const final { return CastArray(A) == CastArray(B); }
+		static constexpr ElementType const& CastElement(void const* Element) { return *static_cast<ElementType const*>(Element); }
 
-		virtual size_t GetCount( void const* Instance ) const override {
-			return CastArray( Instance ).size();
-		}
+		virtual size_t GetCount(void const* Instance) const final { return Cast(Instance).size(); }
 
-		virtual void GetElements( void* Instance, std::vector<void*>& OutElements ) const override {
+		virtual void GetElements(void* Instance, std::vector<void*>& OutElements) const final {
 			OutElements.clear();
-			for( TELEMENT& ArrayElement : CastArray( Instance ) ) {
-				OutElements.push_back( &ArrayElement );
+			for (ElementType& ArrayElement : Cast(Instance)) {
+				OutElements.push_back(&ArrayElement);
 			}
 		}
-		virtual void GetElements( void const* Instance, std::vector<void const*>& OutElements ) const override {
+		virtual void GetElements(void const* Instance, std::vector<void const*>& OutElements) const final {
 			OutElements.clear();
-			for( TELEMENT const& ArrayElement : CastArray( Instance ) ) {
-				OutElements.push_back( &ArrayElement );
+			for (ElementType const& ArrayElement : Cast(Instance)) {
+				OutElements.push_back(&ArrayElement);
 			}
 		}
 
-		virtual void Resize( void* Instance, size_t Count ) const override {
-			CastArray( Instance ).resize( Count );
-		}
+		virtual void Resize(void* Instance, size_t Count) const final { Cast(Instance).resize(Count); }
+		virtual void ClearElements(void* Instance) const final { Cast(Instance).clear(); }
 
-		virtual void ClearElements( void* Instance ) const override {
-			CastArray( Instance ).clear();
+		virtual void AddElement(void* Instance, void const* Value) const final {
+			Cast(Instance).push_back(CastElement(Value));
 		}
-		virtual void AddElement( void* Instance, void const* Value ) const override {
-			CastArray( Instance ).push_back( CastElement( Value ) );
-		}
-
-		virtual void RemoveElement( void* Instance, void const* ElementPointer ) const override {
-			typename TARRAY::iterator Position = std::find_if(
-				CastArray( Instance ).begin(), CastArray( Instance ).end(),
-				[=]( TELEMENT const& Element ){ return &Element == ElementPointer; }
+		virtual void RemoveElement(void* Instance, void const* Element) const final {
+			const auto Position = std::find_if(
+				Cast(Instance).begin(), Cast(Instance).end(),
+				[=](ElementType const& E) { return &E == Element; }
 			);
-			CastArray( Instance ).erase( Position );
+			Cast(Instance).erase(Position);
 		}
-		virtual void InsertElement( void* Instance, void const* ElementPointer, void const* Value ) const override {
-			typename TARRAY::iterator Position = std::find_if(
-				CastArray( Instance ).begin(), CastArray( Instance ).end(),
-				[=]( TELEMENT const& Element ){ return &Element == ElementPointer; }
+		virtual void InsertElement(void* Instance, void const* Element, void const* Value) const final {
+			const auto Position = std::find_if(
+				Cast(Instance).begin(), Cast(Instance).end(),
+				[=](ElementType const& E) { return &E == Element; }
 			);
-			if( Value ) {
-				CastArray( Instance ).insert( Position, CastElement( Value ) );
-			} else {
-				CastArray( Instance ).insert( Position, TELEMENT{} );
-			}
+			Cast(Instance).insert(Position, Value ? CastElement(Value) : ElementType{});
 		}
 	};
 }

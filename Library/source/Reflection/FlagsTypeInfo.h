@@ -16,12 +16,12 @@ namespace Reflection {
 		FlagsTypeInfo() = delete;
 		FlagsTypeInfo(
 			Hash128 InUniqueID, CompilerDefinition InDefinition,
-			char const* InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
-			TypeInfo const* InUnderlying
+			std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
+			TypeInfo const* InUnderlyingTypeInfo
 		);
 		virtual ~FlagsTypeInfo() = default;
 
-		TypeInfo const* Underlying = nullptr;
+		TypeInfo const* UnderlyingTypeInfo = nullptr;
 
 		/** Get the number of components that the flags have */
 		virtual size_t GetComponentCount() const = 0;
@@ -81,7 +81,7 @@ namespace Reflection {
 		FlagsPairType const* Empty;
 
 		TStandardFlagsTypeInfo(
-			char const* InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
+			std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
 			TArrayView<FlagsPairType> InComponentsView, TArrayView<FlagsPairType> InAggregatesView, FlagsPairType const* InEmpty)
 		: FlagsTypeInfo(
 			TypeResolver<FlagsType>::GetID(), GetCompilerDefinition<FlagsType>(),
@@ -94,8 +94,8 @@ namespace Reflection {
 
 		STANDARD_TYPEINFO_METHODS(FlagsType)
 
-		virtual size_t GetComponentCount() const final {return ComponentsView.size();};
-		virtual size_t GetAggregateCount() const final {return AggregatesView.size();};
+		virtual size_t GetComponentCount() const final { return ComponentsView.size(); };
+		virtual size_t GetAggregateCount() const final { return AggregatesView.size(); };
 
 		virtual std::string_view GetComponentName(size_t Index) const final {
 			if (Index < ComponentsView.size()) return ComponentsView[Index].first;
@@ -115,29 +115,29 @@ namespace Reflection {
 		}
 
 		virtual size_t GetIndexOfComponentName(std::string_view Name) const final {
-			const auto Iter = std::find_if(ComponentsView.begin(), ComponentsView.end(), [&](const auto& Pair) {return Pair.first == Name;});
+			const auto Iter = std::find_if(ComponentsView.begin(), ComponentsView.end(), [&](const auto& Pair) { return Pair.first == Name; });
 			return Iter - ComponentsView.begin();
 		}
 		virtual size_t GetIndexOfComponentValue(void const* Value) const final {
-			const auto Iter = std::find_if(ComponentsView.begin(), ComponentsView.end(), [&](const auto& Pair) {return Pair.second == Cast(Value);});
+			const auto Iter = std::find_if(ComponentsView.begin(), ComponentsView.end(), [&](const auto& Pair) { return Pair.second == Cast(Value); });
 			return Iter - ComponentsView.begin();
 		}
 		virtual size_t GetIndexOfAggregateName(std::string_view Name) const final {
-			const auto Iter = std::find_if(AggregatesView.begin(), AggregatesView.end(), [&](const auto& Pair) {return Pair.first == Name;});
+			const auto Iter = std::find_if(AggregatesView.begin(), AggregatesView.end(), [&](const auto& Pair) { return Pair.first == Name; });
 			return Iter - AggregatesView.begin();
 		}
 		virtual size_t GetIndexOfAggregateValue(void const* Value) const final {
-			const auto Iter = std::find_if(AggregatesView.begin(), AggregatesView.end(), [&](const auto& Pair) {return Pair.second == Cast(Value);});
+			const auto Iter = std::find_if(AggregatesView.begin(), AggregatesView.end(), [&](const auto& Pair) { return Pair.second == Cast(Value); });
 			return Iter - AggregatesView.begin();
 		}
 
-		virtual std::string_view GetEmptyName() const final {return Empty->first;}
-		virtual void const* GetEmptyValue() const final {return &Empty->second;}
+		virtual std::string_view GetEmptyName() const final { return Empty->first; }
+		virtual void const* GetEmptyValue() const final { return &Empty->second; }
 
-		virtual void Add(void* Aggregate, void const* Value) const final {Cast(Aggregate) |= Cast(Value);}
-		virtual void Subtract(void* Aggregate, void const* Value) const final {Cast(Aggregate) &= ~Cast(Value);}
-		virtual bool Contains(void const* Aggregate, void const* Value) const final {return (Cast(Aggregate) & Cast(Value)) == Cast(Value);}
-		virtual bool IsEmpty(void const* Aggregate) const final {return Cast(Aggregate) == Empty->second;}
+		virtual void Add(void* Aggregate, void const* Value) const final { Cast(Aggregate) |= Cast(Value); }
+		virtual void Subtract(void* Aggregate, void const* Value) const final { Cast(Aggregate) &= ~Cast(Value); }
+		virtual bool Contains(void const* Aggregate, void const* Value) const final { return (Cast(Aggregate) & Cast(Value)) == Cast(Value); }
+		virtual bool IsEmpty(void const* Aggregate) const final { return Cast(Aggregate) == Empty->second; }
 
 		virtual void GetComponents(void const* Aggregate, std::vector<size_t>& ComponentIndices) const final {
 			const FlagsType AggregateValue = Cast(Aggregate);

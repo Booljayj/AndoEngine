@@ -32,7 +32,7 @@ namespace Serialization {
 					}
 				}
 			}
-			CurrentType = CurrentType->BaseType;
+			CurrentType = CurrentType->BaseTypeInfo;
 		}
 
 		FinishDataBlockWrite( Stream, StartPosition );
@@ -86,7 +86,7 @@ namespace Serialization {
 			if( Reflection::VariableInfo const* FoundInfo = CurrentType->Member.Variables.Find( Hash32{ NameHashValue } ) ) {
 				return FoundInfo;
 			}
-			CurrentType = CurrentType->BaseType;
+			CurrentType = CurrentType->BaseTypeInfo;
 		}
 		return nullptr;
 	}

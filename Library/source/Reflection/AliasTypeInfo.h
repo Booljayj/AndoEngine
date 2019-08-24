@@ -1,3 +1,4 @@
+#pragma once
 #include "Reflection/Components/VariableInfo.h"
 #include "Reflection/TypeInfo.h"
 
@@ -9,13 +10,13 @@ namespace Reflection {
 		AliasTypeInfo() = delete;
 		AliasTypeInfo(
 			Hash128 InUniqueID, CompilerDefinition InDefinition,
-			char const* InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
-			VariableInfo const* InVariable
+			std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
+			VariableInfo const* InAliasedVariableInfo
 		);
 		virtual ~AliasTypeInfo() = default;
 
 		/** The variable that contains the type being aliased */
-		VariableInfo const* Variable = nullptr;
+		VariableInfo const* AliasedVariableInfo = nullptr;
 	};
 
 	//============================================================
@@ -23,11 +24,13 @@ namespace Reflection {
 
 	template<typename AliasType>
 	struct TAliasTypeInfo : public AliasTypeInfo {
-		TAliasTypeInfo(char const* InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer, VariableInfo const* InVariable)
+		TAliasTypeInfo(
+			std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
+			VariableInfo const* InAliasedVariableInfo)
 		: AliasTypeInfo(
 			TypeResolver<AliasType>::GetID(), GetCompilerDefinition<AliasType>(),
 			InDescription, InFlags, InSerializer,
-			InVariable)
+			InAliasedVariableInfo)
 		{}
 
 		STANDARD_TYPEINFO_METHODS(AliasType)

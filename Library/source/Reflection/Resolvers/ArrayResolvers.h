@@ -8,39 +8,39 @@
 #include "Reflection/TypeResolver.h"
 #include "Reflection/ArrayTypeInfo.h"
 
-#define L_DYNAMIC_ARRAY_RESOLVER( __TEMPLATE__, __DESCRIPTION__ )\
-template<typename TELEMENT>\
-struct TypeResolver_Implementation<__TEMPLATE__<TELEMENT>> {\
-	static TDynamicArrayTypeInfo<TELEMENT, __TEMPLATE__<TELEMENT>> const _TypeInfo;\
+#define L_DYNAMIC_ARRAY_RESOLVER( _ArrayTemplate_, _Description_ )\
+template<typename ElementType>\
+struct TypeResolver_Implementation<_ArrayTemplate_<ElementType>> {\
+	static TDynamicArrayTypeInfo<ElementType, _ArrayTemplate_<ElementType>> const _TypeInfo;\
 	static TypeInfo const* Get() { return &_TypeInfo; }\
-	static constexpr Hash128 GetID() { return Hash128{ #__TEMPLATE__ } + TypeResolver<TELEMENT>::GetID(); }\
+	static constexpr Hash128 GetID() { return Hash128{ #_ArrayTemplate_ } + TypeResolver<ElementType>::GetID(); }\
 };\
-template<typename TELEMENT>\
-TDynamicArrayTypeInfo<TELEMENT, __TEMPLATE__<TELEMENT>> const TypeResolver_Implementation<__TEMPLATE__<TELEMENT>>::_TypeInfo{ __DESCRIPTION__, nullptr }
+template<typename ElementType>\
+TDynamicArrayTypeInfo<ElementType, _ArrayTemplate_<ElementType>> const TypeResolver_Implementation<_ArrayTemplate_<ElementType>>::_TypeInfo{ _Description_, FTypeFlags::None, nullptr }
 
 namespace Reflection {
 	namespace Internal {
 		//============================================================
 		// Standard fixed array type specializations
 
-		template<typename TELEMENT, size_t SIZE>
-		struct TypeResolver_Implementation<std::array<TELEMENT, SIZE>> {
-			static TFixedArrayTypeInfo<TELEMENT, SIZE, std::array<TELEMENT, SIZE>> const _TypeInfo;
+		template<typename ElementType, size_t Size>
+		struct TypeResolver_Implementation<std::array<ElementType, Size>> {
+			static TFixedArrayTypeInfo<ElementType, Size, std::array<ElementType, Size>> const _TypeInfo;
 			static TypeInfo const* Get() { return &_TypeInfo; }
 			static constexpr Hash128 GetID() {
-				return Hash128{ "std::array" } + TypeResolver<TELEMENT>::GetID() + Hash128{ static_cast<uint64_t>( SIZE ) };
+				return Hash128{ "std::array" } + TypeResolver<ElementType>::GetID() + Hash128{ static_cast<uint64_t>( Size ) };
 			}
 		};
-		template<typename TELEMENT, size_t SIZE>
-		TFixedArrayTypeInfo<TELEMENT, SIZE, std::array<TELEMENT, SIZE>> const TypeResolver_Implementation<std::array<TELEMENT, SIZE>>::_TypeInfo{ "fixed array", nullptr };
+		template<typename ElementType, size_t Size>
+		TFixedArrayTypeInfo<ElementType, Size, std::array<ElementType, Size>> const TypeResolver_Implementation<std::array<ElementType, Size>>::_TypeInfo{ "fixed array", FTypeFlags::None, nullptr };
 
 		//============================================================
 		// Standard dynamic array type specializations
 
-		L_DYNAMIC_ARRAY_RESOLVER( std::vector, "dynamic array" );
-		L_DYNAMIC_ARRAY_RESOLVER( std::forward_list, "singly-linked list" );
-		L_DYNAMIC_ARRAY_RESOLVER( std::list, "doubly-linked list" );
-		L_DYNAMIC_ARRAY_RESOLVER( std::deque, "double-ended queue" );
+		L_DYNAMIC_ARRAY_RESOLVER(std::vector, "dynamic array");
+		L_DYNAMIC_ARRAY_RESOLVER(std::forward_list, "singly-linked list");
+		L_DYNAMIC_ARRAY_RESOLVER(std::list, "doubly-linked list");
+		L_DYNAMIC_ARRAY_RESOLVER(std::deque, "double-ended queue");
 	}
 }
 

@@ -10,13 +10,13 @@ namespace Reflection {
 		EnumerationTypeInfo() = delete;
 		EnumerationTypeInfo(
 			Hash128 InUniqueID, CompilerDefinition InDefinition,
-			char const* InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
-			TypeInfo const* InUnderlying
+			std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
+			TypeInfo const* InUnderlyingTypeInfo
 		);
 		virtual ~EnumerationTypeInfo() = default;
 
 		/** The underlying type of the values in the enumeration */
-		TypeInfo const* Underlying = nullptr;
+		TypeInfo const* UnderlyingTypeInfo = nullptr;
 
 		/** Get the number of values that the enumeration defines */
 		virtual size_t GetCount() const = 0;
@@ -44,7 +44,7 @@ namespace Reflection {
 		TArrayView<EnumPairType> ElementView;
 
 		TStandardEnumerationTypeInfo(
-			char const* InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
+			std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
 			TArrayView<EnumPairType> InElementView)
 		: EnumerationTypeInfo(
 			TypeResolver<EnumType>::GetID(), GetCompilerDefinition<EnumType>(),
@@ -67,11 +67,11 @@ namespace Reflection {
 		}
 
 		virtual size_t GetIndexOfValue(void const* Value) const final {
-			const auto Iter = std::find(ElementView.begin(), ElementView.end(), [&](auto const& Pair) {return Pair.second == Cast(Value);});
+			const auto Iter = std::find(ElementView.begin(), ElementView.end(), [&](auto const& Pair) { return Pair.second == Cast(Value); });
 			return Iter - ElementView.begin();
 		}
 		virtual size_t GetIndexOfName(std::string_view Name) const final {
-			const auto Iter = std::find(ElementView.begin(), ElementView.end(), [&](auto const& Pair) {return Pair.first == Name;});
+			const auto Iter = std::find(ElementView.begin(), ElementView.end(), [&](auto const& Pair) { return Pair.first == Name; });
 			return Iter - ElementView.begin();
 		}
 	};
@@ -85,7 +85,8 @@ namespace Reflection {
 		TArrayView<EnumPairType> ElementView;
 
 		TGenericEnumerationTypeInfo(
-			Hash128 InUniqueID, char const* InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
+			Hash128 InUniqueID,
+			std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
 			TArrayView<EnumPairType> InElementView)
 		: EnumerationTypeInfo(
 			InUniqueID, GetCompilerDefinition<UnderlyingType>(),
@@ -108,11 +109,11 @@ namespace Reflection {
 		}
 
 		virtual size_t GetIndexOfValue(void const* Value) const final {
-			const auto Iter = std::find(ElementView.begin(), ElementView.end(), [&](auto const& Pair) {return Pair.second == Cast(Value);});
+			const auto Iter = std::find(ElementView.begin(), ElementView.end(), [&](auto const& Pair) { return Pair.second == Cast(Value); });
 			return Iter - ElementView.begin();
 		}
 		virtual size_t GetIndexOfName(std::string_view Name) const final {
-			const auto Iter = std::find(ElementView.begin(), ElementView.end(), [&](auto const& Pair) {return Pair.first == Name;});
+			const auto Iter = std::find(ElementView.begin(), ElementView.end(), [&](auto const& Pair) { return Pair.first == Name; });
 			return Iter - ElementView.begin();
 		}
 	};

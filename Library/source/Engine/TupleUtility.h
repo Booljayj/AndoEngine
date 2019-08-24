@@ -4,70 +4,70 @@
 namespace TupleUtility {
 	namespace detail {
 		/** Runtime value visitor implementations */
-		template<size_t I>
+		template<size_t TupleElementPosition>
 		struct Visit_Impl {
-			template<typename R, typename TTUPLE, typename TVISITOR>
-			inline static constexpr R Visit( TTUPLE const& Tuple, size_t Index, TVISITOR Visitor ) {
-				return Index == (I - 1U) ?
-					Visitor( std::get<I - 1U>(Tuple) ) :
-					Visit_Impl<I - 1U>::template Visit<R>( Tuple, Index, Visitor );
+			template<typename ReturnType, typename TupleType, typename VisitorType>
+			inline static constexpr ReturnType Visit(TupleType const& Tuple, size_t DesiredIndex, VisitorType&& Visitor) {
+				return DesiredIndex == (TupleElementPosition - 1U) ?
+					Visitor(std::get<TupleElementPosition - 1U>(Tuple)) :
+					Visit_Impl<TupleElementPosition - 1U>::template Visit<ReturnType>(Tuple, DesiredIndex, Visitor);
 			}
-			template<typename R, typename TTUPLE, typename TVISITOR>
-			inline static constexpr R Visit( TTUPLE& Tuple, size_t Index, TVISITOR Visitor ) {
-				return Index == (I - 1U) ?
-					Visitor( std::get<I - 1U>(Tuple) ) :
-					Visit_Impl<I - 1U>::template Visit<R>( Tuple, Index, Visitor );
+			template<typename ReturnType, typename TupleType, typename VisitorType>
+			inline static constexpr ReturnType Visit(TupleType& Tuple, size_t DesiredIndex, VisitorType&& Visitor) {
+				return DesiredIndex == (TupleElementPosition - 1U) ?
+					Visitor(std::get<TupleElementPosition - 1U>(Tuple)) :
+					Visit_Impl<TupleElementPosition - 1U>::template Visit<ReturnType>(Tuple, DesiredIndex, Visitor);
 			}
 		};
 
 		template<>
 		struct Visit_Impl<0U> {
-			template<typename R, typename TTUPLE, typename TVISITOR>
-			inline static constexpr R Visit( TTUPLE const&, size_t, TVISITOR ) noexcept(noexcept(R{})) {
-				static_assert( std::is_default_constructible<R>::value, "Explicit return type of Visit method must be default-constructible" );
-				return R{};
+			template<typename ReturnType, typename TupleType, typename VisitorType>
+			inline static constexpr ReturnType Visit(TupleType const&, size_t, VisitorType&&) noexcept(noexcept(ReturnType{})) {
+				static_assert(std::is_default_constructible<ReturnType>::value, "Explicit return type of Visit method must be default-constructible");
+				return ReturnType{};
 			}
-			template<typename R, typename TTUPLE, typename TVISITOR>
-			inline static constexpr R Visit( TTUPLE&, size_t, TVISITOR ) noexcept(noexcept(R{})) {
-				static_assert( std::is_default_constructible<R>::value, "Explicit return type of Visit method must be default-constructible" );
-				return R{};
+			template<typename ReturnType, typename TupleType, typename VisitorType>
+			inline static constexpr ReturnType Visit(TupleType&, size_t, VisitorType&&) noexcept(noexcept(ReturnType{})) {
+				static_assert(std::is_default_constructible<ReturnType>::value, "Explicit return type of Visit method must be default-constructible");
+				return ReturnType{};
 			}
 		};
 
 		/** Runtime type visitor implementations */
-		template<size_t I>
+		template<size_t TupleElementPosition>
 		struct VisitType_Impl {
-			template<typename R, typename TTUPLE, template<typename> class TVISITOR>
-			inline static constexpr R VisitType( size_t Index ) {
-				return Index == (I - 1U) ?
-					TVISITOR<typename std::tuple_element<I - 1U, TTUPLE>::type>::Get() :
-					VisitType_Impl<I - 1U>::template VisitType<R, TTUPLE, TVISITOR>( Index );
+			template<typename ReturnType, typename TupleType, template<typename> class VisitorTemplate>
+			inline static constexpr ReturnType VisitType(size_t DesiredIndex) {
+				return DesiredIndex == (TupleElementPosition - 1U) ?
+					VisitorTemplate<typename std::tuple_element<TupleElementPosition - 1U, TupleType>::type>::Get() :
+					VisitType_Impl<TupleElementPosition - 1U>::template VisitType<ReturnType, TupleType, VisitorTemplate>(DesiredIndex);
 			}
 		};
 
 		template<>
 		struct VisitType_Impl<0U> {
-			template<typename R, typename TTUPLE, template<typename> class TVISITOR>
-			inline static constexpr R VisitType( size_t Index ) {
-				static_assert( std::is_default_constructible<R>::value, "Explicit return type of VisitType method must be default-constructible" );
-				return R{};
+			template<typename ReturnType, typename TupleType, template<typename> class VisitorTemplate>
+			inline static constexpr ReturnType VisitType(size_t DesiredIndex) {
+				static_assert(std::is_default_constructible<ReturnType>::value, "Explicit return type of VisitType method must be default-constructible");
+				return ReturnType{};
 			}
 		};
 	}
 
 	/** Visit the element at the specified index and call the visitor functor with that element */
-	template<typename R, typename TTUPLE, typename TVISITOR>
-	inline constexpr R VisitAt( TTUPLE const& Tuple, size_t Index, TVISITOR Visitor ) {
-		return detail::Visit_Impl<std::tuple_size<TTUPLE>::value>::template Visit<R>( Tuple, Index, Visitor );
+	template<typename ReturnType, typename TupleType, typename VisitorType>
+	inline constexpr ReturnType VisitAt(TupleType const& Tuple, size_t DesiredIndex, VisitorType Visitor) {
+		return detail::Visit_Impl<std::tuple_size<TupleType>::value>::template Visit<ReturnType>(Tuple, DesiredIndex, Visitor);
 	}
-	template<typename R, typename TTUPLE, typename TVISITOR>
-	inline constexpr R VisitAt( TTUPLE& Tuple, size_t Index, TVISITOR Visitor ) {
-		return detail::Visit_Impl<std::tuple_size<TTUPLE>::value>::template Visit<R>( Tuple, Index, Visitor );
+	template<typename ReturnType, typename TupleType, typename VisitorType>
+	inline constexpr ReturnType VisitAt(TupleType& Tuple, size_t DesiredIndex, VisitorType Visitor) {
+		return detail::Visit_Impl<std::tuple_size<TupleType>::value>::template Visit<ReturnType>(Tuple, DesiredIndex, Visitor);
 	}
 
 	/** Visit the type at the specified index, instantiate the template with that type, and invoke the templates "Get" method */
-	template<typename R, typename TTUPLE, template<typename> class TVISITOR>
-	inline constexpr R VisitTypeAt( size_t Index ) {
-		return detail::VisitType_Impl<std::tuple_size<TTUPLE>::value>::template VisitType<R, TTUPLE, TVISITOR>( Index );
+	template<typename ReturnType, typename TupleType, template<typename> class VisitorTemplate>
+	inline constexpr ReturnType VisitTypeAt(size_t DesiredIndex) {
+		return detail::VisitType_Impl<std::tuple_size<TupleType>::value>::template VisitType<ReturnType, TupleType, VisitorTemplate>(DesiredIndex);
 	}
 }

@@ -13,21 +13,18 @@ namespace Reflection {
 	}
 
 	TypeInfo const* TypeInfo::FindTypeByID( Hash128 UniqueID ) {
-		for( TypeInfo const* Info : GetGlobalTypeInfoCollection() ) {
-			if( Info && Info->UniqueID == UniqueID ) {
-				return Info;
-			}
+		for (TypeInfo const* Info : GetGlobalTypeInfoCollection()) {
+			if (Info && Info->UniqueID == UniqueID) return Info;
 		}
 		return nullptr;
 	}
 
 	TypeInfo::TypeInfo(
 		ETypeClassification InClassification, Hash128 InUniqueID, CompilerDefinition InDefinition,
-		char const* InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer
-	)
-	: Classification( InClassification ), UniqueID( InUniqueID ), Definition( InDefinition )
-	, Description( InDescription ), Flags( InFlags ), Serializer( InSerializer )
+		std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer)
+	: Classification(InClassification), UniqueID(InUniqueID), Definition(InDefinition)
+	, Description(InDescription), Flags(InFlags), Serializer(InSerializer)
 	{
-		GetMutableGlobalTypeInfoCollection().push_back( this );
+		GetMutableGlobalTypeInfoCollection().push_back(this);
 	}
 }

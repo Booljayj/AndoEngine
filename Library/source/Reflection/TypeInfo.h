@@ -39,6 +39,7 @@ namespace Reflection
 	public:
 		//============================================================
 		// Basic required type information
+
 		/** The classification of this TypeInfo, defining what kinds of type information it contains */
 		ETypeClassification Classification = ETypeClassification::Primitive;
 		/** The identifier for this type. Always unique and stable. */
@@ -48,55 +49,56 @@ namespace Reflection
 
 		//============================================================
 		// Optional type information
+
 		/** Human-readable description of this type */
-		char const* Description = nullptr;
+		std::string_view Description = std::string_view{};
 		/** Flags that provide additional information about this type */
 		FTypeFlags Flags = FTypeFlags::None;
-		/** The interface used to serialize this type. If null, this type cannot be serialized. */
+		/** The interface used to serialize this type */
 		Serialization::ISerializer* Serializer = nullptr;
 
 		/** Get the container that includes all TypeInfo objects that exist. */
 		static std::deque<TypeInfo const*> const& GetGlobalTypeInfoCollection();
 
 		/** Find a TypeInfo object using its unique ID */
-		static TypeInfo const* FindTypeByID( Hash128 UniqueID );
+		static TypeInfo const* FindTypeByID(Hash128 UniqueID);
 
 		TypeInfo() = delete;
 		TypeInfo(
 			ETypeClassification InClassification, Hash128 InUniqueID, CompilerDefinition InDefinition,
-			char const* InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer
+			std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer
 		);
 		virtual ~TypeInfo() = default;
 
-		/** Construct an instance of this type at the address using the default constructor. Assumes enough space has been allocated to fit this type */
-		virtual void Construct( void* A ) const = 0;
+		/** Construct an instance of this type at the address using the default constructor */
+		virtual void Construct(void* Instance) const = 0;
+		/** Construct an instance of this type at the address using the copy constructor and an existing instance */
+		virtual void Construct(void* Instance, void const* Template) const = 0;
 		/** Destruct an instance of this type at the address. Assumes the instance was properly constructed and won't be destructed again */
-		virtual void Destruct( void* A ) const = 0;
-		/** Copy one instance of this type into another. The destination instance must be initialized. Most types will deep copy, but some may shallow copy if appropriate. */
-		virtual void Copy(void* A, void const* B) const {}
+		virtual void Destruct(void* Instance) const = 0;
 		/** Compare two instances of this type and return true if they should be considered equal */
-		virtual bool Equal( void const* A, void const* B ) const = 0;
+		virtual bool Equal(void const* InstanceA, void const* InstanceB) const = 0;
 
 		/** Convert this TypeInfo to a specific kind of TypeInfo. Will return nullptr if the conversion is not possible */
-		template<typename TTYPE>
-		TTYPE const* As() const {
-			if( TTYPE::CLASSIFICATION == Classification ) return static_cast<TTYPE const*>( this );
+		template<typename TypeInfoType>
+		TypeInfoType const* As() const {
+			if (TypeInfoType::CLASSIFICATION == Classification) return static_cast<TypeInfoType const*>(this);
 			else return nullptr;
 		}
 	};
 
 	/** Convert a TypeInfo pointer to a specific kind of TypeInfo. Will return nullptr if the conversion is not possible */
-	template<typename TTYPE>
-	TTYPE const* Cast( TypeInfo const* Info ) {
-		if( !Info ) return nullptr;
-		else return Info->As<TTYPE>();
+	template<typename TypeInfoType>
+	TypeInfoType const* Cast(TypeInfo const* Info) {
+		if (!Info) return nullptr;
+		else return Info->As<TypeInfoType>();
 	}
 }
 
 #define STANDARD_TYPEINFO_METHODS(Type)\
 static constexpr Type const& Cast(void const* P) { return *static_cast<Type const*>(P); }\
 static constexpr Type& Cast(void* P) { return *static_cast<Type*>(P); }\
-virtual void Construct(void* P) const final {new (P) Type;}\
-virtual void Destruct(void* P) const final {Cast(P).~Type();}\
-virtual void Copy(void* A, void const* B) const final {Cast(A) = Cast(B);}\
+virtual void Construct(void* I) const final {new (I) Type;}\
+virtual void Construct(void* I, void const* T) const final { new (I) Type(Cast(T));}\
+virtual void Destruct(void* I) const final {Cast(I).~Type();}\
 virtual bool Equal(void const* A, void const* B) const final {return Cast(A) == Cast(B);}

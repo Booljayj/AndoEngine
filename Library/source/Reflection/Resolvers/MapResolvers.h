@@ -5,23 +5,23 @@
 #include "Reflection/TypeResolver.h"
 #include "Reflection/MapTypeInfo.h"
 
-#define L_MAP_TYPE_RESOLVER( __TEMPLATE__, __DESCRIPTION__ )\
-template<typename TKEY, typename TVALUE>\
-struct TypeResolver_Implementation<__TEMPLATE__<TKEY, TVALUE>> {\
-	static TMapTypeInfo<TKEY, TVALUE, __TEMPLATE__<TKEY, TVALUE>> const _TypeInfo;\
+#define L_MAP_TYPE_RESOLVER( _MapTemplate_, _Description_ )\
+template<typename KeyType, typename ValueType>\
+struct TypeResolver_Implementation<_MapTemplate_<KeyType, ValueType>> {\
+	static TMapTypeInfo<KeyType, ValueType, _MapTemplate_<KeyType, ValueType>> const _TypeInfo;\
 	static TypeInfo const* Get() { return &_TypeInfo; }\
-	static constexpr Hash128 GetID() { return Hash128{ #__TEMPLATE__ } + TypeResolver<TKEY>::GetID() + TypeResolver<TVALUE>::GetID(); }\
+	static constexpr Hash128 GetID() { return Hash128{ #_MapTemplate_ } + TypeResolver<KeyType>::GetID() + TypeResolver<ValueType>::GetID(); }\
 };\
-template<typename TKEY, typename TVALUE>\
-TMapTypeInfo<TKEY, TVALUE, __TEMPLATE__<TKEY, TVALUE>> const TypeResolver_Implementation<__TEMPLATE__<TKEY, TVALUE>>::_TypeInfo{ __DESCRIPTION__, nullptr }
+template<typename KeyType, typename ValueType>\
+TMapTypeInfo<KeyType, ValueType, _MapTemplate_<KeyType, ValueType>> const TypeResolver_Implementation<_MapTemplate_<KeyType, ValueType>>::_TypeInfo{ _Description_, FTypeFlags::None, nullptr }
 
 namespace Reflection {
 	namespace Internal {
 		//============================================================
 		// Standard map type specializations
 
-		L_MAP_TYPE_RESOLVER( std::map, "ordered map" );
-		L_MAP_TYPE_RESOLVER( std::unordered_map, "unordered map" );
+		L_MAP_TYPE_RESOLVER(std::map, "ordered map");
+		L_MAP_TYPE_RESOLVER(std::unordered_map, "unordered map");
 	}
 }
 

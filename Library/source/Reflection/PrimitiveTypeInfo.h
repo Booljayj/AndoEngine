@@ -1,33 +1,32 @@
+#pragma once
 #include "Reflection/TypeInfo.h"
 #include "Reflection/TypeResolver.h"
 
 namespace Reflection {
-	template<typename TYPE>
+	template<typename Type>
 	struct TPrimitiveTypeInfo : public TypeInfo {
-		TPrimitiveTypeInfo( char const* InDescription, Serialization::ISerializer* InSerializer )
+		TPrimitiveTypeInfo(
+			std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer)
 		: TypeInfo(
-			TypeInfo::CLASSIFICATION, TypeResolver<TYPE>::GetID(), GetCompilerDefinition<TYPE>(),
-			InDescription, FTypeFlags::None, InSerializer )
+			TypeInfo::CLASSIFICATION, TypeResolver<Type>::GetID(), GetCompilerDefinition<Type>(),
+			InDescription, InFlags, InSerializer)
 		{}
 
-		static constexpr TYPE const& Cast( void const* P ) { return *static_cast<TYPE const*>( P ); }
-		static constexpr TYPE& Cast( void* P ) { return *static_cast<TYPE*>( P ); }
-
-		virtual void Construct( void* P ) const final { new (P) TYPE; }
-		virtual void Destruct( void* P ) const final { Cast(P).~TYPE(); }
-		virtual bool Equal( void const* A, void const* B ) const final { return Cast(A) == Cast(B); }
+		STANDARD_TYPEINFO_METHODS(Type)
 	};
 
 	/** Special type for void, which is not a type that can have values but still needs TypeInfo */
-	template<> struct TPrimitiveTypeInfo<void> : public TypeInfo {
+	template<>
+	struct TPrimitiveTypeInfo<void> : public TypeInfo {
 		TPrimitiveTypeInfo()
 		: TypeInfo(
 			TypeInfo::CLASSIFICATION, Hash128{}, GetCompilerDefinition<void>(),
-			"not a type", FTypeFlags::None, nullptr )
+			"not a type", FTypeFlags::None, nullptr)
 		{}
 
-		virtual void Construct( void* P ) const final {}
-		virtual void Destruct( void* P ) const final {}
-		virtual bool Equal( void const* A, void const* B ) const final { return false; }
+		virtual void Construct(void* I) const final {}
+		virtual void Construct(void* I, void const* T) const final {}
+		virtual void Destruct(void* I) const final {}
+		virtual bool Equal(void const* A, void const* B) const final { return false; }
 	};
 }

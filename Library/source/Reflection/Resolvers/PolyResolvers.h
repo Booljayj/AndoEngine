@@ -1,3 +1,4 @@
+#pragma once
 #include <memory>
 #include "Engine/Hash.h"
 #include "Reflection/TypeResolver.h"
@@ -5,16 +6,16 @@
 
 namespace Reflection {
 	namespace Internal {
-	//============================================================
-	// Standard poly type specializations
+		//============================================================
+		// Standard poly type specializations
 
-		template<typename TBASE>
-		struct TypeResolver_Implementation<std::unique_ptr<TBASE>> {
-			static TUniquePtrTypeInfo<TBASE> const _TypeInfo;
+		template<typename BaseType>
+		struct TypeResolver_Implementation<std::unique_ptr<BaseType>> {
+			static TUniquePtrTypeInfo<BaseType> const _TypeInfo;
 			static TypeInfo const* Get() { return &_TypeInfo; }
-			static constexpr Hash128 GetID() { return Hash128{ "std::unique_ptr" } + TypeResolver<TBASE>::GetID(); }
+			static constexpr Hash128 GetID() { return Hash128{ "std::unique_ptr" } + TypeResolver<BaseType>::GetID(); }
 		};
-		template<typename TBASE>
-		TUniquePtrTypeInfo<TBASE> const TypeResolver_Implementation<std::unique_ptr<TBASE>>::_TypeInfo{ "unique pointer", nullptr };
+		template<typename BaseType>
+		TUniquePtrTypeInfo<BaseType> const TypeResolver_Implementation<std::unique_ptr<BaseType>>::_TypeInfo{ "unique pointer", FTypeFlags::None, nullptr };
 	}
 }

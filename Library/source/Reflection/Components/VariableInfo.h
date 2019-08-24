@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include "Engine/Hash.h"
 #include "Reflection/TypeResolver.h"
@@ -17,14 +18,14 @@ namespace Reflection {
 	/** Info that describes a variable value */
 	struct VariableInfo {
 		VariableInfo() = delete;
-		VariableInfo( const char* InName, TypeInfo const* InType, const char* InDescription, FVariableFlags InFlags )
-		: Name( InName )
-		, NameHash( InName )
-		, Type( InType )
-		, Description( InDescription )
-		, Flags( InFlags )
+		VariableInfo(std::string_view InName, TypeInfo const* InType, std::string_view InDescription, FVariableFlags InFlags)
+		: Name(InName)
+		, NameHash(InName)
+		, Type(InType)
+		, Description(InDescription)
+		, Flags(InFlags)
 		{}
-		virtual ~VariableInfo() {};
+		virtual ~VariableInfo() = default;
 
 		std::string Name;
 		Hash32 NameHash = Hash32{};
@@ -33,43 +34,37 @@ namespace Reflection {
 		std::string Description;
 		FVariableFlags Flags = FVariableFlags::None;
 
-		virtual void const* GetImmutableValuePointer( void const* Instance ) const = 0;
-		virtual void* GetMutableValuePointer( void* Instance ) const = 0;
+		virtual void const* GetImmutableValuePointer(void const* Instance) const = 0;
+		virtual void* GetMutableValuePointer(void* Instance) const = 0;
 	};
 
-	template<typename TVAR>
+	template<typename ValueType>
 	struct TStaticVariableInfo : public VariableInfo {
 		TStaticVariableInfo() = delete;
-		TStaticVariableInfo( const char* InName, const char* InDescription, TVAR* InStaticPointer )
-		: VariableInfo( InName, TypeResolver<typename std::decay<TVAR>::type>::Get(), InDescription, FVariableFlags::None )
-		, StaticPointer( InStaticPointer )
+		TStaticVariableInfo(std::string_view InName, std::string_view InDescription, ValueType* InStaticPointer)
+		: VariableInfo(InName, TypeResolver<typename std::decay<ValueType>::type>::Get(), InDescription, FVariableFlags::None)
+		, StaticPointer(InStaticPointer)
 		{}
-		virtual ~TStaticVariableInfo() {};
 
-		TVAR* StaticPointer;
+		ValueType* StaticPointer = nullptr;
 
 		virtual void const* GetImmutableValuePointer( void const* Instance ) const final { return StaticPointer; }
 		virtual void* GetMutableValuePointer( void* Instance ) const final { return StaticPointer; }
 	};
 
 	/** Info that describes a variable within a struct */
-	template<typename TCLASS, typename TVAR>
+	template<typename StructType, typename ValueType>
 	struct TMemberVariableInfo : VariableInfo {
 		TMemberVariableInfo() = delete;
-		TMemberVariableInfo( const char* InName, const char* InDescription, TVAR TCLASS::* InMemberPointer )
-		: VariableInfo( InName, TypeResolver<typename std::decay<TVAR>::type>::Get(), InDescription, FVariableFlags::None )
-		, MemberPointer( InMemberPointer )
+		TMemberVariableInfo(std::string_view InName, std::string_view InDescription, ValueType StructType::* InMemberPointer)
+		: VariableInfo(InName, TypeResolver<typename std::decay<ValueType>::type>::Get(), InDescription, FVariableFlags::None)
+		, MemberPointer(InMemberPointer)
 		{}
-		virtual ~TMemberVariableInfo() {};
 
-		TVAR TCLASS::* MemberPointer;
+		ValueType StructType::* MemberPointer = nullptr;
 
-		void const* GetImmutableValuePointer( void const* Instance ) const final { return &( ((TCLASS const*)Instance)->*MemberPointer ); }
-		void* GetMutableValuePointer( void* Instance ) const final { return &( ((TCLASS*)Instance)->*MemberPointer ); }
-	};
-
-	struct VariableView {
-
+		void const* GetImmutableValuePointer(void const* Instance) const final { return &(((StructType const*)Instance)->*MemberPointer); }
+		void* GetMutableValuePointer(void* Instance) const final { return &(((StructType*)Instance)->*MemberPointer); }
 	};
 }
 

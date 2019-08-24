@@ -3,12 +3,11 @@
 namespace Reflection {
 	AliasTypeInfo::AliasTypeInfo(
 		Hash128 InUniqueID, CompilerDefinition InDefinition,
-		char const* InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
-		VariableInfo const* InVariable
-	)
+		std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
+		VariableInfo const* InAliasedVariableInfo)
 	: TypeInfo(
 		AliasTypeInfo::CLASSIFICATION, InUniqueID, InDefinition,
 		InDescription, InFlags, InSerializer)
-	, Variable(InVariable)
+	, AliasedVariableInfo(InAliasedVariableInfo)
 	{}
 }

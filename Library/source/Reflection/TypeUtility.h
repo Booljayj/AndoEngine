@@ -13,18 +13,18 @@ namespace Reflection {
 	struct Demangler {
 		Demangler() = default;
 		~Demangler() {
-			if( Buffer != nullptr ) std::free( Buffer );
+			if (Buffer != nullptr) std::free(Buffer);
 		}
 
 		/** Demangle the name of a type and return a view of hte results */
-		std::string Demangle( TypeInfo const& Info ) {
+		std::string Demangle(TypeInfo const& Info) {
 			//Perform the demangling. Will return nullptr if the demangling fails, otherwise will return the buffer that contains the name,
 			// which may be the same as the input buffer if there was enough space. Or a brand new one if
 			int Result = 1;
-			char* NewBuffer = abi::__cxa_demangle( Info.Definition.GetMangledName(), Buffer, &Length, &Result );
-			if( NewBuffer != nullptr ) Buffer = NewBuffer;
+			char* NewBuffer = abi::__cxa_demangle(Info.Definition.GetMangledName(), Buffer, &Length, &Result);
+			if (NewBuffer != nullptr) Buffer = NewBuffer;
 
-			if( Result == 0 ) return std::string{ Buffer };
+			if (Result == 0) return std::string{Buffer};
 			else return std::string{};
 		}
 
@@ -34,7 +34,7 @@ namespace Reflection {
 	};
 
 	/** Returns an identifier code suitable to display the classification */
-	std::string_view GetClassificationIdentifier( ETypeClassification Classification );
+	std::string_view GetClassificationIdentifier(ETypeClassification Classification);
 
 	enum class FDebugPrintFlags : uint8_t {
 		None = 0,
@@ -42,8 +42,8 @@ namespace Reflection {
 		IncludeMetrics = 1 << 1,
 		DetailedInfo = 1 << 2,
 	};
-	DEFINE_BITFLAG_OPERATORS( FDebugPrintFlags );
+	DEFINE_BITFLAG_OPERATORS(FDebugPrintFlags);
 
 	/** Print a description of a TypeInfo to a stream for debugging purposes. */
-	void DebugPrint( TypeInfo const* Info, std::ostream& Stream, FDebugPrintFlags Flags = FDebugPrintFlags::None );
+	void DebugPrint(TypeInfo const* Info, std::ostream& Stream, FDebugPrintFlags Flags = FDebugPrintFlags::None);
 }
