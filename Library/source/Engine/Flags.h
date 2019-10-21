@@ -2,26 +2,39 @@
 #include <type_traits>
 
 /** Test if the bitflag value is set to true in the mask */
-#define TEST_BIT( Mask, Bit ) ((size_t)(Mask) & (size_t)(Bit))
+#define TEST_BIT(Mask, Value) ((size_t)(Mask) & (size_t)(Value))
 /** Set the bitflag to true in the mask */
-#define SET_BIT( Mask, Bit ) ((size_t)(Mask) |= (size_t)(Bit))
+#define SET_BIT(Mask, Value) ((size_t)(Mask) |= (size_t)(Value))
 /** Set the bitflag to false in the mask */
-#define CLEAR_BIT( Mask, Bit ) ((size_t)(Mask) &= (size_t)(~(Bit)))
+#define CLEAR_BIT(Mask, Value) ((size_t)(Mask) &= (size_t)(~(Value)))
 
-/** Defines operators to work with a scoped enum that should act like a set of bitflags */
-#define DEFINE_BITFLAG_OPERATORS( __ENUM__ )\
-constexpr inline __ENUM__ operator|( __ENUM__ A, __ENUM__ B ) {\
-	return static_cast<__ENUM__>( static_cast<std::underlying_type<__ENUM__>::type>(A) | static_cast<std::underlying_type<__ENUM__>::type>(B) );\
+/**
+ * Defines operators to work with a scoped enum that should act like a set of bitflags
+ *     + : returns A cast to its underlying integer type
+ *     ! : returns true if A has no flags (use !! to check if A has any flags)
+ *     ~ : returns A with flags flipped
+ *     | : returns flags that are in A or B
+ *     & : returns flags that are in both A and B
+ *     ^ : returns flags that are different in A and B
+ *     % : returns flags in A without any of the flags in B
+ *     * : returns true if A contains any of the flags in B
+ *     / : returns true if A contains all of the flags in B
+ */
+#define DEFINE_BITFLAG_OPERATORS(EnumType)\
+constexpr inline std::underlying_type<EnumType>::type operator+(EnumType A) noexcept {\
+	return static_cast<typename std::underlying_type<EnumType>::type>(A);\
 }\
-constexpr inline __ENUM__ operator&( __ENUM__ A, __ENUM__ B ) {\
-	return static_cast<__ENUM__>( static_cast<std::underlying_type<__ENUM__>::type>(A) & static_cast<std::underlying_type<__ENUM__>::type>(B) );\
-}\
-constexpr inline __ENUM__ operator^( __ENUM__ A, __ENUM__ B ) {\
-	return static_cast<__ENUM__>( static_cast<std::underlying_type<__ENUM__>::type>(A) ^ static_cast<std::underlying_type<__ENUM__>::type>(B) );\
-}\
-constexpr inline __ENUM__& operator|=( __ENUM__& A, __ENUM__ B ) { A = A | B; return A; }\
-constexpr inline __ENUM__& operator&=( __ENUM__& A, __ENUM__ B ) { A = A & B; return A; }\
-constexpr inline __ENUM__& operator^=( __ENUM__& A, __ENUM__ B ) { A = A ^ B; return A; }\
-constexpr inline bool operator<( __ENUM__ A, __ENUM__ B ) {\
-	return bool( static_cast<std::underlying_type<__ENUM__>::type>(A) & static_cast<std::underlying_type<__ENUM__>::type>(B) );\
-}\
+constexpr inline bool operator!(EnumType A) noexcept { return (+A) == 0; }\
+constexpr inline EnumType operator~(EnumType A) noexcept { return static_cast<EnumType>(~(+A)); }\
+constexpr inline EnumType operator|(EnumType A, EnumType B) noexcept { return static_cast<EnumType>((+A) | (+B)); }\
+constexpr inline EnumType operator&(EnumType A, EnumType B) noexcept { return static_cast<EnumType>((+A) & (+B)); }\
+constexpr inline EnumType operator^(EnumType A, EnumType B) noexcept { return static_cast<EnumType>((+A) ^ (+B)); }\
+constexpr inline EnumType operator%(EnumType A, EnumType B) noexcept { return static_cast<EnumType>((+A) & (~(+B))); }\
+constexpr inline EnumType& operator|=(EnumType& A, EnumType B) noexcept { A = A | B; return A; }\
+constexpr inline EnumType& operator&=(EnumType& A, EnumType B) noexcept { A = A & B; return A; }\
+constexpr inline EnumType& operator^=(EnumType& A, EnumType B) noexcept { A = A ^ B; return A; }\
+constexpr inline EnumType& operator%=(EnumType& A, EnumType B) noexcept { A = A % B; return A; }\
+[[deprecated("Use operator* instead")]]\
+constexpr inline bool operator<(EnumType A, EnumType B) noexcept { return ((+A) & (+B)) != 0; }\
+constexpr inline bool operator*(EnumType A, EnumType B) noexcept { return ((+A) & (+B)) != 0; }\
+constexpr inline bool operator/(EnumType A, EnumType B) noexcept { return ((+A) & (+B)) == (+B); }\
