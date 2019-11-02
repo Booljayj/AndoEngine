@@ -5,9 +5,15 @@ template<typename T>
 struct TArrayView {
 	constexpr TArrayView() = default;
 
-	template<typename TArray>
-	constexpr TArrayView(const TArray& Array)
-	: Begin(Array.begin()), Size(Array.size())
+	//Create from a single value
+	constexpr TArrayView(T const& Value)
+	: Begin(&Value), Size(1)
+	{}
+
+	//Create from an iterable container
+	template<typename ArrayType>
+	constexpr TArrayView(ArrayType const& Array)
+	: Begin(Array.begin()), Size(Array.end() - Array.begin())
 	{}
 
 	constexpr inline T const& operator[](size_t Index) const { return Begin[Index]; }
