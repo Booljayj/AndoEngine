@@ -4,6 +4,7 @@
 #include <string_view>
 #include <deque>
 #include <ostream>
+#include "Engine/Flags.h"
 #include "Engine/Hash.h"
 #include "Serialization/Serializer.h"
 #include "Reflection/CompilerDefinition.h"
@@ -30,7 +31,12 @@ namespace Reflection
 	/** Flags to describe aspects of a particular type */
 	enum class FTypeFlags : uint8_t {
 		None = 0,
+		//This type can be serialized to disk (binary or text)
+		Serializable = 1 << 0,
+		//This type can be serialized over the network (fast binary)
+		NetSerializable = 1 << 1,
 	};
+	DEFINE_BITFLAG_OPERATORS(FTypeFlags);
 
 	/** Provides a set of runtime information about a type */
 	struct TypeInfo {
