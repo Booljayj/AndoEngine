@@ -14,6 +14,6 @@ private:
 };
 
 /** Used at the beginning of a scope to indicate that temporary allocations will be reset when the scope ends */
-#define TEMP_SCOPE ScopedTempBlock const __ScopedTempBlock{ CTX, CTX.Temp.GetCursor() }
+#define TEMP_SCOPE ScopedTempBlock const ScopedTempBlock_{ CTX, CTX.Temp.GetCursor() }
 /** Reset the temporary allocation scope early. All allocations made before this is called will become invalid. */
 #define TEMP_SCOPE_RESET __ScopedTempBlock.Reset()
