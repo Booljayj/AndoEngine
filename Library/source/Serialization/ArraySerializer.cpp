@@ -5,68 +5,59 @@
 #include "Serialization/SerializationUtility.h"
 
 namespace Serialization {
-	ArraySerializer::ArraySerializer( Reflection::ArrayTypeInfo const* InType )
-	: Type( InType )
-	{}
+	bool ArraySerializer::SerializeBinary(Reflection::TypeInfo const& Info, void const* Data, std::ostream& Stream) const {
+		Reflection::ArrayTypeInfo const* const ArrayInfo = Info.As<Reflection::ArrayTypeInfo>();
+		if (!ArrayInfo) return false;
 
-	void ArraySerializer::SerializeBinary( void const* Data, std::ostream& Stream ) const
-	{
-		std::streampos const StartPosition = StartDataBlockWrite( Stream );
-		std::vector<void const*> Elements;
+		ScopedDataBlockWrite const ScopedWrite{Stream};
 
 		//Write the size of the array to the stream (handles cases where array size changes)
-		WriteArrayCount( Stream, Data );
+		uint32_t const ArraySize = ArrayInfo->GetCount(Data);
+		WriteLE(&ArraySize, Stream);
 
 		//Get an array of pointers to all the elements
-		Type->GetElements( Data, Elements );
+		std::vector<void const*> Elements;
+		ArrayInfo->GetElements(Data, Elements);
 
 		//Write a data block for each element to the stream
-		for( uint32_t Index = 0; Index < Elements.size(); ++Index ) {
-			Type->ElementTypeInfo->Serializer->SerializeBinary( Elements[Index], Stream );
+		for (uint32_t Index = 0; Index < Elements.size(); ++Index) {
+			SerializeTypeBinary(*ArrayInfo->ElementTypeInfo, Elements[Index], Stream);
 		}
-
-		FinishDataBlockWrite( Stream, StartPosition );
-	}
-
-	bool ArraySerializer::DeserializeBinary( void* Data, std::istream& Stream ) const
-	{
-		std::streampos const EndPosition = ReadDataBlockEndPosition( Stream );
-
-		//Get the serialized size of the array from the data block
-		uint32_t const SerializedArraySize = ReadArrayCount( Stream );
-		//Set the array size to match what we just read, if possible
-		if( !Type->IsFixedSize ) Type->Resize( Data, SerializedArraySize );
-
-		//Get an array of pointers to all the elements
-		std::vector<void*> Elements;
-		Type->GetElements( Data, Elements );
-
-		//Read a data block for each element from the stream
-		bool bArrayReadSuccessful = true;
-		for( uint32_t Index = 0; Index < Elements.size(); ++Index ) {
-			if( Index < SerializedArraySize && CanReadNextElementHeader( Stream, EndPosition ) ) {
-				bool const bElementReadSuccessful = Type->ElementTypeInfo->Serializer->DeserializeBinary( Elements[Index], Stream );
-				bArrayReadSuccessful &= bElementReadSuccessful;
-			}
-		}
-
-		Stream.seekg( EndPosition );
 		return Stream.good();
 	}
 
-	bool ArraySerializer::CanReadNextElementHeader( std::istream& Stream, std::streampos const& EndPosition ) const {
-		return CanReadBytesFromStream( sizeof( uint32_t ), Stream, EndPosition );
-	}
+	bool ArraySerializer::DeserializeBinary(Reflection::TypeInfo const& Info, void* Data, std::istream& Stream) const {
+		Reflection::ArrayTypeInfo const* const ArrayInfo = Info.As<Reflection::ArrayTypeInfo>();
+		if (!ArrayInfo) return false;
 
-	void ArraySerializer::WriteArrayCount( std::ostream& Stream, void const* Data ) const {
-		//@todo Impose a limit on the size of serialized arrays, arrays that are too large should just write nothing
-		uint32_t ArraySize = Type->GetCount( Data );
-		WriteLE( &ArraySize, Stream );
-	}
+		constexpr uint8_t NestedBlockHeaderSize = sizeof(BlockSizeType);
 
-	uint32_t ArraySerializer::ReadArrayCount( std::istream& Stream ) const {
-		uint32_t ArraySize = 0;
-		ReadLE( &ArraySize, Stream );
-		return ArraySize;
+		ScopedDataBlockRead const ScopedRead{Stream};
+
+		//Get the serialized size of the array from the data block
+		uint32_t SerializedArraySize = 0;
+		ReadLE(&SerializedArraySize, Stream);
+
+		//Set the array size to match what we just read, if possible
+		if (!ArrayInfo->IsFixedSize) ArrayInfo->Resize(Data, SerializedArraySize);
+
+		//Get an array of pointers to all the elements
+		std::vector<void*> Elements;
+		ArrayInfo->GetElements(Data, Elements);
+
+		//Read a data block for each element from the stream
+		bool bArrayReadSuccessful = true;
+		for (uint32_t Index = 0; Index < Elements.size(); ++Index) {
+			if (Index < SerializedArraySize && ScopedRead.GetRemainingSize() >= NestedBlockHeaderSize) {
+				bool const bElementReadSuccessful = DeserializeTypeBinary(*ArrayInfo->ElementTypeInfo, Elements[Index], Stream);
+				bArrayReadSuccessful &= bElementReadSuccessful;
+			}
+			else
+			{
+				break;
+			}
+		}
+
+		return Stream.good();
 	}
 }

@@ -5,28 +5,44 @@
 
 namespace Reflection {
 	struct TypeInfo;
-	struct MemberVariableInfo;
 }
 
 namespace Serialization {
-	namespace DataBlock {
-		/** Type used to store the size of a data block */
-		using BLOCK_SIZE_T = uint32_t;
-	}
+	/** Type used to store the size of a data block */
+	using BlockSizeType = uint32_t;
 
-	/** Start a data block in the stream. Returns the position where the block starts */
-	std::streampos StartDataBlockWrite( std::ostream& Stream );
-	/** Finish a data block in the stream */
-	void FinishDataBlockWrite( std::ostream& Stream, std::streampos StartPosition );
+	/**
+	 * Opens a scope where a binary data block will be written to the stream.
+	 * Writes block metadata and seeks to the next write position when destructed.
+	 */
+	struct ScopedDataBlockWrite {
+		ScopedDataBlockWrite(std::ostream& Stream);
+		~ScopedDataBlockWrite();
 
-	/** Read the end of the data block from the stream */
-	std::streampos ReadDataBlockEndPosition( std::istream& Stream );
+	private:
+		std::ostream* StreamPtr;
+		std::streampos WriteStartPosition;
+	};
 
-	/** True if the amount of bytes can be read from the stream without going past the end position */
-	bool CanReadBytesFromStream( uint32_t NumBytes, std::istream& Stream, std::streampos const& EndPosition );
+	/**
+	 * Opens a scope where a binary data block will be read from the stream.
+	 * Seeks ahead to the next read position when destructed.
+	 * Can be used to keep track of the read, including how much more data is available from the data block.
+	 */
+	struct ScopedDataBlockRead {
+		ScopedDataBlockRead(std::istream& Stream);
+		~ScopedDataBlockRead();
+
+		/** Get the number of bytes that remain to be read from the stream */
+		int64_t GetRemainingSize() const;
+		/** Skip a nested data block from within the stream. Will read the block size and seek ahead to the end position */
+		void SkipNestedBlock() const;
+
+	private:
+		std::istream* StreamPtr;
+		std::streampos ReadEndPosition;
+	};
 
 	/** Reset the stringstream contents */
-	void ResetStream( std::stringstream& Stream );
-	/** True if the data in the two pointers are equal */
-	bool AreValuesEqual( Reflection::TypeInfo const* Info, void const* ValueA, void const* ValueB );
+	void ResetStream(std::stringstream& Stream);
 }

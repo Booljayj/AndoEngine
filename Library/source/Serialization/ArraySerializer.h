@@ -7,22 +7,9 @@ namespace Reflection {
 }
 
 namespace Serialization {
-	struct ArraySerializer : public ISerializer
-	{
-	private:
-		Reflection::ArrayTypeInfo const* Type;
-
-	public:
-		ArraySerializer() = delete;
-		ArraySerializer( Reflection::ArrayTypeInfo const* InType );
-
-		virtual void SerializeBinary( void const* Data, std::ostream& Stream ) const override;
-		virtual bool DeserializeBinary( void* Data, std::istream& Stream ) const override;
-
-	private:
-		bool CanReadNextElementHeader( std::istream& Stream, std::streampos const& EndPosition ) const;
-
-		void WriteArrayCount( std::ostream& Stream, void const* Data ) const;
-		uint32_t ReadArrayCount( std::istream& Stream ) const;
+	struct ArraySerializer : public ISerializer {
+		bool SerializeBinary(Reflection::TypeInfo const& Info, void const* Data, std::ostream& Stream) const final;
+		bool DeserializeBinary(Reflection::TypeInfo const& Info, void* Data, std::istream& Stream) const final;
 	};
+	static const ArraySerializer DefaultArraySerializer{};
 }

@@ -4,44 +4,53 @@
 #include "Reflection/Components/VariableInfo.h"
 
 namespace Serialization {
-	std::streampos StartDataBlockWrite( std::ostream& Stream ) {
-		std::streampos const StartPosition = Stream.tellp();
-		//Write zeros to the stream to reserve a space where the block size will eventually be written
-		DataBlock::BLOCK_SIZE_T const Zero = 0;
-		WriteLE( &Zero, Stream ); //Endianness doesn't matter, but kept this way for parity.
-		//Return where the block starts so we can seek back here when finishing
-		return StartPosition;
+	ScopedDataBlockWrite::ScopedDataBlockWrite(std::ostream& Stream)
+	: StreamPtr(&Stream)
+	, WriteStartPosition(Stream.tellp())
+	{
+		//Write a zero integer to the stream to mark where the size will later be written.
+		BlockSizeType const Zero = 0;
+		WriteLE(&Zero, Stream);
 	}
 
-	void FinishDataBlockWrite( std::ostream& Stream, std::streampos StartPosition ) {
-		std::streampos const EndPosition = Stream.tellp();
-		DataBlock::BLOCK_SIZE_T const BlockDataSize = EndPosition - StartPosition - sizeof( DataBlock::BLOCK_SIZE_T );
-		//Reverse back to the start of the block and write the size to the reserved bytes
-		Stream.seekp( StartPosition );
-		WriteLE( &BlockDataSize, Stream );
-		//Go back to the end of the block so that further data can be written to the stream
-		Stream.seekp( EndPosition );
+	ScopedDataBlockWrite::~ScopedDataBlockWrite() {
+		//Compute the size of the data that was written after the size marker.
+		std::streampos const WriteEndPosition = StreamPtr->tellp();
+		BlockSizeType const BlockSize = WriteEndPosition - WriteStartPosition - sizeof(BlockSizeType);
+		//Write the size to the space we reserved earlier
+		StreamPtr->seekp(WriteStartPosition);
+		WriteLE(&BlockSize, *StreamPtr);
+		//Go back to where we left off writing so any subsequent data follows this data block
+		StreamPtr->seekp(WriteEndPosition);
 	}
 
-	std::streampos ReadDataBlockEndPosition( std::istream& Stream ) {
-		DataBlock::BLOCK_SIZE_T NumBytes = 0;
-		ReadLE( &NumBytes, Stream );
-		return ( Stream.tellg() + std::streamoff{ NumBytes } );
+	ScopedDataBlockRead::ScopedDataBlockRead(std::istream& Stream)
+	: StreamPtr(&Stream)
+	{
+		BlockSizeType BlockSize = 0;
+		ReadLE(&BlockSize, Stream);
+		//We have already read the size marker, so the read end position is the current location plus the block size.
+		ReadEndPosition = (Stream.tellg() + std::streamoff{BlockSize});
 	}
 
-	bool CanReadBytesFromStream( uint32_t NumBytes, std::istream& Stream, std::streampos const& EndPosition ) {
-		return ( Stream.tellg() + std::streamoff{ NumBytes } ) <= EndPosition;
+	ScopedDataBlockRead::~ScopedDataBlockRead() {
+		//Seek ahead to the end position (we may already be there if the entire data block was read)
+		StreamPtr->seekg(ReadEndPosition);
+	}
+
+	int64_t ScopedDataBlockRead::GetRemainingSize() const {
+		return int64_t(ReadEndPosition - StreamPtr->tellg());
+	}
+
+	void ScopedDataBlockRead::SkipNestedBlock() const {
+		const std::streampos CurrentPosition = StreamPtr->tellg();
+		BlockSizeType NestedBlockSize = 0;
+		ReadLE(&NestedBlockSize, *StreamPtr);
+		StreamPtr->seekg(std::min(CurrentPosition + std::streamoff{NestedBlockSize}, ReadEndPosition));
 	}
 
 	void ResetStream( std::stringstream& Stream ) {
-		Stream.str( "" );
+		Stream.str("");
 		Stream.clear();
-	}
-
-	bool AreValuesEqual( Reflection::TypeInfo const* Info, void const* ValueA, void const* ValueB ) {
-		if( ValueA && ValueB ) {
-			return Info->Equal( ValueA, ValueB );
-		}
-		return false;
 	}
 }

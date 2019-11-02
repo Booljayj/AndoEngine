@@ -7,6 +7,7 @@
 #include "Engine/Hash.h"
 #include "Reflection/TypeResolver.h"
 #include "Reflection/ArrayTypeInfo.h"
+#include "Serialization/ArraySerializer.h"
 
 #define L_DYNAMIC_ARRAY_RESOLVER( _ArrayTemplate_, _Description_ )\
 template<typename ElementType>\
@@ -16,7 +17,7 @@ struct TypeResolver_Implementation<_ArrayTemplate_<ElementType>> {\
 	static constexpr Hash128 GetID() { return Hash128{ #_ArrayTemplate_ } + TypeResolver<ElementType>::GetID(); }\
 };\
 template<typename ElementType>\
-TDynamicArrayTypeInfo<ElementType, _ArrayTemplate_<ElementType>> const TypeResolver_Implementation<_ArrayTemplate_<ElementType>>::_TypeInfo{ _Description_, FTypeFlags::None, nullptr }
+TDynamicArrayTypeInfo<ElementType, _ArrayTemplate_<ElementType>> const TypeResolver_Implementation<_ArrayTemplate_<ElementType>>::_TypeInfo{ _Description_, FTypeFlags::None, &Serialization::DefaultArraySerializer }
 
 namespace Reflection {
 	namespace Internal {
@@ -32,7 +33,7 @@ namespace Reflection {
 			}
 		};
 		template<typename ElementType, size_t Size>
-		TFixedArrayTypeInfo<ElementType, Size, std::array<ElementType, Size>> const TypeResolver_Implementation<std::array<ElementType, Size>>::_TypeInfo{ "fixed array", FTypeFlags::None, nullptr };
+		TFixedArrayTypeInfo<ElementType, Size, std::array<ElementType, Size>> const TypeResolver_Implementation<std::array<ElementType, Size>>::_TypeInfo{ "fixed array", FTypeFlags::None, &Serialization::DefaultArraySerializer };
 
 		//============================================================
 		// Standard dynamic array type specializations

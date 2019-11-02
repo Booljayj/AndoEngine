@@ -22,19 +22,24 @@
  *		union {
  *			char Data[];
  *			tuple<uint16_t, DataBlock> IdentifierBasedNestedDataBlocks[];
- *			tuple<uint32_t, DataBlock[]> ArrayBasedNestedDataBlocks;
+ *			tuple<uint32_t, DataBlock*> ArrayBasedNestedDataBlocks;
  *		}
  *	};
  */
 
+namespace Reflection {
+	struct TypeInfo;
+}
+
 namespace Serialization {
 	//@todo Make all serialization functions contextual so they can print more detailed warning or error infomation
+	/** Interface that provides serialization implementations for a type */
 	struct ISerializer {
-		virtual ~ISerializer() {}
+		virtual ~ISerializer() = default;
 
 		/** Serialize to and from binary data streams */
-		virtual void SerializeBinary( void const* Data, std::ostream& Stream ) const = 0;
-		virtual bool DeserializeBinary( void* Data, std::istream& Stream ) const = 0;
+		virtual bool SerializeBinary(Reflection::TypeInfo const& Info, void const* Data, std::ostream& Stream) const = 0;
+		virtual bool DeserializeBinary(Reflection::TypeInfo const& Info, void* Data, std::istream& Stream) const = 0;
 
 		/** Serialize to and from human-readable text streams */
 		//virtual void SerializeText( void const* Data, std::ostringstream& Stream ) const = 0;
@@ -45,4 +50,13 @@ namespace Serialization {
 		//virtual void SerializeFastBinary( void const* Data, std::ostream& Stream ) const = 0;
 		//virtual void DeserializeFastBinary( void* Data, std::istream& Stream ) const = 0;
 	};
+
+	/** Returns whether it's possible to serialize a type (whether it has a serializer interface or not) */
+	bool CanSerializeType(Reflection::TypeInfo const& Info);
+	/** Returns whether a type should be serialized (based on its flags and whether it has a serializer interface) */
+	bool ShouldSerializeType(Reflection::TypeInfo const& Info);
+
+	/** Serialize data to and from the stream as if it was the provided type */
+	bool SerializeTypeBinary(Reflection::TypeInfo const& Info, void const* Data, std::ostream& Stream);
+	bool DeserializeTypeBinary(Reflection::TypeInfo const& Info, void* Data, std::istream& Stream);
 }
