@@ -126,7 +126,6 @@ int main( int argc, char const* argv[] ) {
 	LOG( LogMain, Info, "Hello, World! This is AndoEngine." );
 	LOG( LogMain, Debug, "Compiled with " __VERSION__ " on " __DATE__ );
 
-	return 0;
 	if( Startup( CTX ) ) {
 		LOG( LogMain, Info, "Creating entities" );
 		EntityID EntA = 3;
@@ -173,7 +172,7 @@ int main( int argc, char const* argv[] ) {
 		GL::Link( *TestProgram );
 		GL::Use( *TestProgram );
 
-		MainLoop( CTX );
+		// MainLoop( CTX );
 	}
 
 	Shutdown( CTX );

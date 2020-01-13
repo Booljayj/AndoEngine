@@ -3,7 +3,7 @@ NAME := Tests
 TARGET = $(NAME).out
 TARGETTYPE := executable
 
-LIBS := SDL2 GLEW
+LIBS := SDL2 GLEW vulkan MoltenVK
 FRAMEWORKS := OpenGL
 
 # core library
