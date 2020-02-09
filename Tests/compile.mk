@@ -1,17 +1,15 @@
-# main
-NAME := Tests
-TARGET = $(NAME).out
-TARGETTYPE := executable
-
-LIBS := SDL2 GLEW vulkan MoltenVK
-FRAMEWORKS := OpenGL
-
 # core library
 CORELIB := AndoEngine
 CORELIB_PATH := ../Library
 
-CXXFLAGS += -I$(CORELIB_PATH)/source -I$(CORELIB_PATH)/generated
-LDFLAGS += -L$(CORELIB_PATH)
-LDLIBS += -l$(CORELIB)
+# standard compilation
+NAME := Tests
+TARGETTYPE := executable
+
+DEPENDENCIES := $(CORELIB_PATH)/lib$(CORELIB).a
+INCLUDE_PATHS := $(CORELIB_PATH)/source $(CORELIB_PATH)/generated
+LIBS := AndoEngine SDL2 GLEW vulkan MoltenVK
+LIB_PATHS := ../Library
+FRAMEWORKS := OpenGL
 
 include ../make/std_compile.mk

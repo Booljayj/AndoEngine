@@ -1,4 +1,27 @@
 # required variables
+#	NAME: the name of the target
+#	TARGETTYPE: the type of the target, either "library" or "executable"
+
+# optional variables
+#	make:
+#	DEPENDENCIES: additional dependencies that will cause the target to be rebuilt
+#
+#	compilation:
+#	DEFINE: macro definitions to include when compiling
+#	INCLUDE_PATHS: the paths that will be searched when looking for headers during compilation
+#
+#	linking:
+#	LIBS: the names of external libraries that will be included when linking
+#	LIB_PATHS: the paths that will be searched when looking for external libraries during linking
+#	FRAMEWORKS: the names of external OSX frameworks that will be included during linking
+#
+#	internal:
+#	DIR_RESOURCES: the relative path of the compiler resources
+#	CXXFLAGS: additional compiler flags
+#	LDFLAGS: additional linker flags
+
+#========================================================================================
+# required variables
 ifndef NAME
 $(error Must define a NAME variable before including "std_compile.mk")
 endif
@@ -8,7 +31,7 @@ endif
 
 ifeq ($(TARGETTYPE),library)
 IS_LIBRARY := 1
-TARGET = lib$(NAME).a
+TARGET := lib$(NAME).a
 else ifeq ($(TARGETTYPE),executable)
 IS_EXECUTABLE := 1
 TARGET := $(NAME).out
@@ -39,17 +62,23 @@ CXXFLAGS := $(CXXFLAGS) -std=gnu++17 -g -Wall -c -MMD -MP -I./$(DIR_SOURCE) -I./
 LDFLAGS := $(LDFLAGS)
 ARFLAGS := -static -o
 
-# compilation defines
+# compilation
 ifdef DEFINE
 CXXFLAGS += $(foreach DEF, $(DEFINE), -D$(DEFINE))
 endif
 
-# external libraries
+ifdef INCLUDE_PATHS
+CXXFLAGS += $(foreach INCLUDE_PATH, $(INCLUDE_PATHS), -I$(INCLUDE_PATH))
+endif
+
+# linking
 ifdef LIBS
 LDLIBS += $(foreach LIB, $(LIBS), -l$(LIB))
 endif
+ifdef LIB_PATHS
+LDFLAGS += $(foreach LIB_PATH, $(LIB_PATHS), -L$(LIB_PATH))
+endif
 
-# external frameworks (OSX)
 ifdef FRAMEWORKS
 LDLIBS += -framework $(FRAMEWORKS)
 endif
@@ -77,12 +106,12 @@ clean:
 
 # main target
 ifdef IS_LIBRARY
-$(TARGET): $(BUILD_OBJ)
+$(TARGET): $(BUILD_OBJ) $(DEPENDENCIES)
 	$(info > Building $(TARGETTYPE) $(NAME)...)
 	@$(RM) $@
 	@$(AR) $(ARFLAGS) $@ $(BUILD_OBJ)
 else ifdef IS_EXECUTABLE
-$(TARGET): $(BUILD_OBJ)
+$(TARGET): $(BUILD_OBJ) $(DEPENDENCIES)
 	$(info > Building $(TARGETTYPE) $(NAME)...)
 	@$(RM) $@
 	@$(CXX) $(LDFLAGS) $(LDLIBS) $(BUILD_OBJ) -o $@
