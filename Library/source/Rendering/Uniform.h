@@ -7,38 +7,31 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "Rendering/EGLType.enum.h"
 
-namespace GL
-{
-	struct UniformInfo
-	{
-		std::string NameID; //@todo: Change to some kind of 32b string id, only used to identify a particular uniform by a readable name
-		EGLType::ENUM Type; // is this irrelevant?
-		uint32_t Location;
+namespace GL {
+	struct UniformInfo {
+		std::string nameID; //@todo: Change to some kind of 32b string id, only used to identify a particular uniform by a readable name
+		EGLType::ENUM type; // is this irrelevant?
+		uint32_t location;
 
-		uint8_t ComponentCount; //the number of 32bit components that compose this type
-		uint16_t ElementCount; //if uniform is an array, this is the size of the array
+		uint8_t componentCount; //the number of 32bit components that compose this type
+		uint16_t elementCount; //if uniform is an array, this is the size of the array
 	};
 
 	using UniformData = uint32_t;
 
-	void GetUniforms( GLuint ProgramID, std::vector<UniformInfo>& OutUniforms );
+	void GetUniforms(GLuint programID, std::vector<UniformInfo>& outUniforms);
 
-	template< typename TValue >
-	inline void SetUniform_Bound( GLuint ProgramID, char const* UniformName, TValue const& Value )
-	{
-		GLint const Location = glGetUniformLocation( ProgramID, UniformName );
-		if( Location != -1 )
-		{
-			SetUniformLocation( Location, Value );
-		}
+	template<typename ValueType>
+	inline void SetUniform_Bound(GLuint programID, char const* uniformName, ValueType const& value) {
+		GLint const location = glGetUniformLocation(programID, uniformName);
+		if (location != -1) SetUniformLocation(location, value);
 	}
 
-	template< typename TValue >
-	inline void SetUniformLocation_Bound( GLint UniformLocation, TValue const& Value ) {}
+	template<typename ValueType>
+	inline void SetUniformLocation_Bound(GLint uniformLocation, ValueType const& value) {}
 }
 
 template<>
-inline void GL::SetUniformLocation_Bound( GLint UniformLocation, glm::mat4x4 const& Value )
-{
-	glUniformMatrix4fv( UniformLocation, 1, GL_FALSE, glm::value_ptr( Value ) );
+inline void GL::SetUniformLocation_Bound(GLint uniformLocation, glm::mat4x4 const& value) {
+	glUniformMatrix4fv(uniformLocation, 1, GL_FALSE, glm::value_ptr(value));
 }

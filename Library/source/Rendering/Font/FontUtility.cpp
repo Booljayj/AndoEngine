@@ -8,53 +8,53 @@
 
 namespace Rendering {
 	struct GlyphShapeContext {
-		Geometry::Shape* Shape;
-		Geometry::Contour* CurrentContour;
-		glm::vec2 CurrentStartPosition;
+		Geometry::Shape* shape;
+		Geometry::Contour* currentContour;
+		glm::vec2 currentStartPosition;
 
-		GlyphShapeContext( Geometry::Shape& InShape )
-		: Shape( &InShape )
-		, CurrentContour( nullptr )
-		, CurrentStartPosition( 0.0f, 0.0f )
+		GlyphShapeContext(Geometry::Shape& inShape)
+		: shape(&inShape)
+		, currentContour(nullptr)
+		, currentStartPosition(0.0f, 0.0f)
 		{}
 	};
 
-	int32_t FreetypeMoveTo( FT_Vector const* End, void* ContextPtr ) {
-		GlyphShapeContext& Context = *static_cast<GlyphShapeContext*>( ContextPtr );
-		Context.Shape->contours.push_back( Geometry::Contour{} );
-		Context.CurrentContour = &Context.Shape->contours.back();
-		Context.CurrentStartPosition = glm::vec2{ End->x, End->y };
+	int32_t FreetypeMoveTo(FT_Vector const* end, void* contextPtr) {
+		GlyphShapeContext& context = *static_cast<GlyphShapeContext*>(contextPtr);
+		context.shape->contours.push_back(Geometry::Contour{});
+		context.currentContour = &context.shape->contours.back();
+		context.currentStartPosition = glm::vec2{end->x, end->y};
 		return 0;
 	}
-	int32_t FreetypeLineTo( FT_Vector const* End, void* ContextPtr ) {
-		GlyphShapeContext& Context = *static_cast<GlyphShapeContext*>( ContextPtr );
-		glm::vec2 EndPosition{ End->x, End->y };
-		Context.CurrentContour->curves.push_back(
-			Geometry::LinearCurve{ Context.CurrentStartPosition, EndPosition }
+	int32_t FreetypeLineTo(FT_Vector const* end, void* contextPtr) {
+		GlyphShapeContext& context = *static_cast<GlyphShapeContext*>(contextPtr);
+		glm::vec2 endPosition{end->x, end->y};
+		context.currentContour->curves.push_back(
+			Geometry::LinearCurve{context.currentStartPosition, endPosition}
 		);
-		Context.CurrentStartPosition = EndPosition;
+		context.currentStartPosition = endPosition;
 		return 0;
 	}
-	int32_t FreetypeConicTo( FT_Vector const* Ctl, FT_Vector const* End, void* ContextPtr ) {
-		GlyphShapeContext& Context = *static_cast<GlyphShapeContext*>( ContextPtr );
-		glm::vec2 EndPosition{ End->x, End->y };
-		Context.CurrentContour->curves.push_back(
-			Geometry::QuadraticCurve{ Context.CurrentStartPosition, glm::vec2{ Ctl->x, Ctl->y }, EndPosition }
+	int32_t FreetypeConicTo(FT_Vector const* ctl, FT_Vector const* end, void* contextPtr) {
+		GlyphShapeContext& context = *static_cast<GlyphShapeContext*>(contextPtr);
+		glm::vec2 endPosition{end->x, end->y};
+		context.currentContour->curves.push_back(
+			Geometry::QuadraticCurve{context.currentStartPosition, glm::vec2{ctl->x, ctl->y}, endPosition}
 		);
-		Context.CurrentStartPosition = EndPosition;
+		context.currentStartPosition = endPosition;
 		return 0;
 	}
-	int32_t FreetypeCubicTo( FT_Vector const* Ctl0, FT_Vector const* Ctl1, FT_Vector const* End, void* ContextPtr ) {
-		GlyphShapeContext& Context = *static_cast<GlyphShapeContext*>( ContextPtr );
-		glm::vec2 EndPosition{ End->x, End->y };
-		Context.CurrentContour->curves.push_back(
-			Geometry::CubicCurve{ Context.CurrentStartPosition, glm::vec2{ Ctl0->x, Ctl0->y }, glm::vec2{ Ctl1->x, Ctl1->y }, EndPosition }
+	int32_t FreetypeCubicTo(FT_Vector const* ctl0, FT_Vector const* ctl1, FT_Vector const* end, void* contextPtr) {
+		GlyphShapeContext& context = *static_cast<GlyphShapeContext*>(contextPtr);
+		glm::vec2 endPosition{end->x, end->y};
+		context.currentContour->curves.push_back(
+			Geometry::CubicCurve{context.currentStartPosition, glm::vec2{ctl0->x, ctl0->y}, glm::vec2{ctl1->x, ctl1->y}, endPosition}
 		);
-		Context.CurrentStartPosition = EndPosition;
+		context.currentStartPosition = endPosition;
 		return 0;
 	}
 
-	FT_Outline_Funcs FreetypeOutlineFunctions{
+	FT_Outline_Funcs freetypeOutlineFunctions{
 		&FreetypeMoveTo,
 		&FreetypeLineTo,
 		&FreetypeConicTo,
@@ -62,40 +62,40 @@ namespace Rendering {
 		0, 0
 	};
 
-	FT_GlyphSlot LoadGlyph( FT_Face Face, char32_t CodePoint ) {
-		FT_Error Error = FT_Load_Char( Face, CodePoint, FT_LOAD_NO_SCALE | FT_LOAD_PEDANTIC | FT_LOAD_LINEAR_DESIGN );
-		if( Error ) return nullptr;
-		else return Face->glyph;
+	FT_GlyphSlot LoadGlyph(FT_Face face, char32_t codePoint) {
+		FT_Error const error = FT_Load_Char(face, codePoint, FT_LOAD_NO_SCALE | FT_LOAD_PEDANTIC | FT_LOAD_LINEAR_DESIGN);
+		if (error) return nullptr;
+		else return face->glyph;
 	}
 
-	float GetGlpyhAdvance( FT_GlyphSlot Glyph ) {
-		return static_cast<float>( Glyph->metrics.horiAdvance );
+	float GetGlpyhAdvance(FT_GlyphSlot glyph) {
+		return static_cast<float>(glyph->metrics.horiAdvance);
 	}
 
-	bool DecomposeGlyph( Geometry::Shape& OutShape, FT_GlyphSlot Glyph ) {
-		if( Glyph->format != FT_Glyph_Format_::FT_GLYPH_FORMAT_OUTLINE ) return false;
+	bool DecomposeGlyph(Geometry::Shape& outShape, FT_GlyphSlot glyph) {
+		if (glyph->format != FT_Glyph_Format_::FT_GLYPH_FORMAT_OUTLINE) return false;
 		//Reset the shape before writing to it
-		OutShape.contours.clear();
+		outShape.contours.clear();
 		//Decompose the shape of the glyph
-		GlyphShapeContext Context{ OutShape };
-		const FT_Error DecomposeError = FT_Outline_Decompose( &Glyph->outline, &FreetypeOutlineFunctions, &Context );
-		if( DecomposeError ) return false;
+		GlyphShapeContext context{outShape};
+		FT_Error const error = FT_Outline_Decompose(&glyph->outline, &freetypeOutlineFunctions, &context);
+		if (error) return false;
 		//Successfully decomposed the shape (shape may still be invalid if the decomposed data is corrupt)
 		return true;
 	}
 
-	l_vector<::std::tuple<uint32_t, uint32_t, glm::vec2>> DumpKerningValues( CTX_ARG, FT_Face Face, char32_t CodePoint ) {
-		l_vector<::std::tuple<uint32_t, uint32_t, glm::vec2>> KerningValues{ CTX.temp };
-		if( FT_HAS_KERNING( Face ) ) {
-			int32_t FirstGlyphIndex = FT_Get_Char_Index( Face, CodePoint );
-			FT_Vector Kerning;
-			for( size_t SecondGlyphIndex = 0; SecondGlyphIndex < Face->num_glyphs; ++SecondGlyphIndex ) {
-				FT_Error Error = FT_Get_Kerning( Face, FirstGlyphIndex, SecondGlyphIndex, FT_Kerning_Mode_::FT_KERNING_UNSCALED, &Kerning );
-				if( Error || ( Kerning.x == 0 && Kerning.y == 0 ) ) continue;
-				KerningValues.push_back( std::make_tuple( FirstGlyphIndex, SecondGlyphIndex, glm::vec2{ Kerning.x, Kerning.y } ) );
+	l_vector<::std::tuple<uint32_t, uint32_t, glm::vec2>> DumpKerningValues(CTX_ARG, FT_Face face, char32_t codePoint) {
+		l_vector<::std::tuple<uint32_t, uint32_t, glm::vec2>> kerningValues{ CTX.temp };
+		if (FT_HAS_KERNING(face)) {
+			int32_t const firstGlyphIndex = FT_Get_Char_Index(face, codePoint);
+			FT_Vector kerning;
+			for (size_t secondGlyphIndex = 0; secondGlyphIndex < face->num_glyphs; ++secondGlyphIndex) {
+				FT_Error const error = FT_Get_Kerning(face, firstGlyphIndex, secondGlyphIndex, FT_Kerning_Mode_::FT_KERNING_UNSCALED, &kerning);
+				if (error || (kerning.x == 0 && kerning.y == 0)) continue;
+				kerningValues.push_back(std::make_tuple(firstGlyphIndex, secondGlyphIndex, glm::vec2{kerning.x, kerning.y}));
 			}
 		}
-		return KerningValues;
+		return kerningValues;
 	}
 
 }

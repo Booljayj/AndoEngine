@@ -11,22 +11,22 @@ public:
 
 struct SDLEventSystem {
 protected:
-	std::vector<SDL_Event> FrameEvents;
+	std::vector<SDL_Event> frameEvents;
 
 public:
 	bool Startup(CTX_ARG);
 	bool Shutdown(CTX_ARG);
 
-	void PollEvents(bool& bRequestShutdown);
+	void PollEvents(bool& requestShutdown);
 };
 
 struct SDLWindowSystem {
 protected:
-	SDL_Window* MainWindow;
+	SDL_Window* mainWindow;
 
 public:
 	bool Startup(CTX_ARG);
 	bool Shutdown(CTX_ARG);
 
-	inline SDL_Window* GetMainWindow() const { return MainWindow; }
+	inline SDL_Window* GetMainWindow() const { return mainWindow; }
 };

@@ -6,39 +6,36 @@
 #include "Rendering/Uniform.h"
 #include "Rendering/Types.h"
 
-struct ShaderComponent
-{
+struct ShaderComponent {
 	//Serialized data
-	char const* Source = nullptr;
-	GL::EShader::ENUM ShaderType = GL::EShader::Vertex;
+	char const* source = nullptr;
+	GL::EShader::ENUM shaderType = GL::EShader::Vertex;
 
 	//Runtime data
-	ShaderID _ShaderID = 0;
-	bool bIsCompiled = false;
+	ShaderID shaderID = 0;
+	bool isCompiled = false;
 };
 
 using ShaderComponentManager = TSimpleComponentManager<ShaderComponent>;
 
-struct ProgramComponent
-{
+struct ProgramComponent {
 	//Serialized data
-	std::vector<ShaderComponent*> LinkedShaders;
+	std::vector<ShaderComponent*> linkedShaders;
 
 	//Runtime data
-	ProgramID _ProgramID = 0;
-	std::vector<GL::UniformInfo> _Uniforms;
-	bool bIsLinked = false;
+	ProgramID programID = 0;
+	std::vector<GL::UniformInfo> uniforms;
+	bool isLinked = false;
 };
 
 using ProgramComponentManager = TSimpleComponentManager<ProgramComponent>;
 
-namespace GL
-{
-	bool Compile( ShaderComponent& Shader );
-	void DescribeCompilationErrors( std::ostream& Stream, ShaderComponent const& Shader );
+namespace GL {
+	bool Compile(ShaderComponent& shader);
+	void DescribeCompilationErrors(std::ostream& stream, ShaderComponent const& shader);
 
-	bool Link( ProgramComponent& Program );
-	void DescribeLinkingErrors( std::ostream& Stream, ProgramComponent const& Program );
+	bool Link(ProgramComponent& program);
+	void DescribeLinkingErrors(std::ostream& stream, ProgramComponent const& program);
 
-	void Use( ProgramComponent const& Program );
+	void Use(ProgramComponent const& program);
 }

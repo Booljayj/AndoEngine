@@ -18,10 +18,10 @@ struct EntityCollectionSystem;
 
 class RenderingSystem {
 private:
-	static constexpr size_t FILTER_SIZE = 2;
-	std::shared_ptr<EntityFilter<FILTER_SIZE>> Filter;
-	TComponentHandle<TransformComponent> TransformHandle;
-	TComponentHandle<MeshRendererComponent> MeshRendererHandle;
+	static constexpr size_t FilterSize = 2;
+	std::shared_ptr<EntityFilter<FilterSize>> filter;
+	TComponentHandle<TransformComponent> transformHandle;
+	TComponentHandle<MeshRendererComponent> meshRendererHandle;
 
 	/** The vulkan application instance for this application */
 	Rendering::VulkanApplication application;
@@ -51,9 +51,9 @@ public:
 	bool Startup(
 		CTX_ARG,
 		SDLWindowSystem* windowSystem,
-		EntityCollectionSystem* EntityCollection,
-		TComponentInfo<TransformComponent>* Transform,
-		TComponentInfo<MeshRendererComponent>* MeshRenderer
+		EntityCollectionSystem* entityCollectionSystem,
+		TComponentInfo<TransformComponent>* transform,
+		TComponentInfo<MeshRendererComponent>* meshRenderer
 	);
 	bool Shutdown(CTX_ARG);
 

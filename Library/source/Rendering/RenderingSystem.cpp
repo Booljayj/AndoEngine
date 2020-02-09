@@ -17,15 +17,15 @@ RenderingSystem::RenderingSystem()
 bool RenderingSystem::Startup(
 	CTX_ARG,
 	SDLWindowSystem* windowSystem,
-	EntityCollectionSystem* EntityCollection,
-	TComponentInfo<TransformComponent>* Transform,
-	TComponentInfo<MeshRendererComponent>* MeshRenderer)
+	EntityCollectionSystem* entityCollectionSystem,
+	TComponentInfo<TransformComponent>* transform,
+	TComponentInfo<MeshRendererComponent>* meshRenderer)
 {
-	ComponentInfo const* Infos[2] = { Transform, MeshRenderer };
-	Filter = EntityCollection->MakeFilter(Infos);
-	if (Filter) {
-		TransformHandle = Filter->GetMatchComponentHandle(Transform);
-		MeshRendererHandle = Filter->GetMatchComponentHandle(MeshRenderer);
+	ComponentInfo const* infos[FilterSize] = { transform, meshRenderer };
+	filter = entityCollectionSystem->MakeFilter(infos);
+	if (filter) {
+		transformHandle = filter->GetMatchComponentHandle(transform);
+		meshRendererHandle = filter->GetMatchComponentHandle(meshRenderer);
 		//return true;
 	} else {
 		//return false;
@@ -103,17 +103,17 @@ bool RenderingSystem::SelectPhysicalDevice(CTX_ARG, uint32_t index) {
 	return false;
 }
 
-void RenderingSystem::RenderFrame(float InterpolationAlpha) const {
-	for (EntityFilter<FILTER_SIZE>::FilterMatch const& Match : *Filter) {
-		RenderComponent(Match.Get(MeshRendererHandle));
+void RenderingSystem::RenderFrame(float interpolationAlpha) const {
+	for (EntityFilter<FilterSize>::FilterMatch const& match : *filter) {
+		RenderComponent(match.Get(meshRendererHandle));
 	}
 }
 
-void RenderingSystem::RenderComponent(MeshRendererComponent const* MeshRenderer) {
-	if (!MeshRenderer->IsValid()) return;
+void RenderingSystem::RenderComponent(MeshRendererComponent const* meshRenderer) {
+	if (!meshRenderer->IsValid()) return;
 
-	//glBindVertexArray(MeshRenderer->VertexArrayID);
-	//glDrawArrays(GL_TRIANGLES, 0, MeshRenderer->VertexCount);
+	//glBindVertexArray(meshRenderer->VertexArrayID);
+	//glDrawArrays(GL_TRIANGLES, 0, meshRenderer->VertexCount);
 	//GLenum ErrorCode = glGetError();
 	//if (ErrorCode != GL_NO_ERROR) {
 	//	std::cerr << "OpenGL Error: " << ErrorCode << std::endl;

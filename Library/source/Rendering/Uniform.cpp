@@ -3,36 +3,34 @@
 
 using namespace std;
 
-namespace GL
-{
-	void GetUniforms( GLuint ProgramID, vector<UniformInfo>& OutUniforms )
-	{
-		GLint TotalCount = 0;
-		glGetProgramiv( ProgramID, GL_ACTIVE_UNIFORMS, &TotalCount );
-		GLint NameBufferSize = 0;
-		glGetProgramiv( ProgramID, GL_ACTIVE_UNIFORM_MAX_LENGTH, &NameBufferSize );
+namespace GL {
+	void GetUniforms(GLuint programID, vector<UniformInfo>& outUniforms) {
+		GLint totalCount = 0;
+		glGetProgramiv(programID, GL_ACTIVE_UNIFORMS, &totalCount);
+		GLint nameBufferSize = 0;
+		glGetProgramiv(programID, GL_ACTIVE_UNIFORM_MAX_LENGTH, &nameBufferSize);
 
-		char* const NameBuffer = new char[NameBufferSize];
+		char* const nameBuffer = new char[nameBufferSize];
 
-		OutUniforms.clear();
-		OutUniforms.reserve( TotalCount );
+		outUniforms.clear();
+		outUniforms.reserve(totalCount);
 
-		GLint NameSize = 0;
-		GLint ElementCount = 0;
-		GLenum Type = 0;
+		GLint nameSize = 0;
+		GLint elementCount = 0;
+		GLenum type = 0;
 
-		for( GLuint UniformIndex = 0; UniformIndex < TotalCount; ++ UniformIndex ) {
-			glGetActiveUniform(	ProgramID, UniformIndex, NameBufferSize, &NameSize, &ElementCount, &Type, NameBuffer );
+		for (GLuint uniformIndex = 0; uniformIndex < totalCount; ++ uniformIndex) {
+			glGetActiveUniform(programID, uniformIndex, nameBufferSize, &nameSize, &elementCount, &type, nameBuffer);
 
-			UniformInfo NewUniformInfo;
-			NewUniformInfo.NameID = string{ NameBuffer, static_cast<string::size_type>( NameSize ) };
-			NewUniformInfo.Type = EGLType::FromGL( Type );
-			NewUniformInfo.ElementCount = static_cast<uint16_t>( ElementCount );
-			NewUniformInfo.Location = static_cast<uint32_t>( glGetUniformLocation( ProgramID, NameBuffer ) );
+			UniformInfo newUniformInfo;
+			newUniformInfo.nameID = string{nameBuffer, static_cast<string::size_type>(nameSize)};
+			newUniformInfo.type = EGLType::FromGL(type);
+			newUniformInfo.elementCount = static_cast<uint16_t>(elementCount);
+			newUniformInfo.location = static_cast<uint32_t>(glGetUniformLocation(programID, nameBuffer));
 
-			OutUniforms.push_back( NewUniformInfo );
+			outUniforms.push_back(newUniformInfo);
 		}
 
-		delete[] NameBuffer;
+		delete[] nameBuffer;
 	}
 }

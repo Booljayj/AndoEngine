@@ -7,13 +7,12 @@
 #include "Rendering/EBuffer.enum.h"
 #include "Rendering/Types.h"
 
-namespace GL
-{
-	void DescribeAttributeParam_Bound( std::ostream& Stream, EAttribute::ENUM Attribute, EAttributeParameter::ENUM Param );
-	void DescribeAttribute_Bound( std::ostream& Stream, EAttribute::ENUM Attribute );
+namespace GL {
+	void DescribeAttributeParam_Bound(std::ostream& stream, EAttribute::ENUM attribute, EAttributeParameter::ENUM param);
+	void DescribeAttribute_Bound(std::ostream& stream, EAttribute::ENUM attribute);
 
-	void DescribeVertexArrayObject( std::ostream& Stream, VertexArrayObjectID VAOID );
+	void DescribeVertexArrayObject(std::ostream& stream, VertexArrayObjectID vaoID);
 
-	void BindAttributeNames( ProgramID PID );
-	void BindBuffersToVertexArrayObject( VertexArrayObjectID VAOID, VertexBufferObjectID const* BufferIDArray );
+	void BindAttributeNames(ProgramID pID);
+	void BindBuffersToVertexArrayObject(VertexArrayObjectID vaoID, VertexBufferObjectID const* bufferIDArray);
 }

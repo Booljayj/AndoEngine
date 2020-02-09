@@ -8,7 +8,7 @@
 #include "UI/IMGUI/imgui_impl_sdl.h"
 #include "UI/IMGUI/imgui_impl_opengl3.h"
 
-DEFINE_LOG_CATEGORY( SDL, Debug );
+DEFINE_LOG_CATEGORY(SDL, Debug);
 
 bool SDLFrameworkSystem::Startup(CTX_ARG) {
 	if (SDL_Init(SDL_INIT_VIDEO) == 0) {
@@ -25,28 +25,28 @@ bool SDLFrameworkSystem::Shutdown(CTX_ARG) {
 }
 
 bool SDLEventSystem::Startup(CTX_ARG) {
-	FrameEvents.reserve(20);
+	frameEvents.reserve(20);
 	return true;
 }
 
 bool SDLEventSystem::Shutdown(CTX_ARG) { return true; }
 
-void SDLEventSystem::PollEvents(bool& bRequestShutdown) {
-	FrameEvents.clear();
-	SDL_Event CurrentEvent;
+void SDLEventSystem::PollEvents(bool& requestShutdown) {
+	frameEvents.clear();
+	SDL_Event currentEvent;
 
-	while (SDL_PollEvent(&CurrentEvent)) {
-		ImGui_ImplSDL2_ProcessEvent(&CurrentEvent);
-		FrameEvents.push_back(CurrentEvent);
-		if (CurrentEvent.type == SDL_QUIT) {
-			bRequestShutdown = true;
+	while (SDL_PollEvent(&currentEvent)) {
+		ImGui_ImplSDL2_ProcessEvent(&currentEvent);
+		frameEvents.push_back(currentEvent);
+		if (currentEvent.type == SDL_QUIT) {
+			requestShutdown = true;
 		}
 	}
 }
 
 bool SDLWindowSystem::Startup(CTX_ARG) {
-	MainWindow = SDL_CreateWindow("AndoSystem", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 800, SDL_WINDOW_SHOWN | SDL_WINDOW_VULKAN);
-	if (!MainWindow) {
+	mainWindow = SDL_CreateWindow("AndoSystem", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 800, SDL_WINDOW_SHOWN | SDL_WINDOW_VULKAN);
+	if (!mainWindow) {
 		LOGF(LogSDL, Error, "Failed to create SDL window: %i", SDL_GetError());
 		return false;
 	}
@@ -54,6 +54,6 @@ bool SDLWindowSystem::Startup(CTX_ARG) {
 }
 
 bool SDLWindowSystem::Shutdown(CTX_ARG) {
-	SDL_DestroyWindow(MainWindow);
+	if (mainWindow) SDL_DestroyWindow(mainWindow);
 	return true;
 }

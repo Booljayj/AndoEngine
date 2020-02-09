@@ -4,118 +4,110 @@
 #include "Rendering/Shader.h"
 #include "Rendering/VertexArrayObject.h"
 
-namespace GL
-{
-	bool Compile( ShaderComponent& Shader )
-	{
-		if( Shader.bIsCompiled ) {
-			//Shader is already compiled.
+namespace GL {
+	bool Compile(ShaderComponent& shader) {
+		if (shader.isCompiled) {
+			//shader is already compiled.
 			return true;
 		}
 
-		//Create a new OpenGL Shader object if we need one.
-		if( Shader._ShaderID == 0 ) {
-			Shader._ShaderID = glCreateShader( EShader::ToGL( Shader.ShaderType ) );
+		//Create a new OpenGL shader object if we need one.
+		if (shader.shaderID == 0) {
+			shader.shaderID = glCreateShader(EShader::ToGL(shader.shaderType));
 		}
-		glShaderSource( Shader._ShaderID, 1, &Shader.Source, 0 );
+		glShaderSource(shader.shaderID, 1, &shader.source, 0);
 
-		GLint CompileStatus;
-		glCompileShader( Shader._ShaderID );
-		glGetShaderiv( Shader._ShaderID, GL_COMPILE_STATUS, &CompileStatus );
+		GLint compileStatus;
+		glCompileShader(shader.shaderID);
+		glGetShaderiv(shader.shaderID, GL_COMPILE_STATUS, &compileStatus);
 
-		if( !(Shader.bIsCompiled = EGLBool::FromGL( CompileStatus ) == EGLBool::True ) ) {
-			DescribeCompilationErrors( std::cerr, Shader );
+		if (!(shader.isCompiled = EGLBool::FromGL(compileStatus) == EGLBool::True)) {
+			DescribeCompilationErrors(std::cerr, shader);
 		}
 
-		return Shader.bIsCompiled;
+		return shader.isCompiled;
 	}
 
-	void DescribeCompilationErrors( std::ostream& Stream, ShaderComponent const& Shader )
-	{
-		GLint MsgLength = 0;
-		glGetShaderiv( Shader._ShaderID, GL_INFO_LOG_LENGTH, &MsgLength );
-		char* const MsgBuffer = new char[MsgLength];
-		glGetShaderInfoLog( Shader._ShaderID, MsgLength, &MsgLength, MsgBuffer );
+	void DescribeCompilationErrors(std::ostream& stream, ShaderComponent const& shader) {
+		GLint msgLength = 0;
+		glGetShaderiv(shader.shaderID, GL_INFO_LOG_LENGTH, &msgLength);
+		char* const msgBuffer = new char[msgLength];
+		glGetShaderInfoLog(shader.shaderID, msgLength, &msgLength, msgBuffer);
 
-		Stream << "ERROR [OpenGL] Compiling Shader " << Shader._ShaderID << ": " << MsgBuffer << std::endl;
-		delete[] MsgBuffer;
+		stream << "ERROR [OpenGL] Compiling shader " << shader.shaderID << ": " << msgBuffer << std::endl;
+		delete[] msgBuffer;
 	}
 
-	bool Link( ProgramComponent& Program )
-	{
-		GLint LinkStatus;
+	bool Link(ProgramComponent& program) {
 
-		if( Program.bIsLinked ) {
-			//Program is already linked
+		if( program.isLinked ) {
+			//program is already linked
 			return true;
 		}
 
 		//Create a program object in OpenGL if we need a new one
-		if( Program._ProgramID == 0 ) {
-			Program._ProgramID = glCreateProgram();
+		if( program.programID == 0 ) {
+			program.programID = glCreateProgram();
 		}
 
 		//Attempt to load precompiled program data
-//		if( Program._Binary )
-//		{
-//			glProgramBinary( Program._ProgramID, Program._BinaryVersion, Program._Binary.size(), Program._Binary.data() );
-//			glGetProgramiv( Program._ProgramID, GL_LINK_STATUS, &LinkStatus );
-//			bLinkingWasSuccessful = EGLBool::FromGlobal( LinkStatus ) == EGLBool::True;
+//		if (program._Binary) {
+//			glProgramBinary(program.programID, program._BinaryVersion, program._Binary.size(), program._Binary.data());
+//			glGetProgramiv(program.programID, GL_LINK_STATUS, &linkStatus);
+//			linkingWasSuccessful = EGLBool::FromGlobal(linkStatus) == EGLBool::True;
 //
-//			if( bLinkingWasSuccessful )
-//			{
+//			if (linkingWasSuccessful) {
 //				//The program was loaded from an existing binary. Huzzah.
 //				return true;
 //			}
 //		}
 
 		//Compile and attach any shaders this program depends on.
-		for( ShaderComponent* Shader : Program.LinkedShaders ) {
-			if( Shader && GL::Compile( *Shader ) ) {
-				glAttachShader( Program._ProgramID, Shader->_ShaderID );
+		for (ShaderComponent* shader : program.linkedShaders) {
+			if(shader && GL::Compile(*shader)) {
+				glAttachShader(program.programID, shader->shaderID);
 			}
 		}
 
 		//Add attribute location information to the program
-		BindAttributeNames( Program._ProgramID );
+		BindAttributeNames(program.programID);
 
 		//Do the actual linking
-		glLinkProgram( Program._ProgramID );
+		glLinkProgram(program.programID);
 
 		//Determing if the linking was successful (saving result to component)
-		glGetProgramiv( Program._ProgramID, GL_LINK_STATUS, &LinkStatus );
+		GLint linkStatus;
+		glGetProgramiv(program.programID, GL_LINK_STATUS, &linkStatus);
 
-		if( ( Program.bIsLinked = EGLBool::FromGL( LinkStatus ) == EGLBool::True ) ) {
-			GetUniforms( Program._ProgramID, Program._Uniforms );
+		if ((program.isLinked = EGLBool::FromGL(linkStatus) == EGLBool::True)) {
+			GetUniforms(program.programID, program.uniforms);
 		} else {
-			DescribeLinkingErrors( std::cerr, Program );
+			DescribeLinkingErrors(std::cerr, program);
 		}
 
 		//Detach shaders before returning success result
-		for( ShaderComponent* Shader : Program.LinkedShaders ) {
-			if( Shader && Shader->bIsCompiled ) {
-				glDetachShader( Program._ProgramID, Shader->_ShaderID );
+		for (ShaderComponent* shader : program.linkedShaders) {
+			if (shader && shader->isCompiled) {
+				glDetachShader(program.programID, shader->shaderID);
 				//In the future, this can be delayed until all programs are linked
-				glDeleteShader( Shader->_ShaderID );
+				glDeleteShader(shader->shaderID);
 			}
 		}
 
-		return Program.bIsLinked;
+		return program.isLinked;
 	}
 
-	void DescribeLinkingErrors( std::ostream& Stream, ProgramComponent const& Program )
-	{
-		GLint MsgLength = 0;
-		glGetProgramiv( Program._ProgramID, GL_INFO_LOG_LENGTH, &MsgLength );
-		char* const MsgBuffer = new char[MsgLength];
-		glGetProgramInfoLog( Program._ProgramID, MsgLength, &MsgLength, MsgBuffer );
+	void DescribeLinkingErrors(std::ostream& stream, ProgramComponent const& program) {
+		GLint msgLength = 0;
+		glGetProgramiv(program.programID, GL_INFO_LOG_LENGTH, &msgLength);
+		char* const msgBuffer = new char[msgLength];
+		glGetProgramInfoLog(program.programID, msgLength, &msgLength, msgBuffer);
 
-		Stream << "ERROR [OpenGL] Linking Program " << Program._ProgramID << ": " << MsgBuffer << std::endl;
-		delete[] MsgBuffer;
+		stream << "ERROR [OpenGL] Linking program " << program.programID << ": " << msgBuffer << std::endl;
+		delete[] msgBuffer;
 	}
 
-	void Use( ProgramComponent const& Program )
-	{
-		glUseProgram( Program._ProgramID );
+	void Use(ProgramComponent const& program) {
+		glUseProgram(program.programID);
 	}
 }
