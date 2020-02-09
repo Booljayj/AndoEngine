@@ -8,7 +8,7 @@ namespace Geometry {
 
 	/** Represents a 2D shape composed of several contours */
 	struct Shape {
-		std::vector<Contour> Contours;
+		std::vector<Contour> contours;
 
 		/** true if all the contours in this shape are closed */
 		bool IsClosed() const;

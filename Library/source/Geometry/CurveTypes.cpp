@@ -5,227 +5,227 @@
 #include "Geometry/CurveTypes.h"
 
 namespace Geometry {
-	LinearCurve::LinearCurve( glm::vec2 const& InP0, glm::vec2 const& InP1, FColorChannel InColorChannels )
-	: P0( InP0 ), P1( InP1 )
-	, ColorChannels( InColorChannels )
+	LinearCurve::LinearCurve(glm::vec2 const& inP0, glm::vec2 const& inP1, FColorChannel inColorChannels)
+	: p0(inP0), p1(inP1)
+	, colorChannels(inColorChannels)
 	{}
 
-	QuadraticCurve::QuadraticCurve( glm::vec2 const& InP0, glm::vec2 const& InP1, glm::vec2 const& InP2, FColorChannel InColorChannels  )
-	: P0( InP0 ), P1( InP1 ), P2( InP2 )
-	, ColorChannels( InColorChannels )
+	QuadraticCurve::QuadraticCurve(glm::vec2 const& inP0, glm::vec2 const& inP1, glm::vec2 const& inP2, FColorChannel inColorChannels)
+	: p0(inP0), p1(inP1), p2(inP2)
+	, colorChannels(inColorChannels)
 	{}
 
-	CubicCurve::CubicCurve( glm::vec2 const& InP0, glm::vec2 const& InP1, glm::vec2 const& InP2, glm::vec2 const& InP3, FColorChannel InColorChannels )
-	: P0( InP0 ), P1( InP1 ), P2( InP2 ), P3( InP3 )
-	, ColorChannels( InColorChannels )
+	CubicCurve::CubicCurve( glm::vec2 const& inP0, glm::vec2 const& inP1, glm::vec2 const& inP2, glm::vec2 const& inP3, FColorChannel inColorChannels)
+	: p0(inP0), p1(inP1), p2(inP2), p3(inP3)
+	, colorChannels(inColorChannels)
 	{}
 
-	glm::vec2 LinearCurve::Position( float Alpha ) const {
-		return glm::mix( P0, P1, Alpha );
+	glm::vec2 LinearCurve::Position(float alpha) const {
+		return glm::mix(p0, p1, alpha);
 	}
-	glm::vec2 QuadraticCurve::Position( float Alpha ) const {
-		return glm::mix( glm::mix( P0, P1, Alpha ), glm::mix( P1, P2, Alpha ), Alpha );
+	glm::vec2 QuadraticCurve::Position(float alpha) const {
+		return glm::mix(glm::mix(p0, p1, alpha), glm::mix(p1, p2, alpha), alpha);
 	}
-	glm::vec2 CubicCurve::Position( float Alpha ) const {
-		glm::vec2 const P12 = glm::mix( P1, P2, Alpha );
-		return glm::mix( glm::mix( glm::mix( P0, P1, Alpha ), P12, Alpha ), glm::mix( P12, glm::mix( P2, P3, Alpha ), Alpha ), Alpha );
+	glm::vec2 CubicCurve::Position(float alpha) const {
+		glm::vec2 const p12 = glm::mix(p1, p2, alpha);
+		return glm::mix(glm::mix( glm::mix(p0, p1, alpha), p12, alpha), glm::mix(p12, glm::mix(p2, p3, alpha), alpha), alpha);
 	}
 
-	glm::vec2 LinearCurve::Direction( float Alpha ) const {
-		return P1 - P0;
+	glm::vec2 LinearCurve::Direction(float alpha) const {
+		return p1 - p0;
 	}
-	glm::vec2 QuadraticCurve::Direction( float Alpha ) const {
-		return glm::mix( P1 - P0, P2 - P1, Alpha );
+	glm::vec2 QuadraticCurve::Direction(float alpha) const {
+		return glm::mix(p1 - p0, p2 - p1, alpha);
 	}
-	glm::vec2 CubicCurve::Direction( float Alpha ) const {
-		if( Alpha == 0 ) return P2 - P0;
-		if( Alpha == 1 ) return P3 - P1;
-		return glm::mix( glm::mix( P1 - P0, P2 - P1, Alpha ), glm::mix( P2 - P1, P3 - P2, Alpha ), Alpha );
+	glm::vec2 CubicCurve::Direction(float alpha) const {
+		if (alpha == 0) return p2 - p0;
+		if (alpha == 1) return p3 - p1;
+		return glm::mix(glm::mix(p1 - p0, p2 - p1, alpha), glm::mix(p2 - p1, p3 - p2, alpha), alpha);
 	}
 
 	Rect LinearCurve::Bounds() const {
-		Rect AABB{ P0 };
-		AABB.Encapsulate( P1 );
-		return AABB;
+		Rect aabb{p0};
+		aabb.Encapsulate(p1);
+		return aabb;
 	}
 	Rect QuadraticCurve::Bounds() const {
-		Rect AABB{ P0 };
-		AABB.Encapsulate( P2 );
-		glm::vec2 const Bottom = ( P1 - P0 ) - ( P2 - P1 );
-		if( Bottom.x != 0.0f ) {
-			float const Alpha = ( P1.x - P0.x ) / Bottom.x;
-			if( Alpha > 0 && Alpha < 1 ) AABB.Encapsulate( Position( Alpha ) );
+		Rect aabb{p0};
+		aabb.Encapsulate(p2);
+		glm::vec2 const bottom = (p1 - p0) - (p2 - p1);
+		if (bottom.x != 0.0f) {
+			float const alpha = (p1.x - p0.x) / bottom.x;
+			if (alpha > 0 && alpha < 1) aabb.Encapsulate(Position(alpha));
 		}
-		if( Bottom.y != 0.0f ) {
-			float const Alpha = ( P1.y - P0.y ) / Bottom.y;
-			if( Alpha > 0 && Alpha < 1 ) AABB.Encapsulate( Position( Alpha ) );
+		if (bottom.y != 0.0f) {
+			float const alpha = (p1.y - p0.y) / bottom.y;
+			if (alpha > 0 && alpha < 1) aabb.Encapsulate(Position(alpha));
 		}
-		return AABB;
+		return aabb;
 	}
 	Rect CubicCurve::Bounds() const {
-		Rect AABB{ P0 };
-		AABB.Encapsulate( P3 );
-		glm::vec2 const A0 = P1 - P0;
-		glm::vec2 const A1 = 2.0f * ( P2 - P1 - A0 );
-		glm::vec2 const A2 = P3- ( 3.0f * P2 ) + ( 3.0f * P1 ) - P0;
+		Rect aabb{p0};
+		aabb.Encapsulate(p3);
+		glm::vec2 const a0 = p1 - p0;
+		glm::vec2 const a1 = 2.0f * (p2 - p1 - a0);
+		glm::vec2 const a2 = p3- (3.0f * p2) + (3.0f * p1) - p0;
 		{
-			float Alphas[2];
-			size_t const Solutions = SolveQuadratic( Alphas, A2.x, A1.x, A0.x );
-			for( size_t Index = 0; Index < Solutions; ++Index ) {
-				if( Alphas[Index] > 0 && Alphas[Index] < 1 ) AABB.Encapsulate( Position( Alphas[Index] ) );
+			float alphas[2];
+			size_t const solutions = SolveQuadratic(alphas, a2.x, a1.x, a0.x);
+			for (size_t index = 0; index < solutions; ++index) {
+				if (alphas[index] > 0 && alphas[index] < 1) aabb.Encapsulate(Position(alphas[index]));
 			}
 		}
 		{
-			float Alphas[2];
-			size_t const Solutions = SolveQuadratic( Alphas, A2.y, A1.y, A0.y );
-			for( size_t Index = 0; Index < Solutions; ++Index ) {
-				if( Alphas[Index] > 0 && Alphas[Index] < 1 ) AABB.Encapsulate( Position( Alphas[Index] ) );
+			float alphas[2];
+			size_t const solutions = SolveQuadratic(alphas, a2.y, a1.y, a0.y);
+			for (size_t index = 0; index < solutions; ++index) {
+				if (alphas[index] > 0 && alphas[index] < 1) aabb.Encapsulate(Position(alphas[index]));
 			}
 		}
-		return AABB;
+		return aabb;
 	}
 
 	template<typename T>
-	uint8_t NonZeroSign( T Alpha ) {
-		return 2 * ( Alpha > T{0} ) - 1;
+	uint8_t NonZeroSign(T alpha) {
+		return 2 * (alpha > T{0}) - 1;
 	}
 
-	CurveMinimumSignedDistance LinearCurve::MinimumSignedDistance( glm::vec2 Origin ) const {
-		SignedDistance MinimumSignedDistance;
-		glm::vec2 const AQ = Origin - P0;
-		glm::vec2 const AB = P1 - P0;
-		float NearestAlpha = glm::dot( AQ, AB ) / glm::dot( AB, AB );
-		glm::vec2 const EQ = ( NearestAlpha > 0.5f ? P1 : P0 ) - Origin;
-		float const EndpointDistance = glm::length( EQ );
-		if( NearestAlpha > 0.0f && NearestAlpha < 1.0f ) {
-			float const ABLength = glm::length( AB );
-			glm::vec2 const ABPerpendicular{ AB.y/ABLength, -AB.x/ABLength };
-			float const OrthoDistance = glm::dot( ABPerpendicular, AQ );
-			if( fabs( OrthoDistance ) < EndpointDistance ) MinimumSignedDistance = SignedDistance{ OrthoDistance, 0 };
+	CurveMinimumSignedDistance LinearCurve::MinimumSignedDistance(glm::vec2 origin) const {
+		SignedDistance minimumSignedDistance;
+		glm::vec2 const aq = origin - p0;
+		glm::vec2 const ab = p1 - p0;
+		float nearestAlpha = glm::dot(aq, ab) / glm::dot(ab, ab);
+		glm::vec2 const eq = (nearestAlpha > 0.5f ? p1 : p0) - origin;
+		float const endpointDistance = glm::length(eq);
+		if (nearestAlpha > 0.0f && nearestAlpha < 1.0f) {
+			float const abLength = glm::length( ab );
+			glm::vec2 const abPerpendicular{ ab.y/abLength, -ab.x/abLength };
+			float const orthoDistance = glm::dot( abPerpendicular, aq );
+			if (fabs(orthoDistance) < endpointDistance) minimumSignedDistance = SignedDistance{orthoDistance, 0};
 		} else {
-			MinimumSignedDistance = SignedDistance{
-				NonZeroSign( glm::cross( AQ, AB ) ) * EndpointDistance,
-				fabs( glm::dot( glm::normalize( AB ), glm::normalize( EQ ) ) )
+			minimumSignedDistance = SignedDistance{
+				NonZeroSign(glm::cross(aq, ab)) * endpointDistance,
+				fabs(glm::dot(glm::normalize(ab), glm::normalize(eq)))
 			};
 		}
-		return CurveMinimumSignedDistance{ MinimumSignedDistance, NearestAlpha };
+		return CurveMinimumSignedDistance{minimumSignedDistance, nearestAlpha};
 	}
-	CurveMinimumSignedDistance QuadraticCurve::MinimumSignedDistance( glm::vec2 Origin ) const {
-		glm::vec2 const QA = P0 - Origin;
-		glm::vec2 const AB = P1 - P0;
-		glm::vec2 const BR = P0 + P2 - P1 - P1;
-		float const A = glm::dot( BR, BR );
-		float const B = 3.0f * glm::dot( AB, BR );
-		float const C = 2.0f * glm::dot( AB, AB ) + glm::dot( QA, BR );
-		float const D = glm::dot( QA, AB );
-		float Alphas[3];
-		uint8_t const Solutions = SolveCubic( Alphas, A, B, C, D );
+	CurveMinimumSignedDistance QuadraticCurve::MinimumSignedDistance(glm::vec2 origin) const {
+		glm::vec2 const qa = p0 - origin;
+		glm::vec2 const ab = p1 - p0;
+		glm::vec2 const br = p0 + p2 - p1 - p1;
+		float const a = glm::dot(br, br);
+		float const b = 3.0f * glm::dot(ab, br);
+		float const c = 2.0f * glm::dot(ab, ab) + glm::dot(qa, br);
+		float const d = glm::dot(qa, ab);
+		float alphas[3];
+		uint8_t const solutions = SolveCubic(alphas, a, b, c, d);
 
-		float MinimumDistance = NonZeroSign( glm::cross( AB, QA ) ) * glm::length( QA ); // Distance from A
-		float NearestAlpha = -glm::dot( QA, AB ) / glm::dot( AB, AB );
+		float minimumDistance = NonZeroSign(glm::cross(ab, qa)) * glm::length(qa); // distance from a
+		float nearestAlpha = -glm::dot(qa, ab) / glm::dot(ab, ab);
 		{
-			float const Distance = NonZeroSign( glm::cross( P2 - P1, P2 - Origin ) ) * glm::length( P2 - Origin ); // Distance from B
-			if( fabs( Distance ) < fabs( MinimumDistance ) ) {
-				MinimumDistance = Distance;
-				NearestAlpha = glm::dot( Origin - P1, P2 - P1 ) / glm::dot( P2 - P1, P2 - P1 );
+			float const distance = NonZeroSign(glm::cross(p2 - p1, p2 - origin)) * glm::length(p2 - origin); // distance from b
+			if (fabs(distance) < fabs(minimumDistance)) {
+				minimumDistance = distance;
+				nearestAlpha = glm::dot(origin - p1, p2 - p1) / glm::dot(p2 - p1, p2 - p1);
 			}
 		}
-		for( size_t Index = 0; Index < Solutions; ++Index ) {
-			if( Alphas[Index] > 0.0f && Alphas[Index] < 1.0f ) {
-				glm::vec2 const Endpoint = P0 + ( 2.0f * Alphas[Index] * AB ) + ( Alphas[Index] * Alphas[Index] * BR );
-				float const Distance = NonZeroSign( glm::cross( P2 - P0, Endpoint - Origin ) ) * glm::length( Endpoint - Origin );
-				if( fabs( Distance ) <= fabs( MinimumDistance ) ) {
-					MinimumDistance = Distance;
-					NearestAlpha = Alphas[Index];
+		for (size_t index = 0; index < solutions; ++index) {
+			if (alphas[index] > 0.0f && alphas[index] < 1.0f) {
+				glm::vec2 const endpoint = p0 + (2.0f * alphas[index] * ab) + (alphas[index] * alphas[index] * br);
+				float const distance = NonZeroSign(glm::cross(p2 - p0, endpoint - origin)) * glm::length(endpoint - origin);
+				if (fabs(distance) <= fabs(minimumDistance)) {
+					minimumDistance = distance;
+					nearestAlpha = alphas[index];
 				}
 			}
 		}
 
-		if( NearestAlpha >= 0.0f && NearestAlpha <= 1.0f ) {
-			return CurveMinimumSignedDistance{ SignedDistance{ MinimumDistance, 0.0f }, NearestAlpha };
-		} if( NearestAlpha < 0.5f ) {
-			return CurveMinimumSignedDistance{ SignedDistance{ MinimumDistance, fabs( glm::dot( glm::normalize( AB ), glm::normalize( QA ) ) ) }, NearestAlpha };
+		if (nearestAlpha >= 0.0f && nearestAlpha <= 1.0f) {
+			return CurveMinimumSignedDistance{SignedDistance{minimumDistance, 0.0f}, nearestAlpha};
+		} if (nearestAlpha < 0.5f) {
+			return CurveMinimumSignedDistance{SignedDistance{minimumDistance, fabs(glm::dot(glm::normalize(ab), glm::normalize(qa)))}, nearestAlpha};
 		} else {
-			return CurveMinimumSignedDistance{ SignedDistance{ MinimumDistance, fabs( glm::dot( glm::normalize( P2 - P1 ), glm::normalize( P2 - Origin ) ) ) }, NearestAlpha };
+			return CurveMinimumSignedDistance{SignedDistance{minimumDistance, fabs(glm::dot(glm::normalize(p2 - p1), glm::normalize(p2 - origin)))}, nearestAlpha};
 		}
 	}
-	CurveMinimumSignedDistance CubicCurve::MinimumSignedDistance( glm::vec2 Origin ) const {
-		glm::vec2 const QA = P0 - Origin;
-		glm::vec2 const AB = P1 - P0;
-		glm::vec2 const BR = P2 - P1 - AB;
-		glm::vec2 const AS = ( P3 - P2 ) - ( P2 - P1 ) - BR;
+	CurveMinimumSignedDistance CubicCurve::MinimumSignedDistance(glm::vec2 origin) const {
+		glm::vec2 const qa = p0 - origin;
+		glm::vec2 const ab = p1 - p0;
+		glm::vec2 const br = p2 - p1 - ab;
+		glm::vec2 const as = (p3 - p2) - (p2 - p1) - br;
 
-		glm::vec2 EPDirection = Direction( 0.0f );
-		float MinimumDistance = NonZeroSign( glm::cross( EPDirection, QA ) ) * glm::length( QA ); // Distance from A
-		float NearestAlpha = -glm::dot( QA, EPDirection ) / glm::dot( EPDirection, EPDirection );
+		glm::vec2 epDirection = Direction(0.0f);
+		float minimumDistance = NonZeroSign(glm::cross(epDirection, qa)) * glm::length(qa); // distance from a
+		float nearestAlpha = -glm::dot(qa, epDirection) / glm::dot(epDirection, epDirection);
 		{
-			EPDirection = Direction( 1.0f );
-			float const Distance = NonZeroSign( glm::cross( EPDirection, P3 - Origin ) ) * glm::length( P3 - Origin ); // Distance from B
-			if( fabs( Distance) < fabs( MinimumDistance ) ) {
-				MinimumDistance = Distance;
-				NearestAlpha = glm::dot( Origin + EPDirection - P3, EPDirection ) / glm::dot( EPDirection, EPDirection );
+			epDirection = Direction(1.0f);
+			float const distance = NonZeroSign(glm::cross(epDirection, p3 - origin)) * glm::length(p3 - origin); // distance from b
+			if (fabs(distance) < fabs(minimumDistance)) {
+				minimumDistance = distance;
+				nearestAlpha = glm::dot(origin + epDirection - p3, epDirection) / glm::dot(epDirection, epDirection);
 			}
 		}
-		// Iterative minimum Distance search
-		static constexpr size_t CUBIC_SEARCH_STARTS = 10;
-		static constexpr size_t CUBIC_SEARCH_STEPS = 10;
-		for( size_t Index = 0; Index <= CUBIC_SEARCH_STARTS; ++Index ) {
-			float Alpha = (float)Index / (float)CUBIC_SEARCH_STARTS;
-			for( size_t Step = 0;; ++Step ) {
-				glm::vec2 const QPT = Position( Alpha ) - Origin;
-				float const Distance = NonZeroSign( glm::cross( Direction( Alpha ), QPT ) ) * glm::length( QPT );
-				if( fabs( Distance ) < fabs( MinimumDistance ) ) {
-					MinimumDistance = Distance;
-					NearestAlpha = Alpha;
+		// Iterative minimum distance search
+		static constexpr size_t CubicSeachSegments = 10;
+		static constexpr size_t CubicSeachSteps = 10;
+		for (size_t index = 0; index <= CubicSeachSegments; ++index) {
+			float alpha = (float)index / (float)CubicSeachSegments;
+			for (size_t step = 0;; ++step) {
+				glm::vec2 const qpt = Position(alpha) - origin;
+				float const distance = NonZeroSign(glm::cross(Direction(alpha), qpt)) * glm::length(qpt);
+				if (fabs(distance) < fabs(minimumDistance)) {
+					minimumDistance = distance;
+					nearestAlpha = alpha;
 				}
 
-				if( Step == CUBIC_SEARCH_STEPS ) break;
+				if (step == CubicSeachSteps) break;
 
-				// Improve Alphas
-				glm::vec2 const D1 = ( 3.0f * AS * Alpha * Alpha ) + ( 6.0f * BR * Alpha ) + ( 3.0f * AB );
-				glm::vec2 const D2 = ( 6.0f * AS * Alpha ) + ( 6.0f * BR );
-				Alpha -= glm::dot( QPT, D1 ) / ( glm::dot( D1, D1 ) + glm::dot( QPT, D2 ) );
-				if( Alpha < 0.0f || Alpha > 1.0f ) break;
+				// Improve alphas
+				glm::vec2 const d1 = (3.0f * as * alpha * alpha) + (6.0f * br * alpha) + (3.0f * ab);
+				glm::vec2 const d2 = (6.0f * as * alpha) + (6.0f * br);
+				alpha -= glm::dot(qpt, d1) / (glm::dot(d1, d1) + glm::dot(qpt, d2));
+				if (alpha < 0.0f || alpha > 1.0f) break;
 			}
 		}
 
-		if( NearestAlpha >= 0.0f && NearestAlpha <= 1.0f )
-			return CurveMinimumSignedDistance{ SignedDistance{ MinimumDistance, 0.0f }, NearestAlpha };
-		if( NearestAlpha < 0.5f )
-			return CurveMinimumSignedDistance{ SignedDistance{ MinimumDistance, fabs( glm::dot( glm::normalize( Direction( 0.0f ) ), glm::normalize( QA ) ) ) }, NearestAlpha };
+		if (nearestAlpha >= 0.0f && nearestAlpha <= 1.0f)
+			return CurveMinimumSignedDistance{SignedDistance{minimumDistance, 0.0f}, nearestAlpha};
+		if (nearestAlpha < 0.5f)
+			return CurveMinimumSignedDistance{SignedDistance{minimumDistance, fabs(glm::dot(glm::normalize(Direction(0.0f)), glm::normalize(qa)))}, nearestAlpha};
 		else
-			return CurveMinimumSignedDistance{ SignedDistance{ MinimumDistance, fabs( glm::dot( glm::normalize( Direction( 1.0f ) ), glm::normalize( P3 - Origin ) ) ) }, NearestAlpha };
+			return CurveMinimumSignedDistance{SignedDistance{minimumDistance, fabs(glm::dot(glm::normalize(Direction(1.0f)), glm::normalize(p3 - origin)))}, nearestAlpha};
 	}
 
-	void LinearCurve::SetStartPosition( glm::vec2 NewStartPosition ) {
-		P0 = NewStartPosition;
+	void LinearCurve::SetStartPosition(glm::vec2 newStartPosition) {
+		p0 = newStartPosition;
 	}
-	void QuadraticCurve::SetStartPosition( glm::vec2 NewStartPosition ) {
-		glm::vec2 const OriginalP1 = P1;
-		glm::vec2 const OriginalP01 = P0 - P1;
-		glm::vec2 const OriginalP21 = P2 - P1;
-		P1 += glm::cross( OriginalP01, NewStartPosition - P0 ) / glm::cross( OriginalP01, OriginalP21 ) * OriginalP21;
-		P0 = NewStartPosition;
-		if( glm::dot( OriginalP01, P0 - P1 ) < 0.0f ) P1 = OriginalP1;
+	void QuadraticCurve::SetStartPosition(glm::vec2 newStartPosition) {
+		glm::vec2 const originalP1 = p1;
+		glm::vec2 const originalP01 = p0 - p1;
+		glm::vec2 const originalP21 = p2 - p1;
+		p1 += glm::cross(originalP01, newStartPosition - p0) / glm::cross(originalP01, originalP21) * originalP21;
+		p0 = newStartPosition;
+		if (glm::dot(originalP01, p0 - p1) < 0.0f) p1 = originalP1;
 	}
-	void CubicCurve::SetStartPosition( glm::vec2 NewStartPosition ) {
-		P1 += ( NewStartPosition - P0 );
-		P0 = NewStartPosition;
+	void CubicCurve::SetStartPosition(glm::vec2 newStartPosition) {
+		p1 += (newStartPosition - p0);
+		p0 = newStartPosition;
 	}
 
-	void LinearCurve::SetEndPosition( glm::vec2 NewEndPosition ) {
-		P1 = NewEndPosition;
+	void LinearCurve::SetEndPosition(glm::vec2 newEndPosition) {
+		p1 = newEndPosition;
 	}
-	void QuadraticCurve::SetEndPosition( glm::vec2 NewEndPosition ) {
-		glm::vec2 const OriginalP1 = P1;
-		glm::vec2 const OriginalP01 = P0 - P1;
-		glm::vec2 const OriginalP21 = P2 - P1;
-		P1 += glm::cross( OriginalP21, NewEndPosition - P2 ) / glm::cross( OriginalP21, OriginalP01 ) * OriginalP01;
-		P2 = NewEndPosition;
-		if( glm::dot( OriginalP21, P2 - P1 ) < 0.0f ) P1 = OriginalP1;
+	void QuadraticCurve::SetEndPosition(glm::vec2 newEndPosition) {
+		glm::vec2 const originalP1 = p1;
+		glm::vec2 const originalP01 = p0 - p1;
+		glm::vec2 const originalP21 = p2 - p1;
+		p1 += glm::cross(originalP21, newEndPosition - p2) / glm::cross(originalP21, originalP01) * originalP01;
+		p2 = newEndPosition;
+		if( glm::dot(originalP21, p2 - p1) < 0.0f) p1 = originalP1;
 	}
-	void CubicCurve::SetEndPosition( glm::vec2 NewEndPosition ) {
-		P2 += ( NewEndPosition - P3 );
-		P3 = NewEndPosition;
+	void CubicCurve::SetEndPosition(glm::vec2 newEndPosition) {
+		p2 += (newEndPosition - p3);
+		p3 = newEndPosition;
 	}
 }

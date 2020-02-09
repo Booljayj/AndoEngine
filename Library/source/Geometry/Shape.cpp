@@ -6,17 +6,17 @@
 
 namespace Geometry {
 	bool Shape::IsClosed() const {
-		for( Contour const& C : Contours ) {
-			if( !C.IsClosed() ) return false;
+		for (Contour const& contour : contours) {
+			if (!contour.IsClosed()) return false;
 		}
 		return true;
 	}
 
 	Rect Shape::Bounds() const {
-		Rect AABB{};
-		for( Contour const& C : Contours ) {
-			AABB.Encapsulate( C.Bounds() );
+		Rect aabb{};
+		for (Contour const& contour : contours) {
+			aabb.Encapsulate(contour.Bounds());
 		}
-		return AABB;
+		return aabb;
 	}
 }

@@ -21,15 +21,15 @@ namespace Rendering {
 
 	int32_t FreetypeMoveTo( FT_Vector const* End, void* ContextPtr ) {
 		GlyphShapeContext& Context = *static_cast<GlyphShapeContext*>( ContextPtr );
-		Context.Shape->Contours.push_back( Geometry::Contour{} );
-		Context.CurrentContour = &Context.Shape->Contours.back();
+		Context.Shape->contours.push_back( Geometry::Contour{} );
+		Context.CurrentContour = &Context.Shape->contours.back();
 		Context.CurrentStartPosition = glm::vec2{ End->x, End->y };
 		return 0;
 	}
 	int32_t FreetypeLineTo( FT_Vector const* End, void* ContextPtr ) {
 		GlyphShapeContext& Context = *static_cast<GlyphShapeContext*>( ContextPtr );
 		glm::vec2 EndPosition{ End->x, End->y };
-		Context.CurrentContour->Curves.push_back(
+		Context.CurrentContour->curves.push_back(
 			Geometry::LinearCurve{ Context.CurrentStartPosition, EndPosition }
 		);
 		Context.CurrentStartPosition = EndPosition;
@@ -38,7 +38,7 @@ namespace Rendering {
 	int32_t FreetypeConicTo( FT_Vector const* Ctl, FT_Vector const* End, void* ContextPtr ) {
 		GlyphShapeContext& Context = *static_cast<GlyphShapeContext*>( ContextPtr );
 		glm::vec2 EndPosition{ End->x, End->y };
-		Context.CurrentContour->Curves.push_back(
+		Context.CurrentContour->curves.push_back(
 			Geometry::QuadraticCurve{ Context.CurrentStartPosition, glm::vec2{ Ctl->x, Ctl->y }, EndPosition }
 		);
 		Context.CurrentStartPosition = EndPosition;
@@ -47,7 +47,7 @@ namespace Rendering {
 	int32_t FreetypeCubicTo( FT_Vector const* Ctl0, FT_Vector const* Ctl1, FT_Vector const* End, void* ContextPtr ) {
 		GlyphShapeContext& Context = *static_cast<GlyphShapeContext*>( ContextPtr );
 		glm::vec2 EndPosition{ End->x, End->y };
-		Context.CurrentContour->Curves.push_back(
+		Context.CurrentContour->curves.push_back(
 			Geometry::CubicCurve{ Context.CurrentStartPosition, glm::vec2{ Ctl0->x, Ctl0->y }, glm::vec2{ Ctl1->x, Ctl1->y }, EndPosition }
 		);
 		Context.CurrentStartPosition = EndPosition;
@@ -75,7 +75,7 @@ namespace Rendering {
 	bool DecomposeGlyph( Geometry::Shape& OutShape, FT_GlyphSlot Glyph ) {
 		if( Glyph->format != FT_Glyph_Format_::FT_GLYPH_FORMAT_OUTLINE ) return false;
 		//Reset the shape before writing to it
-		OutShape.Contours.clear();
+		OutShape.contours.clear();
 		//Decompose the shape of the glyph
 		GlyphShapeContext Context{ OutShape };
 		const FT_Error DecomposeError = FT_Outline_Decompose( &Glyph->outline, &FreetypeOutlineFunctions, &Context );

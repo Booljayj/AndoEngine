@@ -5,19 +5,21 @@
 namespace Geometry {
 	/** Represents a 2D axially-aligned bounding box */
 	struct Rect {
-		glm::vec2 Min;// = { std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity() };
-		glm::vec2 Max;// = { -std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity() };
+		glm::vec2 min = { std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity() };
+		glm::vec2 max = { -std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity() };
 
-		Rect();
-		Rect( const glm::vec2& Position );
+		constexpr Rect() = default;
+		constexpr Rect(glm::vec2 const& position)
+		: min(position), max(position)
+		{}
 
-		bool IsValid() const;
+		inline constexpr bool IsValid() const { return min.x<=max.x && min.y<=max.y; }
 
-		bool Contains( const glm::vec2& Position ) const;
-		bool Intersects( const Rect& Bounds ) const;
-		bool Overlaps( const Rect& Bounds ) const;
+		bool Contains(glm::vec2 const& position) const;
+		bool Intersects(Rect const& bounds) const;
+		bool Overlaps(Rect const& bounds) const;
 
-		void Encapsulate( const glm::vec2& Position );
-		void Encapsulate( const Rect& Bounds );
+		void Encapsulate(glm::vec2 const& position);
+		void Encapsulate(Rect const& bounds);
 	};
 }

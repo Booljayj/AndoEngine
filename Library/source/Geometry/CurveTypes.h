@@ -6,68 +6,66 @@
 #include "Geometry/ColorChannel.h"
 #include "Geometry/SignedDistance.h"
 
-namespace Geometry
-{
-	struct CurveMinimumSignedDistance
-	{
-		SignedDistance MinimumSignedDistance;
-		float NearestAlpha;
+namespace Geometry {
+	struct CurveMinimumSignedDistance {
+		SignedDistance minimumSignedDistance;
+		float nearestAlpha;
 	};
 
 	/** A linear segment */
 	struct LinearCurve {
-		glm::vec2 P0 = glm::vec2{ 0.0f, 0.0f };
-		glm::vec2 P1 = glm::vec2{ 0.0f, 0.0f };
-		FColorChannel ColorChannels = FColorChannel::White;
+		glm::vec2 p0 = glm::vec2{0.0f, 0.0f};
+		glm::vec2 p1 = glm::vec2{0.0f, 0.0f};
+		FColorChannel colorChannels = FColorChannel::White;
 
 		LinearCurve() = default;
-		LinearCurve( const glm::vec2& InP0, const glm::vec2& InP1, FColorChannel InColorChannels = FColorChannel::White );
+		LinearCurve(glm::vec2 const& inP0, glm::vec2 const& inP1, FColorChannel inColorChannels = FColorChannel::White);
 
-		glm::vec2 Position( float Alpha ) const;
-		glm::vec2 Direction( float Alpha ) const;
+		glm::vec2 Position(float alpha) const;
+		glm::vec2 Direction(float alpha) const;
 		Rect Bounds() const;
-		CurveMinimumSignedDistance MinimumSignedDistance( glm::vec2 Origin ) const;
+		CurveMinimumSignedDistance MinimumSignedDistance(glm::vec2 origin) const;
 
-		void SetStartPosition( glm::vec2 NewStartPosition );
-		void SetEndPosition( glm::vec2 NewEndPosition );
+		void SetStartPosition(glm::vec2 newStartPosition);
+		void SetEndPosition(glm::vec2 newEndPosition);
 	};
 
 	/** A quadratic Bezier curve segment */
 	struct QuadraticCurve {
-		glm::vec2 P0 = glm::vec2{ 0.0f, 0.0f };
-		glm::vec2 P1 = glm::vec2{ 0.0f, 0.0f };
-		glm::vec2 P2 = glm::vec2{ 0.0f, 0.0f };
-		FColorChannel ColorChannels = FColorChannel::White;
+		glm::vec2 p0 = glm::vec2{0.0f, 0.0f};
+		glm::vec2 p1 = glm::vec2{0.0f, 0.0f};
+		glm::vec2 p2 = glm::vec2{0.0f, 0.0f};
+		FColorChannel colorChannels = FColorChannel::White;
 
 		QuadraticCurve();
-		QuadraticCurve( const glm::vec2& InP0, const glm::vec2& InP1, const glm::vec2& InP2, FColorChannel InColorChannels = FColorChannel::White );
+		QuadraticCurve(glm::vec2 const& inP0, glm::vec2 const& inP1, glm::vec2 const& inP2, FColorChannel inColorChannels = FColorChannel::White);
 
-		glm::vec2 Position( float Alpha ) const;
-		glm::vec2 Direction( float Alpha ) const;
+		glm::vec2 Position(float alpha) const;
+		glm::vec2 Direction(float alpha) const;
 		Rect Bounds() const;
-		CurveMinimumSignedDistance MinimumSignedDistance( glm::vec2 Origin ) const;
+		CurveMinimumSignedDistance MinimumSignedDistance(glm::vec2 origin) const;
 
-		void SetStartPosition( glm::vec2 NewStartPosition );
-		void SetEndPosition( glm::vec2 NewEndPosition );
+		void SetStartPosition(glm::vec2 newStartPosition);
+		void SetEndPosition(glm::vec2 newEndPosition);
 	};
 
 	/* A cubic Bezier curve segment */
 	struct CubicCurve {
-		glm::vec2 P0 = glm::vec2{ 0.0f, 0.0f };
-		glm::vec2 P1 = glm::vec2{ 0.0f, 0.0f };
-		glm::vec2 P2 = glm::vec2{ 0.0f, 0.0f };
-		glm::vec2 P3 = glm::vec2{ 0.0f, 0.0f };
-		FColorChannel ColorChannels = FColorChannel::White;
+		glm::vec2 p0 = glm::vec2{0.0f, 0.0f};
+		glm::vec2 p1 = glm::vec2{0.0f, 0.0f};
+		glm::vec2 p2 = glm::vec2{0.0f, 0.0f};
+		glm::vec2 p3 = glm::vec2{0.0f, 0.0f};
+		FColorChannel colorChannels = FColorChannel::White;
 
 		CubicCurve();
-		CubicCurve( const glm::vec2& InP0, const glm::vec2& InP1, const glm::vec2& InP2, const glm::vec2& InP3, FColorChannel InColorChannels = FColorChannel::White );
+		CubicCurve(glm::vec2 const& inP0, glm::vec2 const& inP1, glm::vec2 const& inP2, glm::vec2 const& inP3, FColorChannel inColorChannels = FColorChannel::White);
 
-		glm::vec2 Position( float Alpha ) const;
-		glm::vec2 Direction( float Alpha ) const;
+		glm::vec2 Position(float alpha) const;
+		glm::vec2 Direction(float alpha) const;
 		Rect Bounds() const;
-		CurveMinimumSignedDistance MinimumSignedDistance( glm::vec2 Origin ) const;
+		CurveMinimumSignedDistance MinimumSignedDistance(glm::vec2 origin) const;
 
-		void SetStartPosition( glm::vec2 NewStartPosition );
-		void SetEndPosition( glm::vec2 NewEndPosition );
+		void SetStartPosition(glm::vec2 newStartPosition);
+		void SetEndPosition(glm::vec2 newEndPosition);
 	};
 }

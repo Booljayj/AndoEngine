@@ -3,62 +3,62 @@
 #include "Geometry/Equations.h"
 
 namespace Geometry {
-	int8_t SolveQuadratic( float* X, float A, float B, float C ) {
-		if( fabs( A ) < std::numeric_limits<float>::min() ) {
-			if( fabs( B ) < std::numeric_limits<float>::min() ) {
-				if( C == 0.0f ) return -1;
+	int8_t SolveQuadratic(float* x, float a, float b, float c) {
+		if (fabs(a) < std::numeric_limits<float>::min()) {
+			if (fabs(b) < std::numeric_limits<float>::min()) {
+				if (c == 0.0f) return -1;
 				else return 0;
 			} else {
-				X[0] = -C/B;
+				x[0] = -c/b;
 				return 1;
 			}
 		}
-		float Discriminant = (B*B)-(4.0f*A*C);
-		if( Discriminant > 0 ) {
-			Discriminant = sqrt( Discriminant );
-			X[0] = ( -B + Discriminant )/(2.0f*A);
-			X[1] = ( -B - Discriminant )/(2.0f*A);
+		float discriminant = (b*b)-(4.0f*a*c);
+		if (discriminant > 0) {
+			discriminant = sqrt(discriminant);
+			x[0] = (-b + discriminant) / (2.0f*a);
+			x[1] = (-b - discriminant) / (2.0f*a);
 			return 2;
-		} else if( Discriminant == 0 ) {
-			X[0] = B/(-2.0f*A);
+		} else if (discriminant == 0) {
+			x[0] = b/(-2.0f*a);
 			return 1;
 		} else {
 			return 0;
 		}
 	}
 
-	int8_t SolveCubicNormed( float* X, float A, float B, float C ) {
-		float const A2 = A*A;
-		float Q = (A2-3.0f*B)/9.0f;
-		float const R = (A*(2.0f*A2 - 9.0f*B)+27.0f*C)/54.0f;
-		float const R2 = R*R;
-		float const Q3 = Q*Q*Q;
-		if( R2<Q3 ) {
-			float T = R / sqrt( Q3 );
-			if( T<-1.0f ) T = -1.0f;
-			if( T>1.0f ) T = 1.0f;
-			T = acos( T );
-			A /= 3.0f;
-			Q = -2.0f*sqrt( Q );
-			X[0] = Q*cos( T/3.0f ) - A;
-			X[1] = Q*cos( (T+2.0f*M_PI)/3.0f )-A;
-			X[2] = Q*cos( (T-2.0f*M_PI)/3.0f )-A;
+	int8_t SolveCubicNormed(float* x, float a, float b, float c) {
+		float const a2 = a*a;
+		float q = (a2-3.0f*b)/9.0f;
+		float const r = (a*(2.0f*a2 - 9.0f*b)+27.0f*c)/54.0f;
+		float const r2 = r*r;
+		float const q3 = q*q*q;
+		if (r2 < q3) {
+			float t = r / sqrt(q3);
+			if (t < -1.0f) t = -1.0f;
+			if (t > 1.0f) t = 1.0f;
+			t = acos(t);
+			a /= 3.0f;
+			q = -2.0f * sqrt(q);
+			x[0] = q * cos(t/3.0f) - a;
+			x[1] = q * cos((t+2.0f*M_PI)/3.0f )-a;
+			x[2] = q * cos((t-2.0f*M_PI)/3.0f )-a;
 			return 3;
 		} else {
-			float AP = -pow( fabs( R )+sqrt( R2-Q3 ), 1.0f/3.0f );
-			if( R < 0.0f ) AP = -AP;
-			float const BP = (AP==0.0f) ? 0.0f : (Q/AP);
-			A /= 3.0f;
-			X[0] = (AP+BP)-A;
-			X[1] = -0.5f*(AP+BP)-A;
-			X[2] = 0.5f*sqrt( 3.0f )*(AP-BP);
-			if( fabs( X[2] ) < std::numeric_limits<float>::min() ) return 2;
+			float ap = -pow(fabs(r) + sqrt(r2-q3), 1.0f/3.0f);
+			if (r < 0.0f) ap = -ap;
+			float const bp = (ap==0.0f) ? 0.0f : (q/ap);
+			a /= 3.0f;
+			x[0] = (ap+bp)-a;
+			x[1] = -0.5f*(ap+bp)-a;
+			x[2] = 0.5f*sqrt(3.0f)*(ap-bp);
+			if (fabs(x[2]) < std::numeric_limits<float>::min()) return 2;
 			else return 1;
 		}
 	}
 
-	int8_t SolveCubic( float* X, float A, float B, float C, float D ) {
-		if( fabs( A ) < std::numeric_limits<float>::min() ) return SolveQuadratic( X, B, C, D );
-		return SolveCubicNormed( X, B/A, C/A, D/A );
+	int8_t SolveCubic(float* x, float a, float b, float c, float d) {
+		if (fabs(a) < std::numeric_limits<float>::min()) return SolveQuadratic(x, b, c, d);
+		return SolveCubicNormed(x, b/a, c/a, d/a);
 	}
 }

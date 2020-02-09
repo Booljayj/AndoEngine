@@ -2,47 +2,37 @@
 #include "Geometry/Rect.h"
 
 namespace Geometry {
-	bool Between( float const& A, float const& Min, float const& Max ) {
-		return A>=Min && A<=Max;
+	bool Between(float const& a, float const& min, float const& max) {
+		return a>=min && a<=max;
 	}
 
-	Rect::Rect()
-	: Min( std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity() )
-	, Max( -std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity() )
-	{}
-
-	Rect::Rect( glm::vec2 const& Position )
-	: Min( Position ), Max( Position )
-	{}
-
-	bool Rect::IsValid() const {
-		return Min.x<=Max.x && Min.y<=Max.y;
+	bool Rect::Contains(const glm::vec2& position) const {
+		return Between(position.x, min.x, max.x) && Between(position.y, min.y, max.y);
 	}
 
-	bool Rect::Contains( const glm::vec2& Position ) const {
-		return Between( Position.x, Min.x, Max.x ) && Between( Position.y, Min.y, Max.y );
-	}
-	bool Rect::Intersects( const Rect& Bounds ) const {
-		bool const IntersectsX = Between( Bounds.Min.x, Min.x, Max.x ) || Between( Bounds.Max.x, Min.x, Max.x );
-		bool const IntersectsY = Between( Bounds.Min.y, Min.y, Max.y ) || Between( Bounds.Max.y, Min.y, Max.y );
-		return IntersectsX && IntersectsY;
-	}
-	bool Rect::Overlaps( const Rect& Bounds ) const {
-		bool const IntersectsX = Between( Bounds.Min.x, Min.x, Max.x ) && Between( Bounds.Max.x, Min.x, Max.x );
-		bool const IntersectsY = Between( Bounds.Min.y, Min.y, Max.y ) && Between( Bounds.Max.y, Min.y, Max.y );
-		return IntersectsX && IntersectsY;
+	bool Rect::Intersects(const Rect& bounds) const {
+		bool const intersectsX = Between(bounds.min.x, min.x, max.x) || Between(bounds.max.x, min.x, max.x);
+		bool const intersectsY = Between(bounds.min.y, min.y, max.y) || Between(bounds.max.y, min.y, max.y);
+		return intersectsX && intersectsY;
 	}
 
-	void Rect::Encapsulate( const glm::vec2& Position ) {
-		Min.x = std::min( Min.x, Position.x );
-		Min.y = std::min( Min.y, Position.y );
-		Max.x = std::max( Max.x, Position.x );
-		Max.y = std::max( Max.y, Position.y );
+	bool Rect::Overlaps(const Rect& bounds) const {
+		bool const intersectsX = Between(bounds.min.x, min.x, max.x) && Between(bounds.max.x, min.x, max.x);
+		bool const intersectsY = Between(bounds.min.y, min.y, max.y) && Between(bounds.max.y, min.y, max.y);
+		return intersectsX && intersectsY;
 	}
-	void Rect::Encapsulate( const Rect& Bounds ) {
-		Min.x = std::min( Min.x, Bounds.Min.x );
-		Min.y = std::min( Min.y, Bounds.Min.y );
-		Max.x = std::max( Max.x, Bounds.Max.x );
-		Max.y = std::max( Max.y, Bounds.Max.y );
+
+	void Rect::Encapsulate(const glm::vec2& position) {
+		min.x = std::min(min.x, position.x);
+		min.y = std::min(min.y, position.y);
+		max.x = std::max(max.x, position.x);
+		max.y = std::max(max.y, position.y);
+	}
+
+	void Rect::Encapsulate(const Rect& bounds) {
+		min.x = std::min(min.x, bounds.min.x);
+		min.y = std::min(min.y, bounds.min.y);
+		max.x = std::max(max.x, bounds.max.x);
+		max.y = std::max(max.y, bounds.max.y);
 	}
 }

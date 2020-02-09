@@ -7,7 +7,7 @@ namespace Geometry {
 
 	/** Represents a continuous directional path */
 	struct Contour {
-		std::vector<Curve> Curves;
+		std::vector<Curve> curves;
 
 		/** Calculates the axially-oriented bounding box of the contour */
 		Rect Bounds() const;
@@ -19,6 +19,6 @@ namespace Geometry {
 
 	namespace ContourUtility {
 		/** Splits a single-curve contour into thirds which together represent the original contour */
-		void SplitContourIntoThirds( Contour& C );
+		void SplitContourIntoThirds(Contour& contour);
 	}
 }
