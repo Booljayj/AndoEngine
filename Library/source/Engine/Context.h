@@ -12,20 +12,20 @@
  * extremely common utilities, including logging, assertions, and temporary allocations.
  */
 struct Context {
-	Context( size_t InTempCapacity )
-		: ThreadID( std::this_thread::get_id() )
-		, Temp( InTempCapacity )
+	Context( size_t inTempCapacity )
+		: threadID( std::this_thread::get_id() )
+		, temp( inTempCapacity )
 	{}
 
 private:
 	/** ID of the thread this context is being used on. A context should only be used by a single thread. */
-	std::thread::id ThreadID;
+	std::thread::id threadID;
 
 public:
 	/** Buffer used for dynamic allocation of small objects within the thread */
-	HeapBuffer Temp;
+	HeapBuffer temp;
 	/** Logger object used to print output */
-	Logger Log;
+	Logger log;
 
-	inline std::thread::id GetThreadID() const { return ThreadID; }
+	inline std::thread::id GetThreadID() const { return threadID; }
 };

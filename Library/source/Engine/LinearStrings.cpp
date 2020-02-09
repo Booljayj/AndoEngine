@@ -3,15 +3,15 @@
 #include <cstring>
 #include "Engine/LinearStrings.h"
 
-std::string_view l_printf( HeapBuffer& Buffer, char const* Format, ... ) {
+std::string_view l_printf(HeapBuffer& buffer, char const* format, ...) {
 	std::va_list args;
-	va_start( args, Format );
+	va_start(args, format);
 
-	size_t const MaxAvailableAllocatorCapacity = Buffer.GetAvailable();
-	char* const FormattedStringPtr = Buffer.GetCursor();
-	size_t const FormattedStringLength = vsnprintf( FormattedStringPtr, MaxAvailableAllocatorCapacity, Format, args );
-	Buffer.SetCursor( FormattedStringPtr + FormattedStringLength );
+	size_t const maxAvailableAllocatorCapacity = buffer.GetAvailable();
+	char* const formattedStringPtr = buffer.GetCursor();
+	size_t const formattedStringLength = vsnprintf(formattedStringPtr, maxAvailableAllocatorCapacity, format, args);
+	buffer.SetCursor(formattedStringPtr + formattedStringLength);
 
-	va_end( args );
-	return std::string_view{ FormattedStringPtr, FormattedStringLength };
+	va_end(args);
+	return std::string_view{formattedStringPtr, formattedStringLength};
 }

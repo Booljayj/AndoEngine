@@ -85,7 +85,7 @@ namespace Rendering {
 	}
 
 	l_vector<::std::tuple<uint32_t, uint32_t, glm::vec2>> DumpKerningValues( CTX_ARG, FT_Face Face, char32_t CodePoint ) {
-		l_vector<::std::tuple<uint32_t, uint32_t, glm::vec2>> KerningValues{ CTX.Temp };
+		l_vector<::std::tuple<uint32_t, uint32_t, glm::vec2>> KerningValues{ CTX.temp };
 		if( FT_HAS_KERNING( Face ) ) {
 			int32_t FirstGlyphIndex = FT_Get_Char_Index( Face, CodePoint );
 			FT_Vector Kerning;

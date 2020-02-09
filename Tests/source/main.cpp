@@ -29,153 +29,152 @@
 #include "Reflection/ReflectionTest.h"
 #include "Reflection/TypeUtility.h"
 
-// Components and managers
+// components and managers
+CREATE_COMPONENT(   1, transform, TransformComponent, TransformComponentManager{} );
+CREATE_COMPONENT(   2, hierarchy, HierarchyComponent, HierarchyComponentManager{} );
 
-CREATE_COMPONENT(   1, Transform, TransformComponent, TransformComponentManager{} );
-CREATE_COMPONENT(   2, Hierarchy, HierarchyComponent, HierarchyComponentManager{} );
-
-CREATE_COMPONENT( 100, Mesh, MeshComponent, MeshComponentManager{} );
-CREATE_COMPONENT( 110, MeshRenderer, MeshRendererComponent, MeshRendererComponentManager{} );
-CREATE_COMPONENT( 120, Shader, ShaderComponent, ShaderComponentManager{} );
-CREATE_COMPONENT( 130, Program, ProgramComponent, ProgramComponentManager{} );
+CREATE_COMPONENT( 100, mesh, MeshComponent, MeshComponentManager{} );
+CREATE_COMPONENT( 110, meshRenderer, MeshRendererComponent, MeshRendererComponentManager{} );
+CREATE_COMPONENT( 120, shader, ShaderComponent, ShaderComponentManager{} );
+CREATE_COMPONENT( 130, program, ProgramComponent, ProgramComponentManager{} );
 
 // Systems
+ComponentCollectionSystem componentCollectionSystem;
+EntityCollectionSystem entityCollectionSystem;
 
-ComponentCollectionSystem ComponentCollection;
-EntityCollectionSystem EntityCollection;
-
-SDLFrameworkSystem SDLFramework;
-SDLEventSystem SDLEvent;
-SDLWindowSystem SDLWindow;
+SDLFrameworkSystem sdlFrameworkSystem;
+SDLEventSystem sdlEventSystem;
+SDLWindowSystem sdlWindowSystem;
 
 RenderingSystem renderingSystem;
 
-DEFINE_LOG_CATEGORY( Main, Debug );
+DEFINE_LOG_CATEGORY(Main, Debug);
 
-bool Startup( CTX_ARG ) {
+// Primary system procedures
+bool Startup(CTX_ARG) {
 	TEMP_SCOPE;
-	LOG( LogMain, Info, "Starting up all systems..." );
+	LOG(LogMain, Info, "Starting up all systems...");
 
-	const std::initializer_list<const ComponentInfo*> Components = {
-		&Transform,
-		&Hierarchy,
-		&Mesh,
-		&MeshRenderer,
-		&Shader,
-		&Program,
+	const std::initializer_list<const ComponentInfo*> components = {
+		&transform,
+		&hierarchy,
+		&mesh,
+		&meshRenderer,
+		&shader,
+		&program,
 	};
 
-	STARTUP_SYSTEM( LogMain, ComponentCollection, Components.begin(), Components.size() );
-	STARTUP_SYSTEM( LogMain, EntityCollection, &ComponentCollection, 100 );
-	STARTUP_SYSTEM( LogMain, SDLFramework );
-	STARTUP_SYSTEM( LogMain, SDLEvent );
-	STARTUP_SYSTEM( LogMain, SDLWindow );
-	STARTUP_SYSTEM( LogMain, renderingSystem, &SDLWindow, &EntityCollection, &Transform, &MeshRenderer );
+	STARTUP_SYSTEM(LogMain, componentCollectionSystem, components.begin(), components.size());
+	STARTUP_SYSTEM(LogMain, entityCollectionSystem, &componentCollectionSystem, 100);
+	STARTUP_SYSTEM(LogMain, sdlFrameworkSystem);
+	STARTUP_SYSTEM(LogMain, sdlEventSystem);
+	STARTUP_SYSTEM(LogMain, sdlWindowSystem);
+	STARTUP_SYSTEM(LogMain, renderingSystem, &sdlWindowSystem, &entityCollectionSystem, &transform, &meshRenderer);
 	return true;
 }
 
-void Shutdown( CTX_ARG ) {
+void Shutdown(CTX_ARG) {
 	TEMP_SCOPE;
-	LOG( LogMain, Info, "Shutting down all systems..." );
+	LOG(LogMain, Info, "Shutting down all systems...");
 
-	SHUTDOWN_SYSTEM( LogMain, renderingSystem );
-	SHUTDOWN_SYSTEM( LogMain, SDLWindow );
-	SHUTDOWN_SYSTEM( LogMain, SDLEvent );
-	SHUTDOWN_SYSTEM( LogMain, SDLFramework );
-	SHUTDOWN_SYSTEM( LogMain, EntityCollection );
-	SHUTDOWN_SYSTEM( LogMain, ComponentCollection );
+	SHUTDOWN_SYSTEM(LogMain, renderingSystem);
+	SHUTDOWN_SYSTEM(LogMain, sdlWindowSystem);
+	SHUTDOWN_SYSTEM(LogMain, sdlEventSystem);
+	SHUTDOWN_SYSTEM(LogMain, sdlFrameworkSystem);
+	SHUTDOWN_SYSTEM(LogMain, entityCollectionSystem);
+	SHUTDOWN_SYSTEM(LogMain, componentCollectionSystem);
 }
 
-void MainLoop( CTX_ARG ) {
-	TimeController_FixedUpdateVariableRendering TimeController{ 60.0f, 10.0f };
+void MainLoop(CTX_ARG) {
+	TimeController_FixedUpdateVariableRendering timeController{60.0f, 10.0f};
 
-	bool bShutdownRequested = false;
-	while( !bShutdownRequested ) {
-		TimeController.AdvanceFrame();
+	bool shutdownRequested = false;
+	while (!shutdownRequested) {
+		timeController.AdvanceFrame();
 
-		SDLEvent.PollEvents( bShutdownRequested );
+		sdlEventSystem.PollEvents(shutdownRequested);
 
-		while( TimeController.StartUpdateFrame() ) {
-			CTX.Temp.Reset();
-			//const Time& T = TimeController.GetTime();
-			//CTX.Log->Message( DESC( TimeController ) );
-			EntityCollection.UpdateFilters();
+		while (timeController.StartUpdateFrame()) {
+			CTX.temp.Reset();
+			//const Time& T = timeController.GetTime();
+			//CTX.Log->Message( DESC( timeController ) );
+			entityCollectionSystem.UpdateFilters();
 
 			//Game Update
 
-			EntityCollection.RecycleGarbage( CTX );
-			TimeController.FinishUpdateFrame();
+			entityCollectionSystem.RecycleGarbage(CTX);
+			timeController.FinishUpdateFrame();
 		}
 
-		if( !bShutdownRequested ) {
-			const float InterpolationAlpha = TimeController.FrameInterpolationAlpha();
-			CTX.Temp.Reset();
+		if (!shutdownRequested) {
+			//const float interpolationAlpha = timeController.FrameInterpolationAlpha();
+			CTX.temp.Reset();
 		}
 	}
 }
 
-int main( int argc, char const* argv[] ) {
-	Context CTX{ 10000 };
-	CTX.Log.AddModule( std::make_shared<TerminalLoggerModule>() );
+int main(int argc, char const* argv[]) {
+	Context CTX{10000};
+	CTX.log.AddModule(std::make_shared<TerminalLoggerModule>());
 	//CTX.Log.AddModule( std::make_shared<FileLoggerModule>( "Main.log" ) );
 
-	LOG( LogMain, Info, "Hello, World! This is AndoEngine." );
-	LOG( LogMain, Debug, "Compiled with " __VERSION__ " on " __DATE__ );
+	LOG(LogMain, Info, "Hello, World! This is AndoEngine.");
+	LOG(LogMain, Debug, "Compiled with " __VERSION__ " on " __DATE__);
 
-	if( Startup( CTX ) ) {
-		// LOG( LogMain, Info, "Creating entities" );
-		// EntityID EntA = 3;
-		// EntityID VertexShaderID = 40;
-		// EntityID FragmentShaderID = 45;
-		// EntityID ShaderProgramID = 50;
-		// EntityID MeshID = 55;
+	if (Startup(CTX)) {
+		// LOG(LogMain, Info, "Creating entities");
+		// EntityID entA = 3;
+		// EntityID vertexShaderID = 40;
+		// EntityID fragmentShaderID = 45;
+		// EntityID shaderProgramID = 50;
+		// EntityID meshID = 55;
 
-		// EntityCollection.Create( CTX, EntA, { &Transform, &Hierarchy } );
+		// entityCollectionSystem.Create(CTX, entA, {&transform, &hierarchy});
 
-		// Entity const* VertexShaderEntity = EntityCollection.Create( CTX, VertexShaderID, { &Shader } );
-		// Entity const* FragmentShaderEntity = EntityCollection.Create( CTX, FragmentShaderID, { &Shader } );
-		// Entity const* ShaderProgramEntity = EntityCollection.Create( CTX, ShaderProgramID, { &Program } );
+		// Entity const* vertexShaderEntity = entityCollectionSystem.Create(CTX, vertexShaderID, {&shader});
+		// Entity const* fragmentShaderEntity = entityCollectionSystem.Create(CTX, fragmentShaderID, {&shader});
+		// Entity const* shaderProgramEntity = entityCollectionSystem.Create(CTX, shaderProgramID, {&program});
 
-		// Entity const* MeshEntity = EntityCollection.Create( CTX, MeshID, { &Transform, &Mesh, &MeshRenderer } );
+		// Entity const* meshEntity = entityCollectionSystem.Create(CTX, meshID, {&transform, &mesh, &meshRenderer});
 
-		// MeshComponent* TestMesh = MeshEntity->Get( Mesh );
-		// TestMesh->Vertices = {
+		// MeshComponent* testMesh = meshEntity->Get(mesh);
+		// testMesh->vertices = {
 		// 	GL::VertexData{ -1, -1, 0 },
 		// 	GL::VertexData{ 1, -1, 0 },
 		// 	GL::VertexData{ 0, 1, 0 },
 		// };
-		// TestMesh->CreateBuffers();
+		// testMesh->CreateBuffers();
 
-		// MeshRendererComponent* TestMeshRenderer = MeshEntity->Get( MeshRenderer );
-		// TestMeshRenderer->Setup( TestMesh );
+		// MeshRendererComponent* testMeshRenderer = meshEntity->Get(meshRenderer);
+		// testMeshRenderer->Setup(testMesh);
 
-		// ShaderComponent* TestVertexShader = VertexShaderEntity->Get( Shader );
-		// TestVertexShader->Source =
+		// ShaderComponent* testVertexShader = vertexShaderEntity->Get(shader);
+		// testVertexShader->source =
 		// 	"#version 330 core\n\
 		// 	in vec3 vert_Position;\n\
 		// 	void main(void) { gl_Position.xyz = vert_Position; gl_Position.w = 1.0; }";
-		// TestVertexShader->ShaderType = GL::EShader::Vertex;
+		// testVertexShader->shaderType = GL::EShader::Vertex;
 
-		// ShaderComponent* TestFragmentShader = FragmentShaderEntity->Get( Shader );
-		// TestFragmentShader->Source =
+		// ShaderComponent* testFragmentShader = fragmentShaderEntity->Get( shader );
+		// testFragmentShader->source =
 		// 	"#version 330 core\n\
 		// 	out vec4 color;\n\
 		// 	void main(){ color = vec4(1,0,0,1); }";
-		// TestFragmentShader->ShaderType = GL::EShader::Fragment;
+		// testFragmentShader->shaderType = GL::EShader::Fragment;
 
-		// ProgramComponent* TestProgram = ShaderProgramEntity->Get( Program );
-		// TestProgram->LinkedShaders = { TestVertexShader, TestFragmentShader };
-		// GL::Link( *TestProgram );
-		// GL::Use( *TestProgram );
+		// ProgramComponent* testProgram = shaderProgramEntity->Get(program);
+		// testProgram->linkedShaders = {testVertexShader, testFragmentShader};
+		// GL::Link(*testProgram);
+		// GL::Use(*testProgram);
 
-		// MainLoop( CTX );
+		// MainLoop(CTX);
 	}
 
-	Shutdown( CTX );
+	Shutdown(CTX);
 
 	LOGF(
 		LogMain, Info, "[TempBuffer]{ Current: %i/%i, Peak: %i/%i }",
-		CTX.Temp.GetUsed(), CTX.Temp.GetCapacity(), CTX.Temp.GetPeakUsage(), CTX.Temp.GetCapacity()
+		CTX.temp.GetUsed(), CTX.temp.GetCapacity(), CTX.temp.GetPeakUsage(), CTX.temp.GetCapacity()
 	);
 
 	return 0;

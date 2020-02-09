@@ -32,14 +32,14 @@ namespace Reflection {
 
 		//Print the unique ID of this type in hexadecimal
 		std::ios_base::fmtflags f{ Stream.flags() };
-		Stream << std::hex << std::right << std::setw(sizeof(Info->UniqueID.Low)) << std::setfill('0') << Info->UniqueID.Low << "-" << Info->UniqueID.High;
+		Stream << std::hex << std::right << std::setw(sizeof(Info->UniqueID.low)) << std::setfill('0') << Info->UniqueID.low << "-" << Info->UniqueID.high;
 		Stream.flags(f);
 
 		//Print the kind of TypeInfo this is.
 		Stream << " [" << GetClassificationIdentifier(Info->Classification) << "]";
 
 		//Print additional metrics, like size and whether it can be serialized
-		if (Flags < FDebugPrintFlags::IncludeMetrics) {
+		if (Flags * FDebugPrintFlags::IncludeMetrics) {
 			Stream << " (" << Info->Definition.Size << ":" << Info->Definition.Alignment;
 			if (Info->Serializer) {
 				Stream << ", Serializable)";
@@ -49,14 +49,14 @@ namespace Reflection {
 		}
 
 		//Print the name of the type, optionally demangled
-		if (Flags < FDebugPrintFlags::DemangleName) {
+		if (Flags * FDebugPrintFlags::DemangleName) {
 			Stream << " " << DebugDemangler.Demangle(*Info);
 		} else {
 			Stream << " " << Info->Definition.GetMangledName();
 		}
 
 		//Print detailed info for this type, depending on the kind
-		if (Flags < FDebugPrintFlags::DetailedInfo) {
+		if (Flags * FDebugPrintFlags::DetailedInfo) {
 			if (StructTypeInfo const* StructInfo = Info->As<StructTypeInfo>()) {
 				//Print constants
 				if (StructInfo->Static.Constants.Size() > 0 || StructInfo->Member.Constants.Size() > 0) {

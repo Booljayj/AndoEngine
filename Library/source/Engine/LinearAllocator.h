@@ -7,58 +7,58 @@
 
 struct HeapBuffer {
 private:
-	size_t Capacity;
-	std::unique_ptr<char[]> Data;
-	char* Current;
+	size_t capacity;
+	std::unique_ptr<char[]> data;
+	char* current;
 
-	size_t PeakUsage;
-	size_t PeakOverflow;
+	size_t peakUsage;
+	size_t peakOverflow;
 
 public:
-	HeapBuffer(size_t InCapacity);
+	HeapBuffer(size_t inCapacity);
 	HeapBuffer() = delete;
 	HeapBuffer(HeapBuffer&&) = delete;
 	HeapBuffer(HeapBuffer const&) = delete;
 
-	inline char* begin() { return Data.get(); }
-	inline char* end() { return Data.get() + Capacity; }
-	inline char const* begin() const { return Data.get(); }
-	inline char const* end() const { return Data.get() + Capacity; }
+	inline char* begin() { return data.get(); }
+	inline char* end() { return data.get() + capacity; }
+	inline char const* begin() const { return data.get(); }
+	inline char const* end() const { return data.get() + capacity; }
 
-	inline void Reset() noexcept { Current = begin(); }
+	inline void Reset() noexcept { current = begin(); }
 
-	inline char* GetCursor() const noexcept { return Current; }
-	inline void SetCursor( char* NewCurrent ) noexcept {
-		Current = std::min( std::max( NewCurrent, begin() ), end() ); //Clamp the input to ensure it's inside the buffer
-		PeakUsage = std::max( PeakUsage, GetUsed() );
+	inline char* GetCursor() const noexcept { return current; }
+	inline void SetCursor(char* newCurrent) noexcept {
+		current = std::min(std::max(newCurrent, begin()), end()); //Clamp the input to ensure it's inside the buffer
+		peakUsage = std::max(peakUsage, GetUsed());
 	}
 
-	inline size_t GetCapacity() const noexcept { return Capacity; }
-	inline size_t GetAvailable() const noexcept { return end() - Current; }
-	inline size_t GetUsed() const noexcept { return Current - begin(); }
-	inline size_t GetPeakUsage() const noexcept { return PeakUsage; }
-	inline size_t GetPeakOverflow() const noexcept { return PeakOverflow; }
+	inline size_t GetCapacity() const noexcept { return capacity; }
+	inline size_t GetAvailable() const noexcept { return end() - current; }
+	inline size_t GetUsed() const noexcept { return current - begin(); }
+	inline size_t GetPeakUsage() const noexcept { return peakUsage; }
+	inline size_t GetPeakOverflow() const noexcept { return peakOverflow; }
 
-	inline bool Contains( void* Pointer ) const noexcept {
+	inline bool Contains(void* pointer) const noexcept {
 		return true &&
-			static_cast<char*>( Pointer ) >= begin() &&
-			static_cast<char*>( Pointer ) < end();
+			static_cast<char*>(pointer) >= begin() &&
+			static_cast<char*>(pointer) < end();
 	}
 
 	/** Returns an aligned array of elements inside this buffer, or nullptr if the buffer does not have enough space */
 	template<typename T>
-	inline T* Request( size_t Count = 1 ) noexcept {
-		static_assert( sizeof(T) > 0, "Template type has zero size" );
+	inline T* Request(size_t count = 1) noexcept {
+		static_assert(sizeof(T) > 0, "Template type has zero size");
 
-		if( size_t const RequestedBytes = sizeof(T) * Count ) {
-			size_t AvailableBytes = GetAvailable();
-			void* AlignedCurrent = GetCursor();
-			if( std::align( alignof(T), RequestedBytes, AlignedCurrent, AvailableBytes ) ) {
-				SetCursor( static_cast<char*>( AlignedCurrent ) + RequestedBytes );
-				return static_cast<T*>( AlignedCurrent );
+		if (size_t const requestedBytes = sizeof(T) * count) {
+			size_t availableBytes = GetAvailable();
+			void* alignedCurrent = GetCursor();
+			if (std::align(alignof(T), requestedBytes, alignedCurrent, availableBytes)) {
+				SetCursor(static_cast<char*>(alignedCurrent) + requestedBytes);
+				return static_cast<T*>(alignedCurrent);
 			} else {
 				//The actual overflow is probably a bit higher due to alignment, but this number does not need to be exact.
-				PeakOverflow = std::max( PeakOverflow, RequestedBytes );
+				peakOverflow = std::max(peakOverflow, requestedBytes);
 			}
 		}
 		return nullptr;
@@ -66,44 +66,44 @@ public:
 };
 
 /** std allocator that uses a buffer to manage allocations. */
-template< typename T >
+template<typename T>
 class TLinearAllocator {
-	template< typename U >
+	template<typename U>
 	friend class TLinearAllocator;
 
 protected:
-	HeapBuffer* Buffer = nullptr;
+	HeapBuffer* buffer = nullptr;
 
 public:
 	using value_type = T;
 	using propagate_on_container_move_assignment = std::true_type;
 
 	TLinearAllocator() = delete;
-	TLinearAllocator( HeapBuffer& InBuffer )
-	: Buffer( &InBuffer )
+	TLinearAllocator(HeapBuffer& inBuffer)
+	: buffer(&inBuffer)
 	{}
 
-	TLinearAllocator( TLinearAllocator const& ) = default;
+	TLinearAllocator(TLinearAllocator const&) = default;
 
 	template<typename U>
-	TLinearAllocator( TLinearAllocator<U> const& Other )
-	: Buffer( Other.Buffer )
+	TLinearAllocator(TLinearAllocator<U> const& other)
+	: buffer(other.buffer)
 	{}
 
 	~TLinearAllocator() = default;
 
-	T* allocate( size_t Count, void const* Hint = nullptr ) {
-		if( T* BufferRequest = Buffer->Request<T>( Count ) ) {
-			return BufferRequest;
+	T* allocate(size_t count, void const* hint = nullptr) {
+		if (T* bufferRequest = buffer->Request<T>(count)) {
+			return bufferRequest;
 		} else {
 			//default to heap allocation, we have exceeded the capacity of the temp allocator
-			return static_cast<T*>( ::operator new( sizeof(T) * Count ) );
+			return static_cast<T*>(::operator new(sizeof(T) * count));
 		}
 	}
 
-	void deallocate( T* Pointer, size_t Count ) {
-		if( !Buffer->Contains( Pointer ) ) {
-			::operator delete( Pointer );
+	void deallocate(T* pointer, size_t count) {
+		if (!buffer->Contains(pointer)) {
+			::operator delete(pointer);
 		}
 	}
 
@@ -118,16 +118,16 @@ public:
 	template< class U > struct rebind { typedef TLinearAllocator<U> other; };
 	using is_always_equal = std::false_type;
 
-	pointer address( reference x ) const noexcept { return &x; }
-	const_pointer address( const_reference x ) const noexcept { return &x; }
-	size_type max_size() const { return Buffer->GetCapacity(); }
+	pointer address(reference x) const noexcept { return &x; }
+	const_pointer address(const_reference x) const noexcept { return &x; }
+	size_type max_size() const { return buffer->GetCapacity(); }
 
-	template< class U, class... Args >
-	void construct( U* Pointer, Args&&... args ) {
-		::new( (void*)Pointer ) U( std::forward<Args>( args )... );
+	template<class U, class... ArgTypes>
+	void construct(U* pointer, ArgTypes&&... args) {
+		::new((void*)pointer) U(std::forward<ArgTypes>(args)...);
 	}
-	template< class U >
-	void destroy( U* Pointer ) {
-		Pointer->~U();
+	template<class U>
+	void destroy(U* pointer) {
+		pointer->~U();
 	}
 };

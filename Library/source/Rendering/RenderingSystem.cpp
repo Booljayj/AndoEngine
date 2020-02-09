@@ -40,7 +40,7 @@ bool RenderingSystem::Startup(
 	{
 		uint32_t deviceCount = 0;
 		vkEnumeratePhysicalDevices(application.instance, &deviceCount, nullptr);
-		VkPhysicalDevice* devices = CTX.Temp.Request<VkPhysicalDevice>(deviceCount);
+		VkPhysicalDevice* devices = CTX.temp.Request<VkPhysicalDevice>(deviceCount);
 		vkEnumeratePhysicalDevices(application.instance, &deviceCount, devices);
 
 		for (int32_t deviceIndex = 0; deviceIndex < deviceCount; ++deviceIndex) {

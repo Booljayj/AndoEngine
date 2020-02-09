@@ -7,16 +7,16 @@ namespace Rendering {
 		TEMP_SCOPE;
 		enabledFeatures = inEnabledFeatures;
 
-		l_unordered_set<uint32_t> uniqueQueueFamilies{CTX.Temp};
+		l_unordered_set<uint32_t> uniqueQueueFamilies{CTX.temp};
 		uniqueQueueFamilies.insert(physicalDevice.queues.graphics.value().index);
 		uniqueQueueFamilies.insert(physicalDevice.queues.present.value().index);
 
-		l_vector<uint32_t> queueCreateInfoIndices{uniqueQueueFamilies.begin(), uniqueQueueFamilies.end(), CTX.Temp};
+		l_vector<uint32_t> queueCreateInfoIndices{uniqueQueueFamilies.begin(), uniqueQueueFamilies.end(), CTX.temp};
 		uint32_t const queueCICount = queueCreateInfoIndices.size();
 
 		float queuePriority = 1.0f;
 
-		VkDeviceQueueCreateInfo* const queueCIs = CTX.Temp.Request<VkDeviceQueueCreateInfo>(queueCICount);
+		VkDeviceQueueCreateInfo* const queueCIs = CTX.temp.Request<VkDeviceQueueCreateInfo>(queueCICount);
 		for (uint32_t queueFamilyIndex = 0; queueFamilyIndex < queueCICount; ++queueFamilyIndex) {
 			VkDeviceQueueCreateInfo& queueCI = queueCIs[queueFamilyIndex];
 			queueCI = {};

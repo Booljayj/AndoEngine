@@ -14,7 +14,7 @@ namespace Rendering {
 		{
 			uint32_t extensionCount = 0;
 			vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
-			VkExtensionProperties* supportedExtensions = CTX.Temp.Request<VkExtensionProperties>(extensionCount);
+			VkExtensionProperties* supportedExtensions = CTX.temp.Request<VkExtensionProperties>(extensionCount);
 			vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, supportedExtensions);
 
 			Result.extensions.reserve(extensionCount);
@@ -38,7 +38,7 @@ namespace Rendering {
 		{
 			uint32_t queueFamilyCount = 0;
 			vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
-			VkQueueFamilyProperties* queueFamilies = CTX.Temp.Request<VkQueueFamilyProperties>(queueFamilyCount);
+			VkQueueFamilyProperties* queueFamilies = CTX.temp.Request<VkQueueFamilyProperties>(queueFamilyCount);
 			vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies);
 
 			for (uint32_t queueIndex = 0; queueIndex < queueFamilyCount; ++queueIndex) {

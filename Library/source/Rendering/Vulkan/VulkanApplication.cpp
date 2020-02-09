@@ -22,7 +22,7 @@ namespace Rendering {
 
 			uint32_t sdlExtensionCount = 0;
 			SDL_Vulkan_GetInstanceExtensions(window, &sdlExtensionCount, nullptr);
-			char const** sdlExtensionNames = CTX.Temp.Request<char const*>(sdlExtensionCount);
+			char const** sdlExtensionNames = CTX.temp.Request<char const*>(sdlExtensionCount);
 			SDL_Vulkan_GetInstanceExtensions(window, &sdlExtensionCount, sdlExtensionNames);
 
 			VkInstanceCreateInfo instanceCI = {};

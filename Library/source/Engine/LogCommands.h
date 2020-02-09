@@ -13,36 +13,36 @@
 namespace LoggingInternal {
 	/** Helper template to resolve compiler-removed output */
 	template<ELogVerbosity Verbosity>
-	inline typename std::enable_if<Verbosity >= MINIMUM_LOG_VERBOSITY>::type
-	LogHelper( CTX_ARG, char const* Location, LogCategory const& Category, char const* Message ) {
-		CTX.Log.Output( Location, Category, Verbosity, Message );
+	inline typename std::enable_if<(Verbosity >= MINIMUM_LOG_VERBOSITY)>::type
+	LogHelper(CTX_ARG, char const* location, LogCategory const& category, char const* message) {
+		CTX.log.Output(location, category, Verbosity, message);
 	}
 	template<ELogVerbosity Verbosity>
-	inline typename std::enable_if<Verbosity < MINIMUM_LOG_VERBOSITY>::type
-	LogHelper( CTX_ARG, char const* Location, LogCategory const& Category, char const* Message ) { /** no-op, removed by compiler */ }
+	inline typename std::enable_if<(Verbosity < MINIMUM_LOG_VERBOSITY)>::type
+	LogHelper(CTX_ARG, char const* location, LogCategory const& category, char const* message) { /** no-op, removed by compiler */ }
 
 	/** Helper template to resolve compiler-removed formatted output */
-	template<ELogVerbosity Verbosity, typename... TARGS>
-	inline typename std::enable_if<Verbosity >= MINIMUM_LOG_VERBOSITY>::type
-	LogFormattedHelper( CTX_ARG, char const* Location, LogCategory const& Category, char const* Message, TARGS&&... Args ) {
-		CTX.Log.Output( Location, Category, Verbosity, l_printf( CTX.Temp, Message, std::forward<TARGS>( Args )... ) );
+	template<ELogVerbosity Verbosity, typename... ArgTypes>
+	inline typename std::enable_if<(Verbosity >= MINIMUM_LOG_VERBOSITY)>::type
+	LogFormattedHelper(CTX_ARG, char const* location, LogCategory const& category, char const* message, ArgTypes&&... args) {
+		CTX.log.Output(location, category, Verbosity, l_printf(CTX.temp, message, std::forward<ArgTypes>(args)...));
 	}
-	template<ELogVerbosity Verbosity, typename... TARGS>
-	inline typename std::enable_if<Verbosity < MINIMUM_LOG_VERBOSITY>::type
-	LogFormattedHelper( CTX_ARG, char const* Location, LogCategory const& Category, char const* Message, TARGS&&... Args ) { /** no-op, removed by compiler */ }
+	template<ELogVerbosity Verbosity, typename... ArgTypes>
+	inline typename std::enable_if<(Verbosity < MINIMUM_LOG_VERBOSITY)>::type
+	LogFormattedHelper(CTX_ARG, char const* location, LogCategory const& category, char const* message, ArgTypes&&... args) { /** no-op, removed by compiler */ }
 }
 
-#define S1( _X_ ) #_X_
-#define S2( _X_ ) S1(_X_)
+#define S1(X) #X
+#define S2(X) S1(X)
 #define LOCATION (__FILE__ ":" S2(__LINE__))
 
 /** Log a message to the current context's logger */
-#define LOG( _CAT_, _VERBOSITY_, _MESSAGE_ ) LoggingInternal::LogHelper<ELogVerbosity::_VERBOSITY_>( CTX, LOCATION, _CAT_, _MESSAGE_ )
+#define LOG(CAT, VERBOSITY, MESSAGE) LoggingInternal::LogHelper<ELogVerbosity::VERBOSITY>(CTX, LOCATION, CAT, MESSAGE)
 /** Log a formatted message to the current context's logger */
-#define LOGF( _CAT_, _VERBOSITY_, _MESSAGE_, ... ) LoggingInternal::LogFormattedHelper<ELogVerbosity::_VERBOSITY_>( CTX, LOCATION, _CAT_, _MESSAGE_, __VA_ARGS__ )
+#define LOGF(CAT, VERBOSITY, MESSAGE, ...) LoggingInternal::LogFormattedHelper<ELogVerbosity::VERBOSITY>(CTX, LOCATION, CAT, MESSAGE, __VA_ARGS__)
 
 #else
-#define LOG( _CAT_, _VERBOSITY_, _MESSAGE_ )
-#define LOGF( _CAT_, _VERBOSITY_, _MESSAGE_, ... )
+#define LOG(CAT, VERBOSITY, MESSAGE)
+#define LOGF(CAT, VERBOSITY, MESSAGE, ...)
 
 #endif

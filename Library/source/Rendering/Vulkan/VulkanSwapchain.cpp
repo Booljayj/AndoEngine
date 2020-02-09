@@ -16,7 +16,7 @@ namespace Rendering {
 
 		//Copy the previous data that will be cleaned up later.
 		VkSwapchainKHR previousSwapchain = swapchain;
-		l_vector<VulkanSwapchainImage> previousImages{images.begin(), images.end(), CTX.Temp};
+		l_vector<VulkanSwapchainImage> previousImages{images.begin(), images.end(), CTX.temp};
 
 		//Create the new swapchain
 		{
@@ -69,7 +69,7 @@ namespace Rendering {
 		if (bSuccess) {
 			uint32_t imageCount;
 			vkGetSwapchainImagesKHR(logicalDevice, swapchain, &imageCount, nullptr);
-			VkImage* imagesRaw = CTX.Temp.Request<VkImage>(imageCount);
+			VkImage* imagesRaw = CTX.temp.Request<VkImage>(imageCount);
 			vkGetSwapchainImagesKHR(logicalDevice, swapchain, &imageCount, imagesRaw);
 
 			VkImageViewCreateInfo imageViewCI = {};

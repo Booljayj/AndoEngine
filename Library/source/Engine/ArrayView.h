@@ -6,24 +6,24 @@ struct TArrayView {
 	constexpr TArrayView() = default;
 
 	//Create from a single value
-	constexpr TArrayView(T const& Value)
-	: Begin(&Value), Size(1)
+	constexpr TArrayView(T const& value)
+	: begin_(&value), size_(1)
 	{}
 
 	//Create from an iterable container
 	template<typename ArrayType>
-	constexpr TArrayView(ArrayType const& Array)
-	: Begin(Array.data()), Size(Array.end() - Array.begin())
+	constexpr TArrayView(ArrayType const& array)
+	: begin_(array.data()), size_(array.end() - array.begin())
 	{}
 
-	constexpr inline T const& operator[](size_t Index) const { return Begin[Index]; }
-	constexpr inline operator bool() const {return Size == 0;}
+	constexpr inline T const& operator[](size_t index) const { return begin_[index]; }
+	constexpr inline operator bool() const {return size_ == 0;}
 
-	constexpr inline T const* begin() const { return Begin; }
-	constexpr inline T const* end() const { return Begin + Size; }
-	constexpr inline size_t size() const { return Size; }
+	constexpr inline T const* begin() const { return begin_; }
+	constexpr inline T const* end() const { return begin_ + size_; }
+	constexpr inline size_t size() const { return size_; }
 
 private:
-	T const* Begin = nullptr;
-	size_t Size = 0;
+	T const* begin_ = nullptr;
+	size_t size_ = 0;
 };

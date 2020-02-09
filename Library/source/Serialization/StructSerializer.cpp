@@ -62,12 +62,12 @@ namespace Serialization {
 	}
 
 	void StructSerializer::WriteVariableIdentifier(Reflection::VariableInfo const& VariableInfo, std::ostream& Stream) {
-		decltype(Hash32::Hash) const NameHashValue = VariableInfo.NameHash.Hash;
+		decltype(Hash32::hash) const NameHashValue = VariableInfo.NameHash.hash;
 		WriteLE(&(NameHashValue), Stream);
 	}
 
 	Reflection::VariableInfo const* StructSerializer::ReadVariableIdentifier(Reflection::StructTypeInfo const& StructInfo, std::istream& Stream) {
-		decltype(Hash32::Hash) NameHashValue = 0;
+		decltype(Hash32::hash) NameHashValue = 0;
 		ReadLE(&NameHashValue, Stream);
 
 		//Walk up the chain of base classes, searching for a variable with the correct name hash.
