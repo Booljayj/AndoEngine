@@ -10,19 +10,19 @@ struct LogOutputData;
 
 /** An object which handles program output from within a single thread */
 struct Logger {
-	std::vector<std::shared_ptr<LoggerModule>> Modules;
+	std::vector<std::shared_ptr<LoggerModule>> modules;
 
 	/** Output a message through this logger. Mainly used through logging macros */
-	void Output(std::string_view Location, LogCategory const& Category, ELogVerbosity Verbosity, std::string_view Message ) const;
+	void Output(LogCategory const& category, ELogVerbosity verbosity, std::string_view location, std::string_view message) const;
 
 	/** Add the provided module to this logger to process output */
-	void AddModule( std::shared_ptr<LoggerModule> const& Module );
+	void AddModule(std::shared_ptr<LoggerModule> const& module);
 
-	template<typename TMODULE, typename... TARGS>
-	void AddModule( TARGS... Args ) {
-		AddModule( std::make_shared<TMODULE>(std::forward(Args)...) );
+	template<typename ModuleType, typename... ArgTypes>
+	void AddModule(ArgTypes... args) {
+		AddModule(std::make_shared<ModuleType>(std::forward(args)...));
 	}
 
 	/** Remove a previously added module from this logger */
-	void RemoveModule( std::shared_ptr<LoggerModule> const& Module );
+	void RemoveModule(std::shared_ptr<LoggerModule> const& module);
 };

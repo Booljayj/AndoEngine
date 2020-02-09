@@ -8,10 +8,10 @@ struct LoggerModule {
 public:
 	virtual ~LoggerModule() {}
 	/** Process a message given to a logger. Thread safe. */
-	void ProcessMessage( LogOutputData const& OutputData );
+	void ProcessMessage(LogOutputData const& outputData);
 
 protected:
 	/** Mutex that locks access to mutable data within this module. Used by normal interface functions, and can also be used by internal thread workers. */
-	std::mutex AccessMutex;
-	virtual void InternalProcessMessage( LogOutputData const& OutputData ) = 0;
+	std::mutex accessMutex;
+	virtual void InternalProcessMessage(LogOutputData const& outputData) = 0;
 };

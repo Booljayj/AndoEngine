@@ -1,29 +1,30 @@
 #pragma once
 #include <atomic>
+#include <string_view>
 #include "Engine/Logging/LogVerbosity.h"
 
 /** A category used to group log output that is related. Output always belongs to a single category */
 struct LogCategory {
 private:
-	char const* Name;
-	std::atomic<ELogVerbosity> Verbosity;
+	std::string_view name;
+	std::atomic<ELogVerbosity> verbosity;
 
 public:
-	LogCategory( char const* InName, ELogVerbosity InVerbosity )
-	: Name( InName ), Verbosity( InVerbosity )
+	LogCategory(std::string_view inName, ELogVerbosity inVerbosity)
+	: name(inName), verbosity(inVerbosity)
 	{}
 
-	inline char const* GetName() const { return Name; };
+	inline std::string_view GetName() const { return name; };
 	/** True if the output with the specified verbosity should be shown right now for this category */
-	inline ELogVerbosity GetShownVerbosity() const { return Verbosity.load(); }
+	inline ELogVerbosity GetShownVerbosity() const { return verbosity.load(); }
 	/** Modify the verbosity level that is allow for output that belongs to this category */
-	inline void SetShownVerbosity( ELogVerbosity NewVerbosity ) { Verbosity.store( NewVerbosity ); }
+	inline void SetShownVerbosity( ELogVerbosity newVerbosity ) { verbosity.store( newVerbosity ); }
 };
 
-#define DECLARE_LOG_CATEGORY( _NAME_ )\
-extern LogCategory Log ## _NAME_
+#define DECLARE_LOG_CATEGORY(NAME)\
+extern LogCategory Log ## NAME
 
-#define DEFINE_LOG_CATEGORY( _NAME_, _INITIAL_VERBOSITY_ )\
-LogCategory Log ## _NAME_{ "[" #_NAME_ "]", ELogVerbosity::_INITIAL_VERBOSITY_ }
+#define DEFINE_LOG_CATEGORY(NAME, INITIAL_VERBOSITY)\
+LogCategory Log ## NAME{ "[" #NAME "]", ELogVerbosity::INITIAL_VERBOSITY }
 
-DECLARE_LOG_CATEGORY( Temp );
+DECLARE_LOG_CATEGORY(Temp);

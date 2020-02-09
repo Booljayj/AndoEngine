@@ -6,10 +6,10 @@
 
 /** Data for a log output operation */
 struct LogOutputData {
-	TimeStamp TimeStamp;
-	LogCategory const* Category;
-	ELogVerbosity Verbosity;
-	std::string_view Location;
-	std::string_view Message;
+	TimeStamp timeStamp;
+	LogCategory const* category;
+	ELogVerbosity verbosity;
+	std::string_view location;
+	std::string_view message;
 };
-std::ostream& operator<<( std::ostream& Stream, LogOutputData const& OutputData );
+std::ostream& operator<<(std::ostream& stream, LogOutputData const& outputData);

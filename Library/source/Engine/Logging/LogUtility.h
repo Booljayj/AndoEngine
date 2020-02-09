@@ -1,9 +1,10 @@
 #pragma once
+#include <string_view>
 #include "Engine/Logging/Logger.h"
 
 namespace LogUtility {
 	/** Gets an identifier to show in a message for a log verbosity */
-	char const* GetText( ELogVerbosity const Verbosity ) noexcept;
+	std::string_view GetText(ELogVerbosity const verbosity) noexcept;
 	/** Gets the terminal color that can be used to colorize text for a log verbosity level */
-	char const* GetTerminalColor( ELogVerbosity const Verbosity ) noexcept;
+	std::string_view GetTerminalColor(ELogVerbosity const verbosity) noexcept;
 }

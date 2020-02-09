@@ -4,9 +4,9 @@
 
 struct StreamLoggerModule : public LoggerModule {
 protected:
-	std::ostream* StreamPtr;
-	virtual void InternalProcessMessage( LogOutputData const& OutputData ) override;
+	std::ostream* streamPtr;
+	virtual void InternalProcessMessage(LogOutputData const& outputData) override;
 
 public:
-	StreamLoggerModule( std::ostream& Stream );
+	StreamLoggerModule(std::ostream& stream);
 };

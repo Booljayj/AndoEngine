@@ -1,10 +1,10 @@
 #include "Engine/Logging/StreamLoggerModules.h"
 #include "Engine/Logging/LogOutputData.h"
 
-StreamLoggerModule::StreamLoggerModule( std::ostream& Stream )
-: StreamPtr( &Stream )
+StreamLoggerModule::StreamLoggerModule(std::ostream& stream)
+: streamPtr(&stream)
 {}
 
-void StreamLoggerModule::InternalProcessMessage( LogOutputData const& OutputData ) {
-	*StreamPtr << OutputData << std::endl;
+void StreamLoggerModule::InternalProcessMessage(LogOutputData const& outputData) {
+	*streamPtr << outputData << std::endl;
 }

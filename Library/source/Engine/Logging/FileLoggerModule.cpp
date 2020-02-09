@@ -2,12 +2,12 @@
 #include "Engine/Logging/FileLoggerModule.h"
 #include "Engine/Logging/LogOutputData.h"
 
-FileLoggerModule::FileLoggerModule( std::string_view FileName )
-: Stream( FileName.data(), std::ios::out | std::ios::app )
+FileLoggerModule::FileLoggerModule(std::string_view fileName)
+: stream(fileName.data(), std::ios::out | std::ios::app)
 {}
 
-void FileLoggerModule::InternalProcessMessage( LogOutputData const& OutputData ) {
-	if( Stream.is_open() && Stream.good() ) {
-		Stream << OutputData << std::endl;
+void FileLoggerModule::InternalProcessMessage(LogOutputData const& outputData) {
+	if (stream.is_open() && stream.good()) {
+		stream << outputData << std::endl;
 	}
 }
