@@ -4,48 +4,37 @@
 #include "Engine/Context.h"
 #include "Engine/LinearStrings.h"
 
-DEFINE_LOG_CATEGORY( Entity, Debug );
+DEFINE_LOG_CATEGORY(Entity, Debug);
 
-Entity::Entity()
-{}
-
-void Entity::Reserve( size_t ComponentCount )
-{
-	Owned.reserve( ComponentCount );
+void Entity::Reserve(size_t componentCount) {
+	owned.reserve(componentCount);
 }
 
-void Entity::Add( ComponentTypeID TypeID, ptr_t Component )
-{
-	EntityOwnedComponent NewOwnedComponent{ Component, TypeID };
-	const auto Iter = std::upper_bound( Owned.begin(), Owned.end(), NewOwnedComponent );
-	Owned.insert( Iter, NewOwnedComponent );
+void Entity::Add(ComponentTypeID typeID, ptr_t component) {
+	EntityOwnedComponent const newOwnedComponent{component, typeID};
+	auto const iter = std::upper_bound(owned.begin(), owned.end(), newOwnedComponent);
+	owned.insert(iter, newOwnedComponent);
 }
 
-void Entity::Reset( std::vector<EntityOwnedComponent>& OutComponents )
-{
-	OutComponents.reserve( OutComponents.size() + Owned.size() );
-	OutComponents.insert( OutComponents.end(), Owned.begin(), Owned.end() );
-	Owned.clear();
+void Entity::Reset(std::vector<EntityOwnedComponent>& outComponents) {
+	outComponents.reserve(outComponents.size() + owned.size());
+	outComponents.insert(outComponents.end(), owned.begin(), owned.end());
+	owned.clear();
 }
 
-bool Entity::Has( ComponentTypeID TypeID ) const
-{
-	auto const Iter = std::lower_bound( Owned.begin(), Owned.end(), TypeID );
-	return ( Iter != Owned.end() ) && ( Iter->TypeID == TypeID );
+bool Entity::Has(ComponentTypeID typeID) const {
+	auto const iter = std::lower_bound(owned.begin(), owned.end(), typeID);
+	return (iter != owned.end()) && (iter->typeID == typeID);
 }
 
-bool Entity::HasAll( ComponentTypeID const* TypeIDs, size_t Count ) const
-{
-	for( size_t Index = 0; Index < Count; ++Index ) {
-		if( !Has( TypeIDs[Index] ) ) {
-			return false;
-		}
+bool Entity::HasAll(ComponentTypeID const* typeIDs, size_t count) const {
+	for (size_t index = 0; index < count; ++index) {
+		if (!Has(typeIDs[index])) return false;
 	}
 	return true;
 }
 
-ptr_t Entity::Get( ComponentTypeID TypeID ) const
-{
-	auto FoundIter = std::find( Owned.begin(), Owned.end(), TypeID );
-	return FoundIter != Owned.end() ? FoundIter->CompPtr : nullptr;
+ptr_t Entity::Get(ComponentTypeID typeID) const {
+	auto foundIter = std::find(owned.begin(), owned.end(), typeID);
+	return foundIter != owned.end() ? foundIter->compPtr : nullptr;
 }

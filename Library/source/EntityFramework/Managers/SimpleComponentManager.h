@@ -4,8 +4,7 @@
 struct Entity;
 
 /** An extremely basic component manager that does not perform any additional lifetime functions other than wiping newly retained components. */
-template< typename TCOMP >
-struct TSimpleComponentManager : TChunkedComponentManager<TCOMP, 64>
-{
-	using TChunkedComponentManager<TCOMP, 64>::TChunkedComponentManager;
+template<typename ComponentType>
+struct TSimpleComponentManager : TChunkedComponentManager<ComponentType, 64> {
+	using TChunkedComponentManager<ComponentType, 64>::TChunkedComponentManager;
 };

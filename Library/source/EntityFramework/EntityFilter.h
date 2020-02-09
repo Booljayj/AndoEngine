@@ -6,94 +6,87 @@
 #include "EntityFramework/ComponentInfo.h"
 #include "EntityFramework/Entity.h"
 
-/** Handle used to quickly get a specific component type from an array of components using its local index. */
-template<typename TCOMP>
-struct TComponentHandle
-{
+/** handle used to quickly get a specific component type from an array of components using its local index. */
+template<typename ComponentType>
+struct TComponentHandle {
 private:
-	size_t ComponentIndex;
+	size_t componentIndex;
+
 public:
 	TComponentHandle() = default;
-	TComponentHandle( size_t InComponentIndex ) : ComponentIndex( InComponentIndex ) {}
-	TComponentHandle<TCOMP>& operator=( TComponentHandle<TCOMP> const& Other ) = default;
+	TComponentHandle(size_t inComponentIndex) : componentIndex(inComponentIndex) {}
+	TComponentHandle<ComponentType>& operator=(TComponentHandle<ComponentType> const& other) = default;
 
-	inline size_t GetIndex() const { return ComponentIndex; }
+	inline size_t GetIndex() const { return componentIndex; }
 };
 
 /** Base for entity filters, used by the EntityCollection to create and update a filter */
-struct EntityFilterBase
-{
+struct EntityFilterBase {
 	virtual ~EntityFilterBase() = default;
-	virtual void Reserve( size_t Capacity ) = 0;
-	virtual bool Add( EntityID const& ID, Entity const& E ) = 0;
-	virtual bool Remove( EntityID const& ID ) = 0;
+	virtual void Reserve(size_t capacity) = 0;
+	virtual bool Add(EntityID const& id, Entity const& entity) = 0;
+	virtual bool Remove(EntityID const& id) = 0;
 };
 
 /** Entity filter that holds a collection of matching entities. It is managed by the EntityCollection that created it */
-template<size_t SIZE>
-struct EntityFilter : EntityFilterBase
-{
+template<size_t FilterSize>
+struct EntityFilter : EntityFilterBase {
 	/** A match collected by the entity filter */
-	struct FilterMatch
-	{
-		EntityID ID;
-		std::array<void*, SIZE> Components;
+	struct FilterMatch {
+		EntityID id;
+		std::array<void*, FilterSize> components;
 
-		template<typename TCOMP>
-		inline TCOMP* Get( TComponentHandle<TCOMP> const& Handle ) const { return static_cast<TCOMP*>( Components[Handle.GetIndex()] ); }
+		template<typename ComponentType>
+		inline ComponentType* Get(TComponentHandle<ComponentType> const& handle) const { return static_cast<ComponentType*>(components[handle.GetIndex()]); }
 	};
 
 private:
-	std::array<ComponentTypeID, SIZE> TypeIDs;
-	std::vector<FilterMatch> Matches;
+	std::array<ComponentTypeID, FilterSize> typeIDs;
+	std::vector<FilterMatch> matches;
 
 public:
-	EntityFilter( ComponentInfo const* (&Infos)[SIZE] )
-	{
-		for( size_t Index = 0; Index < SIZE; ++Index ) {
-			TypeIDs[Index] = Infos[Index]->GetID();
+	EntityFilter(ComponentInfo const* (&infos)[FilterSize]) {
+		for (size_t index = 0; index < FilterSize; ++index) {
+			typeIDs[index] = infos[index]->GetID();
 		}
-		std::sort( TypeIDs.begin(), TypeIDs.end() );
+		std::sort(typeIDs.begin(), typeIDs.end());
 	}
 	virtual ~EntityFilter() = default;
 
-	void Reserve( size_t Capacity ) override { Matches.reserve( Capacity ); }
+	void Reserve(size_t capacity) override { matches.reserve(capacity); }
 
-	bool Add( EntityID const& ID, Entity const& E ) override
-	{
-		bool const HasAllComponents = E.HasAll( TypeIDs.begin(), TypeIDs.size() );
-		if( HasAllComponents ) {
-			FilterMatch NewMatch;
-			NewMatch.ID = ID;
-			for( size_t Index = 0; Index < SIZE; ++Index ) {
-				NewMatch.Components[Index] = E.Get( TypeIDs[Index] );
+	bool Add(EntityID const& id, Entity const& entity) override {
+		bool const hasAllComponents = entity.HasAll(typeIDs.begin(), typeIDs.size());
+		if (hasAllComponents) {
+			FilterMatch newMatch;
+			newMatch.id = id;
+			for (size_t index = 0; index < FilterSize; ++index) {
+				newMatch.components[index] = entity.Get(typeIDs[index]);
 			}
-			Matches.push_back( NewMatch );
+			matches.push_back(newMatch);
 			return true;
 		}
 		return false;
 	}
 
-	bool Remove( EntityID const& ID ) override
-	{
-		size_t RemovedCount = 0;
-		for( typename std::vector<FilterMatch>::reverse_iterator Iter = Matches.rbegin(); Iter != Matches.rend(); ++Iter ) {
-			if( Iter->ID == ID ) {
-				std::swap( *Iter, Matches.back() );
-				Matches.pop_back();
-				++RemovedCount;
+	bool Remove(EntityID const& id) override {
+		size_t removedCount = 0;
+		for (typename std::vector<FilterMatch>::reverse_iterator iter = matches.rbegin(); iter != matches.rend(); ++iter) {
+			if (iter->id == id) {
+				std::swap(*iter, matches.back());
+				matches.pop_back();
+				++removedCount;
 			}
 		}
-		return RemovedCount > 0;
+		return removedCount > 0;
 	}
 
-	template<typename TCOMP>
-	TComponentHandle<TCOMP> GetMatchComponentHandle( TComponentInfo<TCOMP> const* Info ) const
-	{
-		size_t const Index = std::distance( TypeIDs.begin(), std::find( TypeIDs.begin(), TypeIDs.end(), Info->GetID() ) );
-		return TComponentHandle<TCOMP>{ Index };
+	template<typename ComponentType>
+	TComponentHandle<ComponentType> GetMatchComponentHandle(TComponentInfo<ComponentType> const* info) const {
+		size_t const index = std::distance(typeIDs.begin(), std::find(typeIDs.begin(), typeIDs.end(), info->GetID()));
+		return TComponentHandle<ComponentType>{index};
 	}
 
-	typename std::vector<FilterMatch>::const_iterator begin() const { return Matches.begin(); }
-	typename std::vector<FilterMatch>::const_iterator end() const { return Matches.end(); }
+	typename std::vector<FilterMatch>::const_iterator begin() const { return matches.begin(); }
+	typename std::vector<FilterMatch>::const_iterator end() const { return matches.end(); }
 };

@@ -6,6 +6,10 @@
 #include <string_view>
 #include "Reflection/TypeInfo.h"
 
+//============================================================
+// Note: This file is a scratch space to test out different entity storage concepts.
+//       None of this should be used directly in any way until that R&D work is complete.
+
 struct ComponentInfo;
 
 struct ComponentA { static constexpr size_t ID = 10; };
@@ -13,30 +17,30 @@ struct ComponentB { static constexpr size_t ID = 12; };
 struct ComponentC { static constexpr size_t ID = 51213; };
 
 struct MyArchetype {
-	ComponentA A;
-	ComponentB B;
-	ComponentC C;
+	ComponentA a;
+	ComponentB b;
+	ComponentC c;
 
 	static constexpr size_t ID = 1;
-	static constexpr size_t ComponentIDs[] = { decltype( A )::ID, decltype( B )::ID, decltype( C )::ID };
+	static constexpr size_t ComponentIDs[] = { decltype(a)::ID, decltype(b)::ID, decltype(c)::ID };
 };
 
 struct BaseArchetypeContainer {};
 
-template<typename TARCHETYPE>
+template<typename ArchetypeType>
 struct ArchetypeContainer : BaseArchetypeContainer {
-	std::vector<TARCHETYPE> Archetypes;
+	std::vector<ArchetypeType> archetypes;
 };
 
-template<typename TARCHETYPE>
+template<typename ArchetypeType>
 struct Entity {
 	static constexpr size_t ID = 1;
 
-	TARCHETYPE* Components;
+	ArchetypeType* components;
 };
 
 struct EntityCoordinator {
-	std::vector<std::tuple<size_t, std::unique_ptr<BaseArchetypeContainer>>> ArchetypeContainers;
+	std::vector<std::tuple<size_t, std::unique_ptr<BaseArchetypeContainer>>> archetypeContainers;
 };
 
 //===
@@ -45,9 +49,9 @@ struct IArchetype {
 	virtual std::vector<std::tuple<size_t, void*>> GetComponents() = 0;
 };
 
-template<typename... TCOMPS>
+template<typename... ComponentTypes>
 struct TArchetype : IArchetype {
-	std::tuple<TCOMPS...> Components;
+	std::tuple<ComponentTypes...> components;
 
 	virtual
 };
@@ -57,37 +61,36 @@ struct ArchetypeInfo {
 	virtual std::basic_string_view<ComponentInfo const*> GetComponentInfos() = 0;
 };
 
-template< typename... TCOMPS >
+template< typename... ComponentTypes >
 struct TArchetypeInfo {
-	using TYPE = std::tuple<TCOMPS...>;
+	using ArchetypeType = std::tuple<ComponentTypes...>;
 };
 
-struct Archetype
-{
-	std::vector<Reflection::TypeInfo const*> ComponentTypes;
+struct Archetype {
+	std::vector<Reflection::TypeInfo const*> componentTypes;
 
 	//@todo calculate this from the component types. Does not have to be persistent
-	uint32_t UniqueID;
-	std::vector<size_t> ComponentOffsets;
-	size_t BufferSize;
+	uint32_t uniqueID;
+	std::vector<size_t> componentOffsets;
+	size_t bufferSize;
 
 	void Build() {
 		//Start the buffer at location 0, which means every time this pointer is incremented the numeric value is equal to the offset.
-		void* Pointer = nullptr;
+		void* pointer = nullptr;
 		//Start with a theoretically unlimited amount of space for the buffer. We won't use this value, the pointer is enough.
-		size_t Space = std::numeric_limits<size_t>::max();
+		size_t space = std::numeric_limits<size_t>::max();
 
 		//For each component that this archetype defines, find space for it in some theoretical 16-byte aligned buffer
-		for( Reflection::TypeInfo const* ComponentType : ComponentTypes ) {
+		for( Reflection::TypeInfo const* componentType : componentTypes ) {
 			//Modify the pointer's current value to meet the component's alignment requirements.
-			std::align( ComponentType->Alignment, ComponentType->Size, Pointer, Space );
+			std::align( componentType->Definition.Alignment, componentType->Definition.Size, pointer, space );
 			//Record the offset of this component in the buffer
-			ComponentOffsets.push_back( reinterpret_cast<size_t>( Pointer ) );
+			componentOffsets.push_back(reinterpret_cast<size_t>(pointer));
 			//Advance the pointer to the next available location in the buffer
-			Pointer = static_cast<char*>( Pointer ) + ComponentType->Size;
+			pointer = static_cast<char*>(pointer) + componentType->Definition.Size;
 		}
 		//Record the total buffer size, which is equal to the final memory address offset
-		BufferSize = reinterpret_cast<size_t>( Pointer );
+		bufferSize = reinterpret_cast<size_t>(pointer);
 	}
 };
 
@@ -119,22 +122,22 @@ struct tuple_contains<T, std::tuple<U, Types...>> {
 	constexpr bool value = tuple_contains<T, std::tuple<Types...>>::value;
 };
 
-template<typename... TCOMPS>
+template<typename... ComponentTypes>
 struct TArchetype {
-	using StorageType = std::tuple<TCOMPS...>;
+	using StorageType = std::tuple<ComponentTypes...>;
 
-	constexpr std::array<Reflection::TypeInfo const*, sizeof...( TCOMPS )> ComponentTypeInfos = { Reflection::TypeResolver<TCOMPS>::Get()... };
+	constexpr std::array<Reflection::TypeInfo const*, sizeof...( ComponentTypes )> ComponentTypeInfos = { Reflection::TypeResolver<ComponentTypes>::Get()... };
 
 	template<typename... TREQUESTED_COMPS>
-	static std::tuple<TREQUESTEDCOMPS*...> Get( StorageType& Entity ) {
-		return std::make_tuple( &std::get<std::tuple_index<TREQUESTED_COMPS>>( Entity )... );
+	static std::tuple<TREQUESTEDCOMPS*...> Get(StorageType& entity) {
+		return std::make_tuple(&std::get<std::tuple_index<TREQUESTED_COMPS>>(entity)...);
 	};
 };
 
-template<typename TARCHETYPE>
+template<typename ArchetypeType>
 struct TArchetypeContainer {
-	using Archetype = TARCHETYPE;
+	using Archetype = ArchetypeType;
 
-	std::vector<Archetype::StorageType> Entities;
-	std::vector<EntityID> EntityIDs;
+	std::vector<Archetype::StorageType> entities;
+	std::vector<EntityID> entityIDs;
 };

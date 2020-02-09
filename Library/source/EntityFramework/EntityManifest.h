@@ -7,14 +7,14 @@
 /** Describes a set of entities that can be loaded from files */
 struct EntityManifest {
 	struct FileEntry {
-		std::string Filename;
-		size_t Offset = 0;
+		std::string filename;
+		size_t offset = 0;
 	};
 
-	std::unordered_map<EntityID, FileEntry> Entries;
+	std::unordered_map<EntityID, FileEntry> entries;
 
 	/** Load entries from a file. Matching existing entries will be overwritten. */
-	void LoadManifestFile( CTX_ARG, std::string_view Filename );
-	/** Find an entry for the provided ID in this manifest */
-	FileEntry const* Find( const EntityID& ID ) const;
+	void LoadManifestFile(CTX_ARG, std::string_view filename);
+	/** Find an entry for the provided id in this manifest */
+	FileEntry const* Find(const EntityID& id) const;
 };

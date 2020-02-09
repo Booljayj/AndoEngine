@@ -2,9 +2,8 @@
 #include "Engine/Context.h"
 #include "Engine/LinearStrings.h"
 
-DEFINE_LOG_CATEGORY( Component, Debug );
+DEFINE_LOG_CATEGORY(Component, Debug);
 
-bool ComponentInfo::Compare( ComponentInfo const* A, ComponentInfo const* B )
-{
-	return A->GetID() < B->GetID();
+bool ComponentInfo::Compare(ComponentInfo const* a, ComponentInfo const* b) {
+	return a->id < b->id;
 }

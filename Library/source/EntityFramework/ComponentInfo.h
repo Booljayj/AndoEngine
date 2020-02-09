@@ -4,49 +4,46 @@
 #include "EntityFramework/Types.h"
 #include "EntityFramework/ComponentManager.h"
 
-DECLARE_LOG_CATEGORY( Component );
+DECLARE_LOG_CATEGORY(Component);
 
-#define CREATE_COMPONENT( __ID__, __NAME__, __TYPE__, __MAN_INIT__ )\
-auto __NAME__##Manager = __MAN_INIT__;\
-TComponentInfo<__TYPE__> __NAME__{ __ID__, #__NAME__, &__NAME__##Manager }
+#define CREATE_COMPONENT(id, NAME, TYPE, MANAGER_INIT)\
+auto NAME##manager = MANAGER_INIT; TComponentInfo<TYPE> NAME{id, #NAME, &NAME##manager}
 
 /** Represents a component that can be owned by an entity */
-struct ComponentInfo
-{
+struct ComponentInfo {
 public:
 	virtual ~ComponentInfo() {}
 
-	/** Standard comparison predicate. Sorts ascending by ID. */
-	static bool Compare( ComponentInfo const* A, ComponentInfo const* B );
+	/** Standard comparison predicate. Sorts ascending by id. */
+	static bool Compare(ComponentInfo const* a, ComponentInfo const* b);
 
-	ComponentTypeID GetID() const { return ID; }
-	char const* GetName() const { return Name; }
-	ComponentManager* GetManager() const { return Manager; }
+	ComponentTypeID GetID() const { return id; }
+	std::string_view GetName() const { return name; }
+	ComponentManager* GetManager() const { return manager; }
 
 protected:
 	/** Hidden explicit construction. Use the derived template to create instances of ComponentInfo. */
-	ComponentInfo( ComponentTypeID const& InID, char const* InName, ComponentManager* InManager )
-		: ID( InID ), Name( InName ), Manager( InManager )
+	ComponentInfo(ComponentTypeID const& inID, std::string_view inName, ComponentManager* inManager)
+		: id(inID), name(inName), manager(inManager)
 	{}
 
-	/** The unique ID of this component. Used to identify a component, so this should never change once it is used */
-	ComponentTypeID ID;
+	/** The unique id of this component. Used to identify a component, so this should never change once it is used */
+	ComponentTypeID id;
 	/** The human-readable name of this component. Used in debugging and some types of serialization */
-	char const* Name;
+	std::string_view name;
 	/** The manager which creates and collates components of this type */
-	ComponentManager* Manager;
+	ComponentManager* manager;
 };
 
 /** Template used to provide type information to a ComponentInfo in template functions. */
-template< typename TDATA >
-struct TComponentInfo : public ComponentInfo
-{
+template<typename DataType_>
+struct TComponentInfo : public ComponentInfo {
 public:
-	TComponentInfo( ComponentTypeID InID, char const* InName, ComponentManager* InManager )
-		: ComponentInfo( InID, InName, InManager )
+	TComponentInfo(ComponentTypeID inID, char const* inName, ComponentManager* inManager)
+		: ComponentInfo(inID, inName, inManager)
 	{}
 	virtual ~TComponentInfo() override {}
 
 	/** The type of the component */
-	using TYPE = TDATA;
+	using DataType = DataType_;
 };

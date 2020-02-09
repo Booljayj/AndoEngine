@@ -4,8 +4,7 @@
 
 constexpr const ComponentTypeID EntityInfoComponent_ID = 0;
 
-struct EntityInfoComponent
-{
+struct EntityInfoComponent {
 	EntityID id;
 	std::string name;
 	uint32_t flags;

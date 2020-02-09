@@ -8,66 +8,64 @@
 #include "EntityFramework/Serializer.h"
 
 /** A component manager which allocates fixed-size component chunks dynamically as needed and uses standardized manipulation */
-template<class TCOMP, size_t BLOCK_SIZE>
-struct TChunkedComponentManager : public ComponentManager
-{
-	using BlockType = TInlineManagedComponentBlock<TCOMP, BLOCK_SIZE>;
+template<class ComponentType, size_t BlockSize>
+struct TChunkedComponentManager : public ComponentManager {
+	using BlockType = TInlineManagedComponentBlock<ComponentType, BlockSize>;
 
 protected:
-	size_t LowestFreeBlockIndex = 0;
-	std::vector<BlockType*> Blocks;
+	size_t lowestFreeBlockIndex = 0;
+	std::vector<BlockType*> blocks;
 
 public:
 	TChunkedComponentManager() = default;
-	virtual ~TChunkedComponentManager()
-	{
-		for( BlockType* BlockPtr : Blocks ) {
-			delete BlockPtr;
+	virtual ~TChunkedComponentManager() {
+		for (BlockType* blockPtr : blocks) {
+			delete blockPtr;
 		}
 	}
 
-	static TCOMP* Cast( ptr_t Comp ) { return static_cast<TCOMP*>( Comp ); }
-	static TCOMP const* Cast( cptr_t Comp ) { return static_cast<TCOMP const*>( Comp ); }
+	static ComponentType* Cast(ptr_t comp) { return static_cast<ComponentType*>( comp ); }
+	static ComponentType const* Cast(cptr_t comp) { return static_cast<ComponentType const*>( comp ); }
 
-	virtual void Setup( Entity const& NewEntity, ptr_t NewComponent ) const override {}
+	virtual void Setup( Entity const& newEntity, ptr_t newComponent ) const override {}
 
 	virtual ptr_t Retain() override {
 		//Grow the number of managed blocks if we don't currently have any free components
-		if( LowestFreeBlockIndex == Blocks.size() ) {
-			Blocks.emplace_back( new BlockType() );
+		if (lowestFreeBlockIndex == blocks.size()) {
+			blocks.emplace_back(new BlockType());
 		}
 		//Get an unused component from a block and reinitialize it.
-		TCOMP* RetainedComponent = Blocks[LowestFreeBlockIndex]->Retain();
-		new(RetainedComponent) TCOMP{};
+		ComponentType* retainedComponent = blocks[lowestFreeBlockIndex]->Retain();
+		new(retainedComponent) ComponentType{};
 		//Seek ahead if we've run out of free components in the lowest block
-		while( LowestFreeBlockIndex < Blocks.size() && !Blocks[LowestFreeBlockIndex]->HasAnyFree() ) {
-			++LowestFreeBlockIndex;
+		while (lowestFreeBlockIndex < blocks.size() && !blocks[lowestFreeBlockIndex]->HasAnyFree()) {
+			++lowestFreeBlockIndex;
 		}
-		return RetainedComponent;
+		return retainedComponent;
 	}
 
-	virtual void Release( ptr_t RawReleasedComponent ) override {
-		TCOMP* ReleasedComponent = Cast( RawReleasedComponent );
-		for( size_t ContainingBlockIndex = 0; ContainingBlockIndex < Blocks.size(); ++ContainingBlockIndex ) {
-			BlockType* Block = Blocks[ContainingBlockIndex];
-			if( Block->Contains( ReleasedComponent ) ) {
-				Block->Release( ReleasedComponent );
-				if( ContainingBlockIndex < LowestFreeBlockIndex ) {
-					LowestFreeBlockIndex = ContainingBlockIndex;
+	virtual void Release(ptr_t rawReleasedComponent) override {
+		ComponentType* releasedComponent = Cast(rawReleasedComponent);
+		for( size_t containingBlockIndex = 0; containingBlockIndex < blocks.size(); ++containingBlockIndex ) {
+			BlockType* block = blocks[containingBlockIndex];
+			if (block->Contains(releasedComponent)) {
+				block->Release(releasedComponent);
+				if (containingBlockIndex < lowestFreeBlockIndex) {
+					lowestFreeBlockIndex = containingBlockIndex;
 				}
 				return;
 			}
 		}
-		assert( false ); //Should never reach this point unless the component was not part of this manager
+		assert(false); //Should never reach this point unless the component was not part of this manager
 	}
 
-	virtual void Save( cptr_t Comp, ByteStream& Bytes ) override { Serializer<TCOMP>::Save( *Cast( Comp ), Bytes ); }
-	virtual void Load( ptr_t Comp, ByteStream const& Bytes ) override { Serializer<TCOMP>::Load( *Cast( Comp ), Bytes ); }
-	virtual void Copy( cptr_t CompA, ptr_t CompB ) override { *Cast( CompB ) = *Cast( CompA ); }
-	virtual void Wipe( ptr_t Comp ) override { new (Comp) TCOMP{}; }
+	virtual void Save(cptr_t comp, ByteStream& bytes) override { Serializer<ComponentType>::Save(*Cast(comp), bytes); }
+	virtual void Load(ptr_t comp, ByteStream const& bytes) override { Serializer<ComponentType>::Load(*Cast(comp), bytes); }
+	virtual void Copy(cptr_t compA, ptr_t compB) override { *Cast(compB) = *Cast(compA); }
+	virtual void Wipe(ptr_t comp) override { new (comp) ComponentType{}; }
 
 	size_t CountTotal() const override final {
-		return BLOCK_SIZE * Blocks.size();
+		return BlockSize * blocks.size();
 	}
 
 	size_t CountFree() const override final {
@@ -75,27 +73,27 @@ public:
 	}
 
 	size_t CountUsed() const override final {
-		size_t RunningTotal = 0;
-		for( size_t Index = 0; Index < Blocks.size(); ++Index ) {
-			RunningTotal += Blocks[Index]->CountUsed();
+		size_t runningTotal = 0;
+		for( size_t index = 0; index < blocks.size(); ++index ) {
+			runningTotal += blocks[index]->CountUsed();
 		}
-		return RunningTotal;
+		return runningTotal;
 	}
 
-	template<typename TPRED>
-	void ForEach( TPRED const& Predicate ) const {
-		for( BlockType* Block : Blocks ) {
-			for( TCOMP& Comp : *Block ) {
-				if( Block->IsUsed( &Comp ) ) Predicate( &Comp );
+	template<typename PredicateType>
+	void ForEach(PredicateType const& predicate) const {
+		for (BlockType* block : blocks) {
+			for (ComponentType& comp : *block) {
+				if (block->IsUsed(&comp)) predicate(&comp);
 			}
 		}
 	}
 
-	template<typename TPRED>
-	void ForEachAll( TPRED const& Predicate ) const {
-		for( std::unique_ptr<BlockType>& Block : Blocks ) {
-			for( TCOMP& Comp : *Block ) {
-				Predicate( &Comp );
+	template<typename PredicateType>
+	void ForEachAll(PredicateType const& predicate) const {
+		for (std::unique_ptr<BlockType>& block : blocks) {
+			for (ComponentType& comp : *block) {
+				predicate(&comp);
 			}
 		}
 	}
