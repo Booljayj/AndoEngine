@@ -1,62 +1,27 @@
 #include <cassert>
 #include <glm/vec3.hpp>
-#include <vulkan/vulkan.hpp>
+#include <SDL2/SDL_vulkan.h>
+#include <vulkan/vulkan.h>
 #include "Rendering/RenderingSystem.h"
 #include "Engine/BasicComponents.h"
 #include "Engine/LogCommands.h"
 #include "Engine/Utility.h"
 #include "EntityFramework/EntityCollectionSystem.h"
+#include "Rendering/SDLSystems.h"
 #include "Rendering/MeshRendererComponent.h"
 
-std::ostream& operator<<(std::ostream& stream, VulkanVersion const& version) {
-	stream << version.major << "." << version.minor << "." << version.patch;
-	return stream;
-}
-
-VulkanPhysicalDeviceInfo VulkanPhysicalDeviceInfo::Extract(const vk::PhysicalDevice& device) {
-	VulkanPhysicalDeviceInfo Result;
-	Result.device = device;
-	Result.deviceProperties = device.getProperties();
-	Result.deviceFeatures = device.getFeatures();
-	Result.deviceMemoryProperties = device.getMemoryProperties();
-
-	return Result;
-}
-
-void VulkanPhysicalDeviceInfo::Write(std::ostream& stream) const {
-	stream << "Device Name:    " << deviceProperties.deviceName << std::endl;
-	stream << "Device Type:    " << vk::to_string(deviceProperties.deviceType) << std::endl;
-	stream << "API Version:    " << VulkanVersion(deviceProperties.apiVersion) << std::endl;
-	stream << "Driver Version: " << VulkanVersion(deviceProperties.driverVersion) << std::endl;
-
-	stream << "Memory Heaps:  " << deviceMemoryProperties.memoryHeapCount << std::endl;
-	for (size_t memoryHeapIndex = 0; memoryHeapIndex < deviceMemoryProperties.memoryHeapCount; ++memoryHeapIndex) {
-		const auto& heap = deviceMemoryProperties.memoryHeaps[memoryHeapIndex];
-		stream << "\tHeap " << memoryHeapIndex << ", flags: " << vk::to_string(heap.flags) << ", size: ";
-		Utility::WriteByteSizeValue(std::cout, heap.size);
-		stream << std::endl;
-	}
-	stream << "Memory Types:  " << deviceMemoryProperties.memoryTypeCount << std::endl;
-	for (size_t memoryTypeIndex = 0; memoryTypeIndex < deviceMemoryProperties.memoryTypeCount; ++memoryTypeIndex) {
-		const auto& type = deviceMemoryProperties.memoryTypes[memoryTypeIndex];
-		stream << "\tType " << memoryTypeIndex << ", flags: " << vk::to_string(type.propertyFlags) << ", heap: " << type.heapIndex << std::endl;
-	}
-
-	stream << "Queues:" << std::endl;
-	std::vector<vk::QueueFamilyProperties> const queueFamiliesProperties = device.getQueueFamilyProperties();
-	for (size_t queueFamilyIndex = 0; queueFamilyIndex < queueFamiliesProperties.size(); ++queueFamilyIndex) {
-		const auto& queueFamilyProperties = queueFamiliesProperties[queueFamilyIndex];
-		stream << "\tFamily " << queueFamilyIndex << ", flags: " << vk::to_string(queueFamilyProperties.queueFlags) << ", count: " << queueFamilyProperties.queueCount << std::endl;
-	}
-}
+RenderingSystem::RenderingSystem()
+: shouldRecreateSwapchain(false)
+{}
 
 bool RenderingSystem::Startup(
 	CTX_ARG,
+	SDLWindowSystem* windowSystem,
 	EntityCollectionSystem* EntityCollection,
 	TComponentInfo<TransformComponent>* Transform,
 	TComponentInfo<MeshRendererComponent>* MeshRenderer)
 {
-	ComponentInfo const* Infos[] = { Transform, MeshRenderer };
+	ComponentInfo const* Infos[2] = { Transform, MeshRenderer };
 	Filter = EntityCollection->MakeFilter(Infos);
 	if (Filter) {
 		TransformHandle = Filter->GetMatchComponentHandle(Transform);
@@ -66,35 +31,76 @@ bool RenderingSystem::Startup(
 		//return false;
 	}
 
+	// Vulkan instance
+	if (!application.Create(CTX, windowSystem->GetMainWindow())) {
+		LOG(LogTemp, Error, "Failed to create the Vulkan application");
+	}
+
+	// Collect physical devices and select default one
 	{
-		// Vulkan instance
-		vk::ApplicationInfo appInfo;
-		appInfo.pApplicationName = "DefaultProject";
-		appInfo.pEngineName = "AndoEngine";
-		appInfo.apiVersion = VK_API_VERSION_1_0;
+		uint32_t deviceCount = 0;
+		vkEnumeratePhysicalDevices(application.instance, &deviceCount, nullptr);
+		VkPhysicalDevice* devices = CTX.Temp.Request<VkPhysicalDevice>(deviceCount);
+		vkEnumeratePhysicalDevices(application.instance, &deviceCount, devices);
 
-		vk::InstanceCreateInfo instanceCreateInfo;
-		instanceCreateInfo.pApplicationInfo = &appInfo;
-		instance = vk::createInstance(instanceCreateInfo);
+		for (int32_t deviceIndex = 0; deviceIndex < deviceCount; ++deviceIndex) {
+			const Rendering::VulkanPhysicalDevice physicalDevice = Rendering::VulkanPhysicalDevice::Get(CTX, devices[deviceIndex], application.surface);
+			if (IsUsablePhysicalDevice(physicalDevice)) {
+				availablePhysicalDevices.push_back(physicalDevice);
+			}
+		}
+
+		if (availablePhysicalDevices.size() == 0) {
+			LOG(LogTemp, Error, "Failed to find any vulkan physical devices");
+			return false;
+		}
+
+		if (!SelectPhysicalDevice(CTX, 0)) {
+			LOG(LogTemp, Error, "Failed to select default physical device");
+			return false;
+		}
 	}
 
-	// Physical device
-	availablePhysicalDevices = instance.enumeratePhysicalDevices();
+	//Create the swapchain
 
-	if (availablePhysicalDevices.size() == 0) {
-		LOG(LogTemp, Error, "Failed to find any vulkan physical devices");
-		return false;
+	//Disabled for now, something seems to wrong with the underlying system calls
+	return true;
+	{
+		shouldRecreateSwapchain = false;
+		if (!swapchain.Create(CTX, VkExtent2D{1024, 768}, application.surface, *GetPhysicalDevice(selectedPhysicalDeviceIndex), logicalDevice.device)) {
+			LOG(LogTemp, Error, "Failed to create the swapchain");
+			return false;
+		}
 	}
-
-	selectedPhysicalDeviceInfo = VulkanPhysicalDeviceInfo::Extract(availablePhysicalDevices[0]);
-	selectedPhysicalDeviceInfo.Write(std::cout);
 
 	return true;
 }
 
 bool RenderingSystem::Shutdown(CTX_ARG) {
-	if (!!instance) instance.destroy();
+	swapchain.Destroy(logicalDevice.device);
+	logicalDevice.Destroy();
+	application.Destroy();
 	return true;
+}
+
+bool RenderingSystem::SelectPhysicalDevice(CTX_ARG, uint32_t index) {
+	if (index != selectedPhysicalDeviceIndex) {
+		if (const Rendering::VulkanPhysicalDevice* physicalDevice = GetPhysicalDevice(index)) {
+
+			logicalDevice.Destroy();
+			if (!logicalDevice.Create(CTX, *physicalDevice, enabledFeatures)) {
+				LOGF(LogTemp, Error, "Failed to create logical device for physical device %i", index);
+				return false;
+			}
+
+			selectedPhysicalDeviceIndex = index;
+			shouldRecreateSwapchain = true;
+
+			physicalDevice->WriteDescription(std::cout);
+			return true;
+		}
+	}
+	return false;
 }
 
 void RenderingSystem::RenderFrame(float InterpolationAlpha) const {
@@ -106,11 +112,14 @@ void RenderingSystem::RenderFrame(float InterpolationAlpha) const {
 void RenderingSystem::RenderComponent(MeshRendererComponent const* MeshRenderer) {
 	if (!MeshRenderer->IsValid()) return;
 
-	glBindVertexArray(MeshRenderer->VertexArrayID);
-	glDrawArrays(GL_TRIANGLES, 0, MeshRenderer->VertexCount);
+	//glBindVertexArray(MeshRenderer->VertexArrayID);
+	//glDrawArrays(GL_TRIANGLES, 0, MeshRenderer->VertexCount);
+	//GLenum ErrorCode = glGetError();
+	//if (ErrorCode != GL_NO_ERROR) {
+	//	std::cerr << "OpenGL Error: " << ErrorCode << std::endl;
+	//}
+}
 
-	GLenum ErrorCode = glGetError();
-	if (ErrorCode != GL_NO_ERROR) {
-		std::cerr << "OpenGL Error: " << ErrorCode << std::endl;
-	}
+bool RenderingSystem::IsUsablePhysicalDevice(const Rendering::VulkanPhysicalDevice& physicalDevice) {
+	return physicalDevice.HasRequiredQueues() && physicalDevice.HasRequiredExtensions(requiredExtensions) && physicalDevice.HasSwapchainSupport();
 }

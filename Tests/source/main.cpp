@@ -48,7 +48,7 @@ SDLFrameworkSystem SDLFramework;
 SDLEventSystem SDLEvent;
 SDLWindowSystem SDLWindow;
 
-RenderingSystem Rendering;
+RenderingSystem renderingSystem;
 
 DEFINE_LOG_CATEGORY( Main, Debug );
 
@@ -70,7 +70,7 @@ bool Startup( CTX_ARG ) {
 	STARTUP_SYSTEM( LogMain, SDLFramework );
 	STARTUP_SYSTEM( LogMain, SDLEvent );
 	STARTUP_SYSTEM( LogMain, SDLWindow );
-	STARTUP_SYSTEM( LogMain, Rendering, &EntityCollection, &Transform, &MeshRenderer );
+	STARTUP_SYSTEM( LogMain, renderingSystem, &SDLWindow, &EntityCollection, &Transform, &MeshRenderer );
 	return true;
 }
 
@@ -78,7 +78,7 @@ void Shutdown( CTX_ARG ) {
 	TEMP_SCOPE;
 	LOG( LogMain, Info, "Shutting down all systems..." );
 
-	SHUTDOWN_SYSTEM( LogMain, Rendering );
+	SHUTDOWN_SYSTEM( LogMain, renderingSystem );
 	SHUTDOWN_SYSTEM( LogMain, SDLWindow );
 	SHUTDOWN_SYSTEM( LogMain, SDLEvent );
 	SHUTDOWN_SYSTEM( LogMain, SDLFramework );
@@ -110,10 +110,6 @@ void MainLoop( CTX_ARG ) {
 		if( !bShutdownRequested ) {
 			const float InterpolationAlpha = TimeController.FrameInterpolationAlpha();
 			CTX.Temp.Reset();
-
-			SDLWindow.Clear();
-			Rendering.RenderFrame( InterpolationAlpha );
-			SDLWindow.Swap();
 		}
 	}
 }
@@ -127,50 +123,50 @@ int main( int argc, char const* argv[] ) {
 	LOG( LogMain, Debug, "Compiled with " __VERSION__ " on " __DATE__ );
 
 	if( Startup( CTX ) ) {
-		LOG( LogMain, Info, "Creating entities" );
-		EntityID EntA = 3;
-		EntityID VertexShaderID = 40;
-		EntityID FragmentShaderID = 45;
-		EntityID ShaderProgramID = 50;
-		EntityID MeshID = 55;
+		// LOG( LogMain, Info, "Creating entities" );
+		// EntityID EntA = 3;
+		// EntityID VertexShaderID = 40;
+		// EntityID FragmentShaderID = 45;
+		// EntityID ShaderProgramID = 50;
+		// EntityID MeshID = 55;
 
-		EntityCollection.Create( CTX, EntA, { &Transform, &Hierarchy } );
+		// EntityCollection.Create( CTX, EntA, { &Transform, &Hierarchy } );
 
-		Entity const* VertexShaderEntity = EntityCollection.Create( CTX, VertexShaderID, { &Shader } );
-		Entity const* FragmentShaderEntity = EntityCollection.Create( CTX, FragmentShaderID, { &Shader } );
-		Entity const* ShaderProgramEntity = EntityCollection.Create( CTX, ShaderProgramID, { &Program } );
+		// Entity const* VertexShaderEntity = EntityCollection.Create( CTX, VertexShaderID, { &Shader } );
+		// Entity const* FragmentShaderEntity = EntityCollection.Create( CTX, FragmentShaderID, { &Shader } );
+		// Entity const* ShaderProgramEntity = EntityCollection.Create( CTX, ShaderProgramID, { &Program } );
 
-		Entity const* MeshEntity = EntityCollection.Create( CTX, MeshID, { &Transform, &Mesh, &MeshRenderer } );
+		// Entity const* MeshEntity = EntityCollection.Create( CTX, MeshID, { &Transform, &Mesh, &MeshRenderer } );
 
-		MeshComponent* TestMesh = MeshEntity->Get( Mesh );
-		TestMesh->Vertices = {
-			GL::VertexData{ -1, -1, 0 },
-			GL::VertexData{ 1, -1, 0 },
-			GL::VertexData{ 0, 1, 0 },
-		};
-		TestMesh->CreateBuffers();
+		// MeshComponent* TestMesh = MeshEntity->Get( Mesh );
+		// TestMesh->Vertices = {
+		// 	GL::VertexData{ -1, -1, 0 },
+		// 	GL::VertexData{ 1, -1, 0 },
+		// 	GL::VertexData{ 0, 1, 0 },
+		// };
+		// TestMesh->CreateBuffers();
 
-		MeshRendererComponent* TestMeshRenderer = MeshEntity->Get( MeshRenderer );
-		TestMeshRenderer->Setup( TestMesh );
+		// MeshRendererComponent* TestMeshRenderer = MeshEntity->Get( MeshRenderer );
+		// TestMeshRenderer->Setup( TestMesh );
 
-		ShaderComponent* TestVertexShader = VertexShaderEntity->Get( Shader );
-		TestVertexShader->Source =
-			"#version 330 core\n\
-			in vec3 vert_Position;\n\
-			void main(void) { gl_Position.xyz = vert_Position; gl_Position.w = 1.0; }";
-		TestVertexShader->ShaderType = GL::EShader::Vertex;
+		// ShaderComponent* TestVertexShader = VertexShaderEntity->Get( Shader );
+		// TestVertexShader->Source =
+		// 	"#version 330 core\n\
+		// 	in vec3 vert_Position;\n\
+		// 	void main(void) { gl_Position.xyz = vert_Position; gl_Position.w = 1.0; }";
+		// TestVertexShader->ShaderType = GL::EShader::Vertex;
 
-		ShaderComponent* TestFragmentShader = FragmentShaderEntity->Get( Shader );
-		TestFragmentShader->Source =
-			"#version 330 core\n\
-			out vec4 color;\n\
-			void main(){ color = vec4(1,0,0,1); }";
-		TestFragmentShader->ShaderType = GL::EShader::Fragment;
+		// ShaderComponent* TestFragmentShader = FragmentShaderEntity->Get( Shader );
+		// TestFragmentShader->Source =
+		// 	"#version 330 core\n\
+		// 	out vec4 color;\n\
+		// 	void main(){ color = vec4(1,0,0,1); }";
+		// TestFragmentShader->ShaderType = GL::EShader::Fragment;
 
-		ProgramComponent* TestProgram = ShaderProgramEntity->Get( Program );
-		TestProgram->LinkedShaders = { TestVertexShader, TestFragmentShader };
-		GL::Link( *TestProgram );
-		GL::Use( *TestProgram );
+		// ProgramComponent* TestProgram = ShaderProgramEntity->Get( Program );
+		// TestProgram->LinkedShaders = { TestVertexShader, TestFragmentShader };
+		// GL::Link( *TestProgram );
+		// GL::Use( *TestProgram );
 
 		// MainLoop( CTX );
 	}

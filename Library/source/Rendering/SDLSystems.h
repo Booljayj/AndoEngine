@@ -3,38 +3,30 @@
 #include <SDL2/SDL.h>
 #include "Engine/Context.h"
 
-class SDLFrameworkSystem
-{
+struct SDLFrameworkSystem {
 public:
-	bool Startup( CTX_ARG );
-	bool Shutdown( CTX_ARG );
+	bool Startup(CTX_ARG);
+	bool Shutdown(CTX_ARG);
 };
 
-class SDLEventSystem
-{
+struct SDLEventSystem {
 protected:
 	std::vector<SDL_Event> FrameEvents;
 
 public:
-	bool Startup( CTX_ARG );
-	bool Shutdown( CTX_ARG );
+	bool Startup(CTX_ARG);
+	bool Shutdown(CTX_ARG);
 
-	void PollEvents( bool& bRequestShutdown );
+	void PollEvents(bool& bRequestShutdown);
 };
 
-class SDLWindowSystem
-{
+struct SDLWindowSystem {
 protected:
 	SDL_Window* MainWindow;
-	SDL_GLContext MainContext;
 
 public:
-	bool Startup( CTX_ARG );
-	bool Shutdown( CTX_ARG );
+	bool Startup(CTX_ARG);
+	bool Shutdown(CTX_ARG);
 
-	void Clear();
-	void Swap();
-
-protected:
-	void SetupGLAttributes();
+	inline SDL_Window* GetMainWindow() const { return MainWindow; }
 };
