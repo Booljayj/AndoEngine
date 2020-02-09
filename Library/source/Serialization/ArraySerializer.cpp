@@ -21,7 +21,7 @@ namespace Serialization {
 
 		//Write a data block for each element to the stream
 		for (uint32_t Index = 0; Index < Elements.size(); ++Index) {
-			SerializeTypeBinary(*ArrayInfo->ElementTypeInfo, Elements[Index], Stream);
+			SerializeTypeBinary(*ArrayInfo->elementType, Elements[Index], Stream);
 		}
 		return Stream.good();
 	}
@@ -39,7 +39,7 @@ namespace Serialization {
 		ReadLE(&SerializedArraySize, Stream);
 
 		//Set the array size to match what we just read, if possible
-		if (!ArrayInfo->IsFixedSize) ArrayInfo->Resize(Data, SerializedArraySize);
+		if (!ArrayInfo->isFixedSize) ArrayInfo->Resize(Data, SerializedArraySize);
 
 		//Get an array of pointers to all the elements
 		std::vector<void*> Elements;
@@ -49,7 +49,7 @@ namespace Serialization {
 		bool bArrayReadSuccessful = true;
 		for (uint32_t Index = 0; Index < Elements.size(); ++Index) {
 			if (Index < SerializedArraySize && ScopedRead.GetRemainingSize() >= NestedBlockHeaderSize) {
-				bool const bElementReadSuccessful = DeserializeTypeBinary(*ArrayInfo->ElementTypeInfo, Elements[Index], Stream);
+				bool const bElementReadSuccessful = DeserializeTypeBinary(*ArrayInfo->elementType, Elements[Index], Stream);
 				bArrayReadSuccessful &= bElementReadSuccessful;
 			}
 			else

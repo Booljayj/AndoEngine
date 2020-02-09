@@ -3,24 +3,24 @@
 
 namespace Reflection {
 	PolyTypeInfo::PolyTypeInfo(
-		Hash128 InUniqueID, CompilerDefinition InDefinition,
-		std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
-		TypeInfo const* InBaseTypeInfo, bool InCanBeBaseType, bool InCanBeDerivedType)
+		Hash128 inID, CompilerDefinition inDef,
+		std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer,
+		TypeInfo const* inBaseTypeInfo, bool inCanBeBaseType, bool inCanBeDerivedType)
 	: TypeInfo(
-		PolyTypeInfo::CLASSIFICATION, InUniqueID, InDefinition,
-		InDescription, InFlags, InSerializer)
-	, BaseTypeInfo(InBaseTypeInfo)
-	, CanBeBaseType(InCanBeBaseType)
-	, CanBeDerivedType(InCanBeDerivedType)
+		PolyTypeInfo::Classification, inID, inDef,
+		inDescription, inFlags, inSerializer)
+	, baseType(inBaseTypeInfo)
+	, canBeBaseType(inCanBeBaseType)
+	, canBeDerivedType(inCanBeDerivedType)
 	{}
 
-	bool PolyTypeInfo::CanAssignType(PolyTypeInfo const* PolyInfo, TypeInfo const* Info) {
-		if (!PolyInfo || !Info) return false;
-		if (PolyInfo->CanBeBaseType && Info == PolyInfo->BaseTypeInfo) {
+	bool PolyTypeInfo::CanAssignType(PolyTypeInfo const* polyInfo, TypeInfo const* type) {
+		if (!polyInfo || !type) return false;
+		if (polyInfo->canBeBaseType && type == polyInfo->baseType) {
 			return true;
-		} else if (PolyInfo->CanBeDerivedType) {
-			if (StructTypeInfo const* StructInfo = Info->As<StructTypeInfo>()) {
-				return StructInfo->DerivesFrom(PolyInfo->BaseTypeInfo);
+		} else if (polyInfo->canBeDerivedType) {
+			if (StructTypeInfo const* structType = type->As<StructTypeInfo>()) {
+				return structType->DerivesFrom(polyInfo->baseType);
 			}
 		}
 		return false;

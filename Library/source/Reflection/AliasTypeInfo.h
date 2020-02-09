@@ -5,18 +5,18 @@
 namespace Reflection {
 	/** An alias is a struct with a single member that behaves as if it was that member */
 	struct AliasTypeInfo : public TypeInfo {
-		static constexpr ETypeClassification CLASSIFICATION = ETypeClassification::Alias;
+		static constexpr ETypeClassification Classificiation = ETypeClassification::Alias;
 
 		AliasTypeInfo() = delete;
 		AliasTypeInfo(
-			Hash128 InUniqueID, CompilerDefinition InDefinition,
-			std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
-			VariableInfo const* InAliasedVariableInfo
+			Hash128 inID, CompilerDefinition inDef,
+			std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer,
+			VariableInfo const* inVariableInfo
 		);
 		virtual ~AliasTypeInfo() = default;
 
 		/** The variable that contains the type being aliased */
-		VariableInfo const* AliasedVariableInfo = nullptr;
+		VariableInfo const* variableInfo = nullptr;
 	};
 
 	//============================================================
@@ -25,12 +25,12 @@ namespace Reflection {
 	template<typename AliasType>
 	struct TAliasTypeInfo : public AliasTypeInfo {
 		TAliasTypeInfo(
-			std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
-			VariableInfo const* InAliasedVariableInfo)
+			std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer,
+			VariableInfo const* inVariableInfo)
 		: AliasTypeInfo(
 			TypeResolver<AliasType>::GetID(), GetCompilerDefinition<AliasType>(),
-			InDescription, InFlags, InSerializer,
-			InAliasedVariableInfo)
+			inDescription, inFlags, inSerializer,
+			inVariableInfo)
 		{}
 
 		STANDARD_TYPEINFO_METHODS(AliasType)

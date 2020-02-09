@@ -7,127 +7,127 @@
 
 namespace Reflection {
 	struct ArrayTypeInfo : public TypeInfo {
-		static constexpr ETypeClassification CLASSIFICATION = ETypeClassification::Array;
+		static constexpr ETypeClassification Classification = ETypeClassification::Array;
 
 		/** Whether the number of elements in the array can be manipulated */
-		bool IsFixedSize = false;
+		bool isFixedSize = false;
 		/** The type of the elements in the array */
-		TypeInfo const* ElementTypeInfo = nullptr;
+		TypeInfo const* elementType = nullptr;
 
 		ArrayTypeInfo() = delete;
 		ArrayTypeInfo(
-			Hash128 InUniqueID, CompilerDefinition InDefinition,
-			std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
-			bool InIsFixedSize, TypeInfo const* InElementTypeInfo
+			Hash128 inID, CompilerDefinition inDef,
+			std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer,
+			bool inIsFixedSize, TypeInfo const* inElementType
 		);
 		virtual ~ArrayTypeInfo() = default;
 
 		/** Get the number of elements that are in the array */
-		virtual size_t GetCount(void const* Instance) const = 0;
+		virtual size_t GetCount(void const* instance) const = 0;
 
 		/** Get a vector of all the elements in the array */
-		virtual void GetElements(void* Instance, std::vector<void*>& OutElements) const = 0;
-		virtual void GetElements(void const* Instance, std::vector<void const*>& OutElements) const = 0;
+		virtual void GetElements(void* instance, std::vector<void*>& outElements) const = 0;
+		virtual void GetElements(void const* instance, std::vector<void const*>& outElements) const = 0;
 
 		/** Resize the array to hold a specific number of elements */
-		virtual void Resize(void* Instance, size_t Count) const = 0;
+		virtual void Resize(void* instance, size_t count) const = 0;
 
 		/** Remove all elements in the container */
-		virtual void ClearElements(void* Instance) const = 0;
-		/** Add a new element to the "end" of the array */
-		virtual void AddElement(void* Instance, void const* Value) const = 0;
+		virtual void ClearElements(void* instance) const = 0;
+		/** Add a new elementType to the "end" of the array */
+		virtual void AddElement(void* instance, void const* value) const = 0;
 
-		/** Remove the pointed-at element */
-		virtual void RemoveElement(void* Instance, void const* Element) const = 0;
-		/** Insert a new element at the position of the pointed-at element, equal to the value. If Value is nullptr, the new element is default-constructed */
-		virtual void InsertElement(void* Instance, void const* Element, void const* Value) const = 0;
+		/** Remove the pointed-at elementType */
+		virtual void RemoveElement(void* instance, void const* element) const = 0;
+		/** Insert a new elementType at the position of the pointed-at elementType, equal to the value. If value is nullptr, the new elementType is default-constructed */
+		virtual void InsertElement(void* instance, void const* element, void const* value) const = 0;
 	};
 
 	//============================================================
 	// Templates
 
 	/** Template that implements the ArrayTypeInfo interface for fixed-size arrays (std::array) */
-	template<typename ElementType, size_t Size, typename ArrayType>
+	template<typename ArrayType, typename ElementType, size_t Size>
 	struct TFixedArrayTypeInfo : public ArrayTypeInfo {
-		TFixedArrayTypeInfo(std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer)
+		TFixedArrayTypeInfo(std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer)
 		: ArrayTypeInfo(
 			TypeResolver<ArrayType>::GetID(), GetCompilerDefinition<ArrayType>(),
-			InDescription, InFlags, InSerializer,
+			inDescription, inFlags, inSerializer,
 			true, TypeResolver<ElementType>::Get())
 		{}
 
 		STANDARD_TYPEINFO_METHODS(ArrayType)
 
-		virtual size_t GetCount(void const* Instance) const final { return Size; }
+		virtual size_t GetCount(void const* instance) const final { return Size; }
 
-		virtual void GetElements(void* Instance, std::vector<void*>& OutElements) const final {
-			OutElements.clear();
-			for (ElementType& ArrayElement : Cast(Instance)) {
-				OutElements.push_back(&ArrayElement);
+		virtual void GetElements(void* instance, std::vector<void*>& outElements) const final {
+			outElements.clear();
+			for (ElementType& element : Cast(instance)) {
+				outElements.push_back(&element);
 			}
 		}
-		virtual void GetElements(void const* Instance, std::vector<void const*>& OutElements) const final {
-			OutElements.clear();
-			for (ElementType const& ArrayElement : Cast(Instance)) {
-				OutElements.push_back(&ArrayElement);
+		virtual void GetElements(void const* instance, std::vector<void const*>& outElements) const final {
+			outElements.clear();
+			for (ElementType const& element : Cast(instance)) {
+				outElements.push_back(&element);
 			}
 		}
 
-		virtual void Resize(void* Instance, size_t Count) const final {}
-		virtual void ClearElements(void* Instance) const final {}
-		virtual void AddElement(void* Instance, void const* Value) const final {}
-		virtual void RemoveElement(void* Instance, void const* Element) const final {}
-		virtual void InsertElement(void* Instance, void const* Element, void const* Value) const final {}
+		virtual void Resize(void* instance, size_t count) const final {}
+		virtual void ClearElements(void* instance) const final {}
+		virtual void AddElement(void* instance, void const* value) const final {}
+		virtual void RemoveElement(void* instance, void const* element) const final {}
+		virtual void InsertElement(void* instance, void const* element, void const* value) const final {}
 	};
 
 	/** Template that implements the ArrayTypeInfo interface for dynamic array types (std::vector, std::list, etc) */
-	template<typename ElementType, typename ArrayType>
+	template<typename ArrayType, typename ElementType>
 	struct TDynamicArrayTypeInfo : public ArrayTypeInfo {
-		TDynamicArrayTypeInfo(std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer)
+		TDynamicArrayTypeInfo(std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer)
 		: ArrayTypeInfo(
 			TypeResolver<ArrayType>::GetID(), GetCompilerDefinition<ArrayType>(),
-			InDescription, InFlags, InSerializer,
+			inDescription, inFlags, inSerializer,
 			false, TypeResolver<ElementType>::Get())
 		{}
 
 		STANDARD_TYPEINFO_METHODS(ArrayType)
 
-		static constexpr ElementType const& CastElement(void const* Element) { return *static_cast<ElementType const*>(Element); }
+		static constexpr ElementType const& CastElement(void const* element) { return *static_cast<ElementType const*>(element); }
 
-		virtual size_t GetCount(void const* Instance) const final { return Cast(Instance).size(); }
+		virtual size_t GetCount(void const* instance) const final { return Cast(instance).size(); }
 
-		virtual void GetElements(void* Instance, std::vector<void*>& OutElements) const final {
-			OutElements.clear();
-			for (ElementType& ArrayElement : Cast(Instance)) {
-				OutElements.push_back(&ArrayElement);
+		virtual void GetElements(void* instance, std::vector<void*>& outElements) const final {
+			outElements.clear();
+			for (ElementType& element : Cast(instance)) {
+				outElements.push_back(&element);
 			}
 		}
-		virtual void GetElements(void const* Instance, std::vector<void const*>& OutElements) const final {
-			OutElements.clear();
-			for (ElementType const& ArrayElement : Cast(Instance)) {
-				OutElements.push_back(&ArrayElement);
+		virtual void GetElements(void const* instance, std::vector<void const*>& outElements) const final {
+			outElements.clear();
+			for (ElementType const& element : Cast(instance)) {
+				outElements.push_back(&element);
 			}
 		}
 
-		virtual void Resize(void* Instance, size_t Count) const final { Cast(Instance).resize(Count); }
-		virtual void ClearElements(void* Instance) const final { Cast(Instance).clear(); }
+		virtual void Resize(void* instance, size_t count) const final { Cast(instance).resize(count); }
+		virtual void ClearElements(void* instance) const final { Cast(instance).clear(); }
 
-		virtual void AddElement(void* Instance, void const* Value) const final {
-			Cast(Instance).push_back(CastElement(Value));
+		virtual void AddElement(void* instance, void const* value) const final {
+			Cast(instance).push_back(CastElement(value));
 		}
-		virtual void RemoveElement(void* Instance, void const* Element) const final {
-			const auto Position = std::find_if(
-				Cast(Instance).begin(), Cast(Instance).end(),
-				[=](ElementType const& E) { return &E == Element; }
+		virtual void RemoveElement(void* instance, void const* element) const final {
+			const auto position = std::find_if(
+				Cast(instance).begin(), Cast(instance).end(),
+				[=](ElementType const& e) { return &e == element; }
 			);
-			Cast(Instance).erase(Position);
+			Cast(instance).erase(position);
 		}
-		virtual void InsertElement(void* Instance, void const* Element, void const* Value) const final {
-			const auto Position = std::find_if(
-				Cast(Instance).begin(), Cast(Instance).end(),
-				[=](ElementType const& E) { return &E == Element; }
+		virtual void InsertElement(void* instance, void const* element, void const* value) const final {
+			const auto position = std::find_if(
+				Cast(instance).begin(), Cast(instance).end(),
+				[=](ElementType const& e) { return &e == element; }
 			);
-			Cast(Instance).insert(Position, Value ? CastElement(Value) : ElementType{});
+			Cast(instance).insert(position, value ? CastElement(value) : ElementType{});
 		}
 	};
 }

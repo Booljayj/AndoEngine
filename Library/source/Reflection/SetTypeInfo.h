@@ -5,68 +5,68 @@
 
 namespace Reflection {
 	struct SetTypeInfo : public TypeInfo {
-		static constexpr ETypeClassification CLASSIFICATION = ETypeClassification::Set;
+		static constexpr ETypeClassification Classification = ETypeClassification::Set;
 
 		/** The type of the values in the set */
-		TypeInfo const* ValueTypeInfo = nullptr;
+		TypeInfo const* valueType = nullptr;
 
 		SetTypeInfo() = delete;
 		SetTypeInfo(
-			Hash128 InUniqueID, CompilerDefinition InDefinition,
-			std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
-			TypeInfo const* InValueTypeInfo
+			Hash128 inID, CompilerDefinition inDef,
+			std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer,
+			TypeInfo const* inValueType
 		);
 		virtual ~SetTypeInfo() = default;
 
 		/** Get the number of values that are in the set*/
-		virtual size_t GetCount(void const* Instance) const = 0;
+		virtual size_t GetCount(void const* instance) const = 0;
 
 		/** Get a vector of all the values in the set */
-		virtual void GetValues(void const* Instance, std::vector<void const*>& OutValues) const = 0;
+		virtual void GetValues(void const* instance, std::vector<void const*>& outValues) const = 0;
 
 		/** Returns true if an element with an equal value is contained in the set */
-		virtual bool Contains(void const* Instance, void const* Value) const = 0;
+		virtual bool Contains(void const* instance, void const* value) const = 0;
 
 		/** Remove all values from the set */
-		virtual void Clear(void* Instance) const = 0;
+		virtual void Clear(void* instance) const = 0;
 		/** Adds the value to the set */
-		virtual bool Add(void* Instance, void const* Value) const = 0;
+		virtual bool Add(void* instance, void const* value) const = 0;
 		/** Remove the value from the set */
-		virtual bool Remove(void* Instance, void const* Value) const = 0;
+		virtual bool Remove(void* instance, void const* value) const = 0;
 	};
 
 	//============================================================
 	// Templates
 
-	template<typename ValueType, typename SetType>
+	template<typename SetType, typename ValueType>
 	struct TSetTypeInfo : public SetTypeInfo {
 		TSetTypeInfo(
-			std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer)
+			std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer)
 		: SetTypeInfo(
 			TypeResolver<SetType>::GetID(), GetCompilerDefinition<SetType>(),
-			InDescription, InFlags, InSerializer,
+			inDescription, inFlags, inSerializer,
 			TypeResolver<ValueType>::Get())
 		{}
 
 		STANDARD_TYPEINFO_METHODS(SetType)
 
-		static constexpr ValueType const& CastValue(void const* Value) { return *static_cast<ValueType const*>(Value); }
+		static constexpr ValueType const& CastValue(void const* value) { return *static_cast<ValueType const*>(value); }
 
-		virtual size_t GetCount(void const* Instance) const final { return Cast(Instance).size(); }
+		virtual size_t GetCount(void const* instance) const final { return Cast(instance).size(); }
 
-		virtual void GetValues(void const* Instance, std::vector<void const*>& OutValues) const final {
-			OutValues.clear();
-			for (ValueType const& Value : Cast(Instance)) {
-				OutValues.push_back(&Value);
+		virtual void GetValues(void const* instance, std::vector<void const*>& outValues) const final {
+			outValues.clear();
+			for (ValueType const& value : Cast(instance)) {
+				outValues.push_back(&value);
 			}
 		}
 
-		virtual bool Contains(void const* Instance, void const* Value) const final {
-			return Cast(Instance).find(CastValue(Value)) != Cast(Instance).cend();
+		virtual bool Contains(void const* instance, void const* value) const final {
+			return Cast(instance).find(CastValue(value)) != Cast(instance).cend();
 		}
 
-		virtual void Clear(void* Instance) const final { Cast(Instance).clear(); }
-		virtual bool Add(void* Instance, void const* Value) const final { return Cast(Instance).insert(CastValue(Value)).second; }
-		virtual bool Remove(void* Instance, void const* Value) const final { return Cast(Instance).erase(CastValue(Value)) > 0; }
+		virtual void Clear(void* instance) const final { Cast(instance).clear(); }
+		virtual bool Add(void* instance, void const* value) const final { return Cast(instance).insert(CastValue(value)).second; }
+		virtual bool Remove(void* instance, void const* value) const final { return Cast(instance).erase(CastValue(value)) > 0; }
 	};
 }

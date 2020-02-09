@@ -3,12 +3,12 @@
 #include "Reflection/TypeInfo.h"
 #include "Serialization/PrimitiveSerializer.h"
 
-#define DEFINE_PRIMITIVE_TYPEINFO(_Type_, _Description_)\
-TPrimitiveTypeInfo<_Type_> const TypeInfo__##_Type_ { _Description_, FTypeFlags::None, nullptr }
+#define DEFINE_PRIMITIVE_TYPEINFO(TYPE, DESCRIPTION)\
+TPrimitiveTypeInfo<TYPE> const typeInfo_##TYPE { DESCRIPTION, FTypeFlags::None, nullptr }
 
 namespace Reflection {
 	namespace Internal {
-		TPrimitiveTypeInfo<void> const TypeInfo__void{};
+		TPrimitiveTypeInfo<void> const typeInfo_void{};
 
 		DEFINE_PRIMITIVE_TYPEINFO(bool, "boolean value");
 

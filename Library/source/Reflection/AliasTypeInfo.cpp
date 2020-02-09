@@ -2,12 +2,12 @@
 
 namespace Reflection {
 	AliasTypeInfo::AliasTypeInfo(
-		Hash128 InUniqueID, CompilerDefinition InDefinition,
-		std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
-		VariableInfo const* InAliasedVariableInfo)
+		Hash128 inID, CompilerDefinition inDef,
+		std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer,
+		VariableInfo const* inVariableInfo)
 	: TypeInfo(
-		AliasTypeInfo::CLASSIFICATION, InUniqueID, InDefinition,
-		InDescription, InFlags, InSerializer)
-	, AliasedVariableInfo(InAliasedVariableInfo)
+		AliasTypeInfo::Classification, inID, inDef,
+		inDescription, inFlags, inSerializer)
+	, variableInfo(inVariableInfo)
 	{}
 }

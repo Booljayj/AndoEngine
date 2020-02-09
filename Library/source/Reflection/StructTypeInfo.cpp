@@ -4,16 +4,16 @@
 
 namespace Reflection {
 	StructTypeInfo::StructTypeInfo(
-		Hash128 InUniqueID, CompilerDefinition InDefinition,
-		std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
-		StructTypeInfo const* InBaseTypeInfo, void const* InDefault,
-		Fields InStatic, Fields InMember)
+		Hash128 inID, CompilerDefinition inDef,
+		std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer,
+		StructTypeInfo const* inBaseType, void const* inDefaults,
+		Fields inStatics, Fields inMembers)
 	: TypeInfo(
-		StructTypeInfo::CLASSIFICATION, InUniqueID, InDefinition,
-		InDescription, InFlags, InSerializer)
-	, BaseTypeInfo(InBaseTypeInfo)
-	, Default(InDefault)
-	, Static(InStatic)
-	, Member(InMember)
+		StructTypeInfo::Classification, inID, inDef,
+		inDescription, inFlags, inSerializer)
+	, baseType(inBaseType)
+	, defaults(inDefaults)
+	, statics(inStatics)
+	, members(inMembers)
 	{}
 }

@@ -2,13 +2,13 @@
 
 namespace Reflection {
 	ArrayTypeInfo::ArrayTypeInfo(
-		Hash128 InUniqueID, CompilerDefinition InDefinition,
-		std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
-		bool InIsFixedSize, TypeInfo const* InElementTypeInfo)
+		Hash128 inID, CompilerDefinition inDef,
+		std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer,
+		bool inIsFixedSize, TypeInfo const* inElementType)
 	: TypeInfo(
-		ArrayTypeInfo::CLASSIFICATION, InUniqueID, InDefinition,
-		InDescription, InFlags, InSerializer)
-	, IsFixedSize(InIsFixedSize)
-	, ElementTypeInfo(InElementTypeInfo)
+		ArrayTypeInfo::Classification, inID, inDef,
+		inDescription, inFlags, inSerializer)
+	, isFixedSize(inIsFixedSize)
+	, elementType(inElementType)
 	{}
 }

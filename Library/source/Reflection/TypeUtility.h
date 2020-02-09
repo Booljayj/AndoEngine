@@ -13,37 +13,36 @@ namespace Reflection {
 	struct Demangler {
 		Demangler() = default;
 		~Demangler() {
-			if (Buffer != nullptr) std::free(Buffer);
+			if (buffer != nullptr) std::free(buffer);
 		}
 
 		/** Demangle the name of a type and return a view of hte results */
-		std::string Demangle(TypeInfo const& Info) {
+		std::string Demangle(TypeInfo const& type) {
 			//Perform the demangling. Will return nullptr if the demangling fails, otherwise will return the buffer that contains the name,
-			// which may be the same as the input buffer if there was enough space. Or a brand new one if
-			int Result = 1;
-			char* NewBuffer = abi::__cxa_demangle(Info.Definition.GetMangledName(), Buffer, &Length, &Result);
-			if (NewBuffer != nullptr) Buffer = NewBuffer;
+			// which may be the same as the input buffer if there was enough space. Or a brand new one if not
+			int result = 1;
+			char* newBuffer = abi::__cxa_demangle(type.def.GetMangledName(), buffer, &length, &result);
+			if (newBuffer != nullptr) buffer = newBuffer;
 
-			if (Result == 0) return std::string{Buffer};
+			if (result == 0) return std::string{buffer};
 			else return std::string{};
 		}
 
 	private:
-		char* Buffer = nullptr;
-		size_t Length = 0;
+		char* buffer = nullptr;
+		size_t length = 0;
 	};
 
 	/** Returns an identifier code suitable to display the classification */
-	std::string_view GetClassificationIdentifier(ETypeClassification Classification);
+	std::string_view GetClassificationIdentifier(ETypeClassification classification);
 
-	enum class FDebugPrintFlags : uint8_t {
-		None = 0,
-		DemangleName = 1 << 0,
-		IncludeMetrics = 1 << 1,
-		DetailedInfo = 1 << 2,
+	enum class EDebugPrintFlags : uint8_t {
+		DemangleName,
+		IncludeMetrics,
+		DetailedInfo,
 	};
-	DEFINE_BITFLAG_OPERATORS(FDebugPrintFlags);
+	using FDebugPrintFlags = TFlags<EDebugPrintFlags>;
 
 	/** Print a description of a TypeInfo to a stream for debugging purposes. */
-	void DebugPrint(TypeInfo const* Info, std::ostream& Stream, FDebugPrintFlags Flags = FDebugPrintFlags::None);
+	void DebugPrint(TypeInfo const* type, std::ostream& stream, FDebugPrintFlags flags = FDebugPrintFlags::None);
 }

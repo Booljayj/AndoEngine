@@ -4,11 +4,11 @@
 #include "Engine/Hash.h"
 #include "Reflection/PrimitiveTypeInfo.h"
 
-#define L_DECLARE_PRIMITIVE_TYPEINFO(_Type_)\
-extern TPrimitiveTypeInfo<_Type_> const TypeInfo__##_Type_;\
-template<> struct TypeResolver_Implementation<_Type_> {\
-	static TypeInfo const* Get() { return &TypeInfo__##_Type_; }\
-	static constexpr Hash128 GetID() { return Hash128{ #_Type_ }; }\
+#define L_DECLARE_PRIMITIVE_TYPEINFO(TYPE)\
+extern TPrimitiveTypeInfo<TYPE> const typeInfo_##TYPE;\
+template<> struct TypeResolver_Implementation<TYPE> {\
+	static TypeInfo const* Get() { return &typeInfo_##TYPE; }\
+	static constexpr Hash128 GetID() { return Hash128{ #TYPE }; }\
 }
 
 namespace Reflection {
@@ -17,9 +17,9 @@ namespace Reflection {
 		// Standard primitive type specializations
 
 		//Special definition for void, which is the only primitive type that cannot hold values.
-		extern TPrimitiveTypeInfo<void> const TypeInfo__void;
+		extern TPrimitiveTypeInfo<void> const typeInfo_void;
 		template<> struct TypeResolver_Implementation<void> {
-			static TypeInfo const* Get() { return &TypeInfo__void; }
+			static TypeInfo const* Get() { return &typeInfo_void; }
 			static constexpr Hash128 GetID() { return Hash128{}; }
 		};
 
@@ -49,12 +49,12 @@ namespace Reflection {
 
 		template<typename CharType>
 		struct TypeResolver_Implementation<std::basic_string<CharType>> {
-			static TPrimitiveTypeInfo<std::basic_string<CharType>> const _TypeInfo;
-			static TypeInfo const* Get() { return &_TypeInfo; }
+			static TPrimitiveTypeInfo<std::basic_string<CharType>> const typeInfo;
+			static TypeInfo const* Get() { return &typeInfo; }
 			static constexpr Hash128 GetID() { return Hash128{ "std::basic_string" } + TypeResolver<CharType>::GetID(); }
 		};
 		template<typename CharType>
-		TPrimitiveTypeInfo<std::basic_string<CharType>> const TypeResolver_Implementation<std::basic_string<CharType>>::_TypeInfo{ "dynamic string", FTypeFlags::None, nullptr };
+		TPrimitiveTypeInfo<std::basic_string<CharType>> const TypeResolver_Implementation<std::basic_string<CharType>>::typeInfo{ "dynamic string", FTypeFlags::None, nullptr };
 	}
 }
 

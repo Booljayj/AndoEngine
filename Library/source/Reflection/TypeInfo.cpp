@@ -4,26 +4,26 @@
 namespace Reflection {
 	//Non-public static accessor that can be used by the TypeInfo constructor
 	std::deque<TypeInfo const*>& GetMutableGlobalTypeInfoCollection() {
-		static std::deque<TypeInfo const*> GlobalCollection{};
-		return GlobalCollection;
+		static std::deque<TypeInfo const*> globalCollection{};
+		return globalCollection;
 	}
 
 	std::deque<TypeInfo const*> const& TypeInfo::GetGlobalTypeInfoCollection() {
 		return GetMutableGlobalTypeInfoCollection();
 	}
 
-	TypeInfo const* TypeInfo::FindTypeByID( Hash128 UniqueID ) {
-		for (TypeInfo const* Info : GetGlobalTypeInfoCollection()) {
-			if (Info && Info->UniqueID == UniqueID) return Info;
+	TypeInfo const* TypeInfo::FindTypeByID(Hash128 id) {
+		for (TypeInfo const* info : GetGlobalTypeInfoCollection()) {
+			if (info && info->id == id) return info;
 		}
 		return nullptr;
 	}
 
 	TypeInfo::TypeInfo(
-		ETypeClassification InClassification, Hash128 InUniqueID, CompilerDefinition InDefinition,
-		std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer)
-	: Classification(InClassification), UniqueID(InUniqueID), Definition(InDefinition)
-	, Description(InDescription), Flags(InFlags), Serializer(InSerializer)
+		ETypeClassification inClassification, Hash128 inID, CompilerDefinition inDef,
+		std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer)
+	: classification(inClassification), id(inID), def(inDef)
+	, description(inDescription), flags(inFlags), serializer(inSerializer)
 	{
 		GetMutableGlobalTypeInfoCollection().push_back(this);
 	}

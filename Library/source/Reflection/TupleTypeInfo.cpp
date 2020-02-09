@@ -2,12 +2,12 @@
 
 namespace Reflection {
 	TupleTypeInfo::TupleTypeInfo(
-		Hash128 InUniqueID, CompilerDefinition InDefinition,
-		std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
-		size_t InSize)
+		Hash128 inID, CompilerDefinition inDef,
+		std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer,
+		size_t inSize)
 	: TypeInfo(
-		TupleTypeInfo::CLASSIFICATION, InUniqueID, InDefinition,
-		InDescription, InFlags, InSerializer)
-	, Size(InSize)
+		TupleTypeInfo::Classification, inID, inDef,
+		inDescription, inFlags, inSerializer)
+	, size(inSize)
 	{}
 }

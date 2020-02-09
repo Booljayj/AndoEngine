@@ -2,64 +2,65 @@
 #include <cstdint>
 #include <string>
 #include <string_view>
+#include "Engine/Flags.h"
 #include "Engine/Hash.h"
 #include "Reflection/TypeResolver.h"
 
 namespace Reflection {
 	struct TypeInfo;
 
-	enum FConstantFlags : uint8_t {
-		None = 0,
-		Hidden = 1 << 0,
+	enum EConstantFlags : uint8_t {
+		Hidden,
 	};
+	using FConstantFlags = TFlags<EConstantFlags>;
 
 	/** Info that describes a constant value */
 	struct ConstantInfo {
 		ConstantInfo() = delete;
-		ConstantInfo(std::string_view InName, TypeInfo const* InType, std::string_view InDescription, FConstantFlags InFlags)
-		: Name(InName)
-		, NameHash(InName)
-		, Type(InType)
-		, Description(InDescription)
-		, Flags(InFlags)
+		ConstantInfo(std::string_view inName, TypeInfo const* inType, std::string_view inDescription, FConstantFlags inFlags)
+		: name(inName)
+		, id(inName)
+		, type(inType)
+		, description(inDescription)
+		, flags(inFlags)
 		{}
 		virtual ~ConstantInfo() = default;
 
-		std::string Name;
-		Hash32 NameHash = Hash32{};
-		TypeInfo const* Type = nullptr;
+		std::string name;
+		Hash32 id = Hash32{};
+		TypeInfo const* type = nullptr;
 
-		std::string Description;
-		FConstantFlags Flags = FConstantFlags::None;
+		std::string description;
+		FConstantFlags flags = FConstantFlags::None;
 
-		virtual void const* GetValuePointer(void const* Instance) const = 0;
+		virtual void const* GetValuePointer(void const* instance) const = 0;
 	};
 
 	/** Info that describes a constant value that is global */
 	template<typename ValueType>
 	struct TStaticConstantInfo : public ConstantInfo {
 		TStaticConstantInfo() = delete;
-		TStaticConstantInfo(std::string_view InName, std::string_view InDescription, ValueType* InStaticPointer)
-		: ConstantInfo(InName, TypeResolver<typename std::decay<ValueType>::type>::Get(), InDescription, FConstantFlags::None)
-		, StaticPointer(InStaticPointer)
+		TStaticConstantInfo(std::string_view inName, std::string_view inDescription, ValueType* inStaticPointer)
+		: ConstantInfo(inName, TypeResolver<typename std::decay<ValueType>::type>::Get(), inDescription, FConstantFlags::None)
+		, staticPointer(inStaticPointer)
 		{}
 
-		ValueType const* StaticPointer = nullptr;
+		ValueType const* staticPointer = nullptr;
 
-		void const* GetValuePointer(void const* Instance) const final { return StaticPointer; }
+		void const* GetValuePointer(void const* instance) const final { return staticPointer; }
 	};
 
 	/** Info that describes a constant value that is contained within a struct instance */
 	template<typename StructType, typename ValueType>
 	struct TMemberConstantInfo : public ConstantInfo {
 		TMemberConstantInfo() = delete;
-		TMemberConstantInfo(std::string_view InName, std::string_view InDescription, ValueType const StructType::* InMemberPointer)
-		: ConstantInfo(InName, TypeResolver<typename std::decay<ValueType>::type>::Get(), InDescription, FConstantFlags::None)
-		, MemberPointer(InMemberPointer)
+		TMemberConstantInfo(std::string_view inName, std::string_view inDescription, ValueType const StructType::* inMemberPointer)
+		: ConstantInfo(inName, TypeResolver<typename std::decay<ValueType>::type>::Get(), inDescription, FConstantFlags::None)
+		, memberPointer(inMemberPointer)
 		{}
 
-		ValueType const StructType::* MemberPointer = nullptr;
+		ValueType const StructType::* memberPointer = nullptr;
 
-		void const* GetValuePointer(void const* Instance) const final { return &(((StructType const*)Instance)->*MemberPointer); }
+		void const* GetValuePointer(void const* instance) const final { return &(((StructType const*)instance)->*memberPointer); }
 	};
 }

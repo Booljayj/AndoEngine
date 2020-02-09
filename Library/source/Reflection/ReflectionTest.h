@@ -8,6 +8,7 @@
 #include "Reflection/StructTypeInfo.h"
 #include "Reflection/StandardResolvers.h"
 
+/*
 struct ReflectedType {
 	REFLECTION_MEMBERS( ReflectedType, void );
 
@@ -26,7 +27,9 @@ struct ReflectedType {
 	static const uint16_t StaticImmutableShortValue;
 };
 REFLECT( ReflectedType );
+*/
 
+/*
 struct SecondReflectedType {
 	REFLECTION_MEMBERS( SecondReflectedType, void );
 
@@ -89,3 +92,4 @@ struct SerializedTypeB {
 	};
 };
 REFLECT( SerializedTypeB );
+*/

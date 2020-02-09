@@ -11,25 +11,25 @@ namespace Serialization {
 
 		ScopedDataBlockWrite const ScopedWrite{Stream};
 
-		void const* DefaultData = StructInfo->Default;
+		void const* DefaultData = StructInfo->defaults;
 
 		//Write an identifier and a data block for each non-default variable in the struct
 		Reflection::StructTypeInfo const* CurrentStructInfo = StructInfo;
 		while (CurrentStructInfo) {
-			for (Reflection::VariableInfo const* MemberVariable : CurrentStructInfo->Member.Variables) {
-				if (ShouldSerializeType(*MemberVariable->Type)) {
+			for (Reflection::VariableInfo const* MemberVariable : CurrentStructInfo->members.variables) {
+				if (ShouldSerializeType(*MemberVariable->type)) {
 					//Get a pointer to the value we want to serialize, and a pointer to the default version of that value
 					void const* VariablePointer = MemberVariable->GetImmutableValuePointer(Data);
 					void const* DefaultVariablePointer = MemberVariable->GetImmutableValuePointer(DefaultData);
 
 					//Compare the variable to the default. If the value is the same as the default, then we don't need to write anything
-					if (!MemberVariable->Type->Equal(VariablePointer, DefaultVariablePointer)) {
+					if (!MemberVariable->type->Equal(VariablePointer, DefaultVariablePointer)) {
 						WriteVariableIdentifier(*MemberVariable, Stream);
-						SerializeTypeBinary(*MemberVariable->Type, VariablePointer, Stream);
+						SerializeTypeBinary(*MemberVariable->type, VariablePointer, Stream);
 					}
 				}
 			}
-			CurrentStructInfo = CurrentStructInfo->BaseTypeInfo;
+			CurrentStructInfo = CurrentStructInfo->baseType;
 		}
 
 		return Stream.good();
@@ -48,9 +48,9 @@ namespace Serialization {
 			if (!Stream.good()) return false; //Make sure the read was successful
 
 			//If the struct has a variable with this ID, and it can be serialized, attempt to deserialize it.
-			if (MemberVariable && ShouldSerializeType(*MemberVariable->Type)) {
+			if (MemberVariable && ShouldSerializeType(*MemberVariable->type)) {
 				void* VariablePointer = MemberVariable->GetMutableValuePointer(Data);
-				bool const bSuccess = DeserializeTypeBinary(*MemberVariable->Type, VariablePointer, Stream);
+				bool const bSuccess = DeserializeTypeBinary(*MemberVariable->type, VariablePointer, Stream);
 				if (!bSuccess) return false; //@todo Report an error just for this variable instead of returning false
 
 			} else {
@@ -62,7 +62,7 @@ namespace Serialization {
 	}
 
 	void StructSerializer::WriteVariableIdentifier(Reflection::VariableInfo const& VariableInfo, std::ostream& Stream) {
-		decltype(Hash32::hash) const NameHashValue = VariableInfo.NameHash.hash;
+		decltype(Hash32::hash) const NameHashValue = VariableInfo.id.hash;
 		WriteLE(&(NameHashValue), Stream);
 	}
 
@@ -73,10 +73,10 @@ namespace Serialization {
 		//Walk up the chain of base classes, searching for a variable with the correct name hash.
 		Reflection::StructTypeInfo const* CurrentStructInfo = &StructInfo;
 		while (CurrentStructInfo) {
-			if (Reflection::VariableInfo const* FoundInfo = CurrentStructInfo->Member.Variables.Find(Hash32{NameHashValue})) {
+			if (Reflection::VariableInfo const* FoundInfo = CurrentStructInfo->members.variables.Find(Hash32{NameHashValue})) {
 				return FoundInfo;
 			}
-			CurrentStructInfo = CurrentStructInfo->BaseTypeInfo;
+			CurrentStructInfo = CurrentStructInfo->baseType;
 		}
 		return nullptr;
 	}

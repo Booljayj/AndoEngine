@@ -11,12 +11,12 @@ namespace Reflection {
 #if STD_OPTIONAL_SUPPORT
 		template<typename BaseType>
 		struct TypeResolver_Implementation<std::optional<BaseType>> {
-			static TOptionalTypeInfo<BaseType> const _TypeInfo;
-			static TypeInfo const* Get() { return &_TypeInfo; }
+			static TOptionalTypeInfo<BaseType> const typeInfo;
+			static TypeInfo const* Get() { return &typeInfo; }
 			static constexpr Hash128 GetID() { return Hash128{ "std::optional" } + TypeResolver<BaseType>::GetID(); }
 		};
 		template<typename BaseType>
-		TOptionalTypeInfo<BaseType> const TypeResolver_Implementation<std::optional<BaseType>>::_TypeInfo{ "optional", FTypeFlags::None, nullptr };
+		TOptionalTypeInfo<BaseType> const TypeResolver_Implementation<std::optional<BaseType>>::typeInfo{ "optional", FTypeFlags::None, nullptr };
 #endif
 	}
 }

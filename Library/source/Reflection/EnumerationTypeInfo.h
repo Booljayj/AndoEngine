@@ -5,31 +5,31 @@
 
 namespace Reflection {
 	struct EnumerationTypeInfo : public TypeInfo {
-	 	static constexpr ETypeClassification CLASSIFICATION = ETypeClassification::Enumeration;
+	 	static constexpr ETypeClassification Classification = ETypeClassification::Enumeration;
 
 		EnumerationTypeInfo() = delete;
 		EnumerationTypeInfo(
-			Hash128 InUniqueID, CompilerDefinition InDefinition,
-			std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
-			TypeInfo const* InUnderlyingTypeInfo
+			Hash128 inID, CompilerDefinition inDef,
+			std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer,
+			TypeInfo const* inUnderlyingType
 		);
 		virtual ~EnumerationTypeInfo() = default;
 
 		/** The underlying type of the values in the enumeration */
-		TypeInfo const* UnderlyingTypeInfo = nullptr;
+		TypeInfo const* underlyingType = nullptr;
 
 		/** Get the number of values that the enumeration defines */
 		virtual size_t GetCount() const = 0;
 
 		/** Get the value at the specified index */
-		virtual void const* GetValue(size_t Index) const = 0;
+		virtual void const* GetValue(size_t index) const = 0;
 		/** Get the name of the value at the specified index */
-		virtual std::string_view GetName(size_t Index) const = 0;
+		virtual std::string_view GetName(size_t index) const = 0;
 
 		/** Get the index of the first element with the specified value */
-		virtual size_t GetIndexOfValue(void const* Value) const = 0;
+		virtual size_t GetIndexOfValue(void const* value) const = 0;
 		/** Get the index of the first element with the specified name */
-		virtual size_t GetIndexOfName(std::string_view Name) const = 0;
+		virtual size_t GetIndexOfName(std::string_view name) const = 0;
 	};
 
 	//============================================================
@@ -41,38 +41,38 @@ namespace Reflection {
 		using UnderlyingType = typename std::underlying_type<EnumType>::type;
 
 		/** The elements in this enumeration */
-		TArrayView<EnumPairType> ElementView;
+		TArrayView<EnumPairType> elementView;
 
 		TStandardEnumerationTypeInfo(
-			std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
-			TArrayView<EnumPairType> InElementView)
+			std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer,
+			TArrayView<EnumPairType> inElementView)
 		: EnumerationTypeInfo(
 			TypeResolver<EnumType>::GetID(), GetCompilerDefinition<EnumType>(),
-			InDescription, InFlags, InSerializer,
+			inDescription, inFlags, inSerializer,
 			TypeResolver<UnderlyingType>::Get())
-		, ElementView(InElementView)
+		, elementView(inElementView)
 		{}
 
 		STANDARD_TYPEINFO_METHODS(EnumType)
 
-		virtual size_t GetCount() const final { ElementView.size(); }
+		virtual size_t GetCount() const final { elementView.size(); }
 
-		virtual void const* GetValue(size_t Index) const final {
-			if (Index < ElementView.size()) return &ElementView[Index].second;
+		virtual void const* GetValue(size_t index) const final {
+			if (index < elementView.size()) return &elementView[index].second;
 			return nullptr;
 		}
-		virtual std::string_view GetName(size_t Index) const final {
-			if (Index < ElementView.size()) return ElementView[Index].first;
+		virtual std::string_view GetName(size_t index) const final {
+			if (index < elementView.size()) return elementView[index].first;
 			return std::string_view{};
 		}
 
-		virtual size_t GetIndexOfValue(void const* Value) const final {
-			const auto Iter = std::find(ElementView.begin(), ElementView.end(), [&](auto const& Pair) { return Pair.second == Cast(Value); });
-			return Iter - ElementView.begin();
+		virtual size_t GetIndexOfValue(void const* value) const final {
+			const auto iter = std::find(elementView.begin(), elementView.end(), [&](auto const& pair) { return pair.second == Cast(value); });
+			return iter - elementView.begin();
 		}
-		virtual size_t GetIndexOfName(std::string_view Name) const final {
-			const auto Iter = std::find(ElementView.begin(), ElementView.end(), [&](auto const& Pair) { return Pair.first == Name; });
-			return Iter - ElementView.begin();
+		virtual size_t GetIndexOfName(std::string_view name) const final {
+			const auto iter = std::find(elementView.begin(), elementView.end(), [&](auto const& pair) { return pair.first == name; });
+			return iter - elementView.begin();
 		}
 	};
 
@@ -82,39 +82,39 @@ namespace Reflection {
 		using EnumPairType = std::pair<std::string_view, UnderlyingType>;
 
 		/** The elements in this enumeration */
-		TArrayView<EnumPairType> ElementView;
+		TArrayView<EnumPairType> elementView;
 
 		TGenericEnumerationTypeInfo(
-			Hash128 InUniqueID,
-			std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
-			TArrayView<EnumPairType> InElementView)
+			Hash128 inID,
+			std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer,
+			TArrayView<EnumPairType> inElementView)
 		: EnumerationTypeInfo(
-			InUniqueID, GetCompilerDefinition<UnderlyingType>(),
-			InDescription, InFlags, InSerializer,
+			inID, GetCompilerDefinition<UnderlyingType>(),
+			inDescription, inFlags, inSerializer,
 			TypeResolver<UnderlyingType>::Get())
-		, ElementView(InElementView)
+		, elementView(inElementView)
 		{}
 
 		STANDARD_TYPEINFO_METHODS(UnderlyingType)
 
-		virtual size_t GetCount() const final { ElementView.size(); }
+		virtual size_t GetCount() const final { elementView.size(); }
 
-		virtual void const* GetValue(size_t Index) const final {
-			if (Index < ElementView.size()) return &ElementView[Index].second;
+		virtual void const* GetValue(size_t index) const final {
+			if (index < elementView.size()) return &elementView[index].second;
 			return nullptr;
 		}
-		virtual std::string_view GetName(size_t Index) const final {
-			if (Index < ElementView.size()) return ElementView[Index].first;
+		virtual std::string_view GetName(size_t index) const final {
+			if (index < elementView.size()) return elementView[index].first;
 			return std::string_view{};
 		}
 
-		virtual size_t GetIndexOfValue(void const* Value) const final {
-			const auto Iter = std::find(ElementView.begin(), ElementView.end(), [&](auto const& Pair) { return Pair.second == Cast(Value); });
-			return Iter - ElementView.begin();
+		virtual size_t GetIndexOfValue(void const* value) const final {
+			const auto iter = std::find(elementView.begin(), elementView.end(), [&](auto const& pair) { return pair.second == Cast(value); });
+			return iter - elementView.begin();
 		}
-		virtual size_t GetIndexOfName(std::string_view Name) const final {
-			const auto Iter = std::find(ElementView.begin(), ElementView.end(), [&](auto const& Pair) { return Pair.first == Name; });
-			return Iter - ElementView.begin();
+		virtual size_t GetIndexOfName(std::string_view name) const final {
+			const auto iter = std::find(elementView.begin(), elementView.end(), [&](auto const& pair) { return pair.first == name; });
+			return iter - elementView.begin();
 		}
 	};
 }

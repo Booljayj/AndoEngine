@@ -9,18 +9,18 @@ namespace Reflection {
 		//============================================================
 		// Standard tuple type specializations
 
-		template<typename ...ElementTypes>
+		template<typename... ElementTypes>
 		struct TypeResolver_Implementation<std::tuple<ElementTypes...>> {
 			using TupleType = std::tuple<ElementTypes...>;
-			static TTupleTypeInfo<TupleType, ElementTypes...> const _TypeInfo;
-			static TypeInfo const* Get() { return &_TypeInfo; }
+			static TTupleTypeInfo<TupleType, ElementTypes...> const typeInfo;
+			static TypeInfo const* Get() { return &typeInfo; }
 			static constexpr Hash128 GetID() {
 				constexpr size_t Size = std::tuple_size<TupleType>::value;
-				Hash128 const IDs[Size] = { TypeResolver<ElementTypes>::GetID()... };
-				return std::accumulate(IDs, IDs + Size, Hash128{ "std::tuple" });
+				Hash128 const ids[Size] = { TypeResolver<ElementTypes>::GetID()... };
+				return std::accumulate(ids, ids + Size, Hash128{ "std::tuple" });
 			}
 		};
 		template<typename ...ElementTypes>
-		TTupleTypeInfo<std::tuple<ElementTypes...>, ElementTypes...> const TypeResolver_Implementation<std::tuple<ElementTypes...>>::_TypeInfo{ "tuple", FTypeFlags::None, nullptr };
+		TTupleTypeInfo<std::tuple<ElementTypes...>, ElementTypes...> const TypeResolver_Implementation<std::tuple<ElementTypes...>>::typeInfo{ "tuple", FTypeFlags::None, nullptr };
 	}
 }

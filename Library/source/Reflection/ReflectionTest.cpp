@@ -8,6 +8,7 @@
 #include "Reflection/Components/ConstantInfo.h"
 #include "Serialization/StructSerializer.h"
 
+/*
 int16_t ReflectedType::StaticShortValue = 4;
 uint16_t const ReflectedType::StaticImmutableShortValue = 15;
 
@@ -38,6 +39,7 @@ REFLECTED_STRUCT_BEGIN( ReflectedType )
 	DEFINE_MEMBER_VARIABLE_FIELDS( &IntegerValue, &BooleanValue );
 REFLECTED_STRUCT_END()
 DEFINE_REFLECTION_MEMBERS( ReflectedType, "A simple struct to test reflection" );
+*/
 
 /*
 STRUCT_TYPE_BEGIN( ReflectedType )

@@ -3,13 +3,13 @@
 
 namespace Reflection {
 	MapTypeInfo::MapTypeInfo(
-		Hash128 InUniqueID, CompilerDefinition InDefinition,
-		std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
-		TypeInfo const* InKeyTypeInfo, TypeInfo const* InValueTypeInfo)
+		Hash128 inID, CompilerDefinition inDef,
+		std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer,
+		TypeInfo const* inKeyType, TypeInfo const* inValueType)
 	: TypeInfo(
-		MapTypeInfo::CLASSIFICATION, InUniqueID, InDefinition,
-		InDescription, InFlags, InSerializer)
-	, KeyTypeInfo(InKeyTypeInfo)
-	, ValueTypeInfo(InValueTypeInfo)
+		MapTypeInfo::Classification, inID, inDef,
+		inDescription, inFlags, inSerializer)
+	, keyType(inKeyType)
+	, valueType(inValueType)
 	{}
 }

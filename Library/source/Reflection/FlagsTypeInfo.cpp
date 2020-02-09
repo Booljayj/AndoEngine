@@ -2,12 +2,12 @@
 
 namespace Reflection {
 	FlagsTypeInfo::FlagsTypeInfo(
-		Hash128 InUniqueID, CompilerDefinition InDefinition,
-		std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
-		TypeInfo const* InUnderlyingTypeInfo)
+		Hash128 inID, CompilerDefinition inDef,
+		std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer,
+		TypeInfo const* inUnderlyingType)
 	: TypeInfo(
-		FlagsTypeInfo::CLASSIFICATION, InUniqueID, InDefinition,
-		InDescription, InFlags, InSerializer)
-	, UnderlyingTypeInfo(InUnderlyingTypeInfo)
+		FlagsTypeInfo::Classification, inID, inDef,
+		inDescription, inFlags, inSerializer)
+	, underlyingType(inUnderlyingType)
 	{}
 }

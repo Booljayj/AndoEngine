@@ -2,12 +2,12 @@
 
 namespace Reflection {
 	SetTypeInfo::SetTypeInfo(
-		Hash128 InUniqueID, CompilerDefinition InDefinition,
-		std::string_view InDescription, FTypeFlags InFlags, Serialization::ISerializer* InSerializer,
-		TypeInfo const* InValueTypeInfo)
+		Hash128 inID, CompilerDefinition inDef,
+		std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer,
+		TypeInfo const* inValueType)
 	: TypeInfo(
-		SetTypeInfo::CLASSIFICATION, InUniqueID, InDefinition,
-		InDescription, InFlags, InSerializer)
-	, ValueTypeInfo(InValueTypeInfo)
+		SetTypeInfo::Classification, inID, inDef,
+		inDescription, inFlags, inSerializer)
+	, valueType(inValueType)
 	{}
 }
