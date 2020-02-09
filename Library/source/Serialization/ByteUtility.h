@@ -14,35 +14,33 @@ namespace Serialization {
 
 	namespace {
 		/** Template for structs which define byte-order serialization routines */
-		template<uint32_t SIZE, bool FORWARD>
+		template<uint32_t Size, bool IsForward>
 		struct ByteSerializer;
 
-		template<uint32_t SIZE>
-		struct ByteSerializer<SIZE, true>
-		{
-			static inline void Write( char const* Data, std::ostream& Stream ) {
-				Stream.write( Data, SIZE );
+		template<uint32_t Size>
+		struct ByteSerializer<Size, true> {
+			static inline void Write(char const* data, std::ostream& stream) {
+				stream.write(data, Size);
 			}
-			static inline void Read( char* Data, std::istream& Stream ) {
-				Stream.read( Data, SIZE );
+			static inline void Read(char* data, std::istream& stream) {
+				stream.read(data, Size);
 			}
 		};
-		template<uint32_t SIZE>
-		struct ByteSerializer<SIZE, false>
-		{
-			static constexpr size_t LAST = SIZE - 1;
-			static inline void Write( char const* Data, std::ostream& Stream ) {
-				char ReversedData[SIZE];
-				for( uint8_t Index = 0; Index < SIZE; ++Index ) {
-					ReversedData[LAST - Index] = Data[Index];
+		template<uint32_t Size>
+		struct ByteSerializer<Size, false> {
+			static constexpr size_t Last = Size - 1;
+			static inline void Write(char const* data, std::ostream& stream) {
+				char reversedData[Size];
+				for (uint8_t index = 0; index < Size; ++index) {
+					reversedData[Last - index] = data[index];
 				}
-				Stream.write( ReversedData, SIZE );
+				stream.write(reversedData, Size);
 			}
-			static inline void Read( char* Data, std::istream& Stream ) {
-				char ReversedData[SIZE];
-				Stream.read( ReversedData, SIZE );
-				for( uint8_t Index = 0; Index < SIZE; ++Index ) {
-					Data[Index] = ReversedData[LAST - Index];
+			static inline void Read(char* data, std::istream& stream) {
+				char reversedData[Size];
+				stream.read(reversedData, Size);
+				for (uint8_t index = 0; index < Size; ++index ) {
+					data[index] = reversedData[Last - index];
 				}
 			}
 		};
@@ -50,12 +48,12 @@ namespace Serialization {
 
 	/** Functions which implement serialization routines that read and write in little-endian format */
 	template<typename T>
-	void WriteLE( T const* Data, std::ostream& Stream ) {
-		ByteSerializer<sizeof(T), IsPlatformLittleEndian()>::Write( reinterpret_cast<char const*>( Data ), Stream );
+	void WriteLE(T const* data, std::ostream& stream) {
+		ByteSerializer<sizeof(T), IsPlatformLittleEndian()>::Write(reinterpret_cast<char const*>(data), stream);
 	}
 
 	template<typename T>
-	void ReadLE( T* Data, std::istream& Stream ) {
-		ByteSerializer<sizeof(T), IsPlatformLittleEndian()>::Read( reinterpret_cast<char*>( Data ), Stream );
+	void ReadLE(T* data, std::istream& stream) {
+		ByteSerializer<sizeof(T), IsPlatformLittleEndian()>::Read(reinterpret_cast<char*>(data), stream);
 	}
 }

@@ -9,12 +9,12 @@ namespace Reflection {
 
 namespace Serialization {
 	struct StructSerializer : public ISerializer {
-		bool SerializeBinary(Reflection::TypeInfo const& Info, void const* Data, std::ostream& Stream) const final;
-		bool DeserializeBinary(Reflection::TypeInfo const& Info, void* Data, std::istream& Stream) const final;
+		bool SerializeBinary(Reflection::TypeInfo const& type, void const* data, std::ostream& stream) const final;
+		bool DeserializeBinary(Reflection::TypeInfo const& type, void* data, std::istream& stream) const final;
 
 	private:
-		static void WriteVariableIdentifier(Reflection::VariableInfo const& VariableInfo, std::ostream& Stream);
-		static Reflection::VariableInfo const* ReadVariableIdentifier(Reflection::StructTypeInfo const& Info, std::istream& Stream );
+		static void WriteVariableIdentifier(Reflection::VariableInfo const& variableInfo, std::ostream& stream);
+		static Reflection::VariableInfo const* ReadVariableIdentifier(Reflection::StructTypeInfo const& structType, std::istream& stream);
 	};
-	static const StructSerializer DefaultStructSerializer{};
+	static const StructSerializer defaultStructSerializer{};
 }

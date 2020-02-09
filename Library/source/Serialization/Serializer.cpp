@@ -3,17 +3,17 @@
 #include "Serialization/StructSerializer.h"
 #include "Reflection/TypeInfo.h"
 
-bool Serialization::CanSerializeType(Reflection::TypeInfo const& Info) {
-	return !!Info.serializer;
+bool Serialization::CanSerializeType(Reflection::TypeInfo const& info) {
+	return !!info.serializer;
 }
-bool Serialization::ShouldSerializeType(Reflection::TypeInfo const& Info) {
-	return CanSerializeType(Info) && (Info.flags.Has(Reflection::ETypeFlags::Serializable));
-}
-
-bool Serialization::SerializeTypeBinary(Reflection::TypeInfo const& Info, void const* Data, std::ostream& Stream) {
-	return Info.serializer->SerializeBinary(Info, Data, Stream);
+bool Serialization::ShouldSerializeType(Reflection::TypeInfo const& info) {
+	return CanSerializeType(info) && (info.flags.Has(Reflection::ETypeFlags::Serializable));
 }
 
-bool Serialization::DeserializeTypeBinary(Reflection::TypeInfo const& Info, void* Data, std::istream& Stream) {
-	return Info.serializer->DeserializeBinary(Info, Data, Stream);
+bool Serialization::SerializeTypeBinary(Reflection::TypeInfo const& info, void const* data, std::ostream& stream) {
+	return info.serializer->SerializeBinary(info, data, stream);
+}
+
+bool Serialization::DeserializeTypeBinary(Reflection::TypeInfo const& info, void* data, std::istream& stream) {
+	return info.serializer->DeserializeBinary(info, data, stream);
 }

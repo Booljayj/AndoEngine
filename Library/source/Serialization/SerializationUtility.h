@@ -16,12 +16,12 @@ namespace Serialization {
 	 * Writes block metadata and seeks to the next write position when destructed.
 	 */
 	struct ScopedDataBlockWrite {
-		ScopedDataBlockWrite(std::ostream& Stream);
+		ScopedDataBlockWrite(std::ostream& stream);
 		~ScopedDataBlockWrite();
 
 	private:
-		std::ostream* StreamPtr;
-		std::streampos WriteStartPosition;
+		std::ostream* streamPtr;
+		std::streampos writeStartPosition;
 	};
 
 	/**
@@ -30,7 +30,7 @@ namespace Serialization {
 	 * Can be used to keep track of the read, including how much more data is available from the data block.
 	 */
 	struct ScopedDataBlockRead {
-		ScopedDataBlockRead(std::istream& Stream);
+		ScopedDataBlockRead(std::istream& stream);
 		~ScopedDataBlockRead();
 
 		/** Get the number of bytes that remain to be read from the stream */
@@ -39,10 +39,10 @@ namespace Serialization {
 		void SkipNestedBlock() const;
 
 	private:
-		std::istream* StreamPtr;
-		std::streampos ReadEndPosition;
+		std::istream* streamPtr;
+		std::streampos readEndPosition;
 	};
 
 	/** Reset the stringstream contents */
-	void ResetStream(std::stringstream& Stream);
+	void ResetStream(std::stringstream& stream);
 }

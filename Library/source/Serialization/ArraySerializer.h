@@ -8,8 +8,8 @@ namespace Reflection {
 
 namespace Serialization {
 	struct ArraySerializer : public ISerializer {
-		bool SerializeBinary(Reflection::TypeInfo const& Info, void const* Data, std::ostream& Stream) const final;
-		bool DeserializeBinary(Reflection::TypeInfo const& Info, void* Data, std::istream& Stream) const final;
+		bool SerializeBinary(Reflection::TypeInfo const& type, void const* data, std::ostream& stream) const final;
+		bool DeserializeBinary(Reflection::TypeInfo const& type, void* data, std::istream& stream) const final;
 	};
-	static const ArraySerializer DefaultArraySerializer{};
+	static const ArraySerializer defaultArraySerializer{};
 }
