@@ -3,6 +3,7 @@
 #include <type_traits>
 #include "Engine/Context.h"
 #include "Engine/Logging/LogCategory.h"
+#include "Engine/LinearStrings.h"
 
 #ifndef MINIMUM_LOG_VERBOSITY
 #define MINIMUM_LOG_VERBOSITY ELogVerbosity::Debug

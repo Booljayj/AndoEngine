@@ -13,7 +13,7 @@ struct TArrayView {
 	//Create from an iterable container
 	template<typename ArrayType>
 	constexpr TArrayView(ArrayType const& Array)
-	: Begin(Array.begin()), Size(Array.end() - Array.begin())
+	: Begin(Array.data()), Size(Array.end() - Array.begin())
 	{}
 
 	constexpr inline T const& operator[](size_t Index) const { return Begin[Index]; }
