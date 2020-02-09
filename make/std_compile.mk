@@ -35,7 +35,7 @@ RM := rm -rf
 MKDIR := mkdir -p
 
 # flags (appended to existing defined flags)
-CXXFLAGS := $(CXXFLAGS) -std=gnu++14 -g -Wall -c -MMD -MP -I./$(DIR_SOURCE) -I./$(DIR_GENERATED)
+CXXFLAGS := $(CXXFLAGS) -std=gnu++17 -g -Wall -c -MMD -MP -I./$(DIR_SOURCE) -I./$(DIR_GENERATED)
 LDFLAGS := $(LDFLAGS)
 ARFLAGS := -static -o
 
