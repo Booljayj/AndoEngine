@@ -41,3 +41,48 @@ constexpr inline EnumType& operator-=(EnumType& A, EnumType B) noexcept { A = A 
 constexpr inline bool operator<(EnumType A, EnumType B) noexcept { return ((+A) & (+B)) != 0; }\
 constexpr inline bool operator*(EnumType A, EnumType B) noexcept { return ((+A) & (+B)) != 0; }\
 constexpr inline bool operator/(EnumType A, EnumType B) noexcept { return ((+A) & (+B)) == (+B); }\
+
+template<typename EnumType_>
+struct TFlags {
+public:
+	using EnumType = EnumType_;
+	using UnderlyingType = typename std::underlying_type<EnumType>::type;
+
+	constexpr inline TFlags() : Flags(0) {}
+	constexpr inline TFlags(const TFlags& Other) : Flags(Other.Flags) {}
+	constexpr inline TFlags(UnderlyingType InFlags) : Flags(InFlags) {}
+	constexpr inline TFlags(EnumType InFlag) : Flags(1 << (UnderlyingType)InFlag) {}
+
+	constexpr inline bool operator==(TFlags Other) const noexcept { return Flags == Other.Flags; }
+	constexpr inline bool operator!=(TFlags Other) const noexcept { return Flags != Other.Flags; }
+
+	/** Get the underlying integer value for this set of flags */
+	constexpr inline UnderlyingType operator+() noexcept { return Flags; }
+
+	/** Add a value to the set of flags */
+	constexpr inline TFlags operator+(EnumType Value) const { return Flags | (1 << (UnderlyingType)Value); }
+	constexpr inline TFlags& operator+=(EnumType Value) { *this = *this + Value; return *this; }
+	/** Remove a value from the set of flags */
+	constexpr inline TFlags operator-(EnumType Value) const { return Flags & ~(1 << (UnderlyingType)Value); }
+	constexpr inline TFlags& operator-=(EnumType Value) { *this = *this - Value; return *this; }
+
+	/** Returns the set of flags in this or the other */
+	constexpr inline TFlags Union(TFlags Other) const noexcept { return Flags | Other.Flags; }
+	/** Returns the set of flags in this but without the flags in other */
+	constexpr inline TFlags Subtraction(TFlags Other) const noexcept { return Flags & ~Other.Flags; }
+	/** Returns the set of common flags in both this and the other */
+	constexpr inline TFlags Intersection(TFlags Other) const noexcept { return Flags & Other.Flags; }
+	/** Returns the set of flags that are different in this and the other */
+	constexpr inline TFlags Difference(TFlags Other) const noexcept { return Flags ^ Other.Flags; }
+
+	/** True if this set of flags contains the value */
+	constexpr inline bool Has(EnumType Value) const noexcept { return (Flags & (1 << (UnderlyingType)Value)) != 0; }
+	/** True if this set of flags contains no values */
+	constexpr inline bool IsEmpty() const noexcept { return !!Flags; }
+
+	/** True if this set of flags is a strict subset of another set of flags */
+	constexpr inline bool IsSubsetOf(TFlags Other) const noexcept { return Intersection(Difference(Other)).IsEmpty(); }
+
+private:
+	UnderlyingType Flags;
+};
