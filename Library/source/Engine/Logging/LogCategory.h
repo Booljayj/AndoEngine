@@ -21,10 +21,10 @@ public:
 	inline void SetShownVerbosity( ELogVerbosity newVerbosity ) { verbosity.store( newVerbosity ); }
 };
 
-#define DECLARE_LOG_CATEGORY(NAME)\
-extern LogCategory Log ## NAME
+#define DECLARE_LOG_CATEGORY(Name)\
+extern LogCategory Log ## Name
 
-#define DEFINE_LOG_CATEGORY(NAME, INITIAL_VERBOSITY)\
-LogCategory Log ## NAME{ "[" #NAME "]", ELogVerbosity::INITIAL_VERBOSITY }
+#define DEFINE_LOG_CATEGORY(Name, InitialVerbosity)\
+LogCategory Log ## Name{ "[" #Name "]", ELogVerbosity::InitialVerbosity }
 
 DECLARE_LOG_CATEGORY(Temp);

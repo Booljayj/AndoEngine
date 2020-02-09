@@ -3,8 +3,8 @@
 #include "Reflection/TypeInfo.h"
 #include "Serialization/PrimitiveSerializer.h"
 
-#define DEFINE_PRIMITIVE_TYPEINFO(TYPE, DESCRIPTION)\
-TPrimitiveTypeInfo<TYPE> const typeInfo_##TYPE { DESCRIPTION, FTypeFlags::None, nullptr }
+#define DEFINE_PRIMITIVE_TYPEINFO(Type, Description)\
+TPrimitiveTypeInfo<Type> const typeInfo_##Type { Description, FTypeFlags::None, nullptr }
 
 namespace Reflection {
 	namespace Internal {

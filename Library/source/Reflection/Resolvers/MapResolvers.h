@@ -5,15 +5,15 @@
 #include "Reflection/TypeResolver.h"
 #include "Reflection/MapTypeInfo.h"
 
-#define L_MAP_TYPE_RESOLVER(MAP_TEMPLATE, DESCRIPTION)\
+#define L_MAP_TYPE_RESOLVER(MapTemplate, Description)\
 template<typename KeyType, typename ValueType>\
-struct TypeResolver_Implementation<MAP_TEMPLATE<KeyType, ValueType>> {\
-	static TMapTypeInfo<MAP_TEMPLATE<KeyType, ValueType>, KeyType, ValueType> const typeInfo;\
+struct TypeResolver_Implementation<MapTemplate<KeyType, ValueType>> {\
+	static TMapTypeInfo<MapTemplate<KeyType, ValueType>, KeyType, ValueType> const typeInfo;\
 	static TypeInfo const* Get() { return &typeInfo; }\
-	static constexpr Hash128 GetID() { return Hash128{ #MAP_TEMPLATE } + TypeResolver<KeyType>::GetID() + TypeResolver<ValueType>::GetID(); }\
+	static constexpr Hash128 GetID() { return Hash128{ #MapTemplate } + TypeResolver<KeyType>::GetID() + TypeResolver<ValueType>::GetID(); }\
 };\
 template<typename KeyType, typename ValueType>\
-TMapTypeInfo<MAP_TEMPLATE<KeyType, ValueType>, KeyType, ValueType> const TypeResolver_Implementation<MAP_TEMPLATE<KeyType, ValueType>>::typeInfo{ DESCRIPTION, FTypeFlags::None, nullptr }
+TMapTypeInfo<MapTemplate<KeyType, ValueType>, KeyType, ValueType> const TypeResolver_Implementation<MapTemplate<KeyType, ValueType>>::typeInfo{ Description, FTypeFlags::None, nullptr }
 
 namespace Reflection {
 	namespace Internal {

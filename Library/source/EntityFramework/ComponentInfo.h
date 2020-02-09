@@ -6,8 +6,8 @@
 
 DECLARE_LOG_CATEGORY(Component);
 
-#define CREATE_COMPONENT(id, NAME, TYPE, MANAGER_INIT)\
-auto NAME##manager = MANAGER_INIT; TComponentInfo<TYPE> NAME{id, #NAME, &NAME##manager}
+#define CREATE_COMPONENT(ID, Name, Type, ManagerInit)\
+auto Name##manager = ManagerInit; TComponentInfo<Type> Name{ID, #Name, &Name##manager}
 
 /** Represents a component that can be owned by an entity */
 struct ComponentInfo {

@@ -2,15 +2,15 @@
 #include "Engine/LogCommands.h"
 //General macro utilities for entity-related functions
 
-#define STARTUP_SYSTEM(CAT, SYS_NAME, ...)\
-LOG(CAT, Info, "Startup "#SYS_NAME);\
-if (!SYS_NAME.Startup(CTX, ##__VA_ARGS__)) {\
-	LOG(CAT, Error, "Failed to startup " #SYS_NAME);\
+#define STARTUP_SYSTEM(Category, SystemName, ...)\
+LOG(Category, Info, "Startup "#SystemName);\
+if (!SystemName.Startup(CTX, ##__VA_ARGS__)) {\
+	LOG(Category, Error, "Failed to startup " #SystemName);\
 	return false;\
 }
 
-#define SHUTDOWN_SYSTEM(CAT, SYS_NAME)\
-LOG(CAT, Info, "Shutdown "#SYS_NAME);\
-if (!SYS_NAME.Shutdown(CTX)) {\
-	LOG(CAT, Error, "Failed to shutdown " #SYS_NAME);\
+#define SHUTDOWN_SYSTEM(Category, SystemName)\
+LOG(Category, Info, "Shutdown "#SystemName);\
+if (!SystemName.Shutdown(CTX)) {\
+	LOG(Category, Error, "Failed to shutdown " #SystemName);\
 }

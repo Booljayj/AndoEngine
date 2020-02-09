@@ -9,15 +9,15 @@
 #include "Reflection/ArrayTypeInfo.h"
 #include "Serialization/ArraySerializer.h"
 
-#define L_DYNAMIC_ARRAY_RESOLVER(ARRAY_TEMPLATE, DESCRIPTION)\
+#define L_DYNAMIC_ARRAY_RESOLVER(ArrayTemplate, Description)\
 template<typename ElementType>\
-struct TypeResolver_Implementation<ARRAY_TEMPLATE<ElementType>> {\
-	static TDynamicArrayTypeInfo<ARRAY_TEMPLATE<ElementType>, ElementType> const typeInfo;\
+struct TypeResolver_Implementation<ArrayTemplate<ElementType>> {\
+	static TDynamicArrayTypeInfo<ArrayTemplate<ElementType>, ElementType> const typeInfo;\
 	static TypeInfo const* Get() { return &typeInfo; }\
-	static constexpr Hash128 GetID() { return Hash128{ #ARRAY_TEMPLATE } + TypeResolver<ElementType>::GetID(); }\
+	static constexpr Hash128 GetID() { return Hash128{ #ArrayTemplate } + TypeResolver<ElementType>::GetID(); }\
 };\
 template<typename ElementType>\
-TDynamicArrayTypeInfo<ARRAY_TEMPLATE<ElementType>, ElementType> const TypeResolver_Implementation<ARRAY_TEMPLATE<ElementType>>::typeInfo{ DESCRIPTION, FTypeFlags::None, &Serialization::defaultArraySerializer }
+TDynamicArrayTypeInfo<ArrayTemplate<ElementType>, ElementType> const TypeResolver_Implementation<ArrayTemplate<ElementType>>::typeInfo{ Description, FTypeFlags::None, &Serialization::defaultArraySerializer }
 
 namespace Reflection {
 	namespace Internal {

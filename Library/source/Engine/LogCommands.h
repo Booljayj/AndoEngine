@@ -37,12 +37,12 @@ namespace LoggingInternal {
 #define LOCATION (__FILE__ ":" S2(__LINE__))
 
 /** Log a message to the current context's logger */
-#define LOG(CAT, VERBOSITY, MESSAGE) LoggingInternal::LogHelper<ELogVerbosity::VERBOSITY>(CTX, CAT, LOCATION, MESSAGE)
+#define LOG(Category, Verbosity, Message) LoggingInternal::LogHelper<ELogVerbosity::Verbosity>(CTX, Category, LOCATION, Message)
 /** Log a formatted message to the current context's logger */
-#define LOGF(CAT, VERBOSITY, MESSAGE, ...) LoggingInternal::LogFormattedHelper<ELogVerbosity::VERBOSITY>(CTX, CAT, LOCATION, MESSAGE, __VA_ARGS__)
+#define LOGF(Category, Verbosity, Message, ...) LoggingInternal::LogFormattedHelper<ELogVerbosity::Verbosity>(CTX, Category, LOCATION, Message, __VA_ARGS__)
 
 #else
-#define LOG(CAT, VERBOSITY, MESSAGE)
-#define LOGF(CAT, VERBOSITY, MESSAGE, ...)
+#define LOG(Category, Verbosity, Message)
+#define LOGF(Category, Verbosity, Message, ...)
 
 #endif

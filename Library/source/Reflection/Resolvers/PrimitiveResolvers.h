@@ -4,11 +4,11 @@
 #include "Engine/Hash.h"
 #include "Reflection/PrimitiveTypeInfo.h"
 
-#define L_DECLARE_PRIMITIVE_TYPEINFO(TYPE)\
-extern TPrimitiveTypeInfo<TYPE> const typeInfo_##TYPE;\
-template<> struct TypeResolver_Implementation<TYPE> {\
-	static TypeInfo const* Get() { return &typeInfo_##TYPE; }\
-	static constexpr Hash128 GetID() { return Hash128{ #TYPE }; }\
+#define L_DECLARE_PRIMITIVE_TYPEINFO(Type)\
+extern TPrimitiveTypeInfo<Type> const typeInfo_##Type;\
+template<> struct TypeResolver_Implementation<Type> {\
+	static TypeInfo const* Get() { return &typeInfo_##Type; }\
+	static constexpr Hash128 GetID() { return Hash128{ #Type }; }\
 }
 
 namespace Reflection {

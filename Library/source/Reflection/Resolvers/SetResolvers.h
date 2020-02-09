@@ -5,15 +5,15 @@
 #include "Reflection/TypeResolver.h"
 #include "Reflection/SetTypeInfo.h"
 
-#define L_SET_TYPE_RESOLVER(SET_TEMPLATE, DESCRIPTION)\
+#define L_SET_TYPE_RESOLVER(SetTemplate, Description)\
 template<typename ValueType>\
-struct TypeResolver_Implementation<SET_TEMPLATE<ValueType>> {\
-	static TSetTypeInfo<SET_TEMPLATE<ValueType>, ValueType> const typeInfo;\
+struct TypeResolver_Implementation<SetTemplate<ValueType>> {\
+	static TSetTypeInfo<SetTemplate<ValueType>, ValueType> const typeInfo;\
 	static TypeInfo const* Get() { return &typeInfo; }\
-	static constexpr Hash128 GetID() { return Hash128{ #SET_TEMPLATE } + TypeResolver<ValueType>::GetID(); }\
+	static constexpr Hash128 GetID() { return Hash128{ #SetTemplate } + TypeResolver<ValueType>::GetID(); }\
 };\
 template<typename ValueType>\
-TSetTypeInfo<SET_TEMPLATE<ValueType>, ValueType> const TypeResolver_Implementation<SET_TEMPLATE<ValueType>>::typeInfo{ DESCRIPTION, FTypeFlags::None, nullptr }
+TSetTypeInfo<SetTemplate<ValueType>, ValueType> const TypeResolver_Implementation<SetTemplate<ValueType>>::typeInfo{ Description, FTypeFlags::None, nullptr }
 
 namespace Reflection {
 	namespace Internal {
