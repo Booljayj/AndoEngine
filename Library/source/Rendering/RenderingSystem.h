@@ -6,7 +6,7 @@
 #include "Engine/Logging/Logger.h"
 #include "EntityFramework/ComponentInfo.h"
 #include "EntityFramework/EntityFilter.h"
-#include "Rendering/Vulkan/VulkanApplication.h"
+#include "Rendering/Vulkan/VulkanFramework.h"
 #include "Rendering/Vulkan/VulkanLogicalDevice.h"
 #include "Rendering/Vulkan/VulkanPhysicalDevice.h"
 #include "Rendering/Vulkan/VulkanSwapchain.h"
@@ -23,8 +23,8 @@ private:
 	TComponentHandle<TransformComponent> transformHandle;
 	TComponentHandle<MeshRendererComponent> meshRendererHandle;
 
-	/** The vulkan application instance for this application */
-	Rendering::VulkanApplication application;
+	/** The vulkan framework for this application */
+	Rendering::VulkanFramework framework;
 
 	/** The enabled features on any physical device that this application uses */
 	VkPhysicalDeviceFeatures enabledFeatures;

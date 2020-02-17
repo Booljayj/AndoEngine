@@ -32,7 +32,7 @@ bool RenderingSystem::Startup(
 	}
 
 	// Vulkan instance
-	if (!application.Create(CTX, windowSystem->GetMainWindow())) {
+	if (!framework.Create(CTX, windowSystem->GetMainWindow())) {
 		LOG(LogTemp, Error, "Failed to create the Vulkan application");
 	}
 
@@ -41,12 +41,12 @@ bool RenderingSystem::Startup(
 		TArrayView<char const*> const extensionNames = Rendering::VulkanPhysicalDevice::GetExtensionNames(CTX);
 
 		uint32_t deviceCount = 0;
-		vkEnumeratePhysicalDevices(application.instance, &deviceCount, nullptr);
+		vkEnumeratePhysicalDevices(framework.instance, &deviceCount, nullptr);
 		VkPhysicalDevice* devices = CTX.temp.Request<VkPhysicalDevice>(deviceCount);
-		vkEnumeratePhysicalDevices(application.instance, &deviceCount, devices);
+		vkEnumeratePhysicalDevices(framework.instance, &deviceCount, devices);
 
 		for (int32_t deviceIndex = 0; deviceIndex < deviceCount; ++deviceIndex) {
-			const Rendering::VulkanPhysicalDevice physicalDevice = Rendering::VulkanPhysicalDevice::Get(CTX, devices[deviceIndex], application.surface);
+			const Rendering::VulkanPhysicalDevice physicalDevice = Rendering::VulkanPhysicalDevice::Get(CTX, devices[deviceIndex], framework.surface);
 			if (IsUsablePhysicalDevice(physicalDevice, extensionNames)) {
 				availablePhysicalDevices.push_back(physicalDevice);
 			}
@@ -69,7 +69,7 @@ bool RenderingSystem::Startup(
 	return true;
 	{
 		shouldRecreateSwapchain = false;
-		if (!swapchain.Create(CTX, VkExtent2D{1024, 768}, application.surface, *GetPhysicalDevice(selectedPhysicalDeviceIndex), logicalDevice.device)) {
+		if (!swapchain.Create(CTX, VkExtent2D{1024, 768}, framework.surface, *GetPhysicalDevice(selectedPhysicalDeviceIndex), logicalDevice.device)) {
 			LOG(LogTemp, Error, "Failed to create the swapchain");
 			return false;
 		}
@@ -81,7 +81,7 @@ bool RenderingSystem::Startup(
 bool RenderingSystem::Shutdown(CTX_ARG) {
 	swapchain.Destroy(logicalDevice.device);
 	logicalDevice.Destroy();
-	application.Destroy();
+	framework.Destroy();
 	return true;
 }
 

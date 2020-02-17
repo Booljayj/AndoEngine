@@ -1,11 +1,11 @@
 #include <SDL2/SDL_vulkan.h>
 #include "Engine/ScopedTempBlock.h"
 #include "Engine/LogCommands.h"
-#include "Rendering/Vulkan/VulkanApplication.h"
+#include "Rendering/Vulkan/VulkanFramework.h"
 #include "Rendering/Vulkan/VulkanDebug.h"
 
 namespace Rendering {
-	bool VulkanApplication::Create(CTX_ARG, SDL_Window* window) {
+	bool VulkanFramework::Create(CTX_ARG, SDL_Window* window) {
 		TEMP_SCOPE;
 
 		//Information to create a debug messenger, used in several locations within this function.
@@ -78,19 +78,19 @@ namespace Rendering {
 		return true;
 	}
 
-	void VulkanApplication::Destroy() {
+	void VulkanFramework::Destroy() {
 		if (!!messenger) DestroyDebugUtilsMessengerEXT(instance, messenger, nullptr);
 		if (!!surface) vkDestroySurfaceKHR(instance, surface, nullptr);
 		if (!!instance) vkDestroyInstance(instance, nullptr);
 	}
 
-	TArrayView<char const*> VulkanApplication::GetValidationLayerNames(CTX_ARG) {
+	TArrayView<char const*> VulkanFramework::GetValidationLayerNames(CTX_ARG) {
 		constexpr uint32_t enabledLayerCount = 1;
 		static char const* enabledLayerNames[enabledLayerCount] = {"VK_LAYER_KHRONOS_validation"};
 		return TArrayView<char const*>{enabledLayerNames, enabledLayerCount};
 	}
 
-	bool VulkanApplication::CanEnableValidationLayers(CTX_ARG, TArrayView<char const*> const& enabledLayerNames) {
+	bool VulkanFramework::CanEnableValidationLayers(CTX_ARG, TArrayView<char const*> const& enabledLayerNames) {
 		TEMP_SCOPE;
 
 		uint32_t availableLayerCount;
@@ -112,7 +112,7 @@ namespace Rendering {
 		return true;
 	}
 
-	TArrayView<char const*> VulkanApplication::GetExtensionsNames(CTX_ARG, SDL_Window* window) {
+	TArrayView<char const*> VulkanFramework::GetExtensionsNames(CTX_ARG, SDL_Window* window) {
 		constexpr uint32_t debugExtensionCount = 1;
 		static char const* debugExtensionNames[debugExtensionCount] = {VK_EXT_DEBUG_UTILS_EXTENSION_NAME};
 
@@ -129,7 +129,7 @@ namespace Rendering {
 		return TArrayView<char const*>{extensionNames, extensionCount};
 	}
 
-	bool VulkanApplication::CanEnableExtensions(CTX_ARG, TArrayView<char const*> const& enabledExtensionNames) {
+	bool VulkanFramework::CanEnableExtensions(CTX_ARG, TArrayView<char const*> const& enabledExtensionNames) {
 		TEMP_SCOPE;
 
 		uint32_t availableExtensionCount;

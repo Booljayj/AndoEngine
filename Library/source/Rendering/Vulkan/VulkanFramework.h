@@ -7,7 +7,7 @@
 struct SDL_Window;
 
 namespace Rendering {
-	struct VulkanApplication {
+	struct VulkanFramework {
 		/** The underlying vulkan instance */
 		VkInstance instance;
 		/** The surface tied to the window */
