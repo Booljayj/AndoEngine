@@ -1,4 +1,5 @@
 #pragma once
+#include "Engine/Context.h"
 #include "Rendering/Vulkan/VulkanCommon.h"
 
 namespace Rendering {
@@ -7,6 +8,8 @@ namespace Rendering {
 		VkDebugUtilsMessageTypeFlagsEXT messageType,
 		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
 		void* pUserData);
+
+	VkDebugUtilsMessengerCreateInfoEXT GetDebugUtilsMessengerCreateInfo(CTX_ARG);
 
 	VkResult CreateDebugUtilsMessengerEXT(
 		VkInstance instance,

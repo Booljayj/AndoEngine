@@ -3,9 +3,12 @@
 #include "Rendering/Vulkan/VulkanPhysicalDevice.h"
 #include "Rendering/Vulkan/VulkanVersion.h"
 
+#include <iostream>
+
 namespace Rendering {
 	VulkanPhysicalDevice VulkanPhysicalDevice::Get(CTX_ARG, VkPhysicalDevice const& device, VkSurfaceKHR const& surface) {
 		TEMP_SCOPE;
+
 		VulkanPhysicalDevice Result;
 		Result.device = device;
 		vkGetPhysicalDeviceProperties(device, &Result.properties);
@@ -14,12 +17,12 @@ namespace Rendering {
 		{
 			uint32_t extensionCount = 0;
 			vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
-			VkExtensionProperties* supportedExtensions = CTX.temp.Request<VkExtensionProperties>(extensionCount);
-			vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, supportedExtensions);
+			VkExtensionProperties* extensions = CTX.temp.Request<VkExtensionProperties>(extensionCount);
+			vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, extensions);
 
-			Result.extensions.reserve(extensionCount);
+			Result.supportedExtensions.reserve(extensionCount);
 			for (uint32_t index = 0; index < extensionCount; ++index) {
-				Result.extensions.push_back(std::string{supportedExtensions[index].extensionName});
+				Result.supportedExtensions.push_back(std::string{extensions[index].extensionName});
 			}
 		}
 		{
@@ -62,16 +65,28 @@ namespace Rendering {
 		return Result;
 	}
 
+	TArrayView<char const*> VulkanPhysicalDevice::GetExtensionNames(CTX_ARG) {
+		constexpr size_t extensionCount = 1;
+		static char const* extensionNames[extensionCount] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+		return TArrayView<char const*>{extensionNames, extensionCount};
+	}
+
 	bool VulkanPhysicalDevice::HasRequiredQueues() const {
 		return queues.graphics.has_value() && queues.present.has_value();
 	}
 
-	bool VulkanPhysicalDevice::HasRequiredExtensions(std::set<std::string_view> const& requiredExtensions) const {
-		uint32_t requiredExtensionsSatisfied = 0;
-		for (std::string const& extension : extensions) {
-			requiredExtensionsSatisfied += requiredExtensions.count(extension);
+	bool VulkanPhysicalDevice::HasRequiredExtensions(TArrayView<char const*> const& requiredExtensionNames) const {
+		for (char const* requiredExtensionName : requiredExtensionNames) {
+			bool foundExtension = false;
+			for (std::string const& supportedExtension : supportedExtensions) {
+				if (strcmp(requiredExtensionName, supportedExtension.c_str()) == 0) {
+					foundExtension = true;
+					break;
+				}
+			}
+			if (!foundExtension) return false;
 		}
-		return requiredExtensionsSatisfied == requiredExtensions.size();
+		return true;
 	}
 
 	bool VulkanPhysicalDevice::HasSwapchainSupport() const {
@@ -126,12 +141,12 @@ namespace Rendering {
 		stream << "Supported Extensions:" << std::endl;
 
 		constexpr size_t groupSize = 4;
-		const size_t extensionCount = extensions.size();
-		for (size_t groupBegin = 0; groupBegin < extensionCount; groupBegin += groupSize) {
-			const size_t groupEnd = std::min(groupBegin + groupSize, extensionCount);
+		const size_t supportedExtensionCount = supportedExtensions.size();
+		for (size_t groupBegin = 0; groupBegin < supportedExtensionCount; groupBegin += groupSize) {
+			const size_t groupEnd = std::min(groupBegin + groupSize, supportedExtensionCount);
 			stream << "\t";
 			for (size_t extensionIndex = groupBegin; extensionIndex < groupEnd; ++extensionIndex) {
-				stream << extensions[extensionIndex] << ", ";
+				stream << supportedExtensions[extensionIndex] << ", ";
 			}
 			stream << std::endl;
 		}

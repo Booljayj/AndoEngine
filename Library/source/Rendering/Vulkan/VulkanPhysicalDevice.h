@@ -3,6 +3,7 @@
 #include <optional>
 #include <ostream>
 #include <vulkan/vulkan.h>
+#include "Engine/ArrayView.h"
 #include "Engine/Context.h"
 
 namespace Rendering {
@@ -20,7 +21,7 @@ namespace Rendering {
 		/** The features available on this physical device */
 		VkPhysicalDeviceFeatures features;
 		/** The names of all extensions supported on this physical device */
-		std::vector<std::string> extensions;
+		std::vector<std::string> supportedExtensions;
 
 		/** Details about surface, format, and present mode support on this device */
 		struct {
@@ -38,10 +39,12 @@ namespace Rendering {
 		/** Get the information for a device that will be used with a surface */
 		static VulkanPhysicalDevice Get(CTX_ARG, VkPhysicalDevice const& device, VkSurfaceKHR const& surface);
 
+		static TArrayView<char const*> GetExtensionNames(CTX_ARG);
+
 		/** True if the device has all the queues required to be used */
 		bool HasRequiredQueues() const;
 		/** True if the device has all the extensions required to be used */
-		bool HasRequiredExtensions(std::set<std::string_view> const& requiredExtensions) const;
+		bool HasRequiredExtensions(TArrayView<char const*> const& extensionNames) const;
 		/** True if the device is capable of creating SwapChains */
 		bool HasSwapchainSupport() const;
 

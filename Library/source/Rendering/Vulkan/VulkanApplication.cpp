@@ -8,6 +8,9 @@ namespace Rendering {
 	bool VulkanApplication::Create(CTX_ARG, SDL_Window* window) {
 		TEMP_SCOPE;
 
+		//Information to create a debug messenger, used in several locations within this function.
+		VkDebugUtilsMessengerCreateInfoEXT const messengerCI = Rendering::GetDebugUtilsMessengerCreateInfo(CTX);
+
 		// Vulkan Instance
 		{
 			//Check for validation layer support
@@ -40,12 +43,15 @@ namespace Rendering {
 			VkInstanceCreateInfo instanceCI = {};
 			instanceCI.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 			instanceCI.pApplicationInfo = &appInfo;
-			//Validation layers
-			instanceCI.enabledLayerCount = enabledLayerNames.size();
-			instanceCI.ppEnabledLayerNames = enabledLayerNames.begin();
 			//Extensions
 			instanceCI.enabledExtensionCount = enabledExtensionNames.size();
 			instanceCI.ppEnabledExtensionNames = enabledExtensionNames.begin();
+
+			//Validation layers
+			instanceCI.enabledLayerCount = enabledLayerNames.size();
+			instanceCI.ppEnabledLayerNames = enabledLayerNames.begin();
+			//Debug messenger for messages that are sent during instance creation
+			instanceCI.pNext = &messengerCI;
 
 			if (vkCreateInstance(&instanceCI, nullptr, &instance) != VK_SUCCESS) {
 				LOG(LogVulkan, Error, "Failed to create Vulkan instance");
@@ -63,20 +69,6 @@ namespace Rendering {
 
 		// Vulkan Messenger
 		{
-			VkDebugUtilsMessengerCreateInfoEXT messengerCI = {};
-			messengerCI.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-			messengerCI.messageSeverity =
-				VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-				VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
-				VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-				VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-			messengerCI.messageType =
-				//VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-				VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-				VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-			messengerCI.pfnUserCallback = &Rendering::VulkanDebugCallback;
-			messengerCI.pUserData = &CTX;
-
 			if (CreateDebugUtilsMessengerEXT(instance, &messengerCI, nullptr, &messenger) != VK_SUCCESS) {
 				LOG(LogVulkan, Error, "Failed to create debug messenger");
 				return false;
@@ -115,7 +107,6 @@ namespace Rendering {
 					break;
 				}
 			}
-
 			if (!layerFound) return false;
 		}
 		return true;
@@ -155,7 +146,6 @@ namespace Rendering {
 					break;
 				}
 			}
-
 			if (!extensionFound) return false;
 		}
 		return true;

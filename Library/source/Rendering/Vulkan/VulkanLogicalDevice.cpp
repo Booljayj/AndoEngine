@@ -3,9 +3,8 @@
 #include "Rendering/Vulkan/VulkanLogicalDevice.h"
 
 namespace Rendering {
-	bool VulkanLogicalDevice::Create(CTX_ARG, VulkanPhysicalDevice const& physicalDevice, VkPhysicalDeviceFeatures const& inEnabledFeatures) {
+	bool VulkanLogicalDevice::Create(CTX_ARG, VulkanPhysicalDevice const& physicalDevice, VkPhysicalDeviceFeatures const& enabledFeatures, TArrayView<char const*> const& enabledExtensionNames) {
 		TEMP_SCOPE;
-		enabledFeatures = inEnabledFeatures;
 
 		l_unordered_set<uint32_t> uniqueQueueFamilies{CTX.temp};
 		uniqueQueueFamilies.insert(physicalDevice.queues.graphics.value().index);
@@ -26,13 +25,18 @@ namespace Rendering {
 			queueCI.pQueuePriorities = &queuePriority;
 		}
 
-		VkDeviceCreateInfo deviceCreateInfo = {};
-		deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-		deviceCreateInfo.queueCreateInfoCount = queueCICount;
-		deviceCreateInfo.pQueueCreateInfos = queueCIs;
-		deviceCreateInfo.pEnabledFeatures = &enabledFeatures;
+		VkDeviceCreateInfo deviceCI = {};
+		deviceCI.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+		//Queues
+		deviceCI.queueCreateInfoCount = queueCICount;
+		deviceCI.pQueueCreateInfos = queueCIs;
+		//Features
+		deviceCI.pEnabledFeatures = &enabledFeatures;
+		//Extensions
+		deviceCI.enabledExtensionCount = enabledExtensionNames.size();
+		deviceCI.ppEnabledExtensionNames = enabledExtensionNames.begin();
 
-		vkCreateDevice(physicalDevice.device, &deviceCreateInfo, nullptr, &device);
+		vkCreateDevice(physicalDevice.device, &deviceCI, nullptr, &device);
 
 		if (device) {
 			vkGetDeviceQueue(device, physicalDevice.queues.graphics.value().index, 0, &queues.graphics);

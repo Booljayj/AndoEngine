@@ -26,8 +26,6 @@ private:
 	/** The vulkan application instance for this application */
 	Rendering::VulkanApplication application;
 
-	/** The extensions which the application requires */
-	std::set<std::string_view> requiredExtensions;
 	/** The enabled features on any physical device that this application uses */
 	VkPhysicalDeviceFeatures enabledFeatures;
 
@@ -68,5 +66,5 @@ public:
 	static void RenderComponent(MeshRendererComponent const* MeshRenderer);
 
 private:
-	bool IsUsablePhysicalDevice(const Rendering::VulkanPhysicalDevice& physicalDevice);
+	bool IsUsablePhysicalDevice(const Rendering::VulkanPhysicalDevice& physicalDevice, TArrayView<char const*> const& extensionNames);
 };

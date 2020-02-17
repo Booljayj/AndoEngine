@@ -38,6 +38,8 @@ bool RenderingSystem::Startup(
 
 	// Collect physical devices and select default one
 	{
+		TArrayView<char const*> const extensionNames = Rendering::VulkanPhysicalDevice::GetExtensionNames(CTX);
+
 		uint32_t deviceCount = 0;
 		vkEnumeratePhysicalDevices(application.instance, &deviceCount, nullptr);
 		VkPhysicalDevice* devices = CTX.temp.Request<VkPhysicalDevice>(deviceCount);
@@ -45,7 +47,7 @@ bool RenderingSystem::Startup(
 
 		for (int32_t deviceIndex = 0; deviceIndex < deviceCount; ++deviceIndex) {
 			const Rendering::VulkanPhysicalDevice physicalDevice = Rendering::VulkanPhysicalDevice::Get(CTX, devices[deviceIndex], application.surface);
-			if (IsUsablePhysicalDevice(physicalDevice)) {
+			if (IsUsablePhysicalDevice(physicalDevice, extensionNames)) {
 				availablePhysicalDevices.push_back(physicalDevice);
 			}
 		}
@@ -86,9 +88,10 @@ bool RenderingSystem::Shutdown(CTX_ARG) {
 bool RenderingSystem::SelectPhysicalDevice(CTX_ARG, uint32_t index) {
 	if (index != selectedPhysicalDeviceIndex) {
 		if (const Rendering::VulkanPhysicalDevice* physicalDevice = GetPhysicalDevice(index)) {
+			TArrayView<char const*> const extensionNames = Rendering::VulkanPhysicalDevice::GetExtensionNames(CTX);
 
 			logicalDevice.Destroy();
-			if (!logicalDevice.Create(CTX, *physicalDevice, enabledFeatures)) {
+			if (!logicalDevice.Create(CTX, *physicalDevice, enabledFeatures, extensionNames)) {
 				LOGF(LogTemp, Error, "Failed to create logical device for physical device %i", index);
 				return false;
 			}
@@ -120,6 +123,6 @@ void RenderingSystem::RenderComponent(MeshRendererComponent const* meshRenderer)
 	//}
 }
 
-bool RenderingSystem::IsUsablePhysicalDevice(const Rendering::VulkanPhysicalDevice& physicalDevice) {
-	return physicalDevice.HasRequiredQueues() && physicalDevice.HasRequiredExtensions(requiredExtensions) && physicalDevice.HasSwapchainSupport();
+bool RenderingSystem::IsUsablePhysicalDevice(const Rendering::VulkanPhysicalDevice& physicalDevice, TArrayView<char const*> const& extensionNames) {
+	return physicalDevice.HasRequiredQueues() && physicalDevice.HasRequiredExtensions(extensionNames) && physicalDevice.HasSwapchainSupport();
 }

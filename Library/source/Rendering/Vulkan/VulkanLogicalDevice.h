@@ -7,15 +7,13 @@ namespace Rendering {
 	struct VulkanLogicalDevice {
 		/** The underlying logical device */
 		VkDevice device = nullptr;
-		/** The features that are actually enabled for this device */
-		VkPhysicalDeviceFeatures enabledFeatures;
 
 		struct {
 			VkQueue present = nullptr;
 			VkQueue graphics = nullptr;
 		} queues;
 
-		bool Create(CTX_ARG, Rendering::VulkanPhysicalDevice const& physicalDevice, VkPhysicalDeviceFeatures const& inEnabledFeatures);
+		bool Create(CTX_ARG, Rendering::VulkanPhysicalDevice const& physicalDevice, VkPhysicalDeviceFeatures const& enabledFeatures, TArrayView<char const*> const& enabledExtensionNames);
 		void Destroy();
 	};
 }
