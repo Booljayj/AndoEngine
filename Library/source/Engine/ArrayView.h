@@ -5,15 +5,20 @@ template<typename T>
 struct TArrayView {
 	constexpr TArrayView() = default;
 
+	//Create from a pointer to the beginning of an array and the size of the array
+	constexpr TArrayView(T const* inBegin, size_t inSize)
+	: begin_(inBegin), size_(inSize)
+	{}
+
 	//Create from a single value
 	constexpr TArrayView(T const& value)
-	: begin_(&value), size_(1)
+	: TArrayView(&value, 1)
 	{}
 
 	//Create from an iterable container
 	template<typename ArrayType>
 	constexpr TArrayView(ArrayType const& array)
-	: begin_(array.data()), size_(array.end() - array.begin())
+	: TArrayView(array.data(), array.end() - array.begin())
 	{}
 
 	constexpr inline T const& operator[](size_t index) const { return begin_[index]; }
