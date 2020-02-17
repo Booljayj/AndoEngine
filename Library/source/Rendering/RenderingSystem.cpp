@@ -64,9 +64,6 @@ bool RenderingSystem::Startup(
 	}
 
 	//Create the swapchain
-
-	//Disabled for now, something seems to wrong with the underlying system calls
-	return true;
 	{
 		shouldRecreateSwapchain = false;
 		if (!swapchain.Create(CTX, VkExtent2D{1024, 768}, framework.surface, *GetPhysicalDevice(selectedPhysicalDeviceIndex), logicalDevice.device)) {

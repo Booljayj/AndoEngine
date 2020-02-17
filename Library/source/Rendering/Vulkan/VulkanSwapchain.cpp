@@ -57,7 +57,7 @@ namespace Rendering {
 			//The old swapchain that is being replaced, which will be destroyed after the new one is created.
 			swapchainCI.oldSwapchain = previousSwapchain;
 
-			bSuccess &= vkCreateSwapchainKHR(logicalDevice, &swapchainCI, nullptr, &swapchain);
+			bSuccess &= vkCreateSwapchainKHR(logicalDevice, &swapchainCI, nullptr, &swapchain) == VK_SUCCESS;
 		}
 
 		//Clean up the previous swapchain (regardless of whether the creation of the new one is a success)
