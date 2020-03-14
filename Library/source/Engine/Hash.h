@@ -82,6 +82,7 @@ public:
 		return first.operator+=(second);
 	}
 };
+constexpr Hash32 operator ""_h32(char const* p, size_t s) { return Hash32{std::string_view{p, s}, 0}; };
 
 /** A 64-bit string hash */
 struct Hash64 {
@@ -153,6 +154,7 @@ public:
 		return first.operator+=(second);
 	}
 };
+constexpr Hash64 operator ""_h64(char const* p, size_t s) { return Hash64{std::string_view{p, s}, 0}; };
 
 /** A 128-bit string hash */
 struct Hash128 {
@@ -252,3 +254,4 @@ public:
 		return first.operator+=(second);
 	}
 };
+constexpr Hash128 operator ""_h128(char const* p, size_t s) { return Hash128{std::string_view{p, s}, 0, 0}; };
