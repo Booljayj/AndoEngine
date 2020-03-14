@@ -16,16 +16,16 @@ namespace Serialization {
 		//Write an identifier and a data block for each non-default variable in the struct
 		Reflection::StructTypeInfo const* currentStructInfo = structInfo;
 		while (currentStructInfo) {
-			for (Reflection::VariableInfo const* memberVariable : currentStructInfo->members.variables) {
-				if (ShouldSerializeType(*memberVariable->type)) {
+			for (Reflection::VariableInfo const& memberVariable : currentStructInfo->members.variables) {
+				if (ShouldSerializeType(*memberVariable.type)) {
 					//Get a pointer to the value we want to serialize, and a pointer to the default version of that value
-					void const* variablePointer = memberVariable->GetImmutableValuePointer(data);
-					void const* defaultVariablePointer = memberVariable->GetImmutableValuePointer(defaults);
+					void const* variablePointer = memberVariable.GetValuePointer(data);
+					void const* defaultVariablePointer = memberVariable.GetValuePointer(defaults);
 
 					//Compare the variable to the default. If the value is the same as the default, then we don't need to write anything
-					if (!memberVariable->type->Equal(variablePointer, defaultVariablePointer)) {
-						WriteVariableIdentifier(*memberVariable, stream);
-						SerializeTypeBinary(*memberVariable->type, variablePointer, stream);
+					if (!memberVariable.type->Equal(variablePointer, defaultVariablePointer)) {
+						WriteVariableIdentifier(memberVariable, stream);
+						SerializeTypeBinary(*memberVariable.type, variablePointer, stream);
 					}
 				}
 			}
@@ -49,7 +49,7 @@ namespace Serialization {
 
 			//If the struct has a variable with this ID, and it can be serialized, attempt to deserialize it.
 			if (memberVariable && ShouldSerializeType(*memberVariable->type)) {
-				void* variablePointer = memberVariable->GetMutableValuePointer(data);
+				void* variablePointer = memberVariable->GetValuePointer(data);
 				bool const success = DeserializeTypeBinary(*memberVariable->type, variablePointer, stream);
 				if (!success) return false; //@todo Report an error just for this variable instead of returning false
 

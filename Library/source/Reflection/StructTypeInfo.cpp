@@ -1,5 +1,4 @@
 #include "Reflection/StructTypeInfo.h"
-#include "Reflection/Components/ConstantInfo.h"
 #include "Reflection/Components/VariableInfo.h"
 
 namespace Reflection {

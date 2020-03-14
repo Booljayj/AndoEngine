@@ -1,72 +1,95 @@
 #pragma once
 #include <cstdint>
-#include <string>
 #include <string_view>
-#include <type_traits>
 #include "Engine/Flags.h"
 #include "Engine/Hash.h"
+#include "Engine/TypeTraits.h"
 #include "Reflection/TypeInfo.h"
 #include "Reflection/TypeResolver.h"
 
 namespace Reflection {
 	struct TypeInfo;
 
-	/** flags to describe aspects of a particular type */
-	enum class EVariableFlags : uint8_t {
+	/** flags to describe aspects of a particular variable */
+	enum class EVariableFlags : uint32_t {
+		Const,
 		Hidden,
+		NonSerialized,
 	};
 	using FVariableFlags = TFlags<EVariableFlags>;
 
 	/** Info that describes a variable value */
 	struct VariableInfo {
+	private:
+		using ImmutableVariableGetterFunc = void const*(*)(VariablePointerStorage const&, void const*);
+		using MutableVariableGetterFunc = void*(*)(VariablePointerStorage const&, void*);
+
+		VariablePointerStorage storage;
+		ImmutableVariableGetterFunc immutableGetter;
+		MutableVariableGetterFunc mutableGetter;
+
+	public:
+		TypeInfo const* type;
+		std::string_view name;
+		std::string_view description;
+		FVariableFlags flags;
+		Hash32 id;
+
 		VariableInfo() = delete;
-		VariableInfo(std::string_view inName, TypeInfo const* inType, std::string_view inDescription, FVariableFlags inFlags)
-		: name(inName)
-		, id(inName)
-		, type(inType)
-		, description(inDescription)
-		, flags(inFlags)
-		{}
-		virtual ~VariableInfo() = default;
 
-		std::string name;
-		Hash32 id = Hash32{};
-		TypeInfo const* type = nullptr;
+		/** Construct variable info for a static variable */
+		template<typename ValueType>
+		VariableInfo(ValueType* pointer, std::string_view inName, std::string_view inDescription, FVariableFlags inFlags)
+		: type(TypeResolver<std::decay_t<ValueType>>::Get()), name(inName), description(inDescription), flags(inFlags), id(inName)
+		{
+			using PointerType = decltype(pointer);
+			Cast<PointerType>(storage) = pointer;
+			immutableGetter = [](VariablePointerStorage const& storage, void const* instance) { return Cast<PointerType>(storage); };
+			mutableGetter = [](VariablePointerStorage const& storage, void* instance) { return Cast<PointerType>(storage); };
+		}
+		/** Construct variable info for a const static variable */
+		template<typename ValueType>
+		VariableInfo(const ValueType* pointer, std::string_view inName, std::string_view inDescription, FVariableFlags inFlags)
+		: type(TypeResolver<std::decay_t<ValueType>>::Get()), name(inName), description(inDescription), flags(inFlags + EVariableFlags::Const), id(inName)
+		{
+			using PointerType = decltype(pointer);
+			Cast<PointerType>(storage) = pointer;
+			immutableGetter = [](VariablePointerStorage const& storage, void const* instance) { return Cast<PointerType>(storage); };
+			mutableGetter = [](VariablePointerStorage const& storage, void* instance) { return nullptr; };
+		}
 
-		std::string description;
-		FVariableFlags flags = FVariableFlags::None;
+		/** Construct variable info for a member variable */
+		template<typename ClassType, typename ValueType>
+		VariableInfo(ValueType ClassType::* pointer, std::string_view inName, std::string_view inDescription, FVariableFlags inFlags)
+		: type(TypeResolver<std::decay_t<ValueType>>::Get()), name(inName), description(inDescription), flags(inFlags), id(inName)
+		{
+			using PointerType = decltype(pointer);
+			Cast<PointerType>(storage) = pointer;
+			immutableGetter = [](VariablePointerStorage const& storage, void const* instance) {
+				PointerType pointer = Cast<PointerType>(storage);
+				return &(static_cast<ClassType const*>(instance)->pointer);
+			};
+			mutableGetter = [](VariablePointerStorage const& storage, void* instance) {
+				PointerType pointer = Cast<PointerType>(storage);
+				return &(static_cast<ClassType*>(instance)->pointer);
+			};
+		}
+		/** Construct variable info for a const member variable */
+		template<typename ClassType, typename ValueType>
+		VariableInfo(const ValueType ClassType::* pointer, std::string_view inName, std::string_view inDescription, FVariableFlags inFlags)
+		: type(TypeResolver<std::decay_t<ValueType>>::Get()), name(inName), description(inDescription), flags(inFlags + EVariableFlags::Const), id(inName)
+		{
+			using PointerType = decltype(pointer);
+			Cast<PointerType>(storage) = pointer;
+			immutableGetter = [](VariablePointerStorage const& storage, void const* instance) {
+				PointerType pointer = Cast<PointerType>(storage);
+				return &(static_cast<ClassType const*>(instance)->pointer);
+			};
+			mutableGetter = [](VariablePointerStorage const& storage, void* instance) { return nullptr; };
+		}
 
-		virtual void const* GetImmutableValuePointer(void const* instance) const = 0;
-		virtual void* GetMutableValuePointer(void* instance) const = 0;
-	};
-
-	template<typename ValueType>
-	struct TStaticVariableInfo : public VariableInfo {
-		TStaticVariableInfo() = delete;
-		TStaticVariableInfo(std::string_view inName, std::string_view inDescription, ValueType* inStaticPointer)
-		: VariableInfo(inName, TypeResolver<typename std::decay<ValueType>::type>::Get(), inDescription, FVariableFlags::None)
-		, staticPointer(inStaticPointer)
-		{}
-
-		ValueType* staticPointer = nullptr;
-
-		virtual void const* GetImmutableValuePointer( void const* instance ) const final { return staticPointer; }
-		virtual void* GetMutableValuePointer( void* instance ) const final { return staticPointer; }
-	};
-
-	/** Info that describes a variable within a struct */
-	template<typename StructType, typename ValueType>
-	struct TMemberVariableInfo : VariableInfo {
-		TMemberVariableInfo() = delete;
-		TMemberVariableInfo(std::string_view inName, std::string_view inDescription, ValueType StructType::* inMemberPointer)
-		: VariableInfo(inName, TypeResolver<typename std::decay<ValueType>::type>::Get(), inDescription, FVariableFlags::None)
-		, memberPointer(inMemberPointer)
-		{}
-
-		ValueType StructType::* memberPointer = nullptr;
-
-		void const* GetImmutableValuePointer(void const* instance) const final { return &(((StructType const*)instance)->*memberPointer); }
-		void* GetMutableValuePointer(void* instance) const final { return &(((StructType*)instance)->*memberPointer); }
+		/** Get a pointer to this variable on a particular instance (instance is ignored for static variables) */
+		void const* GetValuePointer(void const* instance) const { return immutableGetter(storage, instance); }
+		void* GetValuePointer(void* instance) const { return mutableGetter(storage, instance); }
 	};
 }
-

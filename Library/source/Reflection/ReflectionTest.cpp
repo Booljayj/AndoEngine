@@ -5,7 +5,6 @@
 #include "Reflection/StructTypeInfo.h"
 #include "Reflection/StructTypeMacros.h"
 #include "Reflection/Components/VariableInfo.h"
-#include "Reflection/Components/ConstantInfo.h"
 #include "Serialization/StructSerializer.h"
 
 /*

@@ -6,7 +6,6 @@
 #include "Engine/ArrayView.h"
 #include "Engine/Hash.h"
 #include "Reflection/TypeInfo.h"
-#include "Reflection/Components/ConstantInfo.h"
 #include "Reflection/Components/VariableInfo.h"
 
 /** Define members of the struct used for reflection. The second argument must be either the primary baseType class of this type or void */
@@ -28,18 +27,18 @@ namespace Reflection {\
 namespace Reflection {
 	/** A view type specialized for field components */
 	template<typename T>
-	struct FieldView : TArrayView<T const*> {
+	struct FieldView : TArrayView<T const> {
 		T const* Find(Hash32 id) const {
 			//@todo If we have a way to ensure that the field array is sorted, we can use a binary search here for better speed.
-			const auto iter = std::find_if(this->begin(), this->end(), [=](T const* info) { return info->id == id; });
-			if (iter != this->end()) return *iter;
+			const auto iter = std::find_if(this->begin(), this->end(), [=](T const& info) { return info.id == id; });
+			if (iter != this->end()) return &(*iter);
 			else return nullptr;
 		}
 	};
 
 	/** Views into various field types that the struct defines */
 	struct Fields {
-		FieldView<ConstantInfo> constants;
+		FieldView<VariableInfo> constants;
 		FieldView<VariableInfo> variables;
 	};
 

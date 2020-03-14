@@ -61,20 +61,20 @@ namespace Reflection {
 				//Print constants
 				if (structType->statics.constants.size() > 0 || structType->members.constants.size() > 0) {
 					for (auto const& staticConstant : structType->statics.constants) {
-						stream << "\t" << staticConstant->name << " : " << staticConstant->type->def.GetMangledName() << " const static\n";
+						stream << "\t" << staticConstant.name << " : " << staticConstant.type->def.GetMangledName() << " const static\n";
 					}
 					for (auto const& memberConstant : structType->members.constants) {
-						stream << "\t" << memberConstant->name << " : " << memberConstant->type->def.GetMangledName() << " const\n";
+						stream << "\t" << memberConstant.name << " : " << memberConstant.type->def.GetMangledName() << " const\n";
 					}
 					stream << std::endl;
 				}
 				//Print variables
 				if (structType->statics.variables.size() > 0 || structType->members.variables.size() > 0) {
 					for (auto const& staticVariable : structType->statics.variables) {
-						stream << "\t" << staticVariable->name << " : " << staticVariable->type->def.GetMangledName() << " static\n";
+						stream << "\t" << staticVariable.name << " : " << staticVariable.type->def.GetMangledName() << " static\n";
 					}
 					for (auto const& memberVariable : structType->members.variables) {
-						stream << "\t" << memberVariable->name << " : " << memberVariable->type->def.GetMangledName() << "\n";
+						stream << "\t" << memberVariable.name << " : " << memberVariable.type->def.GetMangledName() << "\n";
 					}
 					stream << std::endl;
 				}
