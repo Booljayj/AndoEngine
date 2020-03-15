@@ -6,13 +6,12 @@ namespace Reflection {
 		Hash128 inID, CompilerDefinition inDef,
 		std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer,
 		StructTypeInfo const* inBaseType, void const* inDefaults,
-		Fields inStatics, Fields inMembers)
+		TArrayView<VariableInfo const> inVariables)
 	: TypeInfo(
 		StructTypeInfo::Classification, inID, inDef,
 		inDescription, inFlags, inSerializer)
 	, baseType(inBaseType)
 	, defaults(inDefaults)
-	, statics(inStatics)
-	, members(inMembers)
+	, variables(inVariables)
 	{}
 }

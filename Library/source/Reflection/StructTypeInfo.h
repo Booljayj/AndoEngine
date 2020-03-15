@@ -25,23 +25,6 @@ namespace Reflection {\
 }
 
 namespace Reflection {
-	/** A view type specialized for field components */
-	template<typename T>
-	struct FieldView : TArrayView<T const> {
-		T const* Find(Hash32 id) const {
-			//@todo If we have a way to ensure that the field array is sorted, we can use a binary search here for better speed.
-			const auto iter = std::find_if(this->begin(), this->end(), [=](T const& info) { return info.id == id; });
-			if (iter != this->end()) return &(*iter);
-			else return nullptr;
-		}
-	};
-
-	/** Views into various field types that the struct defines */
-	struct Fields {
-		FieldView<VariableInfo> constants;
-		FieldView<VariableInfo> variables;
-	};
-
 	/** Info for a struct type, which contains various fields and supports inheritance */
 	struct StructTypeInfo : public TypeInfo {
 		static constexpr ETypeClassification Classification = ETypeClassification::Struct;
@@ -50,17 +33,15 @@ namespace Reflection {
 		StructTypeInfo const* baseType = nullptr;
 		/** A default-constructed instance of this struct type, used to find default values for variables */
 		void const* defaults = nullptr;
-		/** The static fields that this type defines */
-		Fields statics;
-		/** The member fields that this type defines */
-		Fields members;
+		/** The variables that are contained in this type */
+		TArrayView<VariableInfo const> variables;
 
 		StructTypeInfo() = delete;
 		StructTypeInfo(
 			Hash128 inID, CompilerDefinition inDefinition,
 			std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer,
 			StructTypeInfo const* inBaseType, void const* inDefaults,
-			Fields inStatics, Fields inMembers
+			TArrayView<VariableInfo const> inVariables
 		);
 		virtual ~StructTypeInfo() = default;
 
@@ -83,12 +64,12 @@ namespace Reflection {
 		TStructTypeInfo(
 			std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer,
 			void const* inDefaults,
-			Fields inStatics, Fields inMembers)
+			TArrayView<VariableInfo const> inVariables)
 		: StructTypeInfo(
 			TypeResolver<StructType>::GetID(), GetCompilerDefinition<StructType>(),
 			inDescription, inFlags, inSerializer,
 			Reflection::Cast<StructTypeInfo>(TypeResolver<BaseType>::Get()), inDefaults,
-			inStatics, inMembers)
+			inVariables)
 		{}
 
 		STANDARD_TYPEINFO_METHODS(StructType)

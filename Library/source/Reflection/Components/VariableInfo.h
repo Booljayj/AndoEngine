@@ -13,6 +13,7 @@ namespace Reflection {
 	/** flags to describe aspects of a particular variable */
 	enum class EVariableFlags : uint32_t {
 		Const,
+		Static,
 		Hidden,
 		NonSerialized,
 	};
@@ -40,7 +41,7 @@ namespace Reflection {
 		/** Construct variable info for a static variable */
 		template<typename ValueType>
 		VariableInfo(ValueType* pointer, std::string_view inName, std::string_view inDescription, FVariableFlags inFlags)
-		: type(TypeResolver<std::decay_t<ValueType>>::Get()), name(inName), description(inDescription), flags(inFlags), id(inName)
+		: type(TypeResolver<std::decay_t<ValueType>>::Get()), name(inName), description(inDescription), flags(inFlags + EVariableFlags::Static), id(inName)
 		{
 			using PointerType = decltype(pointer);
 			Cast<PointerType>(storage) = pointer;
@@ -50,7 +51,7 @@ namespace Reflection {
 		/** Construct variable info for a const static variable */
 		template<typename ValueType>
 		VariableInfo(const ValueType* pointer, std::string_view inName, std::string_view inDescription, FVariableFlags inFlags)
-		: type(TypeResolver<std::decay_t<ValueType>>::Get()), name(inName), description(inDescription), flags(inFlags + EVariableFlags::Const), id(inName)
+		: type(TypeResolver<std::decay_t<ValueType>>::Get()), name(inName), description(inDescription), flags(inFlags + EVariableFlags::Const + EVariableFlags::Static), id(inName)
 		{
 			using PointerType = decltype(pointer);
 			Cast<PointerType>(storage) = pointer;

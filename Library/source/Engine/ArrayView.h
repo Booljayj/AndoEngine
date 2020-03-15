@@ -1,4 +1,5 @@
 #pragma once
+#include <algorithm>
 #include <cstddef>
 
 template<typename T>
@@ -27,6 +28,28 @@ struct TArrayView {
 	constexpr inline T const* begin() const { return begin_; }
 	constexpr inline T const* end() const { return begin_ + size_; }
 	constexpr inline size_t size() const { return size_; }
+
+	constexpr inline size_t IndexOf(const T& value) const {
+		auto const iter = std::find(begin(), end(), value);
+		return iter - begin();
+	}
+	template<typename PredicateType>
+	constexpr inline size_t IndexOf(const PredicateType& predicate) const {
+		auto const iter = std::find_if(begin(), end(), predicate);
+		return iter - begin();
+	}
+
+	constexpr inline T const* Find(const T& value) const {
+		auto const iter = std::find(begin(), end(), value);
+		if (iter != end()) return iter;
+		else return nullptr;
+	}
+	template<typename PredicateType>
+	constexpr inline T const* Find(const PredicateType& predicate) const {
+		auto const iter = std::find_if(begin(), end(), predicate);
+		if (iter != end()) return iter;
+		else return nullptr;
+	}
 
 private:
 	T const* begin_ = nullptr;

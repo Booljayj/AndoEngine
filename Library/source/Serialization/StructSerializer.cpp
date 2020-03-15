@@ -5,52 +5,52 @@
 #include "Serialization/SerializationUtility.h"
 
 namespace Serialization {
-	bool StructSerializer::SerializeBinary(Reflection::TypeInfo const& type, void const* data, std::ostream& stream) const {
-		Reflection::StructTypeInfo const* const structInfo = type.As<Reflection::StructTypeInfo>();
-		if (!structInfo) return false;
+	using namespace Reflection;
+
+	bool StructSerializer::SerializeBinary(TypeInfo const& type, void const* data, std::ostream& stream) const {
+		StructTypeInfo const* const structType = type.As<StructTypeInfo>();
+		if (!structType) return false;
 
 		ScopedDataBlockWrite const scopedWrite{stream};
 
-		void const* defaults = structInfo->defaults;
-
 		//Write an identifier and a data block for each non-default variable in the struct
-		Reflection::StructTypeInfo const* currentStructInfo = structInfo;
-		while (currentStructInfo) {
-			for (Reflection::VariableInfo const& memberVariable : currentStructInfo->members.variables) {
-				if (ShouldSerializeType(*memberVariable.type)) {
+		StructTypeInfo const* currentStructType = structType;
+		while (currentStructType) {
+			for (VariableInfo const& variable : currentStructType->variables) {
+				if (ShouldSerializeVariable(variable) && ShouldSerializeType(*variable.type)) {
 					//Get a pointer to the value we want to serialize, and a pointer to the default version of that value
-					void const* variablePointer = memberVariable.GetValuePointer(data);
-					void const* defaultVariablePointer = memberVariable.GetValuePointer(defaults);
+					void const* dataValuePointer = variable.GetValuePointer(data);
+					void const* defaultValuePointer = variable.GetValuePointer(structType->defaults);
 
 					//Compare the variable to the default. If the value is the same as the default, then we don't need to write anything
-					if (!memberVariable.type->Equal(variablePointer, defaultVariablePointer)) {
-						WriteVariableIdentifier(memberVariable, stream);
-						SerializeTypeBinary(*memberVariable.type, variablePointer, stream);
+					if (!variable.type->Equal(dataValuePointer, defaultValuePointer)) {
+						WriteVariableIdentifier(variable, stream);
+						SerializeTypeBinary(*variable.type, dataValuePointer, stream);
 					}
 				}
 			}
-			currentStructInfo = currentStructInfo->baseType;
+			currentStructType = currentStructType->baseType;
 		}
 
 		return stream.good();
 	}
 
-	bool StructSerializer::DeserializeBinary(Reflection::TypeInfo const& type, void* data, std::istream& stream) const {
-		Reflection::StructTypeInfo const* const structInfo = type.As<Reflection::StructTypeInfo>();
-		if (!structInfo) return false;
+	bool StructSerializer::DeserializeBinary(TypeInfo const& type, void* data, std::istream& stream) const {
+		StructTypeInfo const* const structType = type.As<StructTypeInfo>();
+		if (!structType) return false;
 
 		constexpr uint8_t NestedBlockHeaderSize = sizeof(Hash32) + sizeof(BlockSizeType);
 		ScopedDataBlockRead const scopedRead{stream};
 
 		while (stream.good() && scopedRead.GetRemainingSize() >= NestedBlockHeaderSize) {
 			//Get the next variable to deserialize
-			Reflection::VariableInfo const* memberVariable = ReadVariableIdentifier(*structInfo, stream);
+			VariableInfo const* variable = ReadVariableIdentifier(*structType, stream);
 			if (!stream.good()) return false; //Make sure the read was successful
 
 			//If the struct has a variable with this ID, and it can be serialized, attempt to deserialize it.
-			if (memberVariable && ShouldSerializeType(*memberVariable->type)) {
-				void* variablePointer = memberVariable->GetValuePointer(data);
-				bool const success = DeserializeTypeBinary(*memberVariable->type, variablePointer, stream);
+			if (variable && ShouldSerializeVariable(*variable) && ShouldSerializeType(*variable->type)) {
+				void* dataValuePointer = variable->GetValuePointer(data);
+				bool const success = DeserializeTypeBinary(*variable->type, dataValuePointer, stream);
 				if (!success) return false; //@todo Report an error just for this variable instead of returning false
 
 			} else {
@@ -61,22 +61,29 @@ namespace Serialization {
 		return stream.good();
 	}
 
-	void StructSerializer::WriteVariableIdentifier(Reflection::VariableInfo const& variableInfo, std::ostream& stream) {
-		decltype(Hash32::hash) const idValue = variableInfo.id.hash;
-		WriteLE(&(idValue), stream);
+	bool StructSerializer::ShouldSerializeVariable(VariableInfo const& variable) {
+		constexpr auto excludedFlags = FVariableFlags::Make(EVariableFlags::Const, EVariableFlags::NonSerialized);
+		return variable.flags.HasAll(excludedFlags);
 	}
 
-	Reflection::VariableInfo const* StructSerializer::ReadVariableIdentifier(Reflection::StructTypeInfo const& structInfo, std::istream& stream) {
-		decltype(Hash32::hash) idValue = 0;
-		ReadLE(&idValue, stream);
+	void StructSerializer::WriteVariableIdentifier(VariableInfo const& variable, std::ostream& stream) {
+		Hash32 const id = variable.id;
+		WriteLE(&id.hash, stream);
+	}
+
+	VariableInfo const* StructSerializer::ReadVariableIdentifier(StructTypeInfo const& structType, std::istream& stream) {
+		Hash32 id;
+		ReadLE(&id.hash, stream);
+
+		const auto match = [=](const auto& variable) { return variable.id == id; };
 
 		//Walk up the chain of base classes, searching for a variable with the correct name hash.
-		Reflection::StructTypeInfo const* currentStructInfo = &structInfo;
-		while (currentStructInfo) {
-			if (Reflection::VariableInfo const* foundInfo = currentStructInfo->members.variables.Find(Hash32{idValue})) {
-				return foundInfo;
+		StructTypeInfo const* currentStructType = &structType;
+		while (currentStructType) {
+			if (VariableInfo const* foundVariable = currentStructType->variables.Find(match)) {
+				return foundVariable;
 			}
-			currentStructInfo = currentStructInfo->baseType;
+			currentStructType = currentStructType->baseType;
 		}
 		return nullptr;
 	}

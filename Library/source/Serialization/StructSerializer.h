@@ -13,6 +13,7 @@ namespace Serialization {
 		bool DeserializeBinary(Reflection::TypeInfo const& type, void* data, std::istream& stream) const final;
 
 	private:
+		static bool ShouldSerializeVariable(Reflection::VariableInfo const& variable);
 		static void WriteVariableIdentifier(Reflection::VariableInfo const& variableInfo, std::ostream& stream);
 		static Reflection::VariableInfo const* ReadVariableIdentifier(Reflection::StructTypeInfo const& structType, std::istream& stream);
 	};
