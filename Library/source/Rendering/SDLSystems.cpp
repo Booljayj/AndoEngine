@@ -14,7 +14,7 @@ bool SDLFrameworkSystem::Startup(CTX_ARG) {
 	if (SDL_Init(SDL_INIT_VIDEO) == 0) {
 		return true;
 	} else {
-		LOGF(LogSDL, Error, "SDL_Init Error: %i", SDL_GetError());
+		LOGF(SDL, Error, "SDL_Init Error: %i", SDL_GetError());
 		return false;
 	}
 }
@@ -47,7 +47,7 @@ void SDLEventSystem::PollEvents(bool& requestShutdown) {
 bool SDLWindowSystem::Startup(CTX_ARG) {
 	mainWindow = SDL_CreateWindow("AndoSystem", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 800, SDL_WINDOW_SHOWN | SDL_WINDOW_VULKAN);
 	if (!mainWindow) {
-		LOGF(LogSDL, Error, "Failed to create SDL window: %i", SDL_GetError());
+		LOGF(SDL, Error, "Failed to create SDL window: %i", SDL_GetError());
 		return false;
 	}
 	return true;

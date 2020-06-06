@@ -22,7 +22,6 @@
 #include "Rendering/MeshRendererComponent.h"
 #include "Rendering/VertexData.h"
 #include "Rendering/Shader.h"
-
 #include "Reflection/StandardResolvers.h"
 #include "Reflection/StructTypeInfo.h"
 #include "Reflection/TupleTypeInfo.h"
@@ -53,7 +52,7 @@ DEFINE_LOG_CATEGORY(Main, Debug);
 // Primary system procedures
 bool Startup(CTX_ARG) {
 	TEMP_SCOPE;
-	LOG(LogMain, Info, "Starting up all systems...");
+	LOG(Main, Info, "Starting up all systems...");
 
 	const std::initializer_list<const ComponentInfo*> components = {
 		&transform,
@@ -64,25 +63,25 @@ bool Startup(CTX_ARG) {
 		&program,
 	};
 
-	STARTUP_SYSTEM(LogMain, componentCollectionSystem, components.begin(), components.size());
-	STARTUP_SYSTEM(LogMain, entityCollectionSystem, &componentCollectionSystem, 100);
-	STARTUP_SYSTEM(LogMain, sdlFrameworkSystem);
-	STARTUP_SYSTEM(LogMain, sdlEventSystem);
-	STARTUP_SYSTEM(LogMain, sdlWindowSystem);
-	STARTUP_SYSTEM(LogMain, renderingSystem, &sdlWindowSystem, &entityCollectionSystem, &transform, &meshRenderer);
+	STARTUP_SYSTEM(Main, componentCollectionSystem, components.begin(), components.size());
+	STARTUP_SYSTEM(Main, entityCollectionSystem, &componentCollectionSystem, 100);
+	STARTUP_SYSTEM(Main, sdlFrameworkSystem);
+	STARTUP_SYSTEM(Main, sdlEventSystem);
+	STARTUP_SYSTEM(Main, sdlWindowSystem);
+	STARTUP_SYSTEM(Main, renderingSystem, &sdlWindowSystem, &entityCollectionSystem, &transform, &meshRenderer);
 	return true;
 }
 
 void Shutdown(CTX_ARG) {
 	TEMP_SCOPE;
-	LOG(LogMain, Info, "Shutting down all systems...");
+	LOG(Main, Info, "Shutting down all systems...");
 
-	SHUTDOWN_SYSTEM(LogMain, renderingSystem);
-	SHUTDOWN_SYSTEM(LogMain, sdlWindowSystem);
-	SHUTDOWN_SYSTEM(LogMain, sdlEventSystem);
-	SHUTDOWN_SYSTEM(LogMain, sdlFrameworkSystem);
-	SHUTDOWN_SYSTEM(LogMain, entityCollectionSystem);
-	SHUTDOWN_SYSTEM(LogMain, componentCollectionSystem);
+	SHUTDOWN_SYSTEM(Main, renderingSystem);
+	SHUTDOWN_SYSTEM(Main, sdlWindowSystem);
+	SHUTDOWN_SYSTEM(Main, sdlEventSystem);
+	SHUTDOWN_SYSTEM(Main, sdlFrameworkSystem);
+	SHUTDOWN_SYSTEM(Main, entityCollectionSystem);
+	SHUTDOWN_SYSTEM(Main, componentCollectionSystem);
 }
 
 void MainLoop(CTX_ARG) {
@@ -118,8 +117,8 @@ int main(int argc, char const* argv[]) {
 	CTX.log.AddModule(std::make_shared<TerminalLoggerModule>());
 	//CTX.Log.AddModule( std::make_shared<FileLoggerModule>( "Main.log" ) );
 
-	LOG(LogMain, Info, "Hello, World! This is AndoEngine.");
-	LOG(LogMain, Debug, "Compiled with " __VERSION__ " on " __DATE__);
+	LOG(Main, Info, "Hello, World! This is AndoEngine.");
+	LOG(Main, Debug, "Compiled with " __VERSION__ " on " __DATE__);
 
 	if (Startup(CTX)) {
 		// LOG(LogMain, Info, "Creating entities");
@@ -173,7 +172,7 @@ int main(int argc, char const* argv[]) {
 	Shutdown(CTX);
 
 	LOGF(
-		LogMain, Info, "[TempBuffer]{ Current: %i/%i, Peak: %i/%i }",
+		Main, Info, "[TempBuffer]{ Current: %i/%i, Peak: %i/%i }",
 		CTX.temp.GetUsed(), CTX.temp.GetCapacity(), CTX.temp.GetPeakUsage(), CTX.temp.GetCapacity()
 	);
 

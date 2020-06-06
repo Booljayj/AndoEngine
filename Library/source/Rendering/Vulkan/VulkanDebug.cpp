@@ -43,13 +43,13 @@ namespace Rendering {
 		char const* prefix = GetTypePrefix(CTX, messageType);
 
 		if (messageSeverity >= VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
-			LOGF(LogVulkanMessage, Error, format, prefix, pCallbackData->pMessage);
+			LOGF(VulkanMessage, Error, format, prefix, pCallbackData->pMessage);
 		} else if (messageSeverity >= VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
-			LOGF(LogVulkanMessage, Warning, format, prefix, pCallbackData->pMessage);
+			LOGF(VulkanMessage, Warning, format, prefix, pCallbackData->pMessage);
 		} else if (messageSeverity >= VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {
-			LOGF(LogVulkanMessage, Info, format, prefix, pCallbackData->pMessage);
+			LOGF(VulkanMessage, Info, format, prefix, pCallbackData->pMessage);
 		} else {
-			LOGF(LogVulkanMessage, Debug, format, prefix, pCallbackData->pMessage);
+			LOGF(VulkanMessage, Debug, format, prefix, pCallbackData->pMessage);
 		}
 
 		return VK_FALSE;

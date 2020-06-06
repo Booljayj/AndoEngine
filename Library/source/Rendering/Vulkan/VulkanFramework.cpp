@@ -16,14 +16,14 @@ namespace Rendering {
 			//Check for validation layer support
 			TArrayView<char const*> const enabledLayerNames = GetValidationLayerNames(CTX);
 			if (!CanEnableValidationLayers(CTX, enabledLayerNames)) {
-				LOG(LogVulkan, Error, "Cannot enable required validation layers");
+				LOG(Vulkan, Error, "Cannot enable required validation layers");
 				return false;
 			}
 
 			//Check for extension support
 			TArrayView<char const*> const enabledExtensionNames = GetExtensionsNames(CTX, window);
 			if (!CanEnableExtensions(CTX, enabledExtensionNames)) {
-				LOG(LogVulkan, Error, "Cannot enable required instance extensions");
+				LOG(Vulkan, Error, "Cannot enable required instance extensions");
 				return false;
 			}
 
@@ -54,7 +54,7 @@ namespace Rendering {
 			instanceCI.pNext = &messengerCI;
 
 			if (vkCreateInstance(&instanceCI, nullptr, &instance) != VK_SUCCESS) {
-				LOG(LogVulkan, Error, "Failed to create Vulkan instance");
+				LOG(Vulkan, Error, "Failed to create Vulkan instance");
 				return false;
 			}
 		}
@@ -62,7 +62,7 @@ namespace Rendering {
 		// Vulkan surface (via SDL)
 		{
 			if (SDL_Vulkan_CreateSurface(window, instance, &surface) != SDL_TRUE) {
-				LOG(LogVulkan, Error, "Failed to create Vulkan window surface");
+				LOG(Vulkan, Error, "Failed to create Vulkan window surface");
 				return false;
 			}
 		}
@@ -70,7 +70,7 @@ namespace Rendering {
 		// Vulkan Messenger
 		{
 			if (CreateDebugUtilsMessengerEXT(instance, &messengerCI, nullptr, &messenger) != VK_SUCCESS) {
-				LOG(LogVulkan, Error, "Failed to create debug messenger");
+				LOG(Vulkan, Error, "Failed to create debug messenger");
 				return false;
 			}
 		}

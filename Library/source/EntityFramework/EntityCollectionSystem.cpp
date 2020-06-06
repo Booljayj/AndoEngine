@@ -39,11 +39,11 @@ Entity const* EntityCollectionSystem::Create(CTX_ARG, EntityID const& newID, Com
 					newEntity->Add(info->GetID(), newComponentPtr);
 
 				} else {
-					LOGF(LogEntity, Warning, "Failed to retain new component of type %i", info->GetID());
+					LOGF(Entity, Warning, "Failed to retain new component of type %i", info->GetID());
 					//CTX.Log->Warning( l_printf( CTX.Temp, "Failed to retain new component of type %i", info->GetID() ) );
 				}
 			} else {
-				LOG(LogEntity, Error, "Attempted to create an entity with a null component");
+				LOG(Entity, Error, "Attempted to create an entity with a null component");
 			}
 		}
 
@@ -112,7 +112,7 @@ void EntityCollectionSystem::RecycleGarbage(CTX_ARG) {
 				searcher.Get()->GetManager()->Release(reclaimedComponent.compPtr);
 
 			} else {
-				LOGF(LogEntity, Error, "Cannot find component type %i, garbage for this component will not be released!", reclaimedComponent.typeID);
+				LOGF(Entity, Error, "Cannot find component type %i, garbage for this component will not be released!", reclaimedComponent.typeID);
 				searcher.Reset();
 			}
 		}
@@ -136,7 +136,7 @@ Entity const* EntityCollectionSystem::Find(EntityID const& id) const noexcept {
 
 Entity* EntityCollectionSystem::InsertNew(CTX_ARG, EntityID const& newID) {
 	if (std::find(entityIDs.begin(), entityIDs.end(), newID) != entityIDs.end()) {
-		LOGF(LogEntity, Error, "Cannot create new entity with id '%i', that id already exists", newID);
+		LOGF(Entity, Error, "Cannot create new entity with id '%i', that id already exists", newID);
 		return nullptr;
 	}
 

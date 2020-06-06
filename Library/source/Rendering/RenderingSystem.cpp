@@ -33,7 +33,7 @@ bool RenderingSystem::Startup(
 
 	// Vulkan instance
 	if (!framework.Create(CTX, windowSystem->GetMainWindow())) {
-		LOG(LogTemp, Error, "Failed to create the Vulkan application");
+		LOG(Temp, Error, "Failed to create the Vulkan application");
 	}
 
 	// Collect physical devices and select default one
@@ -53,12 +53,12 @@ bool RenderingSystem::Startup(
 		}
 
 		if (availablePhysicalDevices.size() == 0) {
-			LOG(LogTemp, Error, "Failed to find any vulkan physical devices");
+			LOG(Temp, Error, "Failed to find any vulkan physical devices");
 			return false;
 		}
 
 		if (!SelectPhysicalDevice(CTX, 0)) {
-			LOG(LogTemp, Error, "Failed to select default physical device");
+			LOG(Temp, Error, "Failed to select default physical device");
 			return false;
 		}
 	}
@@ -67,7 +67,7 @@ bool RenderingSystem::Startup(
 	{
 		shouldRecreateSwapchain = false;
 		if (!swapchain.Create(CTX, VkExtent2D{1024, 768}, framework.surface, *GetPhysicalDevice(selectedPhysicalDeviceIndex), logicalDevice.device)) {
-			LOG(LogTemp, Error, "Failed to create the swapchain");
+			LOG(Temp, Error, "Failed to create the swapchain");
 			return false;
 		}
 	}
@@ -89,7 +89,7 @@ bool RenderingSystem::SelectPhysicalDevice(CTX_ARG, uint32_t index) {
 
 			logicalDevice.Destroy();
 			if (!logicalDevice.Create(CTX, *physicalDevice, enabledFeatures, extensionNames)) {
-				LOGF(LogTemp, Error, "Failed to create logical device for physical device %i", index);
+				LOGF(Temp, Error, "Failed to create logical device for physical device %i", index);
 				return false;
 			}
 
