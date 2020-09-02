@@ -13,10 +13,11 @@ namespace Reflection {
 
 	//Reflection info for an argument to a function
 	struct ArgumentInfo {
-		std::string Name;
-		std::string Description;
-		TypeInfo const* Type = nullptr;
+		std::string name;
+		Hash32 id;
+		TypeInfo const* type = nullptr;
+		FArgumentFlags flags = FArgumentFlags::None;
 
-		FArgumentFlags Flags = FArgumentFlags::None;
+		std::string description;
 	};
 }

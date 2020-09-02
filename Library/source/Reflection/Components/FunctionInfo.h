@@ -4,7 +4,8 @@
 #include <string>
 #include <vector>
 #include <utility>
-#include "Engine/MemoryView.h"
+#include "Engine/ArrayView.h"
+#include "Engine/Context.h"
 #include "Reflection/Components/ArgumentInfo.h"
 #include "Reflection/TypeResolver.h"
 
@@ -25,100 +26,93 @@ namespace Reflection {
 		Hidden = 1 << 2,
 	};
 
-	struct FunctionInfo {
-		std::string Name;
-		std::string Description;
+	struct ArgumentView : TArrayView<ArgumentInfo const*> {
+		ArgumentInfo const* Find(Hash32 id) const {
+			//@todo If we have a way to ensure that the field array is sorted, we can use a binary search here for better speed.
+			const auto iter = std::find_if(this->begin(), this->end(), [=](ArgumentInfo const* info) { return info->id == id; });
+			if (iter != this->end()) return *iter;
+			else return nullptr;
+		}
+	};
 
-		TypeInfo const* InstanceType = nullptr;
-		TypeInfo const* ReturnType = nullptr;
-		std::vector<std::unique_ptr<ArgumentInfo>> ArgumentInfos;
+	struct FunctionInfo {
+		std::string name;
+		std::string description;
+
+		TypeInfo const* instanceType = nullptr;
+		TypeInfo const* returnType = nullptr;
+		TypeInfo const* argumentsTupleType = nullptr;
+		ArgumentView argumentsView;
+		size_t argumentsSize;
 
 		uint16_t NameHash = 0;
 		FFunctionFlags Flags = FFunctionFlags::None;
 
-		template<typename TCLASS>
-		bool ValidateInstance( TCLASS* Instance ) const {
-			if( !InstanceType && !Instance ) {
-				return true;
-			} else if( InstanceType && Instance ) {
-				return GetTypeInfo<TCLASS>() == InstanceType;
-			} else {
-				return false;
-			}
-		}
-		template<typename TRETURN>
-		bool ValidateReturn( TRETURN const& Return ) const {
-			return GetTypeInfo<TRETURN> == ReturnType;
-		}
-		template<size_t SIZE>
-		bool ValidateArguments( std::array<TypeInfo const*, SIZE> const& Args ) {
-			if( SIZE == ArgumentInfos.size() ) {
-				for( size_t Index = 0; Index < SIZE; ++Index ) {
-					if( ArgumentInfos[Index].Type == Args[Index] ) {
-						return false;
-					}
-				}
-				return true;
-			}
-			return false;
-		}
-
-		//Safe invocation function that performs reflected type checking and argument packing
-		template<typename TCLASS, typename TRETURN, typename... TARGS>
-		bool InvokeMember( TCLASS* Instance, TRETURN& Return, TARGS&... Args ) const {
-			if( ValidateInstance( Instance ) && ValidateReturn( Return ) ) {
-				//@todo Verify that the typeinfo of each argument matches this function's definition, and that the number of arguments is also correct
-				std::array<TypeInfo const*, sizeof...( TARGS )> ArgTypes{ { GetTypeInfo<TARGS>()... } };
-				if( ValidateArguments( ArgTypes ) ) {
-					std::array<void*, sizeof...( TARGS )> ArgPtrs{ { static_cast<void*>( &Args )... } };
-					return InternalInvoke( Instance, &Return, ArgPtrs.data() );
-				}
-			}
-			return false;
-		}
-
-		//Safe invocation function that performs reflected type checking and argument packing
-		template<typename TCLASS, typename... TARGS>
-		bool Invoke( TCLASS* Instance, TARGS&... Args ) const {
-			if( ReturnType == GetTypeInfo<void>() && ValidateInstance( Instance ) ) {
-				//@todo Verify that the typeinfo of each argument matches this function's definition, and that the number of arguments is also correct
-				std::array<TypeInfo const*, sizeof...( TARGS )> ArgTypes{ { GetTypeInfo<TARGS>()... } };
-				if( ValidateArguments( ArgTypes ) ) {
-					std::array<void*, sizeof...( TARGS )> ArgPtrs{ { static_cast<void*>( &Args )... } };
-					return InternalInvoke( Instance, nullptr, ArgPtrs.data() );
-				}
-			}
-			return false;
-		}
-
-	protected:
-		/** Unsafe internal invocation function. Assumes that the arguments were typechecked! */
-		virtual bool InternalInvoke( void* Instance, void* Return, void** Args ) const = 0;
+		virtual TArrayView<char> CreateArguments(CTX_ARG) const = 0;
+		virtual bool Invoke(void* ret, TArrayView<char> args) = 0;
 	};
 
-	template<typename TCLASS, typename TRETURN, typename... TARGS>
-	struct MemberFunctionInfo : public FunctionInfo {
-		MemberFunctionInfo( TRETURN (TCLASS::* InMember)( TARGS... ) )
-		: Member( InMember )
-		, InstanceType( GetTypeInfo<TCLASS>() )
-		, ReturnType( GetTypeInfo<TRETURN>() )
-		{}
+	template<typename T, typename Enable = void>
+	struct TFunctionInfo {};
 
-		TRETURN (TCLASS::* Member)( TARGS... );
+	//============================================================
+	// Static functions
 
-		template<size_t... Is>
-		void InternalInvokeMember_Impl( TCLASS& Instance, TRETURN& Return, void** Args, std::index_sequence<Is...> ) const {
-			Return = (Instance.*Member)( *static_cast<TARGS*>( Args[Is] )... );
+	template<typename ReturnType, typename... ArgTypes>
+	struct TFunctionInfo<ReturnType(*)(ArgTypes...), typename std::enable_if<std::is_same_v<ReturnType, void>, void>::type> : public FunctionInfo {
+		using ArgsTupleType = std::tuple<ArgTypes...>;
+		using FunctionType = ReturnType(*)(ArgTypes...);
+
+		FunctionType func;
+
+		virtual bool Invoke(void* ret, TArrayView<char> args) override {
+			if (args.size() != argumentsSize) return false;
+			std::apply(func, *static_cast<ArgsTupleType const*>(args.begin()));
+			return true;
 		}
+	};
+	template<typename ReturnType, typename... ArgTypes>
+	struct TFunctionInfo<ReturnType(*)(ArgTypes...), typename std::enable_if<!std::is_same_v<ReturnType, void>, void>::type> : public FunctionInfo {
+		using ArgsTupleType = std::tuple<ArgTypes...>;
+		using FunctionType = ReturnType(*)(ArgTypes...);
 
-	protected:
-		bool InternalInvoke( void* Instance, void* Return, void** Args ) const final {
-			if( Instance ) {
-				InternalInvokeMember_Impl( *static_cast<TCLASS*>( Instance ), *static_cast<TRETURN*>( Return ), Args, std::index_sequence_for<TARGS...>{} );
-				return true;
-			} else {
-				return false;
-			}
+		FunctionType func;
+
+		virtual bool Invoke(void* ret, TArrayView<char> args) override {
+			if (!ret || args.size() != argumentsSize) return false;
+			*static_cast<ReturnType*>(ret) = std::apply(Func, *static_cast<ArgsTupleType const*>(args.begin()));
+			return true;
+		}
+	};
+
+	//============================================================
+	// Member functions
+
+	template<typename InstanceType, typename ReturnType, typename... ArgTypes>
+	struct TFunctionInfo<ReturnType (InstanceType::*)(ArgTypes...), typename std::enable_if<std::is_same_v<ReturnType, void>, void>::type> : public FunctionInfo {
+		using ArgsTupleType = std::tuple<InstanceType*, ArgTypes...>;
+		using FunctionType = ReturnType(InstanceType::*)(ArgTypes...);
+
+		FunctionType func;
+
+		virtual bool Invoke(void* ret, TArrayView<char> args) override {
+			if (args.size() != argumentsSize) return false;
+			std::apply(func, *static_cast<ArgsTupleType const*>(args.begin()));
+			return true;
+		}
+	};
+
+	template<typename InstanceType, typename ReturnType, typename... ArgTypes>
+	struct TFunctionInfo<ReturnType (InstanceType::*)(ArgTypes...), typename std::enable_if<!std::is_same_v<ReturnType, void>, void>::type> : public FunctionInfo {
+		using ArgsTupleType = std::tuple<InstanceType*, ArgTypes...>;
+		using FunctionType = ReturnType(InstanceType::*)(ArgTypes...);
+
+		FunctionType func;
+
+		virtual bool Invoke(void* ret, TArrayView<char> args) override {
+			if (args.size() != argumentsSize) return false;
+			*static_cast<ReturnType*>(ret) = std::apply(func, *static_cast<ArgsTupleType const*>(args.begin()));
+			return true;
 		}
 	};
 }
