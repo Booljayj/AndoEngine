@@ -5,16 +5,42 @@
 #include <algorithm>
 #include <ostream>
 
+/** A heap-allocated data buffer in which memory can be requested. Memory is handled in a stack-based manner */
 struct HeapBuffer {
 private:
+	/** The total capacity of the buffer, in bytes */
 	size_t capacity;
+	/** The allocated byte array for this buffer */
 	std::unique_ptr<char[]> data;
+	/** The current "free" position in the buffer, where memory requests can be made */
 	char* current;
 
+	/** The largest used amount of the capacity of the buffer over its lifetime */
 	size_t peakUsage;
+	/** When the capacity of the buffer is exceeded during a request, this is the amount that was requested */
 	size_t peakOverflow;
 
 public:
+	/** A mark which will save a buffer's current cursor position when created, and set the buffer to that position when destroyed. */
+	struct Mark {
+		inline Mark(HeapBuffer& inBuffer)
+		: buffer(&inBuffer)
+		, cursor(inBuffer.GetCursor())
+		{}
+
+		inline ~Mark() {
+			Pop();
+		}
+
+		inline void Pop() const {
+			buffer->SetCursor(cursor);
+		}
+
+	private:
+		HeapBuffer* buffer;
+		char* cursor;
+	};
+
 	HeapBuffer(size_t inCapacity);
 	HeapBuffer() = delete;
 	HeapBuffer(HeapBuffer&&) = delete;
@@ -25,11 +51,13 @@ public:
 	inline char const* begin() const { return data.get(); }
 	inline char const* end() const { return data.get() + capacity; }
 
+	/** Reset the entire buffer, returning the cursor back to the beginning of the buffer */
 	inline void Reset() noexcept { current = begin(); }
 
+	/** The cursor position points to the current location in the buffer where requests can be made. It can move anywhere within the capacity of the buffer */
 	inline char* GetCursor() const noexcept { return current; }
 	inline void SetCursor(char* newCurrent) noexcept {
-		current = std::min(std::max(newCurrent, begin()), end()); //Clamp the input to ensure it's inside the buffer
+		current = std::clamp(newCurrent, begin(), end()); //Clamp the input to ensure it's inside the buffer
 		peakUsage = std::max(peakUsage, GetUsed());
 	}
 
@@ -39,6 +67,7 @@ public:
 	inline size_t GetPeakUsage() const noexcept { return peakUsage; }
 	inline size_t GetPeakOverflow() const noexcept { return peakOverflow; }
 
+	/** Returns true if the pointer value lies within the buffer */
 	inline bool Contains(void* pointer) const noexcept {
 		return true &&
 			static_cast<char*>(pointer) >= begin() &&
@@ -49,23 +78,13 @@ public:
 	template<typename T>
 	inline T* Request(size_t count = 1) noexcept {
 		static_assert(sizeof(T) > 0, "Template type has zero size");
-
-		if (size_t const requestedBytes = sizeof(T) * count) {
-			size_t availableBytes = GetAvailable();
-			void* alignedCurrent = GetCursor();
-			if (std::align(alignof(T), requestedBytes, alignedCurrent, availableBytes)) {
-				SetCursor(static_cast<char*>(alignedCurrent) + requestedBytes);
-				return static_cast<T*>(alignedCurrent);
-			} else {
-				//The actual overflow is probably a bit higher due to alignment, but this number does not need to be exact.
-				peakOverflow = std::max(peakOverflow, requestedBytes);
-			}
-		}
-		return nullptr;
+		return static_cast<T*>(Request(count, sizeof(T), alignof(T)));
 	}
+
+	void* Request(size_t count, size_t size, size_t alignment) noexcept;
 };
 
-/** std allocator that uses a buffer to manage allocations. */
+/** std allocator that uses a HeapBuffer to manage allocations. */
 template<typename T>
 class TLinearAllocator {
 	template<typename U>
