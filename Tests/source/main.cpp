@@ -22,6 +22,7 @@
 #include "Rendering/MeshRendererComponent.h"
 #include "Rendering/VertexData.h"
 #include "Rendering/Shader.h"
+#include "Profiling/ProfilerMacros.h"
 #include "Reflection/StandardResolvers.h"
 #include "Reflection/StructTypeInfo.h"
 #include "Reflection/TupleTypeInfo.h"
@@ -51,6 +52,7 @@ DEFINE_LOG_CATEGORY(Main, Debug);
 
 // Primary system procedures
 bool Startup(CTX_ARG) {
+	PROFILE_FUNCTION();
 	TEMP_SCOPE;
 	LOG(Main, Info, "Starting up all systems...");
 
@@ -73,6 +75,7 @@ bool Startup(CTX_ARG) {
 }
 
 void Shutdown(CTX_ARG) {
+	PROFILE_FUNCTION();
 	TEMP_SCOPE;
 	LOG(Main, Info, "Shutting down all systems...");
 
@@ -89,6 +92,8 @@ void MainLoop(CTX_ARG) {
 
 	bool shutdownRequested = false;
 	while (!shutdownRequested) {
+		PROFILE_DURATION("MainLoop");
+
 		timeController.AdvanceFrame();
 
 		sdlEventSystem.PollEvents(shutdownRequested);
@@ -96,7 +101,6 @@ void MainLoop(CTX_ARG) {
 		while (timeController.StartUpdateFrame()) {
 			CTX.temp.Reset();
 			//const Time& T = timeController.GetTime();
-			//CTX.Log->Message( DESC( timeController ) );
 			entityCollectionSystem.UpdateFilters();
 
 			//Game Update
