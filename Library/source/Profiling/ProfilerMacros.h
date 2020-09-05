@@ -5,18 +5,18 @@
 #define PROFILE_BEGIN_SESSION(Name)
 #define PROFILE_END_SESSION()
 
-#define PROFILE_DURATION(Name)
-#define PROFILE_FUNCTION()
-#define PROFILE_INSTANT(Name)
-#define PROFILE_COUNTER(Name, Value)
+#define PROFILE_DURATION(Name, Category)
+#define PROFILE_FUNCTION(Category)
+#define PROFILE_INSTANT(Name, Category)
+#define PROFILE_COUNTER(Name, Category, Value)
 
 #else
 #define PROFILE_BEGIN_SESSION(Name) ::Profiling::Profiler::Get().BeginSession(CTX, Name)
 #define PROFILE_END_SESSION() ::Profiling::Profiler::Get().EndSession()
 
-#define PROFILE_DURATION(Name) const ::Profiling::ProfilerDurationEventScope scope_ ## __COUNTER__{ Name }
-#define PROFILE_FUNCTION() PROFILE_DURATION(__FUNCTION__)
-#define PROFILE_INSTANT(Name) ::Profiling::Profiler::Get().WriteInstantEvent(Name, ::Profiling::Now())
-#define PROFILE_COUNTER(Name, Value) ::Profiling::Profiler::Get().WriteCounterEvent(Name, ::Profiling::Now(), Value)
+#define PROFILE_DURATION(Name, Category) const ::Profiling::ProfilerDurationEventScope scope_ ## __COUNTER__{ Name, Profile ## Category }
+#define PROFILE_FUNCTION(Category) PROFILE_DURATION(__FUNCTION__, Category)
+#define PROFILE_INSTANT(Name, Category) ::Profiling::Profiler::Get().WriteInstantEvent(Name, Profile ## Category, ::Profiling::Now())
+#define PROFILE_COUNTER(Name, Category, Value) ::Profiling::Profiler::Get().WriteCounterEvent(Name, Profile ## Category, ::Profiling::Now(), Value)
 
 #endif

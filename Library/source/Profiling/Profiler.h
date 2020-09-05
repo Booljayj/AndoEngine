@@ -6,6 +6,7 @@
 #include <thread>
 #include "Engine/Context.h"
 #include "Engine/Logging/LogCategory.h"
+#include "Profiling/ProfileCategory.h"
 #include "Profiling/ProfileTypes.h"
 
 DECLARE_LOG_CATEGORY(Profiler);
@@ -33,12 +34,12 @@ namespace Profiling {
 		TimePointType GetSessionBeginTimePoint();
 
 		/** Write profiling event information to the current session */
-		void WriteInstantEvent(std::string_view name, TimePointType time);
-		void WriteDurationEvent(std::string_view name, TimePointType time, DurationType duration);
-		void WriteCounterEvent(std::string_view name, TimePointType time, uint64_t value);
-		void WriteObjectCreationEvent(std::string_view name, void const* address, TimePointType time);
-		void WriteObjectDestructionEvent(std::string_view name, void const* address, TimePointType time);
-		void WriteObjectSnapshotEvent(std::string_view name, void const* address, std::string_view snapshot, TimePointType time);
+		void WriteInstantEvent(std::string_view name, const ProfileCategory& category, TimePointType time);
+		void WriteDurationEvent(std::string_view name, const ProfileCategory& category, TimePointType time, DurationType duration);
+		void WriteCounterEvent(std::string_view name, const ProfileCategory& category, TimePointType time, uint64_t value);
+		void WriteObjectCreationEvent(std::string_view name, const ProfileCategory& category, void const* address, TimePointType time);
+		void WriteObjectDestructionEvent(std::string_view name, const ProfileCategory& category, void const* address, TimePointType time);
+		void WriteObjectSnapshotEvent(std::string_view name, const ProfileCategory& category, void const* address, std::string_view snapshot, TimePointType time);
 
 	private:
 		struct Session {
@@ -56,12 +57,12 @@ namespace Profiling {
 			bool IsValid() const;
 			void IncrementFlushCounter();
 
-			void WriteInstantEvent(std::string_view name, TimePointType time);
-			void WriteDurationEvent(std::string_view name, TimePointType time, DurationType duration);
-			void WriteCounterEvent(std::string_view name, TimePointType time, uint64_t value);
-			void WriteObjectCreationEvent(std::string_view name, void const* address, TimePointType time);
-			void WriteObjectDestructionEvent(std::string_view name, void const* address, TimePointType time);
-			void WriteObjectSnapshotEvent(std::string_view name, void const* address, std::string_view snapshot, TimePointType time);
+			void WriteInstantEvent(std::string_view name, const ProfileCategory& category, TimePointType time);
+			void WriteDurationEvent(std::string_view name, const ProfileCategory& category, TimePointType time, DurationType duration);
+			void WriteCounterEvent(std::string_view name, const ProfileCategory& category, TimePointType time, uint64_t value);
+			void WriteObjectCreationEvent(std::string_view name, const ProfileCategory& category, void const* address, TimePointType time);
+			void WriteObjectDestructionEvent(std::string_view name, const ProfileCategory& category, void const* address, TimePointType time);
+			void WriteObjectSnapshotEvent(std::string_view name, const ProfileCategory& category, void const* address, std::string_view snapshot, TimePointType time);
 		};
 
 		std::shared_mutex sessionMutex;

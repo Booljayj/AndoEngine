@@ -51,34 +51,34 @@ namespace Profiling {
 		else return TimePointType::min();
 	}
 
-	void Profiler::WriteInstantEvent(std::string_view name, TimePointType time) {
+	void Profiler::WriteInstantEvent(std::string_view name, const ProfileCategory& category, TimePointType time) {
 		const std::unique_lock lock{ sessionMutex };
-		if (session) session->WriteInstantEvent(name, time);
+		if (session) session->WriteInstantEvent(name, category, time);
 	}
 
-	void Profiler::WriteDurationEvent(std::string_view name, TimePointType startTime, DurationType duration) {
+	void Profiler::WriteDurationEvent(std::string_view name, const ProfileCategory& category, TimePointType startTime, DurationType duration) {
 		const std::unique_lock lock{ sessionMutex };
-		if (session) session->WriteDurationEvent(name, startTime, duration);
+		if (session) session->WriteDurationEvent(name, category, startTime, duration);
 	}
 
-	void Profiler::WriteCounterEvent(std::string_view name, TimePointType time, uint64_t value) {
+	void Profiler::WriteCounterEvent(std::string_view name, const ProfileCategory& category, TimePointType time, uint64_t value) {
 		const std::unique_lock lock{ sessionMutex };
-		if (session) session->WriteCounterEvent(name, time, value);
+		if (session) session->WriteCounterEvent(name, category, time, value);
 	}
 
-	void Profiler::WriteObjectCreationEvent(std::string_view name, void const* address, TimePointType time) {
+	void Profiler::WriteObjectCreationEvent(std::string_view name, const ProfileCategory& category, void const* address, TimePointType time) {
 		const std::unique_lock lock{ sessionMutex };
-		if (session) session->WriteObjectCreationEvent(name, address, time);
+		if (session) session->WriteObjectCreationEvent(name, category, address, time);
 	}
 
-	void Profiler::WriteObjectDestructionEvent(std::string_view name, void const* address, TimePointType time) {
+	void Profiler::WriteObjectDestructionEvent(std::string_view name, const ProfileCategory& category, void const* address, TimePointType time) {
 		const std::unique_lock lock{ sessionMutex };
-		if (session) session->WriteObjectDestructionEvent(name, address, time);
+		if (session) session->WriteObjectDestructionEvent(name, category, address, time);
 	}
 
-	void Profiler::WriteObjectSnapshotEvent(std::string_view name, void const* address, std::string_view snapshot, TimePointType time) {
+	void Profiler::WriteObjectSnapshotEvent(std::string_view name, const ProfileCategory& category, void const* address, std::string_view snapshot, TimePointType time) {
 		const std::unique_lock lock{ sessionMutex };
-		if (session) session->WriteObjectSnapshotEvent(name, address, snapshot, time);
+		if (session) session->WriteObjectSnapshotEvent(name, category, address, snapshot, time);
 	}
 
 	uint32_t Profiler::Session::GetThreadID() {
@@ -132,11 +132,12 @@ namespace Profiling {
 		}
 	}
 
-	void Profiler::Session::WriteInstantEvent(std::string_view name, TimePointType time) {
+	void Profiler::Session::WriteInstantEvent(std::string_view name, const ProfileCategory& category, TimePointType time) {
 		const uint32_t threadID = GetThreadID();
 		const uint64_t timeMicroseconds = (time - beginTimePoint).count();
 		file
-			<< ",{\"ph\":\"I\",\"cat\":\"Default\",\"pid\":0,\"name\":\""sv << name
+			<< ",{\"ph\":\"I\",\"pid\":0,\"name\":\""sv << name
+			<< "\",\"cat\":\""sv << category.GetName()
 			<< "\",\"tid\":"sv << threadID
 			<< ",\"ts\":"sv << timeMicroseconds
 			<< "}\n"sv;
@@ -144,12 +145,13 @@ namespace Profiling {
 		IncrementFlushCounter();
 	}
 
-	void Profiler::Session::WriteDurationEvent(std::string_view name, TimePointType time, DurationType duration) {
+	void Profiler::Session::WriteDurationEvent(std::string_view name, const ProfileCategory& category, TimePointType time, DurationType duration) {
 		const uint32_t threadID = GetThreadID();
 		const uint64_t timeMicroseconds = (time - beginTimePoint).count();
 		const uint64_t durationMicroseconds = duration.count();
 		file
-			<< ",{\"ph\":\"X\",\"cat\":\"Default\",\"pid\":0,\"name\":\""sv << name
+			<< ",{\"ph\":\"X\",\"pid\":0,\"name\":\""sv << name
+			<< "\",\"cat\":\""sv << category.GetName()
 			<< "\",\"tid\":"sv << threadID
 			<< ",\"ts\":"sv << timeMicroseconds
 			<< ",\"dur\":"sv << durationMicroseconds
@@ -158,11 +160,12 @@ namespace Profiling {
 		IncrementFlushCounter();
 	}
 
-	void Profiler::Session::WriteCounterEvent(std::string_view name, TimePointType time, uint64_t value) {
+	void Profiler::Session::WriteCounterEvent(std::string_view name, const ProfileCategory& category, TimePointType time, uint64_t value) {
 		const uint32_t threadID = GetThreadID();
 		const uint64_t timeMicroseconds = (time - beginTimePoint).count();
 		file
-			<< ",{\"ph\":\"C\",\"cat\":\"Default\",\"pid\":0,\"name\":\""sv << name
+			<< ",{\"ph\":\"C\",\"pid\":0,\"name\":\""sv << name
+			<< "\",\"cat\":\""sv << category.GetName()
 			<< "\",\"tid\":"sv << threadID
 			<< ",\"ts\":"sv << timeMicroseconds
 			<< ",\"args\":{\""sv << name << "\":" << value
@@ -171,13 +174,13 @@ namespace Profiling {
 		IncrementFlushCounter();
 	}
 
-	void Profiler::Session::WriteObjectCreationEvent(std::string_view name, void const* address, TimePointType time) {
+	void Profiler::Session::WriteObjectCreationEvent(std::string_view name, const ProfileCategory& category, void const* address, TimePointType time) {
 		//@todo
 	}
-	void Profiler::Session::WriteObjectDestructionEvent(std::string_view name, void const* address, TimePointType time) {
+	void Profiler::Session::WriteObjectDestructionEvent(std::string_view name, const ProfileCategory& category, void const* address, TimePointType time) {
 		//@todo
 	}
-	void Profiler::Session::WriteObjectSnapshotEvent(std::string_view name, void const* address, std::string_view snapshot, TimePointType time) {
+	void Profiler::Session::WriteObjectSnapshotEvent(std::string_view name, const ProfileCategory& category, void const* address, std::string_view snapshot, TimePointType time) {
 		//@todo
 	}
 }

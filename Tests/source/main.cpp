@@ -49,10 +49,11 @@ SDLWindowSystem sdlWindowSystem;
 RenderingSystem renderingSystem;
 
 DEFINE_LOG_CATEGORY(Main, Debug);
+DEFINE_PROFILE_CATEGORY(Main);
 
 // Primary system procedures
 bool Startup(CTX_ARG) {
-	PROFILE_FUNCTION();
+	PROFILE_FUNCTION(Main);
 	TEMP_SCOPE;
 	LOG(Main, Info, "Starting up all systems...");
 
@@ -75,8 +76,9 @@ bool Startup(CTX_ARG) {
 }
 
 void Shutdown(CTX_ARG) {
-	PROFILE_FUNCTION();
+	PROFILE_FUNCTION(Main);
 	TEMP_SCOPE;
+
 	LOG(Main, Info, "Shutting down all systems...");
 
 	SHUTDOWN_SYSTEM(Main, renderingSystem);
@@ -92,7 +94,7 @@ void MainLoop(CTX_ARG) {
 
 	bool shutdownRequested = false;
 	while (!shutdownRequested) {
-		PROFILE_DURATION("MainLoop");
+		PROFILE_DURATION("MainLoop", Main);
 
 		timeController.AdvanceFrame();
 
