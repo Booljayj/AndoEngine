@@ -1,6 +1,5 @@
 #include "Engine/LinearStrings.h"
 #include "Engine/LogCommands.h"
-#include "Engine/ScopedTempBlock.h"
 #include "Rendering/Vulkan/VulkanCommon.h"
 #include "Rendering/Vulkan/VulkanDebug.h"
 
@@ -37,7 +36,7 @@ namespace Rendering {
 		void* pUserData
 	) {
 		Context& CTX = *static_cast<Context*>(pUserData);
-		TEMP_SCOPE;
+		TEMP_ALLOCATOR_MARK();
 
 		static char const* format = "%s%s";
 		char const* prefix = GetTypePrefix(CTX, messageType);

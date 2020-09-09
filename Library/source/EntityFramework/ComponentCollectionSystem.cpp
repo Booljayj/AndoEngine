@@ -4,7 +4,6 @@
 #include "Engine/LogCommands.h"
 #include "Engine/LinearContainers.h"
 #include "Engine/LinearStrings.h"
-#include "Engine/ScopedTempBlock.h"
 #include "EntityFramework/ComponentInfo.h"
 
 ComponentCollectionSystem::Searcher::Searcher(ComponentCollectionSystem const& inCollection)

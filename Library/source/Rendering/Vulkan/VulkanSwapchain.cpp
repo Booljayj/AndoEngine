@@ -1,10 +1,9 @@
 #include "Engine/LinearContainers.h"
-#include "Engine/ScopedTempBlock.h"
 #include "Rendering/Vulkan/VulkanSwapchain.h"
 
 namespace Rendering {
 	bool VulkanSwapchain::Create(CTX_ARG, VkExtent2D const& desiredExtent, VkSurfaceKHR const& surface, Rendering::VulkanPhysicalDevice const& physicalDevice, VkDevice const& logicalDevice) {
-		TEMP_SCOPE;
+		TEMP_ALLOCATOR_MARK();
 		bool bSuccess = true;
 
 		surfaceFormat = ChooseSwapSurfaceFormat(physicalDevice.presentation.surfaceFormats);

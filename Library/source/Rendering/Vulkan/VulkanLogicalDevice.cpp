@@ -1,10 +1,9 @@
 #include "Engine/LinearContainers.h"
-#include "Engine/ScopedTempBlock.h"
 #include "Rendering/Vulkan/VulkanLogicalDevice.h"
 
 namespace Rendering {
 	bool VulkanLogicalDevice::Create(CTX_ARG, VulkanPhysicalDevice const& physicalDevice, VkPhysicalDeviceFeatures const& enabledFeatures, TArrayView<char const*> const& enabledExtensionNames) {
-		TEMP_SCOPE;
+		TEMP_ALLOCATOR_MARK();
 
 		l_unordered_set<uint32_t> uniqueQueueFamilies{CTX.temp};
 		uniqueQueueFamilies.insert(physicalDevice.queues.graphics.value().index);

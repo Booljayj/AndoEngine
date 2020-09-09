@@ -5,7 +5,6 @@
 #include "Engine/LinearAllocator.h"
 #include "Engine/LinearContainers.h"
 #include "Engine/LinearStrings.h"
-#include "Engine/ScopedTempBlock.h"
 #include "Engine/TerminalColors.h"
 #include "Engine/Time.h"
 #include "Engine/Context.h"
@@ -54,7 +53,7 @@ DEFINE_PROFILE_CATEGORY(Main);
 // Primary system procedures
 bool Startup(CTX_ARG) {
 	PROFILE_FUNCTION(Main);
-	TEMP_SCOPE;
+	TEMP_ALLOCATOR_MARK();
 	LOG(Main, Info, "Starting up all systems...");
 
 	const std::initializer_list<const ComponentInfo*> components = {
@@ -77,7 +76,7 @@ bool Startup(CTX_ARG) {
 
 void Shutdown(CTX_ARG) {
 	PROFILE_FUNCTION(Main);
-	TEMP_SCOPE;
+	TEMP_ALLOCATOR_MARK();
 
 	LOG(Main, Info, "Shutting down all systems...");
 
@@ -95,17 +94,17 @@ void MainLoop(CTX_ARG) {
 	bool shutdownRequested = false;
 	while (!shutdownRequested) {
 		PROFILE_DURATION("MainLoop", Main);
+		TEMP_ALLOCATOR_MARK();
 
 		timeController.AdvanceFrame();
 
 		sdlEventSystem.PollEvents(shutdownRequested);
 
 		while (timeController.StartUpdateFrame()) {
-			CTX.temp.Reset();
 			//const Time& T = timeController.GetTime();
 			entityCollectionSystem.UpdateFilters();
 
-			//Game Update
+			//@todo: Game Update
 
 			entityCollectionSystem.RecycleGarbage(CTX);
 			timeController.FinishUpdateFrame();
@@ -113,7 +112,6 @@ void MainLoop(CTX_ARG) {
 
 		if (!shutdownRequested) {
 			//const float interpolationAlpha = timeController.FrameInterpolationAlpha();
-			CTX.temp.Reset();
 		}
 	}
 }
@@ -172,7 +170,7 @@ int main(int argc, char const* argv[]) {
 		// GL::Link(*testProgram);
 		// GL::Use(*testProgram);
 
-		// MainLoop(CTX);
+		MainLoop(CTX);
 	}
 
 	Shutdown(CTX);

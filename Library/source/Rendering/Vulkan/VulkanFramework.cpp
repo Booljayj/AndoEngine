@@ -1,12 +1,11 @@
 #include <SDL2/SDL_vulkan.h>
-#include "Engine/ScopedTempBlock.h"
 #include "Engine/LogCommands.h"
 #include "Rendering/Vulkan/VulkanFramework.h"
 #include "Rendering/Vulkan/VulkanDebug.h"
 
 namespace Rendering {
 	bool VulkanFramework::Create(CTX_ARG, SDL_Window* window) {
-		TEMP_SCOPE;
+		TEMP_ALLOCATOR_MARK();
 
 		//Information to create a debug messenger, used in several locations within this function.
 		VkDebugUtilsMessengerCreateInfoEXT const messengerCI = Rendering::GetDebugUtilsMessengerCreateInfo(CTX);
@@ -91,7 +90,7 @@ namespace Rendering {
 	}
 
 	bool VulkanFramework::CanEnableValidationLayers(CTX_ARG, TArrayView<char const*> const& enabledLayerNames) {
-		TEMP_SCOPE;
+		TEMP_ALLOCATOR_MARK();
 
 		uint32_t availableLayerCount;
 		vkEnumerateInstanceLayerProperties(&availableLayerCount, nullptr);
@@ -130,7 +129,7 @@ namespace Rendering {
 	}
 
 	bool VulkanFramework::CanEnableExtensions(CTX_ARG, TArrayView<char const*> const& enabledExtensionNames) {
-		TEMP_SCOPE;
+		TEMP_ALLOCATOR_MARK();
 
 		uint32_t availableExtensionCount;
 		vkEnumerateInstanceExtensionProperties(nullptr, &availableExtensionCount, nullptr);

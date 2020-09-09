@@ -7,14 +7,17 @@
 /** Macro used to define a function that requires a context. Must appear as the first parameter in the function */
 #define CTX_ARG Context& CTX
 
+/** Makes a mark in the current scope for the temp allocator. When this scope ends, the temporary memory used in this scope will be fully reset. */
+#define TEMP_ALLOCATOR_MARK() HeapBuffer::Mark tempMark_ ## __COUNTER__{CTX.temp}
+
 /** A context is an object that is passed around between many functions, similar to the "this" pointer.
  * It provides a common place to put data that is often considered static or global. It can also expose
  * extremely common utilities, including logging, assertions, and temporary allocations.
  */
 struct Context {
-	Context( size_t inTempCapacity )
-		: threadID( std::this_thread::get_id() )
-		, temp( inTempCapacity )
+	Context(size_t inTempCapacity)
+		: threadID(std::this_thread::get_id())
+		, temp(inTempCapacity)
 	{}
 
 private:
@@ -22,7 +25,7 @@ private:
 	std::thread::id threadID;
 
 public:
-	/** Buffer used for dynamic allocation of small objects within the thread */
+	/** Buffer used for dynamic allocation of small, temporary objects within the thread */
 	HeapBuffer temp;
 	/** Logger object used to print output */
 	Logger log;

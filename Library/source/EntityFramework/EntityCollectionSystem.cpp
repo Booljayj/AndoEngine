@@ -4,7 +4,6 @@
 #include "Engine/LinearContainers.h"
 #include "Engine/LinearStrings.h"
 #include "Engine/LogCommands.h"
-#include "Engine/ScopedTempBlock.h"
 #include "EntityFramework/ComponentInfo.h"
 #include "EntityFramework/Entity.h"
 
@@ -20,7 +19,7 @@ bool EntityCollectionSystem::Shutdown(CTX_ARG) {
 }
 
 Entity const* EntityCollectionSystem::Create(CTX_ARG, EntityID const& newID, ComponentInfo const* const* infos, ByteStream const* byteStreams, size_t count) {
-	TEMP_SCOPE;
+	TEMP_ALLOCATOR_MARK();
 	Entity* newEntity = InsertNew(CTX, newID);
 	if (newEntity) {
 		newEntity->Reserve(count);

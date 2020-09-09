@@ -36,11 +36,10 @@ void SDLEventSystem::PollEvents(bool& requestShutdown) {
 	SDL_Event currentEvent;
 
 	while (SDL_PollEvent(&currentEvent)) {
-		ImGui_ImplSDL2_ProcessEvent(&currentEvent);
+		//ImGui_ImplSDL2_ProcessEvent(&currentEvent);
 		frameEvents.push_back(currentEvent);
-		if (currentEvent.type == SDL_QUIT) {
-			requestShutdown = true;
-		}
+
+		requestShutdown |= (currentEvent.type == SDL_QUIT);
 	}
 }
 
