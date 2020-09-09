@@ -1,28 +1,18 @@
 #pragma once
-#include <memory>
 #include <vulkan/vulkan.h>
-#include <ostream>
 #include "Engine/Context.h"
 #include "Engine/Logging/Logger.h"
-#include "EntityFramework/ComponentInfo.h"
-#include "EntityFramework/EntityFilter.h"
 #include "Rendering/Vulkan/VulkanFramework.h"
 #include "Rendering/Vulkan/VulkanLogicalDevice.h"
 #include "Rendering/Vulkan/VulkanPhysicalDevice.h"
 #include "Rendering/Vulkan/VulkanSwapchain.h"
 
+DECLARE_LOG_CATEGORY(Rendering);
+
 struct SDLWindowSystem;
-struct TransformComponent;
-struct MeshRendererComponent;
-struct EntityCollectionSystem;
 
 class RenderingSystem {
 private:
-	static constexpr size_t FilterSize = 2;
-	std::shared_ptr<EntityFilter<FilterSize>> filter;
-	TComponentHandle<TransformComponent> transformHandle;
-	TComponentHandle<MeshRendererComponent> meshRendererHandle;
-
 	/** The vulkan framework for this application */
 	Rendering::VulkanFramework framework;
 
@@ -48,10 +38,7 @@ public:
 
 	bool Startup(
 		CTX_ARG,
-		SDLWindowSystem* windowSystem,
-		EntityCollectionSystem* entityCollectionSystem,
-		TComponentInfo<TransformComponent>* transform,
-		TComponentInfo<MeshRendererComponent>* meshRenderer
+		SDLWindowSystem* windowSystem
 	);
 	bool Shutdown(CTX_ARG);
 
@@ -61,9 +48,6 @@ public:
 		else return nullptr;
 	}
 	bool SelectPhysicalDevice(CTX_ARG, uint32_t Index);
-
-	void RenderFrame(float InterpolationAlpha) const;
-	static void RenderComponent(MeshRendererComponent const* MeshRenderer);
 
 private:
 	bool IsUsablePhysicalDevice(const Rendering::VulkanPhysicalDevice& physicalDevice, TArrayView<char const*> const& extensionNames);

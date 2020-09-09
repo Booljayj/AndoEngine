@@ -1,7 +1,6 @@
 #pragma once
 #include <vector>
 #include <glm/mat4x4.hpp>
-#include "EntityFramework/Managers/SimpleComponentManager.h"
 
 /** Allows an entity to exist at a point in space, often relative to another entity */
 struct TransformComponent {
@@ -25,8 +24,6 @@ struct TransformHierarchy {
 	std::vector<HierarchyEntry> entries; //entries in forward-iteration order starting with the root, parents will always appear before their children */
 };
 
-using TransformComponentManager = TSimpleComponentManager<TransformComponent>;
-
 /** Allows an entity to form a heirarchy with other entities */
 struct HierarchyComponent {
 	HierarchyComponent* parent;
@@ -34,5 +31,3 @@ struct HierarchyComponent {
 
 	//Event<HierarchyComponent*, HierarchyComponent*> hierarchyChanged;
 };
-
-using HierarchyComponentManager = TSimpleComponentManager<HierarchyComponent>;

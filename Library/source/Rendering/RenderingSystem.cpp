@@ -1,36 +1,21 @@
 #include <cassert>
+#include <iostream>
 #include <glm/vec3.hpp>
 #include <SDL2/SDL_vulkan.h>
 #include <vulkan/vulkan.h>
 #include "Rendering/RenderingSystem.h"
-#include "Engine/BasicComponents.h"
 #include "Engine/LogCommands.h"
 #include "Engine/Utility.h"
-#include "EntityFramework/EntityCollectionSystem.h"
 #include "Rendering/SDLSystems.h"
 #include "Rendering/MeshRendererComponent.h"
+
+DEFINE_LOG_CATEGORY(Rendering, Warning);
 
 RenderingSystem::RenderingSystem()
 : shouldRecreateSwapchain(false)
 {}
 
-bool RenderingSystem::Startup(
-	CTX_ARG,
-	SDLWindowSystem* windowSystem,
-	EntityCollectionSystem* entityCollectionSystem,
-	TComponentInfo<TransformComponent>* transform,
-	TComponentInfo<MeshRendererComponent>* meshRenderer)
-{
-	ComponentInfo const* infos[FilterSize] = { transform, meshRenderer };
-	filter = entityCollectionSystem->MakeFilter(infos);
-	if (filter) {
-		transformHandle = filter->GetMatchComponentHandle(transform);
-		meshRendererHandle = filter->GetMatchComponentHandle(meshRenderer);
-		//return true;
-	} else {
-		//return false;
-	}
-
+bool RenderingSystem::Startup(CTX_ARG, SDLWindowSystem* windowSystem) {
 	// Vulkan instance
 	if (!framework.Create(CTX, windowSystem->GetMainWindow())) {
 		LOG(Temp, Error, "Failed to create the Vulkan application");
@@ -101,23 +86,6 @@ bool RenderingSystem::SelectPhysicalDevice(CTX_ARG, uint32_t index) {
 		}
 	}
 	return false;
-}
-
-void RenderingSystem::RenderFrame(float interpolationAlpha) const {
-	for (EntityFilter<FilterSize>::FilterMatch const& match : *filter) {
-		RenderComponent(match.Get(meshRendererHandle));
-	}
-}
-
-void RenderingSystem::RenderComponent(MeshRendererComponent const* meshRenderer) {
-	if (!meshRenderer->IsValid()) return;
-
-	//glBindVertexArray(meshRenderer->VertexArrayID);
-	//glDrawArrays(GL_TRIANGLES, 0, meshRenderer->VertexCount);
-	//GLenum ErrorCode = glGetError();
-	//if (ErrorCode != GL_NO_ERROR) {
-	//	std::cerr << "OpenGL Error: " << ErrorCode << std::endl;
-	//}
 }
 
 bool RenderingSystem::IsUsablePhysicalDevice(const Rendering::VulkanPhysicalDevice& physicalDevice, TArrayView<char const*> const& extensionNames) {

@@ -1,6 +1,5 @@
 #pragma once
 #include <GL/glew.h>
-#include "EntityFramework/Managers/SimpleComponentManager.h"
 #include "Rendering/VertexArrayObject.h"
 #include "Rendering/Shader.h"
 #include "Rendering/MeshComponent.h"
@@ -32,5 +31,3 @@ struct MeshRendererComponent {
 		glDeleteVertexArrays(1, &vertexArrayID);
 	}
 };
-
-using MeshRendererComponentManager = TSimpleComponentManager<MeshRendererComponent>;

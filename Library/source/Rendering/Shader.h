@@ -1,7 +1,6 @@
 #pragma once
 #include <ostream>
 #include <GL/glew.h>
-#include "EntityFramework/Managers/SimpleComponentManager.h"
 #include "Rendering/EShader.enum.h"
 #include "Rendering/Uniform.h"
 #include "Rendering/Types.h"
@@ -16,8 +15,6 @@ struct ShaderComponent {
 	bool isCompiled = false;
 };
 
-using ShaderComponentManager = TSimpleComponentManager<ShaderComponent>;
-
 struct ProgramComponent {
 	//Serialized data
 	std::vector<ShaderComponent*> linkedShaders;
@@ -27,8 +24,6 @@ struct ProgramComponent {
 	std::vector<GL::UniformInfo> uniforms;
 	bool isLinked = false;
 };
-
-using ProgramComponentManager = TSimpleComponentManager<ProgramComponent>;
 
 namespace GL {
 	bool Compile(ShaderComponent& shader);
