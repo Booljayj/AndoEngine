@@ -2,6 +2,7 @@
 #include <vulkan/vulkan.h>
 #include "Engine/Context.h"
 #include "Engine/Logging/Logger.h"
+#include "EntityFramework/EntityRegistry.h"
 #include "Rendering/Vulkan/VulkanFramework.h"
 #include "Rendering/Vulkan/VulkanLogicalDevice.h"
 #include "Rendering/Vulkan/VulkanPhysicalDevice.h"
@@ -13,6 +14,9 @@ struct SDLWindowSystem;
 
 class RenderingSystem {
 private:
+	/** The entity group that contains all entities to render */
+	//EntityGroup<TypeList<MeshRendererComponent>, TypeList<TransformComponent>, TypeList<>> RenderableEntities;
+
 	/** The vulkan framework for this application */
 	Rendering::VulkanFramework framework;
 
@@ -38,7 +42,8 @@ public:
 
 	bool Startup(
 		CTX_ARG,
-		SDLWindowSystem* windowSystem
+		SDLWindowSystem& windowSystem,
+		EntityRegistry& registry
 	);
 	bool Shutdown(CTX_ARG);
 

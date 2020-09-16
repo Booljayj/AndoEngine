@@ -1,5 +1,13 @@
-#include <array>
+#pragma once
 #include <cstddef>
+#include <type_traits>
+
+/** Helper template struct that is created from a list of types */
+template<typename... Types>
+struct TTypeList {};
+/** Helper variable that becomes a typelist created from a list of types */
+template<typename... Types>
+constexpr TTypeList<Types...> list;
 
 namespace PointerTypes {
 	using StaticVariable = void*;

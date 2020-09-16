@@ -35,7 +35,7 @@ void EntityManifest::LoadManifestFile(CTX_ARG, std::string_view filename) {
 	// }
 }
 
-EntityManifest::FileEntry const* EntityManifest::Find(const EntityID& id) const {
+EntityManifest::FileEntry const* EntityManifest::Find(const EntityAssetID& id) const {
 	// const auto iter = entries.find(id);
 	// if (iter != entries.end()) {
 	// 	return &(iter->second);

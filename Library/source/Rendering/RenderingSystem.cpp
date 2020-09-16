@@ -15,9 +15,9 @@ RenderingSystem::RenderingSystem()
 : shouldRecreateSwapchain(false)
 {}
 
-bool RenderingSystem::Startup(CTX_ARG, SDLWindowSystem* windowSystem) {
+bool RenderingSystem::Startup(CTX_ARG, SDLWindowSystem& windowSystem, EntityRegistry& registry) {
 	// Vulkan instance
-	if (!framework.Create(CTX, windowSystem->GetMainWindow())) {
+	if (!framework.Create(CTX, windowSystem.GetMainWindow())) {
 		LOG(Temp, Error, "Failed to create the Vulkan application");
 	}
 

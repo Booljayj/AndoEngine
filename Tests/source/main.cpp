@@ -1,29 +1,15 @@
-#include <iostream>
-#include <string_view>
-#include <GL/glew.h>
-#include "Engine/BasicComponents.h"
-#include "Engine/LinearAllocator.h"
-#include "Engine/LinearContainers.h"
-#include "Engine/LinearStrings.h"
-#include "Engine/TerminalColors.h"
 #include "Engine/Time.h"
 #include "Engine/Context.h"
 #include "Engine/LogCommands.h"
 #include "Engine/Logging/TerminalLoggerModule.h"
 #include "Engine/Logging/FileLoggerModule.h"
+#include "EntityFramework/EntityRegistry.h"
 #include "EntityFramework/UtilityMacros.h"
 #include "Rendering/SDLSystems.h"
 #include "Rendering/RenderingSystem.h"
-#include "Rendering/MeshComponent.h"
-#include "Rendering/MeshRendererComponent.h"
-#include "Rendering/VertexData.h"
-#include "Rendering/Shader.h"
 #include "Profiling/ProfilerMacros.h"
-#include "Reflection/StandardResolvers.h"
-#include "Reflection/StructTypeInfo.h"
-#include "Reflection/TupleTypeInfo.h"
-#include "Reflection/ReflectionTest.h"
-#include "Reflection/TypeUtility.h"
+
+EntityRegistry registry;
 
 SDLFrameworkSystem sdlFrameworkSystem;
 SDLEventSystem sdlEventSystem;
@@ -43,7 +29,7 @@ bool Startup(CTX_ARG) {
 	STARTUP_SYSTEM(Main, sdlFrameworkSystem);
 	STARTUP_SYSTEM(Main, sdlEventSystem);
 	STARTUP_SYSTEM(Main, sdlWindowSystem);
-	//STARTUP_SYSTEM(Main, renderingSystem, &sdlWindowSystem, &entityCollectionSystem, &transform, &meshRenderer);
+	STARTUP_SYSTEM(Main, renderingSystem, sdlWindowSystem, registry);
 	return true;
 }
 
