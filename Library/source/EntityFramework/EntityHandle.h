@@ -1,6 +1,10 @@
 #pragma once
+#include <tuple>
+#include "Engine/Context.h"
+#include "Engine/LinearContainers.h"
 #include "EntityFramework/EntityInternals.h"
 #include "EntityFramework/EntityTypes.h"
+#include "Reflection/TypeInfo.h"
 
 /**
  * A handle to an Entity.
@@ -13,7 +17,10 @@ public:
 	EntityHandle(const EntityHandle&) = default;
 	EntityHandle(entt::registry& inRegistry, entt::entity inID) : registry(&inRegistry), id(inID) {}
 
+	/** True if this handle does not point to an entity. */
 	inline bool IsNull() const { return registry->valid(id); }
+	/** True if this entity has no components assigned to it. */
+	inline bool IsEmpty() const { return registry->orphan(id); }
 
 	/** Returns true if this entity has all the component types */
 	template<typename... T>
@@ -22,9 +29,9 @@ public:
 	template<typename... T>
 	inline decltype(auto) Get() const { return registry->get<T...>(id); }
 
-	/** Add a component type to this entity. If the entity already has a component of the same type, it will be replaced */
+	/** Add a component type to this entity. */
 	template<typename T, typename... ArgTypes>
-	inline T& Add(ArgTypes... args) { return registry->emplace_or_replace<T>(id, std::forward<ArgTypes>(args)...); }
+	inline T& Add(ArgTypes... args) { return registry->emplace<T>(id, std::forward<ArgTypes>(args)...); }
 	/** Remove the component types from this entity */
 	template<typename... T>
 	inline void Rem() { return registry->remove<T...>(id); }
@@ -46,7 +53,10 @@ public:
 
 	inline EntityConstHandle& operator=(const EntityHandle& other) { registry = other.registry; id = other.id; return *this; }
 
+	/** True if this handle does not point to an entity. */
 	inline bool IsNull() const { return registry->valid(id); }
+	/** True if this entity has no components assigned to it. */
+	inline bool IsEmpty() const { return registry->orphan(id); }
 
 	/** Returns true if this entity has all the component types */
 	template<typename... T>

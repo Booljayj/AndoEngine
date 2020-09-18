@@ -87,6 +87,7 @@ namespace Reflection
 		/** Convert this TypeInfo to a specific kind of TypeInfo. Will return nullptr if the conversion is not possible */
 		template<typename TypeInfoType>
 		TypeInfoType const* As() const {
+			static_assert(std::is_base_of_v<TypeInfo, TypeInfoType>, "TypeInfo::As may only convert to types that derive from TypeInfo");
 			if (TypeInfoType::Classification == classification) return static_cast<TypeInfoType const*>(this);
 			else return nullptr;
 		}
@@ -95,6 +96,7 @@ namespace Reflection
 	/** Convert a TypeInfo pointer to a specific kind of TypeInfo. Will return nullptr if the conversion is not possible */
 	template<typename TypeInfoType>
 	TypeInfoType const* Cast(TypeInfo const* info) {
+			static_assert(std::is_base_of_v<TypeInfo, TypeInfoType>, "TypeInfo::Cast may only convert to types that derive from TypeInfo");
 		if (!info) return nullptr;
 		else return info->As<TypeInfoType>();
 	}
