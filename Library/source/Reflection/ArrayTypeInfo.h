@@ -15,11 +15,7 @@ namespace Reflection {
 		TypeInfo const* elementType = nullptr;
 
 		ArrayTypeInfo() = delete;
-		ArrayTypeInfo(
-			Hash128 inID, CompilerDefinition inDef,
-			std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer,
-			bool inIsFixedSize, TypeInfo const* inElementType
-		);
+		ArrayTypeInfo(Hash128 inID, CompilerDefinition inDef);
 		virtual ~ArrayTypeInfo() = default;
 
 		/** Get the number of elements that are in the array */
@@ -50,11 +46,11 @@ namespace Reflection {
 	template<typename ArrayType, typename ElementType, size_t Size>
 	struct TFixedArrayTypeInfo : public ArrayTypeInfo {
 		TFixedArrayTypeInfo(std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer)
-		: ArrayTypeInfo(
-			TypeResolver<ArrayType>::GetID(), GetCompilerDefinition<ArrayType>(),
-			inDescription, inFlags, inSerializer,
-			true, TypeResolver<ElementType>::Get())
-		{}
+		: ArrayTypeInfo(TypeResolver<ArrayType>::GetID(), GetCompilerDefinition<ArrayType>())
+		{
+			isFixedSize = true;
+			elementType = TypeResolver<ElementType>::Get();
+		}
 
 		STANDARD_TYPEINFO_METHODS(ArrayType)
 
@@ -84,11 +80,11 @@ namespace Reflection {
 	template<typename ArrayType, typename ElementType>
 	struct TDynamicArrayTypeInfo : public ArrayTypeInfo {
 		TDynamicArrayTypeInfo(std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer)
-		: ArrayTypeInfo(
-			TypeResolver<ArrayType>::GetID(), GetCompilerDefinition<ArrayType>(),
-			inDescription, inFlags, inSerializer,
-			false, TypeResolver<ElementType>::Get())
-		{}
+		: ArrayTypeInfo(TypeResolver<ArrayType>::GetID(), GetCompilerDefinition<ArrayType>())
+		{
+			isFixedSize = false;
+			elementType = TypeResolver<ElementType>::Get();
+		}
 
 		STANDARD_TYPEINFO_METHODS(ArrayType)
 

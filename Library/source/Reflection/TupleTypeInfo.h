@@ -12,11 +12,7 @@ namespace Reflection {
 		size_t size = 0;
 
 		TupleTypeInfo() = delete;
-		TupleTypeInfo(
-			Hash128 inID, CompilerDefinition inDef,
-			std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer,
-			size_t inSize
-		);
+		TupleTypeInfo(Hash128 inID, CompilerDefinition inDef);
 		virtual ~TupleTypeInfo() = default;
 
 		/** Get the type of the value at a specific index in the tuple */
@@ -40,13 +36,11 @@ namespace Reflection {
 
 	template<typename TupleType, typename... ElementTypes>
 	struct TTupleTypeInfo : public TupleTypeInfo {
-		TTupleTypeInfo(
-			std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer)
-		: TupleTypeInfo(
-			TypeResolver<TupleType>::GetID(), GetCompilerDefinition<TupleType>(),
-			inDescription, inFlags, inSerializer,
-			std::tuple_size<TupleType>::value)
-		{}
+		TTupleTypeInfo()
+		: TupleTypeInfo(TypeResolver<TupleType>::GetID(), GetCompilerDefinition<TupleType>())
+		{
+			size = std::tuple_size<TupleType>::value;
+		}
 
 		STANDARD_TYPEINFO_METHODS(TupleType)
 

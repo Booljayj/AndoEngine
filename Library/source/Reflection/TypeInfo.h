@@ -73,6 +73,7 @@ namespace Reflection
 			ETypeClassification inClassification, Hash128 inUniqueID, CompilerDefinition inDefinition,
 			std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer
 		);
+		TypeInfo(ETypeClassification inClassification, Hash128 inUniqueID, CompilerDefinition inDefinition);
 		virtual ~TypeInfo() = default;
 
 		/** Construct an instance of this type at the address using the default constructor */
@@ -108,4 +109,7 @@ static constexpr Type& Cast(void* pointer) { return *static_cast<Type*>(pointer)
 virtual void Construct(void* instance) const final {new (instance) Type;}\
 virtual void Construct(void* instance, void const* other) const final { new (instance) Type(Cast(other));}\
 virtual void Destruct(void* instance) const final {Cast(instance).~Type();}\
-virtual bool Equal(void const* a, void const* b) const final {return Cast(a) == Cast(b);}
+virtual bool Equal(void const* a, void const* b) const final {return Cast(a) == Cast(b);}\
+inline decltype(auto) Description(std::string_view inDescription) { description = inDescription; return *this; }\
+inline decltype(auto) Flags(Reflection::FTypeFlags inFlags) { flags = inFlags; return *this; }\
+inline decltype(auto) Serializer(Serialization::ISerializer* inSerializer) { serializer = inSerializer; return *this; }

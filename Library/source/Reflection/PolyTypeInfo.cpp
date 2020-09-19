@@ -2,25 +2,20 @@
 #include "Reflection/StructTypeInfo.h"
 
 namespace Reflection {
-	PolyTypeInfo::PolyTypeInfo(
-		Hash128 inID, CompilerDefinition inDef,
-		std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer,
-		TypeInfo const* inBaseTypeInfo, bool inCanBeBaseType, bool inCanBeDerivedType)
-	: TypeInfo(
-		PolyTypeInfo::Classification, inID, inDef,
-		inDescription, inFlags, inSerializer)
-	, baseType(inBaseTypeInfo)
-	, canBeBaseType(inCanBeBaseType)
-	, canBeDerivedType(inCanBeDerivedType)
+	PolyTypeInfo::PolyTypeInfo(Hash128 inID, CompilerDefinition inDef)
+	: TypeInfo(PolyTypeInfo::Classification, inID, inDef)
+	, canBeBaseType(false)
+	, canBeDerivedType(false)
 	{}
 
-	bool PolyTypeInfo::CanAssignType(PolyTypeInfo const* polyInfo, TypeInfo const* type) {
-		if (!polyInfo || !type) return false;
-		if (polyInfo->canBeBaseType && type == polyInfo->baseType) {
+	bool PolyTypeInfo::CanAssignType(TypeInfo const* type) const {
+		if (!type) return false;
+
+		if (canBeBaseType && type == baseType) {
 			return true;
-		} else if (polyInfo->canBeDerivedType) {
+		} else if (canBeDerivedType) {
 			if (StructTypeInfo const* structType = type->As<StructTypeInfo>()) {
-				return structType->DerivesFrom(polyInfo->baseType);
+				return structType->DerivesFrom(baseType);
 			}
 		}
 		return false;

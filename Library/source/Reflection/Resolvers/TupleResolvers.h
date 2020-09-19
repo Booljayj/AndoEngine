@@ -21,6 +21,7 @@ namespace Reflection {
 			}
 		};
 		template<typename ...ElementTypes>
-		TTupleTypeInfo<std::tuple<ElementTypes...>, ElementTypes...> const TypeResolver_Implementation<std::tuple<ElementTypes...>>::typeInfo{ "tuple", FTypeFlags::None, nullptr };
+		TTupleTypeInfo<std::tuple<ElementTypes...>, ElementTypes...> const TypeResolver_Implementation<std::tuple<ElementTypes...>>::typeInfo = TTupleTypeInfo<std::tuple<ElementTypes...>, ElementTypes...>{}
+			.Description("tuple");
 	}
 }

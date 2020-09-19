@@ -27,4 +27,8 @@ namespace Reflection {
 	{
 		GetMutableGlobalTypeInfoCollection().push_back(this);
 	}
+
+	TypeInfo::TypeInfo(ETypeClassification inClassification, Hash128 inUniqueID, CompilerDefinition inDefinition)
+	: TypeInfo(inClassification, inUniqueID, inDefinition, std::string_view{}, FTypeFlags::None, nullptr)
+	{}
 }

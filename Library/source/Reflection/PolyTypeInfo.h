@@ -16,14 +16,10 @@ namespace Reflection {
 		uint8_t canBeDerivedType : 1;
 
 		PolyTypeInfo() = delete;
-		PolyTypeInfo(
-			Hash128 inID, CompilerDefinition inDef,
-			std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer,
-			TypeInfo const* inBaseTypeInfo, bool inCanBeBaseType, bool inCanBeDerivedType
-		);
+		PolyTypeInfo(Hash128 inID, CompilerDefinition inDef);
 		virtual ~PolyTypeInfo() = default;
 
-		static bool CanAssignType(PolyTypeInfo const* polyType, TypeInfo const* type);
+		bool CanAssignType(TypeInfo const* type) const;
 
 		/** Get the current value of the poly. Can be nullptr if the poly is unassigned */
 		virtual void* GetValue(void* instance) const = 0;
@@ -46,13 +42,13 @@ namespace Reflection {
 		);
 		using PointerType = std::unique_ptr<BaseType>;
 
-		TUniquePtrTypeInfo(
-			std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer)
-		: PolyTypeInfo(
-			TypeResolver<PointerType>::GetID(), GetCompilerDefinition<PointerType>(),
-			inDescription, inFlags, inSerializer,
-			TypeResolver<BaseType>::Get(), !std::is_abstract<BaseType>::value, std::is_class<BaseType>::value && !std::is_final<BaseType>::value)
-		{}
+		TUniquePtrTypeInfo()
+		: PolyTypeInfo(TypeResolver<PointerType>::GetID(), GetCompilerDefinition<PointerType>())
+		{
+			baseType = TypeResolver<BaseType>::Get();
+			canBeBaseType = !std::is_abstract<BaseType>::value;
+			canBeDerivedType = std::is_class<BaseType>::value && !std::is_final<BaseType>::value;
+		}
 
 		STANDARD_TYPEINFO_METHODS(PointerType)
 

@@ -16,6 +16,7 @@ namespace Reflection {
 			static constexpr Hash128 GetID() { return Hash128{ "std::unique_ptr" } + TypeResolver<BaseType>::GetID(); }
 		};
 		template<typename BaseType>
-		TUniquePtrTypeInfo<BaseType> const TypeResolver_Implementation<std::unique_ptr<BaseType>>::typeInfo{ "unique pointer", FTypeFlags::None, nullptr };
+		TUniquePtrTypeInfo<BaseType> const TypeResolver_Implementation<std::unique_ptr<BaseType>>::typeInfo = TUniquePtrTypeInfo<BaseType>{}
+			.Description("unique pointer");
 	}
 }

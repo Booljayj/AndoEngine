@@ -16,7 +16,7 @@ namespace Reflection {
 			if (buffer != nullptr) std::free(buffer);
 		}
 
-		/** Demangle the name of a type and return a view of hte results */
+		/** Demangle the name of a type and return the result */
 		std::string Demangle(TypeInfo const& type) {
 			//Perform the demangling. Will return nullptr if the demangling fails, otherwise will return the buffer that contains the name,
 			// which may be the same as the input buffer if there was enough space. Or a brand new one if not

@@ -5,11 +5,8 @@
 namespace Reflection {
 	template<typename Type>
 	struct TPrimitiveTypeInfo : public TypeInfo {
-		TPrimitiveTypeInfo(
-			std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer)
-		: TypeInfo(
-			TypeInfo::Classification, TypeResolver<Type>::GetID(), GetCompilerDefinition<Type>(),
-			inDescription, inFlags, inSerializer)
+		TPrimitiveTypeInfo()
+		: TypeInfo(TypeInfo::Classification, TypeResolver<Type>::GetID(), GetCompilerDefinition<Type>())
 		{}
 
 		STANDARD_TYPEINFO_METHODS(Type)
@@ -19,10 +16,10 @@ namespace Reflection {
 	template<>
 	struct TPrimitiveTypeInfo<void> : public TypeInfo {
 		TPrimitiveTypeInfo()
-		: TypeInfo(
-			TypeInfo::Classification, Hash128{}, GetCompilerDefinition<void>(),
-			"not a type", FTypeFlags::None, nullptr)
-		{}
+		: TypeInfo(TypeInfo::Classification, Hash128{}, GetCompilerDefinition<void>())
+		{
+			description = "not a type";
+		}
 
 		virtual void Construct(void* instance) const final {}
 		virtual void Construct(void* instance, void const* other) const final {}

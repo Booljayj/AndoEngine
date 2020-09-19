@@ -7,6 +7,14 @@
 #include "Reflection/Components/VariableInfo.h"
 #include "Serialization/StructSerializer.h"
 
+Reflection::TStructTypeInfo<ReflectedType> const ReflectedType::typeInfo_ = Reflection::TStructTypeInfo<ReflectedType>{}
+	.Description("Reflection test type");
+
+
+Reflection::TStructTypeInfo<SecondReflectedType> const SecondReflectedType::typeInfo_ = Reflection::TStructTypeInfo<SecondReflectedType>{}
+	.Description("Reflection test type")
+	.BaseType<ReflectedType>();
+
 /*
 int16_t ReflectedType::StaticShortValue = 4;
 uint16_t const ReflectedType::StaticImmutableShortValue = 15;

@@ -54,7 +54,8 @@ namespace Reflection {
 			static constexpr Hash128 GetID() { return Hash128{ "std::basic_string" } + TypeResolver<CharType>::GetID(); }
 		};
 		template<typename CharType>
-		TPrimitiveTypeInfo<std::basic_string<CharType>> const TypeResolver_Implementation<std::basic_string<CharType>>::typeInfo{ "dynamic string", FTypeFlags::None, nullptr };
+		TPrimitiveTypeInfo<std::basic_string<CharType>> const TypeResolver_Implementation<std::basic_string<CharType>>::typeInfo = TPrimitiveTypeInfo<std::basic_string<CharType>>{}
+			.Description("dynamic string");
 	}
 }
 

@@ -1,7 +1,5 @@
 #pragma once
-#include <array>
 #include <string_view>
-#include <vector>
 #include <type_traits>
 #include "Engine/ArrayView.h"
 #include "Engine/Hash.h"
@@ -13,7 +11,7 @@
 using BaseType = BaseType_;\
 static Reflection::TStructTypeInfo<StructType_> const typeInfo_
 
-/** Expose a struct to the reflection system. Must be expanded after the type is declared and includes the REFLECTION_MEMBERS macro */
+/** Expose a struct to the reflection system. Must be used after the struct is declared. Struct must include the REFLECTION_MEMBERS macro. */
 #define REFLECT(StructType_)\
 namespace Reflection {\
 	namespace Internal {\
@@ -37,12 +35,7 @@ namespace Reflection {
 		TArrayView<VariableInfo const> variables;
 
 		StructTypeInfo() = delete;
-		StructTypeInfo(
-			Hash128 inID, CompilerDefinition inDefinition,
-			std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer,
-			StructTypeInfo const* inBaseType, void const* inDefaults,
-			TArrayView<VariableInfo const> inVariables
-		);
+		StructTypeInfo(Hash128 inID, CompilerDefinition inDefinition);
 		virtual ~StructTypeInfo() = default;
 
 		/** Returns true if the chain of baseType types includes the provided type */
@@ -55,23 +48,21 @@ namespace Reflection {
 	template<typename StructType_>
 	struct TStructTypeInfo : public StructTypeInfo {
 		using StructType = StructType_;
-		using BaseType = typename StructType::BaseType;
-		static_assert(
-			std::is_base_of<BaseType, StructType>::value || std::is_void<BaseType>::value,
-			"invalid type inheritance for StructTypeInfo, T::BaseType is not void or an actual baseType of T"
-		);
 
-		TStructTypeInfo(
-			std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer,
-			void const* inDefaults,
-			TArrayView<VariableInfo const> inVariables)
-		: StructTypeInfo(
-			TypeResolver<StructType>::GetID(), GetCompilerDefinition<StructType>(),
-			inDescription, inFlags, inSerializer,
-			Reflection::Cast<StructTypeInfo>(TypeResolver<BaseType>::Get()), inDefaults,
-			inVariables)
+		TStructTypeInfo()
+		: StructTypeInfo(TypeResolver<StructType>::GetID(), GetCompilerDefinition<StructType>())
 		{}
 
 		STANDARD_TYPEINFO_METHODS(StructType)
+
+		template<typename Type>
+		inline TStructTypeInfo& BaseType() {
+			static_assert(std::is_base_of_v<Type, StructType>, "invalid inheritance for StructTypeInfo, Type is not a base of T");
+			static_assert(std::is_class_v<Type>, "invalid inheritance for StructTypeInfo, Type is not a class");
+			baseType = Reflection::Cast<StructTypeInfo>(TypeResolver<Type>::Get());
+			return *this;
+		}
+		inline TStructTypeInfo& Defaults(void const* inDefaults) { defaults = inDefaults; return *this; }
+		inline TStructTypeInfo& Variables(TArrayView<VariableInfo const> inVariables) { variables = inVariables; return *this; }
 	};
 }

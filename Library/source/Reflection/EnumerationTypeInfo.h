@@ -8,11 +8,7 @@ namespace Reflection {
 	 	static constexpr ETypeClassification Classification = ETypeClassification::Enumeration;
 
 		EnumerationTypeInfo() = delete;
-		EnumerationTypeInfo(
-			Hash128 inID, CompilerDefinition inDef,
-			std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer,
-			TypeInfo const* inUnderlyingType
-		);
+		EnumerationTypeInfo(Hash128 inID, CompilerDefinition inDef);
 		virtual ~EnumerationTypeInfo() = default;
 
 		/** The underlying type of the values in the enumeration */
@@ -43,15 +39,11 @@ namespace Reflection {
 		/** The elements in this enumeration */
 		TArrayView<EnumPairType> elementView;
 
-		TStandardEnumerationTypeInfo(
-			std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer,
-			TArrayView<EnumPairType> inElementView)
-		: EnumerationTypeInfo(
-			TypeResolver<EnumType>::GetID(), GetCompilerDefinition<EnumType>(),
-			inDescription, inFlags, inSerializer,
-			TypeResolver<UnderlyingType>::Get())
-		, elementView(inElementView)
-		{}
+		TStandardEnumerationTypeInfo()
+		: EnumerationTypeInfo(TypeResolver<EnumType>::GetID(), GetCompilerDefinition<EnumType>())
+		{
+			underlyingType = TypeResolver<UnderlyingType>::Get();
+		}
 
 		STANDARD_TYPEINFO_METHODS(EnumType)
 
@@ -74,9 +66,11 @@ namespace Reflection {
 			const auto iter = std::find(elementView.begin(), elementView.end(), [&](auto const& pair) { return pair.first == name; });
 			return iter - elementView.begin();
 		}
+
+		TStandardEnumerationTypeInfo& ElementView(TArrayView<EnumPairType> inElementView) { elementView = inElementView; return *this; }
 	};
 
-	/** Generic type info that allows any array of name-value pairs to be considered an enum */
+	/** Generic type info that allows any array of name-value pairs to be considered an enum. Must be explicitly named, because there is no actual type involved. */
 	template<typename UnderlyingType>
 	struct TGenericEnumerationTypeInfo : public EnumerationTypeInfo {
 		using EnumPairType = std::pair<std::string_view, UnderlyingType>;
@@ -84,16 +78,11 @@ namespace Reflection {
 		/** The elements in this enumeration */
 		TArrayView<EnumPairType> elementView;
 
-		TGenericEnumerationTypeInfo(
-			Hash128 inID,
-			std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer,
-			TArrayView<EnumPairType> inElementView)
-		: EnumerationTypeInfo(
-			inID, GetCompilerDefinition<UnderlyingType>(),
-			inDescription, inFlags, inSerializer,
-			TypeResolver<UnderlyingType>::Get())
-		, elementView(inElementView)
-		{}
+		TGenericEnumerationTypeInfo(Hash128 inID)
+		: EnumerationTypeInfo(inID, GetCompilerDefinition<UnderlyingType>())
+		{
+			underlyingType = TypeResolver<UnderlyingType>::Get();
+		}
 
 		STANDARD_TYPEINFO_METHODS(UnderlyingType)
 
@@ -116,5 +105,7 @@ namespace Reflection {
 			const auto iter = std::find(elementView.begin(), elementView.end(), [&](auto const& pair) { return pair.first == name; });
 			return iter - elementView.begin();
 		}
+
+		TGenericEnumerationTypeInfo& ElementView(TArrayView<EnumPairType> inElementView) { elementView = inElementView; return *this; }
 	};
 }

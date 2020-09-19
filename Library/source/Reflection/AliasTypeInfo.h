@@ -8,11 +8,7 @@ namespace Reflection {
 		static constexpr ETypeClassification Classificiation = ETypeClassification::Alias;
 
 		AliasTypeInfo() = delete;
-		AliasTypeInfo(
-			Hash128 inID, CompilerDefinition inDef,
-			std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer,
-			VariableInfo const* inVariableInfo
-		);
+		AliasTypeInfo(Hash128 inID, CompilerDefinition inDef);
 		virtual ~AliasTypeInfo() = default;
 
 		/** The variable that contains the type being aliased */
@@ -24,15 +20,12 @@ namespace Reflection {
 
 	template<typename AliasType>
 	struct TAliasTypeInfo : public AliasTypeInfo {
-		TAliasTypeInfo(
-			std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer,
-			VariableInfo const* inVariableInfo)
-		: AliasTypeInfo(
-			TypeResolver<AliasType>::GetID(), GetCompilerDefinition<AliasType>(),
-			inDescription, inFlags, inSerializer,
-			inVariableInfo)
+		TAliasTypeInfo()
+		: AliasTypeInfo(TypeResolver<AliasType>::GetID(), GetCompilerDefinition<AliasType>())
 		{}
 
 		STANDARD_TYPEINFO_METHODS(AliasType)
+
+		TAliasTypeInfo& VariableInfo(VariableInfo const* inVariableInfo) { variableInfo = inVariableInfo; return *this; }
 	};
 }

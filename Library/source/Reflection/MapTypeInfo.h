@@ -15,11 +15,7 @@ namespace Reflection {
 		TypeInfo const* valueType = nullptr;
 
 		MapTypeInfo() = delete;
-		MapTypeInfo(
-			Hash128 inID, CompilerDefinition inDef,
-			std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer,
-			TypeInfo const* inKeyType, TypeInfo const* inValueType
-		);
+		MapTypeInfo(Hash128 inID, CompilerDefinition inDef);
 		virtual ~MapTypeInfo() = default;
 
 		/** Get the number of entries in this map */
@@ -48,11 +44,11 @@ namespace Reflection {
 	template<typename MapType, typename KeyType, typename ValueType>
 	struct TMapTypeInfo : public MapTypeInfo {
 		TMapTypeInfo(char const* inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer)
-		: MapTypeInfo(
-			TypeResolver<MapType>::GetID(), GetCompilerDefinition<MapType>(),
-			inDescription, inFlags, inSerializer,
-			TypeResolver<KeyType>::Get(), TypeResolver<ValueType>::Get())
-		{}
+		: MapTypeInfo(TypeResolver<MapType>::GetID(), GetCompilerDefinition<MapType>())
+		{
+			keyType = TypeResolver<KeyType>::Get();
+			valueType = TypeResolver<ValueType>::Get();
+		}
 
 		STANDARD_TYPEINFO_METHODS(MapType)
 

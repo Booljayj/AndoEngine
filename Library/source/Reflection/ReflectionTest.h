@@ -8,36 +8,27 @@
 #include "Reflection/StructTypeInfo.h"
 #include "Reflection/StandardResolvers.h"
 
-/*
 struct ReflectedType {
-	REFLECTION_MEMBERS( ReflectedType, void );
+	REFLECTION_MEMBERS(ReflectedType, void);
 
 	ReflectedType() = default;
-	ReflectedType( const ReflectedType& Other );
-	ReflectedType& operator=( const ReflectedType& Other );
-	bool operator==( const ReflectedType& Other ) const { return false; }
-	bool operator<( const ReflectedType& Other ) const { return false; }
-	bool operator>( const ReflectedType& Other ) const { return false; }
+	ReflectedType(const ReflectedType&) = default;
+	bool operator==(const ReflectedType& Other) const { return IntegerValue == Other.IntegerValue; };
+	bool operator!=(const ReflectedType& Other) const { return !this->operator==(Other); };
 
 	int32_t IntegerValue = 1234;
-	uint8_t const ImmutableByteValue = 3;
 	bool BooleanValue = true;
-
-	static int16_t StaticShortValue;
-	static const uint16_t StaticImmutableShortValue;
 };
-REFLECT( ReflectedType );
-*/
+REFLECT(ReflectedType);
+
+struct SecondReflectedType : public ReflectedType {
+	REFLECTION_MEMBERS(SecondReflectedType, void);
+
+	std::vector<int32_t> VectorValue;
+};
+REFLECT(SecondReflectedType);
 
 /*
-struct SecondReflectedType {
-	REFLECTION_MEMBERS( SecondReflectedType, void );
-
-	std::vector<ReflectedType> VectorValue;
-	std::map<uint8_t, std::string> MapValue;
-};
-REFLECT( SecondReflectedType );
-
 struct RecursiveType {
 	REFLECTION_MEMBERS( RecursiveType, void );
 

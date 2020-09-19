@@ -15,11 +15,7 @@ namespace Reflection {
 		static constexpr ETypeClassification Classification = ETypeClassification::Flags;
 
 		FlagsTypeInfo() = delete;
-		FlagsTypeInfo(
-			Hash128 inID, CompilerDefinition inDef,
-			std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer,
-			TypeInfo const* inUnderlyingType
-		);
+		FlagsTypeInfo(Hash128 inID, CompilerDefinition inDef);
 		virtual ~FlagsTypeInfo() = default;
 
 		TypeInfo const* underlyingType = nullptr;
@@ -79,19 +75,13 @@ namespace Reflection {
 		TArrayView<FlagsPairType> aggregatesView;
 
 		/** Information about the flags "empty" value */
-		FlagsPairType const* empty;
+		FlagsPairType const* empty = nullptr;
 
-		TStandardFlagsTypeInfo(
-			std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer,
-			TArrayView<FlagsPairType> inComponentsView, TArrayView<FlagsPairType> inAggregatesView, FlagsPairType const* inEmpty)
-		: FlagsTypeInfo(
-			TypeResolver<FlagsType>::GetID(), GetCompilerDefinition<FlagsType>(),
-			inDescription, inFlags, inSerializer,
-			TypeResolver<UnderlyingType>::Get())
-		, componentsView(inComponentsView)
-		, aggregatesView(inAggregatesView)
-		, empty(inEmpty)
-		{}
+		TStandardFlagsTypeInfo()
+		: FlagsTypeInfo(TypeResolver<FlagsType>::GetID(), GetCompilerDefinition<FlagsType>())
+		{
+			underlyingType = TypeResolver<UnderlyingType>::Get();
+		}
 
 		STANDARD_TYPEINFO_METHODS(FlagsType)
 
@@ -148,5 +138,9 @@ namespace Reflection {
 				}
 			}
 		}
+
+		TStandardFlagsTypeInfo& ComponentsView(TArrayView<FlagsPairType> inComponentsView) { componentsView = inComponentsView; return *this; }
+		TStandardFlagsTypeInfo& AggregatesView(TArrayView<FlagsPairType> inAggregatesView) { aggregatesView = inAggregatesView; return *this; }
+		TStandardFlagsTypeInfo& Empty(FlagsPairType const* inEmpty) { empty = inEmpty; return *this; }
 	};
 }

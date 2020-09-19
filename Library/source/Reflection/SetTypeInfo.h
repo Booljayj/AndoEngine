@@ -11,14 +11,10 @@ namespace Reflection {
 		TypeInfo const* valueType = nullptr;
 
 		SetTypeInfo() = delete;
-		SetTypeInfo(
-			Hash128 inID, CompilerDefinition inDef,
-			std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer,
-			TypeInfo const* inValueType
-		);
+		SetTypeInfo(Hash128 inID, CompilerDefinition inDef);
 		virtual ~SetTypeInfo() = default;
 
-		/** Get the number of values that are in the set*/
+		/** Get the number of values that are in the set */
 		virtual size_t GetCount(void const* instance) const = 0;
 
 		/** Get a vector of all the values in the set */
@@ -40,13 +36,11 @@ namespace Reflection {
 
 	template<typename SetType, typename ValueType>
 	struct TSetTypeInfo : public SetTypeInfo {
-		TSetTypeInfo(
-			std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer)
-		: SetTypeInfo(
-			TypeResolver<SetType>::GetID(), GetCompilerDefinition<SetType>(),
-			inDescription, inFlags, inSerializer,
-			TypeResolver<ValueType>::Get())
-		{}
+		TSetTypeInfo()
+		: SetTypeInfo(TypeResolver<SetType>::GetID(), GetCompilerDefinition<SetType>())
+		{
+			valueType = TypeResolver<ValueType>::Get();
+		}
 
 		STANDARD_TYPEINFO_METHODS(SetType)
 
