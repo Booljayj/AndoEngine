@@ -1,7 +1,5 @@
 #pragma once
-#include <memory>
-#include "Engine/Hash.h"
-#include "Reflection/TypeResolver.h"
+#include "Engine/STL.h"
 #include "Reflection/PolyTypeInfo.h"
 
 namespace Reflection {

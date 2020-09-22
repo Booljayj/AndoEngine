@@ -1,9 +1,7 @@
 #pragma once
-#include <string_view>
-#include <vector>
-#include <memory>
 #include "Engine/Logging/LogVerbosity.h"
 #include "Engine/Logging/LoggerModule.h"
+#include "Engine/STL.h"
 
 struct LogCategory;
 struct LogOutputData;

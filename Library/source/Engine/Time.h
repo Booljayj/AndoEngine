@@ -1,5 +1,5 @@
 #pragma once
-#include <chrono>
+#include "Engine/STL.h"
 
 //Used to hold current time information that can be used by systems
 struct Time {

@@ -1,7 +1,5 @@
 #pragma once
-#include <cstdint>
-#include <memory>
-#include <ostream>
+#include "Engine/STL.h"
 
 namespace Rendering {
 	/** Wrapper for a Vulkan-style version number to make it easier to print it out to a stream */

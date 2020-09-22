@@ -1,8 +1,5 @@
 #pragma once
-#include <set>
-#include <unordered_set>
-#include "Engine/Hash.h"
-#include "Reflection/TypeResolver.h"
+#include "Engine/STL.h"
 #include "Reflection/SetTypeInfo.h"
 
 #define L_SET_TYPE_RESOLVER(SetTemplate, DescriptionString)\

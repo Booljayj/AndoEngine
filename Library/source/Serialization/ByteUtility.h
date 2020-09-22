@@ -1,6 +1,5 @@
 #pragma once
-#include <ostream>
-#include <istream>
+#include "Engine/STL.h"
 
 namespace Serialization {
 	/** True if the current platform is little-endian */

@@ -1,9 +1,5 @@
 #pragma once
-#include <cstdint>
-#include <cstddef>
-#include <cassert>
-#include <algorithm>
-#include <ostream>
+#include "Engine/STL.h"
 
 /** A heap-allocated data buffer in which memory can be requested. Memory is handled in a stack-based manner */
 struct HeapBuffer {

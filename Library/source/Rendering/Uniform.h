@@ -1,10 +1,8 @@
 #pragma once
-#include <cstdint>
-#include <string>
-#include <vector>
 #include <GL/glew.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include "Engine/STL.h"
 #include "Rendering/EGLType.enum.h"
 
 namespace GL {

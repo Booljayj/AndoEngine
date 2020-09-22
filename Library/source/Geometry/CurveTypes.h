@@ -1,7 +1,6 @@
 #pragma once
-#include <vector>
-#include <memory>
 #include <glm/vec2.hpp>
+#include "Engine/STL.h"
 #include "Geometry/Rect.h"
 #include "Geometry/ColorChannel.h"
 #include "Geometry/SignedDistance.h"

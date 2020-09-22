@@ -1,4 +1,3 @@
-#include <fstream>
 #include "Engine/Logging/FileLoggerModule.h"
 #include "Engine/Logging/LogOutputData.h"
 

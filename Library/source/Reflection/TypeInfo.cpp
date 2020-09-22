@@ -1,4 +1,3 @@
-#include <deque>
 #include "Reflection/TypeInfo.h"
 
 namespace Reflection {

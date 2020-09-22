@@ -1,12 +1,6 @@
 #pragma once
-#include <cstdint>
-#include <array>
-#include <vector>
-#include <map>
-#include <string>
-#include <list>
+#include "Engine/STL.h"
 #include "Reflection/StructTypeInfo.h"
-#include "Reflection/StandardResolvers.h"
 
 struct ReflectedType {
 	REFLECTION_MEMBERS(ReflectedType, void);

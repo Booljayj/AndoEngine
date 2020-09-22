@@ -1,7 +1,5 @@
 #pragma once
-#include <ostream>
-#include <istream>
-#include <sstream>
+#include "Engine/STL.h"
 
 /**
  * Binary Serialization is based around the idea of "data blocks". A data block consists of

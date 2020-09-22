@@ -1,6 +1,5 @@
 #pragma once
-#include <cstddef>
-#include <type_traits>
+#include "Engine/STL.h"
 
 /** Helper template struct that is created from a list of types */
 template<typename... Types>

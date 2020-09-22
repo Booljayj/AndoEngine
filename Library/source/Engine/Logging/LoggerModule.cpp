@@ -1,4 +1,3 @@
-#include <mutex>
 #include "Engine/Logging/LoggerModule.h"
 #include "Engine/Logging/LogOutputData.h"
 

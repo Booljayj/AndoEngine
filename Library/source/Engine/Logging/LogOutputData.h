@@ -1,7 +1,7 @@
 #pragma once
-#include <string_view>
 #include "Engine/Logging/LogCategory.h"
 #include "Engine/Logging/LogVerbosity.h"
+#include "Engine/STL.h"
 #include "Engine/TimeStamp.h"
 
 /** Data for a log output operation */

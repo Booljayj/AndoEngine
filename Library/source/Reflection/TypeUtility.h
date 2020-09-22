@@ -1,11 +1,7 @@
 #pragma once
-#include <initializer_list>
-#include <string>
-#include <string_view>
-#include <ostream>
-#include <sstream>
 #include <cxxabi.h>
 #include "Engine/Flags.h"
+#include "Engine/STL.h"
 #include "Reflection/TypeResolver.h"
 
 namespace Reflection {

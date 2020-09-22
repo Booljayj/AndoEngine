@@ -1,6 +1,6 @@
-#include <mutex>
-#include <vector>
+#pragma once
 #include "Engine/Delegates.h"
+#include "Engine/STL.h"
 
 using EventHandleType = std::shared_ptr<char const>;
 

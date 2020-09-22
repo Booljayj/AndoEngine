@@ -1,5 +1,3 @@
-#include <string>
-#include <sstream>
 #include <glm/vec3.hpp>
 #include "Rendering/EBufferTarget.enum.h"
 #include "Rendering/EGLBool.enum.h"

@@ -1,14 +1,6 @@
 #pragma once
-#include <vector>
-#include <queue>
-#include <forward_list>
-#include <list>
-#include <set>
-#include <map>
-#include <unordered_set>
-#include <unordered_map>
-#include <stack>
 #include "Engine/LinearAllocator.h"
+#include "Engine/STL.h"
 
 // Sequence Containers
 template<class T>

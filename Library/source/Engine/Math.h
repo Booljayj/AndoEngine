@@ -1,7 +1,5 @@
 #pragma once
-#include <cstddef>
-#include <cstdint>
-#include <limits>
+#include "Engine/STL.h"
 
 //Advanced math functions not available in standard libraries
 namespace Math {

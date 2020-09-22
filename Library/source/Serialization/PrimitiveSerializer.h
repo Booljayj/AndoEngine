@@ -1,5 +1,5 @@
 #pragma once
-#include <string>
+#include "Engine/STL.h"
 #include "Serialization/ByteUtility.h"
 #include "Serialization/Serializer.h"
 #include "Serialization/SerializationUtility.h"

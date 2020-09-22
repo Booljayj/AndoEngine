@@ -1,8 +1,7 @@
 #pragma once
-#include <cstdint>
-#include <thread>
 #include "Engine/LinearAllocator.h"
 #include "Engine/Logging/Logger.h"
+#include "Engine/STL.h"
 
 /** Macro used to define a function that requires a context. Must appear as the first parameter in the function */
 #define CTX_ARG Context& CTX

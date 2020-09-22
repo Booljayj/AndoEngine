@@ -1,7 +1,5 @@
 #pragma once
-#include <string_view>
-#include <string>
-#include "Engine/Hash.h"
+#include "Engine/STL.h"
 #include "Reflection/PrimitiveTypeInfo.h"
 
 #define L_DECLARE_PRIMITIVE_TYPEINFO(Type)\

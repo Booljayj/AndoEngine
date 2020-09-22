@@ -1,4 +1,3 @@
-#include <algorithm>
 #include "Geometry/Rect.h"
 
 namespace Geometry {

@@ -1,7 +1,7 @@
 #pragma once
-#include <string>
 #include "Engine/ArrayView.h"
 #include "Engine/Context.h"
+#include "Engine/STL.h"
 #include "Rendering/Vulkan/VulkanCommon.h"
 
 struct SDL_Window;

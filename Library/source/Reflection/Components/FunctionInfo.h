@@ -1,11 +1,7 @@
 #pragma once
-#include <cstdint>
-#include <memory>
-#include <string>
-#include <vector>
-#include <utility>
 #include "Engine/ArrayView.h"
 #include "Engine/Context.h"
+#include "Engine/STL.h"
 #include "Reflection/Components/ArgumentInfo.h"
 #include "Reflection/TypeResolver.h"
 

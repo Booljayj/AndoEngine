@@ -1,5 +1,5 @@
-#include <cstdint>
-#include <typeinfo>
+#pragma once
+#include "Engine/STL.h"
 
 namespace Reflection {
 	/** Type information that is specified by the compiler */

@@ -1,4 +1,3 @@
-#include <array>
 #include <glm/gtx/exterior_product.hpp>
 #include <glm/geometric.hpp>
 #include "Geometry/Equations.h"

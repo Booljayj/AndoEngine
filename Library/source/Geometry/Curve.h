@@ -1,5 +1,6 @@
-#include <array>
+#pragma once
 #include <glm/vec2.hpp>
+#include "Engine/STL.h"
 #include "Geometry/CurveTypes.h"
 #include "Utility/variant.hpp"
 

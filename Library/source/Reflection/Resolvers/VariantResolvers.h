@@ -1,6 +1,5 @@
 #pragma once
-#include <tuple>
-#include "Engine/Hash.h"
+#include "Engine/STL.h"
 #include "Reflection/VariantTypeInfo.h"
 
 namespace Reflection {
@@ -8,15 +7,14 @@ namespace Reflection {
 		//============================================================
 		// Standard variant type specializations
 
-#if STD_OPTIONAL_SUPPORT
 		template<typename BaseType>
 		struct TypeResolver_Implementation<std::optional<BaseType>> {
-			static TOptionalTypeInfo<BaseType> const typeInfo;
+			static TOptionalTypeInfo<std::optional<BaseType>, BaseType> const typeInfo;
 			static TypeInfo const* Get() { return &typeInfo; }
 			static constexpr Hash128 GetID() { return Hash128{ "std::optional" } + TypeResolver<BaseType>::GetID(); }
 		};
 		template<typename BaseType>
-		TOptionalTypeInfo<BaseType> const TypeResolver_Implementation<std::optional<BaseType>>::typeInfo{ "optional", FTypeFlags::None, nullptr };
-#endif
+		TOptionalTypeInfo<std::optional<BaseType>, BaseType> const TypeResolver_Implementation<std::optional<BaseType>>::typeInfo = TOptionalTypeInfo<std::optional<BaseType>, BaseType>{}
+			.Description("optional");
 	}
 }

@@ -1,7 +1,7 @@
 #pragma once
-#include <vector>
 #include <SDL2/SDL.h>
 #include "Engine/Context.h"
+#include "Engine/STL.h"
 
 struct SDLFrameworkSystem {
 public:

@@ -1,9 +1,7 @@
 #pragma once
-#include <cstdint>
-#include <cstddef>
-#include <string_view>
 #include <boost/endian/conversion.hpp>
 #include "Engine/Math.h"
+#include "Engine/STL.h"
 
 //string hash types. These store hashes in specialized types which encapsulate construction, combining, and
 // storing hashes of various lengths.

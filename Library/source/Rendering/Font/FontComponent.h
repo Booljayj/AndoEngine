@@ -1,14 +1,10 @@
 #pragma once
-#include <vector>
-#include <unordered_map>
-#include <locale>
-#include <codecvt>
 #include "Engine/Context.h"
 #include "Engine/Flags.h"
 #include "Engine/LinearAllocator.h"
 #include "Engine/LinearContainers.h"
 #include "Engine/LinearStrings.h"
-#include "EntityFramework/Types.h"
+#include "Engine/STL.h"
 #include "Geometry/Rect.h"
 
 struct TextureComponent;

@@ -1,5 +1,5 @@
-#include <cstdint>
-#include <ostream>
+#pragma once
+#include "Engine/STL.h"
 
 namespace Utility {
 	/** Write a value to a buffer using an exact number of digits in reverse order. */

@@ -1,7 +1,6 @@
 #pragma once
-#include <atomic>
-#include <string_view>
 #include "Engine/Logging/LogVerbosity.h"
+#include "Engine/STL.h"
 
 /** A category used to group log output that is related. Output always belongs to a single category */
 struct LogCategory {

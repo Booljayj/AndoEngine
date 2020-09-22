@@ -1,6 +1,3 @@
-#include <algorithm>
-#include <cstdarg>
-#include <cstring>
 #include "Engine/LinearStrings.h"
 
 std::string_view l_printf(HeapBuffer& buffer, char const* format, ...) {

@@ -1,5 +1,5 @@
 #pragma once
-#include <type_traits>
+#include "Engine/STL.h"
 
 /** Test if the bitflag value is set to true in the mask */
 #define TEST_BIT(Mask, Flag) ((size_t)(Mask) & (size_t)(Flag))

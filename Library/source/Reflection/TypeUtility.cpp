@@ -1,4 +1,3 @@
-#include <iomanip>
 #include "Reflection/TypeUtility.h"
 #include "Reflection/StructTypeInfo.h"
 

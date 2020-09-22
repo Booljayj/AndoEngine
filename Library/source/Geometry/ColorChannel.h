@@ -1,6 +1,6 @@
 #pragma once
-#include <cstdint>
 #include "Engine/Flags.h"
+#include "Engine/STL.h"
 
 namespace Geometry {
 	/* Flags which specify color channels and various combinations of them */

@@ -2,18 +2,6 @@
 #include "Reflection/TypeInfo.h"
 #include "Reflection/TypeResolver.h"
 
-// std::optional is not yet widely supported until c++17, so it can remain dormant.
-#define STD_OPTIONAL_SUPPORT 0
-#if STD_OPTIONAL_SUPPORT
-#include <optional>
-#endif
-
-/** @experimental
- * Variants are not well-supported yet in most C++ compilers, so this implementation is incomplete.
- * Once they are more regularly supported, this implementation should be completed. It may require
- * some significant changes to fully work once that happens, but that's a problem for Future Justin.
- */
-
 namespace Reflection {
 	struct VariantTypeInfo : public TypeInfo {
 		static constexpr ETypeClassification Classification = ETypeClassification::Variant;
@@ -47,22 +35,10 @@ namespace Reflection {
 		virtual bool UnAssign(void* instance) = 0;
 	};
 
-	//@note This requires some visitor templates similar to TTupleTypeInfo to fully work.
-	// template<TVARIANT, TTYPES...>
-	// struct TVariantTypeInfo : public VariantTypeInfo {
-	// };
-
-#if STD_OPTIONAL_SUPPORT
-	template<typename ValueType>
+	template<typename OptionalType, typename ValueType>
 	struct TOptionalTypeInfo : public VariantTypeInfo {
-		using OptionalType = std::optional<ValueType>;
-
-		TOptionalTypeInfo(
-			std::string_view inDescription, FTypeFlags inFlags, Serialization::ISerializer* inSerializer)
-		: VariantTypeInfo(
-			TypeResolver<OptionalType>::GetID(), GetCompilerDefinition<OptionalType>(),
-			inDescription, inFlags, inSerializer
-			/***/ ) //@todo Determine the right value for the possibleTypeCount, and the behavior we want here
+		TOptionalTypeInfo()
+		: VariantTypeInfo(TypeResolver<OptionalType>::GetID(), GetCompilerDefinition<OptionalType>())
 		{}
 
 		STANDARD_TYPEINFO_METHODS(OptionalType)
@@ -76,7 +52,9 @@ namespace Reflection {
 				default: return nullptr;
 			}
 		};
-		virtual bool CanContain(TypeInfo const* type) const final { return type == TypeResolver<void>::Get() || type == TypeResolver<ValueType>::Get(); }
+		virtual bool CanContain(TypeInfo const* type) const final {
+			return type == TypeResolver<void>::Get() || type == TypeResolver<ValueType>::Get();
+		}
 
 		virtual TypeInfo const* GetType(void const* instance) const {
 			if (Cast(instance)) return TypeResolver<ValueType>::Get();
@@ -104,7 +82,4 @@ namespace Reflection {
 		}
 		virtual bool Unassign(void* instance) const final { Cast(instance).reset(); return true; }
 	};
-#endif
 }
-
-#undef STD_OPTIONAL_SUPPORT

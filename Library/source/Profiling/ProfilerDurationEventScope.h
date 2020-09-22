@@ -1,5 +1,5 @@
 #pragma once
-#include <string_view>
+#include "Engine/STL.h"
 #include "Profiling/ProfileCategory.h"
 #include "Profiling/ProfileTypes.h"
 #include "Profiling/Timer.h"

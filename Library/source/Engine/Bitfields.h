@@ -1,4 +1,5 @@
-#include <cstdint>
+#pragma once
+#include "Engine/STL.h"
 
 template<typename StorageType_, uint8_t Offset_, uint8_t NumBits_>
 struct TBitfieldMember {

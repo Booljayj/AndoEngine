@@ -1,5 +1,6 @@
 #pragma once
-#include <string>
+#include "Engine/Hash.h"
+#include "Engine/STL.h"
 
 namespace Reflection {
 	struct TypeInfo;

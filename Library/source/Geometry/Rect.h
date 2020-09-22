@@ -1,6 +1,6 @@
 #pragma once
-#include <limits>
 #include <glm/vec2.hpp>
+#include "Engine/STL.h"
 
 namespace Geometry {
 	/** Represents a 2D axially-aligned bounding box */

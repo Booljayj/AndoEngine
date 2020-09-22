@@ -1,5 +1,4 @@
 #pragma once
-#include <vector>
 #include "Serialization/Serializer.h"
 
 namespace Reflection {

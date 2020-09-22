@@ -1,8 +1,5 @@
 #pragma once
-#include <map>
-#include <unordered_map>
-#include "Engine/Hash.h"
-#include "Reflection/TypeResolver.h"
+#include "Engine/STL.h"
 #include "Reflection/MapTypeInfo.h"
 
 #define L_MAP_TYPE_RESOLVER(MapTemplate, DescriptionString)\

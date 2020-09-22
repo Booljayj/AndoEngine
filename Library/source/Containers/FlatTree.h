@@ -1,7 +1,6 @@
 #pragma once
-#include <cstdint>
-#include <vector>
 #include "Containers/AllocatorFactories.h"
+#include "Engine/STL.h"
 
 /**
  * A tree structure that is stored in a linear array, using indices to define the tree.

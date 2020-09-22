@@ -1,11 +1,11 @@
 #pragma once
-#include <tuple>
 #include <glm/vec2.hpp>
 #include <ft2build.h>
 #include FT_FREETYPE_H
-#include "Geometry/Shape.h"
 #include "Engine/Context.h"
 #include "Engine/LinearContainers.h"
+#include "Engine/STL.h"
+#include "Geometry/Shape.h"
 
 namespace Rendering {
 	/** Load the glyph for a code point */

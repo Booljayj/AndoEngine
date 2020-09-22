@@ -1,5 +1,3 @@
-#include <iostream>
-#include <vector>
 #include "Rendering/EGLBool.enum.h"
 #include "Rendering/Shader.h"
 #include "Rendering/VertexArrayObject.h"

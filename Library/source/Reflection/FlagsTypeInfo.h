@@ -1,6 +1,6 @@
 #pragma once
-#include <vector>
 #include "Engine/ArrayView.h"
+#include "Engine/STL.h"
 #include "Reflection/TypeInfo.h"
 #include "Reflection/TypeResolver.h"
 

@@ -1,10 +1,9 @@
-#include <cassert>
-#include <iostream>
 #include <glm/vec3.hpp>
 #include <SDL2/SDL_vulkan.h>
 #include <vulkan/vulkan.h>
 #include "Rendering/RenderingSystem.h"
 #include "Engine/LogCommands.h"
+#include "Engine/STL.h"
 #include "Engine/Utility.h"
 #include "Rendering/SDLSystems.h"
 #include "Rendering/MeshRendererComponent.h"

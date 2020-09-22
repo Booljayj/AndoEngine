@@ -1,7 +1,6 @@
 #pragma once
+#include "Engine/STL.h"
 #include "Serialization/Serializer.h"
-#include <ostream>
-#include <sstream>
 
 namespace Reflection {
 	struct TypeInfo;

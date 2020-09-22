@@ -1,6 +1,6 @@
-#include <iostream>
-#include <mutex>
+#pragma once
 #include "Engine/Logging/LoggerModule.h"
+#include "Engine/STL.h"
 
 struct StreamLoggerModule : public LoggerModule {
 protected:

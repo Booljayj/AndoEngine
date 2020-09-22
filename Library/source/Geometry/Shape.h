@@ -1,6 +1,5 @@
 #pragma once
-#include <vector>
-#include <memory>
+#include "Engine/STL.h"
 
 namespace Geometry {
 	struct Contour;

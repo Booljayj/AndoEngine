@@ -1,6 +1,6 @@
 #pragma once
-#include <string_view>
 #include "Engine/Hash.h"
+#include "Engine/STL.h"
 #include "Reflection/TypeInfo.h"
 
 namespace Reflection {

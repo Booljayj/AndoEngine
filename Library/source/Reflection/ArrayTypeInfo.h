@@ -1,7 +1,5 @@
 #pragma once
-#include <cstddef>
-#include <memory>
-#include <vector>
+#include "Engine/STL.h"
 #include "Reflection/TypeResolver.h"
 #include "Reflection/TypeInfo.h"
 

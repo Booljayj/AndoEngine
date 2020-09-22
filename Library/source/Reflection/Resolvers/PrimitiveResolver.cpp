@@ -1,7 +1,5 @@
-#include <memory>
-#include "Reflection/Resolvers/PrimitiveResolvers.h"
-#include "Reflection/TypeInfo.h"
 #include "Serialization/PrimitiveSerializer.h"
+#include "Reflection/Resolvers/PrimitiveResolvers.h"
 
 #define DEFINE_PRIMITIVE_TYPEINFO(Type, DescriptionString)\
 TPrimitiveTypeInfo<Type> const typeInfo_##Type = TPrimitiveTypeInfo<Type>{}.Description(DescriptionString)

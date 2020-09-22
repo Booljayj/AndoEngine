@@ -1,5 +1,3 @@
-#include <cmath>
-#include <limits>
 #include "Geometry/Equations.h"
 
 namespace Geometry {

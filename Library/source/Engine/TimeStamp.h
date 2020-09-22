@@ -1,9 +1,6 @@
 #pragma once
-#include <array>
-#include <cstdint>
-#include <chrono>
-#include <ostream>
 #include "Engine/Bitfields.h"
+#include "Engine/STL.h"
 
 /** A broken-down time point used for displaying calendar information. Value ranges are set up for common usage, not for extremes. TimeStamps are not meant to be manually edited. */
 union TimeStamp {

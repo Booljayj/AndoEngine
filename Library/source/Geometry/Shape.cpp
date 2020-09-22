@@ -1,4 +1,3 @@
-#include <array>
 #include "Geometry/Shape.h"
 #include "Geometry/Contour.h"
 #include "Geometry/Curve.h"

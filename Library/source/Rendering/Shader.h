@@ -1,6 +1,6 @@
 #pragma once
-#include <ostream>
 #include <GL/glew.h>
+#include "Engine/STL.h"
 #include "Rendering/EShader.enum.h"
 #include "Rendering/Uniform.h"
 #include "Rendering/Types.h"

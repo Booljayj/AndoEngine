@@ -1,4 +1,3 @@
-#include <iostream>
 #include "Engine/Logging/TerminalLoggerModule.h"
 #include "Engine/Logging/LogOutputData.h"
 #include "Engine/Logging/LogUtility.h"
