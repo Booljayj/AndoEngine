@@ -2,6 +2,7 @@
 NAME := AndoEngine
 TARGETTYPE := library
 
-CXXFLAGS := -I/usr/local/include/freetype2/
+INCLUDE_PATHS := /usr/local/include/freetype2/
+PRECOMPILE := Engine/STL.h
 
 include ../make/std_compile.mk

@@ -58,9 +58,10 @@ RM := rm -rf
 MKDIR := mkdir -p
 
 # flags (appended to existing defined flags)
-CXXFLAGS := $(CXXFLAGS) -std=gnu++17 -g -Wall -c -MMD -MP -I./$(DIR_SOURCE) -I./$(DIR_GENERATED)
+CXXFLAGS := $(CXXFLAGS) -std=gnu++17 -g -Wall -c -I./$(DIR_SOURCE) -I./$(DIR_GENERATED)
+DEPENDENCY_FLAGS := -MMD -MP
 LDFLAGS := $(LDFLAGS)
-ARFLAGS := -static -o
+ARFLAGS := -static
 
 # compilation
 ifdef DEFINE
@@ -69,6 +70,13 @@ endif
 
 ifdef INCLUDE_PATHS
 CXXFLAGS += $(foreach INCLUDE_PATH, $(INCLUDE_PATHS), -I$(INCLUDE_PATH))
+endif
+
+# precompiled headers
+ifdef PRECOMPILE
+PCH := $(DIR_SOURCE)/$(PRECOMPILE).pch
+PCH_SOURCE := $(DIR_SOURCE)/$(PRECOMPILE)
+PCH_FLAGS := -include-pch $(PCH)
 endif
 
 # linking
@@ -109,7 +117,7 @@ ifdef IS_LIBRARY
 $(TARGET): $(BUILD_OBJ) $(DEPENDENCIES)
 	$(info > Building $(TARGETTYPE) $(NAME)...)
 	@$(RM) $@
-	@$(AR) $(ARFLAGS) $@ $(BUILD_OBJ)
+	@$(AR) $(ARFLAGS) -o $@ $(BUILD_OBJ)
 else ifdef IS_EXECUTABLE
 $(TARGET): $(BUILD_OBJ) $(DEPENDENCIES)
 	$(info > Building $(TARGETTYPE) $(NAME)...)
@@ -117,15 +125,20 @@ $(TARGET): $(BUILD_OBJ) $(DEPENDENCIES)
 	@$(CXX) $(LDFLAGS) $(LDLIBS) $(BUILD_OBJ) -o $@
 endif
 
-# normal source files
-$(DIR_BUILD)/%.o: $(DIR_SOURCE)/%.cpp | directories
-	$(info > Compiling $(basename $<)...)
+# precompiled header
+$(PCH): $(PCH_SOURCE) | directories
+	$(info > Precompiling header $(basename $<)...)
 	@$(CXX) $(CXXFLAGS) $< -o $@
 
-# generated source files
-$(DIR_BUILD)/%.o: $(DIR_GENERATED)/%.cpp | directories
+# normal source files
+$(DIR_BUILD)/%.o: $(DIR_SOURCE)/%.cpp $(PCH) | directories
 	$(info > Compiling $(basename $<)...)
-	@$(CXX) $(CXXFLAGS) $< -o $@
+	@$(CXX) $(CXXFLAGS) $(DEPENDENCY_FLAGS) $(PCH_FLAGS) $< -o $@
+
+# generated source files
+$(DIR_BUILD)/%.o: $(DIR_GENERATED)/%.cpp $(PCH) | directories
+	$(info > Compiling $(basename $<)...)
+	@$(CXX) $(CXXFLAGS) $(DEPENDENCY_FLAGS) $(PCH_FLAGS) $< -o $@
 
 # dependency files
 -include $(BUILD_DEP)
