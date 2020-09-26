@@ -1,3 +1,4 @@
+#pragma once
 #include <glm/common.hpp>
 #include <glm/geometric.hpp>
 #include <glm/matrix.hpp>
