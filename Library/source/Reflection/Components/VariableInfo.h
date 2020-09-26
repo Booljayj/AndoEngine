@@ -20,11 +20,17 @@ namespace Reflection {
 
 	/** Info that describes a variable value */
 	struct VariableInfo {
-	private:
-		using ImmutableVariableGetterFunc = void const*(*)(VariablePointerStorage const&, void const*);
-		using MutableVariableGetterFunc = void*(*)(VariablePointerStorage const&, void*);
+	public:
+		union StorageType {
+			VariablePointerStorage variable;
+			FunctionPointerStorage function;
+		};
 
-		VariablePointerStorage storage;
+		using ImmutableVariableGetterFunc = void const*(*)(StorageType const&, void const*);
+		using MutableVariableGetterFunc = void*(*)(StorageType const&, void*);
+
+	private:
+		StorageType storage;
 		ImmutableVariableGetterFunc immutableGetter;
 		MutableVariableGetterFunc mutableGetter;
 
@@ -36,6 +42,7 @@ namespace Reflection {
 		Hash32 id;
 
 		VariableInfo() = delete;
+		VariableInfo(VariableInfo&& other) = default;
 
 		/** Construct variable info for a static variable */
 		template<typename ValueType>
@@ -43,9 +50,9 @@ namespace Reflection {
 		: type(TypeResolver<std::decay_t<ValueType>>::Get()), name(inName), description(inDescription), flags(inFlags + EVariableFlags::Static), id(inName)
 		{
 			using PointerType = decltype(pointer);
-			Cast<PointerType>(storage) = pointer;
-			immutableGetter = [](VariablePointerStorage const& storage, void const* instance) { return Cast<PointerType>(storage); };
-			mutableGetter = [](VariablePointerStorage const& storage, void* instance) { return Cast<PointerType>(storage); };
+			CastAlignedUnion<PointerType>(storage.variable) = pointer;
+			immutableGetter = [](StorageType const& storage, void const* instance) -> void const* { return CastAlignedUnion<PointerType>(storage.variable); };
+			mutableGetter = [](StorageType const& storage, void* instance) -> void* { return CastAlignedUnion<PointerType>(storage.variable); };
 		}
 		/** Construct variable info for a const static variable */
 		template<typename ValueType>
@@ -53,9 +60,9 @@ namespace Reflection {
 		: type(TypeResolver<std::decay_t<ValueType>>::Get()), name(inName), description(inDescription), flags(inFlags + EVariableFlags::Const + EVariableFlags::Static), id(inName)
 		{
 			using PointerType = decltype(pointer);
-			Cast<PointerType>(storage) = pointer;
-			immutableGetter = [](VariablePointerStorage const& storage, void const* instance) { return Cast<PointerType>(storage); };
-			mutableGetter = [](VariablePointerStorage const& storage, void* instance) { return nullptr; };
+			CastAlignedUnion<PointerType>(storage.variable) = pointer;
+			immutableGetter = [](StorageType const& storage, void const* instance) -> void const* { return CastAlignedUnion<PointerType>(storage.variable); };
+			mutableGetter = [](StorageType const& storage, void* instance) -> void* { return nullptr; };
 		}
 
 		/** Construct variable info for a member variable */
@@ -64,14 +71,14 @@ namespace Reflection {
 		: type(TypeResolver<std::decay_t<ValueType>>::Get()), name(inName), description(inDescription), flags(inFlags), id(inName)
 		{
 			using PointerType = decltype(pointer);
-			Cast<PointerType>(storage) = pointer;
-			immutableGetter = [](VariablePointerStorage const& storage, void const* instance) {
-				PointerType pointer = Cast<PointerType>(storage);
-				return &(static_cast<ClassType const*>(instance)->pointer);
+			CastAlignedUnion<PointerType>(static_cast<VariablePointerStorage&>(storage.variable)) = pointer;
+			immutableGetter = [](StorageType const& storage, void const* instance) -> void const* {
+				PointerType pointer = CastAlignedUnion<PointerType>(storage.variable);
+				return &(static_cast<ClassType const*>(instance)->*pointer);
 			};
-			mutableGetter = [](VariablePointerStorage const& storage, void* instance) {
-				PointerType pointer = Cast<PointerType>(storage);
-				return &(static_cast<ClassType*>(instance)->pointer);
+			mutableGetter = [](StorageType const& storage, void* instance) -> void* {
+				PointerType pointer = CastAlignedUnion<PointerType>(storage.variable);
+				return &(static_cast<ClassType*>(instance)->*pointer);
 			};
 		}
 		/** Construct variable info for a const member variable */
@@ -80,12 +87,30 @@ namespace Reflection {
 		: type(TypeResolver<std::decay_t<ValueType>>::Get()), name(inName), description(inDescription), flags(inFlags + EVariableFlags::Const), id(inName)
 		{
 			using PointerType = decltype(pointer);
-			Cast<PointerType>(storage) = pointer;
-			immutableGetter = [](VariablePointerStorage const& storage, void const* instance) {
-				PointerType pointer = Cast<PointerType>(storage);
-				return &(static_cast<ClassType const*>(instance)->pointer);
+			CastAlignedUnion<PointerType>(storage.variable) = pointer;
+			immutableGetter = [](StorageType const& storage, void const* instance) -> void const* {
+				PointerType pointer = CastAlignedUnion<PointerType>(storage.variable);
+				return &(static_cast<ClassType const*>(instance)->*pointer);
 			};
-			mutableGetter = [](VariablePointerStorage const& storage, void* instance) { return nullptr; };
+			mutableGetter = [](StorageType const& storage, void* instance) -> void* { return nullptr; };
+		}
+
+		/** Construct variable info for a variable that is accessed using an indexing operator at a specific index */
+		template<typename ClassType, typename ReturnType>
+		VariableInfo(TTypeList<ClassType, ReturnType>, size_t index, std::string_view inName, std::string_view inDescription, FVariableFlags inFlags)
+		: type(TypeResolver<std::decay_t<ReturnType>>::Get()), name(inName), description(inDescription), flags(inFlags)
+		{
+			CastAlignedUnion<size_t>(storage.variable) = index;
+			immutableGetter = [](StorageType const& storage, void const* instance) -> void const* {
+				const size_t index = CastAlignedUnion<size_t>(storage.variable);
+				ClassType const& object = *(static_cast<ClassType const*>(instance));
+				return &(object[index]);
+			};
+			mutableGetter = [](StorageType const& storage, void* instance) -> void* {
+				const size_t index = CastAlignedUnion<size_t>(storage.variable);
+				ClassType& object = *(static_cast<ClassType*>(instance));
+				return &(object[index]);
+			};
 		}
 
 		/** Get a pointer to this variable on a particular instance (instance is ignored for static variables) */

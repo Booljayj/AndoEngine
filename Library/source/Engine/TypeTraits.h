@@ -21,12 +21,12 @@ namespace PointerTypes {
 }
 
 /** An untyped storage buffer large enough to contain any kind of variable pointer */
-using VariablePointerStorage = std::aligned_union<0, PointerTypes::StaticVariable, PointerTypes::MemberVariable>::type;
+using VariablePointerStorage = std::aligned_union_t<0, PointerTypes::StaticVariable, PointerTypes::MemberVariable>;
 /** An untyped storage buffer large enough to contain any kind of function pointer */
-using FunctionPointerStorage = std::aligned_union<0, PointerTypes::StaticFunction, PointerTypes::MemberFunction>::type;
+using FunctionPointerStorage = std::aligned_union_t<0, PointerTypes::StaticFunction, PointerTypes::MemberFunction>;
 
 /** Cast an aligned storage buffer to a specific type contained in the buffer */
-template<typename T, typename... Types>
-static T const& Cast(std::aligned_union_t<0, Types...> const& storage) { return std::launder(reinterpret_cast<T const*>(&storage)); }
-template<typename T, typename... Types>
-static T& Cast(std::aligned_union_t<0, Types...>& storage) { return std::launder(reinterpret_cast<T*>(&storage)); }
+template<typename T, typename U>
+inline T& CastAlignedUnion(U& storage) { return *std::launder(reinterpret_cast<T*>(&storage)); }
+template<typename T, typename U>
+inline T const& CastAlignedUnion(U const& storage) { return *std::launder(reinterpret_cast<T const*>(&storage)); }

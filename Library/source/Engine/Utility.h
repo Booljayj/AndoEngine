@@ -1,6 +1,11 @@
 #pragma once
 #include "Engine/STL.h"
 
+//Utility to convert a symbol to a string
+#define STRINGIFY(x) #x
+//Utility to convert an expanded macro to a string
+#define STRINGIFY_MACRO(x) STRINGIFY(x)
+
 namespace Utility {
 	/** Write a value to a buffer using an exact number of digits in reverse order. */
 	void WriteReversedValue(uint16_t value, const uint8_t numDigits, char* buffer);

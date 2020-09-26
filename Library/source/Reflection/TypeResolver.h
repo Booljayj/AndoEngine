@@ -1,7 +1,18 @@
 #pragma once
 #include "Engine/Hash.h"
 #include "Engine/STL.h"
+#include "Engine/Utility.h"
 #include "Reflection/TypeInfo.h"
+
+/** Declare a resolver implementation for a type. Must be placed in the Reflection::Internal namespace. */
+#define DECLARE_RESOLVER(type)\
+template<> struct TypeResolver_Implementation<type> {\
+	static TypeInfo const* Get();\
+	static constexpr Hash128 GetID() { return Hash128{ STRINGIFY(type) }; }\
+}
+
+/** Define a resolver implementation for a type. Must be placed in the Reflection::Internal namespace, and a TyepInfo instance with the name info_<name> must exist. */
+#define DEFINE_RESOLVER(type, name) TypeInfo const* TypeResolver_Implementation<type>::Get() { return &info_ ## name; }
 
 namespace Reflection {
 	//The following setup ensures that specializations of TypeResolver are required to implement the concept of a TypeResolver

@@ -62,6 +62,6 @@ namespace Reflection {
 			return *this;
 		}
 		inline TStructTypeInfo& Defaults(void const* inDefaults) { defaults = inDefaults; return *this; }
-		inline TStructTypeInfo& Variables(TArrayView<VariableInfo const> inVariables) { variables = inVariables; return *this; }
+		inline TStructTypeInfo& Variables(TArrayView<VariableInfo const> inVariables) { variables = std::move(inVariables); return *this; }
 	};
 }

@@ -1,7 +1,8 @@
 #pragma once
-#include "Engine/Context.h"
 #include "Engine/Logging/LogCategory.h"
+#include "Engine/Context.h"
 #include "Engine/LinearStrings.h"
+#include "Engine/Utility.h"
 
 #ifndef MINIMUM_LOG_VERBOSITY
 #define MINIMUM_LOG_VERBOSITY ELogVerbosity::Debug
@@ -30,9 +31,8 @@ namespace LoggingInternal {
 	LogFormattedHelper(CTX_ARG, LogCategory const& category, char const* location, char const* message, ArgTypes&&... args) { /** no-op, removed by compiler */ }
 }
 
-#define S1(X) #X
-#define S2(X) S1(X)
-#define LOCATION (__FILE__ ":" S2(__LINE__))
+/** Expands to a string that describes the file location where it appears */
+#define LOCATION __FILE__ ":" STRINGIFY_MACRO(__LINE__)
 
 /** Log a message to the current context's logger */
 #define LOG(Category, Verbosity, Message) LoggingInternal::LogHelper<ELogVerbosity::Verbosity>(CTX, Log ## Category, LOCATION, Message)

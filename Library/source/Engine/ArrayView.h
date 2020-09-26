@@ -21,6 +21,11 @@ struct TArrayView {
 	: TArrayView(array.data(), array.end() - array.begin())
 	{}
 
+	//Create from an initializer list
+	constexpr TArrayView(std::initializer_list<T> const& list)
+	: TArrayView(list.begin(), list.size())
+	{}
+
 	constexpr inline T const& operator[](size_t index) const { return begin_[index]; }
 	constexpr inline operator bool() const {return size_ == 0;}
 
