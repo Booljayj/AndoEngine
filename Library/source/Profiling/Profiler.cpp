@@ -1,8 +1,6 @@
 #include "Profiling/Profiler.h"
 #include "Engine/LogCommands.h"
 
-using namespace std::string_view_literals;
-
 DEFINE_LOG_CATEGORY(Profiler, Info);
 
 namespace Profiling {

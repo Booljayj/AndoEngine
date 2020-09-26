@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <string>
 #include <string_view>
+using namespace std::string_view_literals;
 
 //Array types
 #include <array>

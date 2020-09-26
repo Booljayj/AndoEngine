@@ -2,8 +2,6 @@
 #include "Reflection/StructTypeInfo.h"
 
 namespace Reflection {
-	using namespace std::string_view_literals;
-
 	//A static demangler used by the debug functions in TypeUtility. This mostly exists for convenience.
 	Demangler debugDemangler{};
 
