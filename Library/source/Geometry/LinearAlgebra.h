@@ -1,4 +1,5 @@
 #include <glm/common.hpp>
+#include <glm/geometric.hpp>
 #include <glm/matrix.hpp>
 #include "Engine/Utility.h"
 #include "Reflection/TypeResolver.h"

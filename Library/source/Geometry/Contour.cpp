@@ -1,9 +1,7 @@
-#include <glm/gtc/vec1.hpp>
-#include <glm/vec2.hpp>
-#include <glm/geometric.hpp>
 #include "Geometry/Equations.h"
 #include "Geometry/Contour.h"
 #include "Geometry/Curve.h"
+#include "Geometry/LinearAlgebra.h"
 #include "Utility/variant.hpp"
 
 namespace Geometry {

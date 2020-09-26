@@ -1,7 +1,7 @@
 #pragma once
-#include <glm/vec2.hpp>
 #include "Engine/STL.h"
 #include "Geometry/CurveTypes.h"
+#include "Geometry/LinearAlgebra.h"
 #include "Utility/variant.hpp"
 
 namespace Geometry {

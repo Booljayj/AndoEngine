@@ -1,10 +1,10 @@
 #pragma once
-#include <glm/vec2.hpp>
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include "Engine/Context.h"
 #include "Engine/LinearContainers.h"
 #include "Engine/STL.h"
+#include "Geometry/LinearAlgebra.h"
 #include "Geometry/Shape.h"
 
 namespace Rendering {
