@@ -5,14 +5,16 @@
 #include "Engine/LinearContainers.h"
 #include "Engine/LinearStrings.h"
 #include "Engine/STL.h"
+#include "EntityFramework/EntityTypes.h"
 #include "Geometry/Rect.h"
 
-struct TextureComponent;
-
 struct GlyphInfo {
-	Geometry::Rect textureRect; //uv coordinate rect inside the texture page where the glyph image can be found
-	Geometry::Rect quadRect; //rect defining the physical size of the glyph quad, in em
-	float advance; //How much space the glyph quad requires before the next glyph quad is placed
+	/** uv coordinate rect inside the texture page where the glyph image can be found */
+	Geometry::Rect textureRect;
+	/** rect defining the physical size of the glyph quad, in em */
+	Geometry::Rect quadRect;
+	/** How much space the glyph quad requires before the next glyph quad is placed */
+	float advance;
 };
 
 struct CodePointFrequencyTracker {
@@ -62,21 +64,23 @@ struct CodePointFrequencyTracker {
 };
 
 struct FontFaceComponent {
-	//Information about each glyph contained in this font
+	/** Information about each glyph contained in this font */
 	std::vector<GlyphInfo> glyphInfos;
-	//The mapping between a unicode character code and the index in the glyphInfos array (always sorted by character code, no duplicates).
+	/** The mapping between a unicode character code and the index in the glyphInfos array (always sorted by character code, no duplicates). */
 	std::vector<std::pair<char32_t, uint32_t>> characterMapping;
-	//The kerning information for glyph pairs
+	/** The kerning information for glyph pairs */
 	std::vector<std::tuple<char32_t, char32_t, float>> kerning;
 
-	EntityID pageEntity;
-	TextureComponent* page;
+	/** The texture page where the glyph images are stored */
+	EntityRuntimeID page;
 };
 
 struct FontFamilyComponent {
-	//When text is defined, it can include tags which push font attribute states into the current rendering context.
-	// Those attributes are used to find the best matching font face to use when rendering glyphs. If a glyph is not
-	// found in the best matching font face, the next best is used, and so on.
+	/**
+	 * When text is defined, it can include tags which push font attribute states into the current rendering context.
+	 * Those attributes are used to find the best matching font face to use when rendering glyphs. If a glyph is not
+	 * found in the best matching font face, the next best is used, and so on.
+	 */
 	enum class EFontStyle : uint8_t {
 		Italic,
 		Bold,
@@ -90,11 +94,12 @@ struct FontFamilyComponent {
 		Japanese,
 		Korean,
 	};
+
 	struct FontAttributes {
 		FFontStyle style;
 		EHanGlyphType hanGlyphType;
 	};
 
-	FontFaceComponent* defaultFontFace;
-	std::vector<std::pair<FontAttributes, FontFaceComponent*>> variants;
+	EntityRuntimeID defaultFontFace;
+	std::vector<std::pair<FontAttributes, EntityRuntimeID>> variants;
 };
