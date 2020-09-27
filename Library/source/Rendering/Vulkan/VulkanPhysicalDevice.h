@@ -1,8 +1,8 @@
 #pragma once
-#include <vulkan/vulkan.h>
 #include "Engine/ArrayView.h"
 #include "Engine/Context.h"
 #include "Engine/STL.h"
+#include "Rendering/Vulkan/VulkanCommon.h"
 
 namespace Rendering {
 	struct VulkanPhysicalDevice {

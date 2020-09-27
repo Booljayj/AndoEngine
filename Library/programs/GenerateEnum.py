@@ -1,5 +1,22 @@
 #!/usr/bin/env python
 
+#Example .enum file contents:
+#name: EBufferTarget
+#type: uint8_t
+#namespace: GL
+#include:
+#  - "Engine/STL.h"
+#conv:
+#  - { name: GL, type: GLenum, default: 0, comment: OpenGL built-in enum }
+#
+#values:
+#  - { name: Array, conv: [ GL_ARRAY_BUFFER ] }
+#  - { name: Element, conv: [ GL_ELEMENT_ARRAY_BUFFER ] }
+#  - { name: CopyRead, conv: [ GL_COPY_READ_BUFFER ] }
+#  - { name: CopyWrite, conv: [ GL_COPY_WRITE_BUFFER ] }
+#  - { name: PixelUnpack, conv: [ GL_PIXEL_UNPACK_BUFFER ] }
+#...
+
 import sys
 import os
 import yaml

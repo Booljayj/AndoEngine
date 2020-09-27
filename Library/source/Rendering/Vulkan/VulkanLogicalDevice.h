@@ -1,6 +1,6 @@
 #pragma once
-#include <vulkan/vulkan.h>
 #include "Engine/Context.h"
+#include "Rendering/Vulkan/VulkanCommon.h"
 #include "Rendering/Vulkan/VulkanPhysicalDevice.h"
 
 namespace Rendering {

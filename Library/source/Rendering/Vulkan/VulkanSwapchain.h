@@ -1,7 +1,7 @@
 #pragma once
-#include <vulkan/vulkan.h>
 #include "Engine/ArrayView.h"
 #include "Engine/Context.h"
+#include "Rendering/Vulkan/VulkanCommon.h"
 #include "Rendering/Vulkan/VulkanLogicalDevice.h"
 #include "Rendering/Vulkan/VulkanPhysicalDevice.h"
 

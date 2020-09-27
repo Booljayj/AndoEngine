@@ -2,8 +2,6 @@
 #include "Rendering/Vulkan/VulkanPhysicalDevice.h"
 #include "Rendering/Vulkan/VulkanVersion.h"
 
-#include <iostream>
-
 namespace Rendering {
 	VulkanPhysicalDevice VulkanPhysicalDevice::Get(CTX_ARG, VkPhysicalDevice const& device, VkSurfaceKHR const& surface) {
 		TEMP_ALLOCATOR_MARK();

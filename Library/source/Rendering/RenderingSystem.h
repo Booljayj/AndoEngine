@@ -1,8 +1,8 @@
 #pragma once
-#include <vulkan/vulkan.h>
 #include "Engine/Context.h"
 #include "Engine/Logging/Logger.h"
 #include "EntityFramework/EntityRegistry.h"
+#include "Rendering/Vulkan/VulkanCommon.h"
 #include "Rendering/Vulkan/VulkanFramework.h"
 #include "Rendering/Vulkan/VulkanLogicalDevice.h"
 #include "Rendering/Vulkan/VulkanPhysicalDevice.h"

@@ -1,36 +1,12 @@
 #pragma once
-#include <GL/glew.h>
 #include "Engine/STL.h"
-#include "Rendering/EShader.enum.h"
-#include "Rendering/Uniform.h"
-#include "Rendering/Types.h"
+#include "EntityFramework/EntityTypes.h"
 
 struct ShaderComponent {
-	//Serialized data
-	char const* source = nullptr;
-	GL::EShader::ENUM shaderType = GL::EShader::Vertex;
-
-	//Runtime data
-	ShaderID shaderID = 0;
-	bool isCompiled = false;
+	std::vector<uint8_t> code;
 };
 
-struct ProgramComponent {
-	//Serialized data
-	std::vector<ShaderComponent*> linkedShaders;
-
-	//Runtime data
-	ProgramID programID = 0;
-	std::vector<GL::UniformInfo> uniforms;
-	bool isLinked = false;
+struct MaterialComponent {
+	EntityRuntimeID vertex;
+	EntityRuntimeID fragment;
 };
-
-namespace GL {
-	bool Compile(ShaderComponent& shader);
-	void DescribeCompilationErrors(std::ostream& stream, ShaderComponent const& shader);
-
-	bool Link(ProgramComponent& program);
-	void DescribeLinkingErrors(std::ostream& stream, ProgramComponent const& program);
-
-	void Use(ProgramComponent const& program);
-}

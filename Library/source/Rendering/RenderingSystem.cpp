@@ -1,12 +1,10 @@
-#include <glm/vec3.hpp>
 #include <SDL2/SDL_vulkan.h>
-#include <vulkan/vulkan.h>
 #include "Rendering/RenderingSystem.h"
 #include "Engine/LogCommands.h"
 #include "Engine/STL.h"
 #include "Engine/Utility.h"
+#include "Geometry/LinearAlgebra.h"
 #include "Rendering/SDLSystems.h"
-#include "Rendering/MeshRendererComponent.h"
 
 DEFINE_LOG_CATEGORY(Rendering, Warning);
 
