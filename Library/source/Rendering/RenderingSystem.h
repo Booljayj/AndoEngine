@@ -1,6 +1,7 @@
 #pragma once
 #include "Engine/Context.h"
 #include "Engine/Logging/Logger.h"
+#include "Engine/Time.h"
 #include "EntityFramework/EntityRegistry.h"
 #include "Rendering/Vulkan/VulkanCommon.h"
 #include "Rendering/Vulkan/VulkanFramework.h"
@@ -8,12 +9,12 @@
 #include "Rendering/Vulkan/VulkanPhysicalDevice.h"
 #include "Rendering/Vulkan/VulkanSwapchain.h"
 
-DECLARE_LOG_CATEGORY(Rendering);
-
 struct SDLWindowSystem;
 
+DECLARE_LOG_CATEGORY(Rendering);
+
 class RenderingSystem {
-private:
+public:
 	/** The entity group that contains all entities to render */
 	//EntityGroup<TypeList<MeshRendererComponent>, TypeList<TransformComponent>, TypeList<>> RenderableEntities;
 
@@ -21,11 +22,13 @@ private:
 	Rendering::VulkanFramework framework;
 
 	/** The enabled features on any physical device that this application uses */
-	VkPhysicalDeviceFeatures enabledFeatures;
+	VkPhysicalDeviceFeatures features;
 
 	/** The available physical devices which can be used */
 	std::vector<Rendering::VulkanPhysicalDevice> availablePhysicalDevices;
-	/** The index of the currently selected device */
+	/** The current selected physical device */
+	Rendering::VulkanPhysicalDevice const* selectedPhysicalDevice = nullptr;
+	/** The index of the currently selected physical device */
 	uint32_t selectedPhysicalDeviceIndex = (uint32_t)-1;
 
 	/** The logical device for the currently selected physical device */
@@ -37,15 +40,12 @@ private:
 	/** Flags for tracking rendering behavior */
 	uint32_t shouldRecreateSwapchain : 1;
 
-public:
 	RenderingSystem();
 
-	bool Startup(
-		CTX_ARG,
-		SDLWindowSystem& windowSystem,
-		EntityRegistry& registry
-	);
+	bool Startup(CTX_ARG, SDLWindowSystem& windowSystem, EntityRegistry& registry);
 	bool Shutdown(CTX_ARG);
+
+	bool Update(CTX_ARG, Time time);
 
 	inline uint32_t NumPhysicalDevices() const { return availablePhysicalDevices.size(); }
 	inline const Rendering::VulkanPhysicalDevice* GetPhysicalDevice(uint32_t Index) const {

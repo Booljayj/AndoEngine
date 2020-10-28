@@ -58,8 +58,9 @@ void MainLoop(CTX_ARG) {
 		sdlEventSystem.PollEvents(shutdownRequested);
 
 		while (timeController.StartUpdateFrame()) {
-			//const Time& T = timeController.GetTime();
+			const Time& time = timeController.GetTime();
 
+			shutdownRequested |= renderingSystem.Update(CTX, time);
 			//@todo: Game Update
 
 			timeController.FinishUpdateFrame();

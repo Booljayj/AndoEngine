@@ -2,37 +2,54 @@
 #include "Rendering/Vulkan/VulkanSwapchain.h"
 
 namespace Rendering {
-	bool VulkanSwapchain::Create(CTX_ARG, VkExtent2D const& desiredExtent, VkSurfaceKHR const& surface, Rendering::VulkanPhysicalDevice const& physicalDevice, VkDevice const& logicalDevice) {
-		TEMP_ALLOCATOR_MARK();
-		bool bSuccess = true;
+	namespace VulkanSwapchainUtilities {
+		uint32_t GetImageCountMinimum(VkSurfaceCapabilitiesKHR const& capabilities) {
+			uint32_t const maxImageCountActual = capabilities.maxImageCount > 0 ? capabilities.maxImageCount : std::numeric_limits<uint32_t>::max();
+			return std::min<uint32_t>(capabilities.minImageCount + 1, maxImageCountActual);
+		}
 
-		surfaceFormat = ChooseSwapSurfaceFormat(physicalDevice.presentation.surfaceFormats);
-		presentMode = ChooseSwapPresentMode(physicalDevice.presentation.presentModes);
-		extent = physicalDevice.GetSwapExtent(surface, desiredExtent);
-		preTransform = physicalDevice.GetPreTransform(surface);
+		VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableSurfaceFormats) {
+			for (const auto& availableSurfaceFormat : availableSurfaceFormats) {
+				if (availableSurfaceFormat.format == VK_FORMAT_B8G8R8A8_UNORM && availableSurfaceFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+					return availableSurfaceFormat;
+				}
+			}
+			return availableSurfaceFormats[0];
+		}
 
-		uint32_t const imageCountMinimum = GetImageCountMinimum(physicalDevice.presentation.capabilities);
+		VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
+			for (const auto& availablePresentMode : availablePresentModes) {
+				if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
+					return availablePresentMode;
+				}
+			}
+			return VK_PRESENT_MODE_FIFO_KHR;
+		}
 
-		//Copy the previous data that will be cleaned up later.
-		VkSwapchainKHR previousSwapchain = swapchain;
-		l_vector<VulkanSwapchainImage> previousImages{images.begin(), images.end(), CTX.temp};
+		void SetupProperties(CTX_ARG, VulkanSwapchain& result, VkExtent2D const& extent, VkSurfaceKHR const& surface, VulkanPhysicalDevice const& physical) {
+			result.surfaceFormat = ChooseSwapSurfaceFormat(physical.presentation.surfaceFormats);
+			result.presentMode = ChooseSwapPresentMode(physical.presentation.presentModes);
+			result.extent = physical.GetSwapExtent(surface, extent);
+			result.preTransform = physical.GetPreTransform(surface);
+		}
 
-		//Create the new swapchain
-		{
+		bool CreateSwapchain(CTX_ARG, VulkanSwapchain& result, VkSwapchainKHR const& previous, VkSurfaceKHR const& surface, VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical) {
+			uint32_t const imageCountMinimum = GetImageCountMinimum(physical.presentation.capabilities);
+
 			VkSwapchainCreateInfoKHR swapchainCI = {};
 			swapchainCI.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
 			swapchainCI.surface = surface;
 
 			//Image settings
 			swapchainCI.minImageCount = imageCountMinimum;
-			swapchainCI.imageFormat = surfaceFormat.format;
-			swapchainCI.imageColorSpace = surfaceFormat.colorSpace;
-			swapchainCI.imageExtent = extent;
+			swapchainCI.imageFormat = result.surfaceFormat.format;
+			swapchainCI.imageColorSpace = result.surfaceFormat.colorSpace;
+			swapchainCI.imageExtent = result.extent;
 			swapchainCI.imageArrayLayers = 1;
 			swapchainCI.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
 			//Queue settings
-			uint32_t const queueFamilyIndices[2] = {physicalDevice.queues.graphics->index, physicalDevice.queues.present->index};
+			uint32_t const queueFamilyIndices[2] = {physical.queues.graphics->index, physical.queues.present->index};
 			if (queueFamilyIndices[0] == queueFamilyIndices[1]) {
 				swapchainCI.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
 				swapchainCI.queueFamilyIndexCount = 0;
@@ -44,40 +61,33 @@ namespace Rendering {
 			}
 
 			//Transform settings
-			swapchainCI.preTransform = preTransform;
+			swapchainCI.preTransform = result.preTransform;
 
 			//Compositing settings
 			swapchainCI.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 
 			//Presentation settings
-			swapchainCI.presentMode = presentMode;
+			swapchainCI.presentMode = result.presentMode;
 			swapchainCI.clipped = true;
 
 			//The old swapchain that is being replaced, which will be destroyed after the new one is created.
-			swapchainCI.oldSwapchain = previousSwapchain;
+			swapchainCI.oldSwapchain = previous;
 
-			bSuccess &= vkCreateSwapchainKHR(logicalDevice, &swapchainCI, nullptr, &swapchain) == VK_SUCCESS;
+			return vkCreateSwapchainKHR(logical.device, &swapchainCI, nullptr, &result.swapchain) == VK_SUCCESS;
 		}
 
-		//Clean up the previous swapchain (regardless of whether the creation of the new one is a success)
-		if (previousSwapchain) {
-			DestroyResources(logicalDevice, previousSwapchain, previousImages);
-		}
-
-		//Get the swap chain images and create image views
-		if (bSuccess) {
+		bool CreateImageInfo(CTX_ARG, VulkanSwapchain& result, VulkanLogicalDevice const& logical) {
 			uint32_t imageCount;
-			vkGetSwapchainImagesKHR(logicalDevice, swapchain, &imageCount, nullptr);
-			VkImage* imagesRaw = CTX.temp.Request<VkImage>(imageCount);
-			vkGetSwapchainImagesKHR(logicalDevice, swapchain, &imageCount, imagesRaw);
+			vkGetSwapchainImagesKHR(logical.device, result.swapchain, &imageCount, nullptr);
+			VkImage* images = CTX.temp.Request<VkImage>(imageCount);
+			vkGetSwapchainImagesKHR(logical.device, result.swapchain, &imageCount, images);
 
 			VkImageViewCreateInfo imageViewCI = {};
 			imageViewCI.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-			//imageViewCI.image = swapChainImages[i];
 
 			//Image data settings
 			imageViewCI.viewType = VK_IMAGE_VIEW_TYPE_2D;
-			imageViewCI.format = surfaceFormat.format;
+			imageViewCI.format = result.surfaceFormat.format;
 
 			//Component swizzling settings
 			imageViewCI.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -93,59 +103,126 @@ namespace Rendering {
 			imageViewCI.subresourceRange.layerCount = 1;
 
 			// Get the swap chain buffers containing the image and imageview
-			images.resize(imageCount);
+			result.imageInfos.resize(imageCount);
 			bool bSuccess = true;
 			for (uint32_t imageIndex = 0; imageIndex < imageCount; ++imageIndex) {
-				VkImage const& image = imagesRaw[imageIndex];
-				VulkanSwapchainImage& data = images[imageIndex];
+				VkImage const& image = images[imageIndex];
+				VulkanSwapchainImageInfo& info = result.imageInfos[imageIndex];
 
 				//Assign the image handle
-				data.image = image;
+				info.image = image;
 
 				//Create the view for this image
 				imageViewCI.image = image;
-				bSuccess &= vkCreateImageView(logicalDevice, &imageViewCI, nullptr, &data.view) == VK_SUCCESS;
+				bSuccess &= vkCreateImageView(logical.device, &imageViewCI, nullptr, &info.view) == VK_SUCCESS;
 			}
+
+			return bSuccess;
 		}
 
-		return bSuccess;
-	}
+		bool CreateRenderPasses(CTX_ARG, VulkanSwapchain& result, const VulkanLogicalDevice& logical) {
+			//Descriptions of attachments
+			VkAttachmentDescription colorAttachment{};
+			colorAttachment.format = result.surfaceFormat.format;
+			colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+			colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+			colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+			colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+			colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+			colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-	void VulkanSwapchain::Destroy(VkDevice const& logicalDevice) {
-		if (swapchain) {
-			DestroyResources(logicalDevice, swapchain, images);
+			//References to attachments
+			VkAttachmentReference colorAttachmentRef{};
+			colorAttachmentRef.attachment = 0;
+			colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+			//The color subpass, which uses the color attachment
+			VkSubpassDescription subpass{};
+			subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+			subpass.colorAttachmentCount = 1;
+			subpass.pColorAttachments = &colorAttachmentRef;
+
+			//Information to create the full render pass, with all relevant attachments and subpasses.
+			VkRenderPassCreateInfo renderPassInfo{};
+			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+			renderPassInfo.attachmentCount = 1;
+			renderPassInfo.pAttachments = &colorAttachment;
+			renderPassInfo.subpassCount = 1;
+			renderPassInfo.pSubpasses = &subpass;
+
+			return vkCreateRenderPass(logical.device, &renderPassInfo, nullptr, &result.renderPass) == VK_SUCCESS;
 		}
 	}
 
-	uint32_t VulkanSwapchain::GetImageCountMinimum(VkSurfaceCapabilitiesKHR const& capabilities) {
-		uint32_t const maxImageCountActual = capabilities.maxImageCount > 0 ? capabilities.maxImageCount : std::numeric_limits<uint32_t>::max();
-		return std::min<uint32_t>(capabilities.minImageCount + 1, maxImageCountActual);
+	VulkanSwapchain VulkanSwapchain::Create(CTX_ARG, VkExtent2D const& extent, VkSurfaceKHR const& surface, VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical) {
+		using namespace VulkanSwapchainUtilities;
+		TEMP_ALLOCATOR_MARK();
+
+		vkDeviceWaitIdle(logical.device);
+
+		VulkanSwapchain result;
+		SetupProperties(CTX, result, extent, surface, physical);
+
+		bool const bSuccess =
+			CreateSwapchain(CTX, result, nullptr, surface, physical, logical) &&
+			CreateImageInfo(CTX, result, logical) &&
+			CreateRenderPasses(CTX, result, logical);
+
+		//If we only partially created everything, destroy what was created.
+		if (!bSuccess) result.Destroy(logical);
+
+		return result;
 	}
 
-	VkSurfaceFormatKHR VulkanSwapchain::ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableSurfaceFormats) {
-		for (const auto& availableSurfaceFormat : availableSurfaceFormats) {
-			if (availableSurfaceFormat.format == VK_FORMAT_B8G8R8A8_UNORM && availableSurfaceFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-				return availableSurfaceFormat;
-			}
+	VulkanSwapchain VulkanSwapchain::Recreate(CTX_ARG, VulkanSwapchain& previous, VkExtent2D const& extent, VkSurfaceKHR const& surface, VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical) {
+		using namespace VulkanSwapchainUtilities;
+		TEMP_ALLOCATOR_MARK();
+
+		vkDeviceWaitIdle(logical.device);
+
+		VulkanSwapchain result;
+		SetupProperties(CTX, result, extent, surface, physical);
+
+		bool const bCreatedSwapchain = CreateSwapchain(CTX, result, previous.swapchain, surface, physical, logical);
+
+		//Clean up the previous swapchain (regardless of whether the creation of the new one is a success)
+		if (previous) {
+			previous.Destroy(logical);
 		}
-		return availableSurfaceFormats[0];
+
+		//During a recreate, if we didn't even start creating the new swapchain, we can stop here.
+		if (!bCreatedSwapchain) return result;
+
+		//Get the swap chain images and create image views
+		bool const bSuccess = CreateImageInfo(CTX, result, logical) &&
+			CreateRenderPasses(CTX, result, logical);
+
+		//If we only partially created everything, destroy what was created.
+		if (!bSuccess) result.Destroy(logical);
+
+		return result;
 	}
 
-	VkPresentModeKHR VulkanSwapchain::ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
-		for (const auto& availablePresentMode : availablePresentModes) {
-			if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
-				return availablePresentMode;
-			}
+	void VulkanSwapchain::Destroy(VulkanLogicalDevice const& logical) {
+		//Destroy the render pass
+		if (renderPass) {
+			vkDestroyRenderPass(logical.device, renderPass, nullptr);
+			renderPass = nullptr;
 		}
-		return VK_PRESENT_MODE_FIFO_KHR;
-	}
 
-	void VulkanSwapchain::DestroyResources(VkDevice const& device, VkSwapchainKHR const& swapchain, TArrayView<VulkanSwapchainImage const> const& images) {
-		for (VulkanSwapchainImage const& image : images) {
+		//Destroy the image views
+		for (VulkanSwapchainImageInfo const& image : imageInfos) {
 			if (image.view) {
-				vkDestroyImageView(device, image.view, nullptr);
+				vkDestroyImageView(logical.device, image.view, nullptr);
 			}
 		}
-		vkDestroySwapchainKHR(device, swapchain, nullptr);
+		imageInfos.clear();
+
+		//Destroy the swapchain
+		if (swapchain) {
+			vkDestroySwapchainKHR(logical.device, swapchain, nullptr);
+			swapchain = nullptr;
+		}
 	}
 }

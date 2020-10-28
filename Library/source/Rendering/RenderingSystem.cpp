@@ -15,7 +15,7 @@ RenderingSystem::RenderingSystem()
 bool RenderingSystem::Startup(CTX_ARG, SDLWindowSystem& windowSystem, EntityRegistry& registry) {
 	// Vulkan instance
 	if (!framework.Create(CTX, windowSystem.GetMainWindow())) {
-		LOG(Temp, Error, "Failed to create the Vulkan application");
+		LOG(Rendering, Error, "Failed to create the Vulkan framework");
 	}
 
 	// Collect physical devices and select default one
@@ -35,21 +35,22 @@ bool RenderingSystem::Startup(CTX_ARG, SDLWindowSystem& windowSystem, EntityRegi
 		}
 
 		if (availablePhysicalDevices.size() == 0) {
-			LOG(Temp, Error, "Failed to find any vulkan physical devices");
+			LOG(Rendering, Error, "Failed to find any vulkan physical devices");
 			return false;
 		}
 
 		if (!SelectPhysicalDevice(CTX, 0)) {
-			LOG(Temp, Error, "Failed to select default physical device");
+			LOG(Rendering, Error, "Failed to select default physical device");
 			return false;
 		}
 	}
 
-	//Create the swapchain
+	//Create the initial swapchain
 	{
 		shouldRecreateSwapchain = false;
-		if (!swapchain.Create(CTX, VkExtent2D{1024, 768}, framework.surface, *GetPhysicalDevice(selectedPhysicalDeviceIndex), logicalDevice.device)) {
-			LOG(Temp, Error, "Failed to create the swapchain");
+		swapchain = Rendering::VulkanSwapchain::Create(CTX, VkExtent2D{1024, 768}, framework.surface, *selectedPhysicalDevice, logicalDevice);
+		if (!swapchain) {
+			LOG(Rendering, Error, "Failed to create the swapchain");
 			return false;
 		}
 	}
@@ -58,23 +59,44 @@ bool RenderingSystem::Startup(CTX_ARG, SDLWindowSystem& windowSystem, EntityRegi
 }
 
 bool RenderingSystem::Shutdown(CTX_ARG) {
-	swapchain.Destroy(logicalDevice.device);
+	swapchain.Destroy(logicalDevice);
 	logicalDevice.Destroy();
 	framework.Destroy();
 	return true;
 }
 
-bool RenderingSystem::SelectPhysicalDevice(CTX_ARG, uint32_t index) {
-	if (index != selectedPhysicalDeviceIndex) {
-		if (const Rendering::VulkanPhysicalDevice* physicalDevice = GetPhysicalDevice(index)) {
-			TArrayView<char const*> const extensionNames = Rendering::VulkanPhysicalDevice::GetExtensionNames(CTX);
+bool RenderingSystem::Update(CTX_ARG, Time time) {
+	//Recreate the swapchain if necessary. This happens periodically if the rendering parameters have changed significantly.
+	if (shouldRecreateSwapchain) {
+		shouldRecreateSwapchain = false;
 
-			logicalDevice.Destroy();
-			if (!logicalDevice.Create(CTX, *physicalDevice, enabledFeatures, extensionNames)) {
-				LOGF(Temp, Error, "Failed to create logical device for physical device %i", index);
+		LOG(Rendering, Info, "Recreating swapchain");
+		swapchain = Rendering::VulkanSwapchain::Recreate(CTX, swapchain, VkExtent2D{1024, 768}, framework.surface, *selectedPhysicalDevice, logicalDevice);
+		if (!swapchain) {
+			LOG(Rendering, Error, "Failed to create a new swapchain");
+			return true;
+		}
+	}
+
+	//@todo perform actual rendering here
+	return false;
+}
+
+bool RenderingSystem::SelectPhysicalDevice(CTX_ARG, uint32_t index) {
+	using namespace Rendering;
+
+	if (index != selectedPhysicalDeviceIndex) {
+		if (VulkanPhysicalDevice const* physicalDevice = GetPhysicalDevice(index)) {
+			TArrayView<char const*> const extensions = VulkanPhysicalDevice::GetExtensionNames(CTX);
+
+			VulkanLogicalDevice newLogicalDevice = VulkanLogicalDevice::Create(CTX, *physicalDevice, features, extensions);
+			if (!newLogicalDevice) {
+				LOGF(Rendering, Error, "Failed to create logical device for physical device %i", index);
 				return false;
 			}
+			logicalDevice = std::move(newLogicalDevice);
 
+			selectedPhysicalDevice = physicalDevice;
 			selectedPhysicalDeviceIndex = index;
 			shouldRecreateSwapchain = true;
 

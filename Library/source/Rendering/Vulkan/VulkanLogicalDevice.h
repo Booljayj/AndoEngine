@@ -4,6 +4,10 @@
 #include "Rendering/Vulkan/VulkanPhysicalDevice.h"
 
 namespace Rendering {
+	/**
+	 * Contains the components of a Vulkan logical device, which is used to communicate with a physical device.
+	 * A new logical device is created for each physical device that will be used.
+	 */
 	struct VulkanLogicalDevice {
 		/** The underlying logical device */
 		VkDevice device = nullptr;
@@ -13,7 +17,13 @@ namespace Rendering {
 			VkQueue graphics = nullptr;
 		} queues;
 
-		bool Create(CTX_ARG, Rendering::VulkanPhysicalDevice const& physicalDevice, VkPhysicalDeviceFeatures const& enabledFeatures, TArrayView<char const*> const& enabledExtensionNames);
+		VulkanLogicalDevice() = default;
+		VulkanLogicalDevice(VulkanLogicalDevice&& other);
+
+		VulkanLogicalDevice& operator=(VulkanLogicalDevice&& other);
+		inline operator bool() const { return !!device; }
+
+		static VulkanLogicalDevice Create(CTX_ARG, Rendering::VulkanPhysicalDevice const& physical, VkPhysicalDeviceFeatures const& features, TArrayView<char const*> const& extensions);
 		void Destroy();
 	};
 }

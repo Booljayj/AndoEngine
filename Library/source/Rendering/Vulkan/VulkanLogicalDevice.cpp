@@ -2,8 +2,28 @@
 #include "Rendering/Vulkan/VulkanLogicalDevice.h"
 
 namespace Rendering {
-	bool VulkanLogicalDevice::Create(CTX_ARG, VulkanPhysicalDevice const& physicalDevice, VkPhysicalDeviceFeatures const& enabledFeatures, TArrayView<char const*> const& enabledExtensionNames) {
+	VulkanLogicalDevice::VulkanLogicalDevice(VulkanLogicalDevice&& other) {
+		*this = std::move(other);
+	}
+
+	VulkanLogicalDevice& VulkanLogicalDevice::operator=(VulkanLogicalDevice&& other) {
+		Destroy();
+
+		device = other.device;
+		queues.graphics = other.queues.graphics;
+		queues.present = other.queues.present;
+
+		other.device = nullptr;
+		other.queues.graphics = nullptr;
+		other.queues.present = nullptr;
+
+		return *this;
+	}
+
+	VulkanLogicalDevice VulkanLogicalDevice::Create(CTX_ARG, VulkanPhysicalDevice const& physicalDevice, VkPhysicalDeviceFeatures const& enabledFeatures, TArrayView<char const*> const& enabledExtensionNames) {
 		TEMP_ALLOCATOR_MARK();
+
+		VulkanLogicalDevice result;
 
 		l_unordered_set<uint32_t> uniqueQueueFamilies{CTX.temp};
 		uniqueQueueFamilies.insert(physicalDevice.queues.graphics.value().index);
@@ -35,18 +55,22 @@ namespace Rendering {
 		deviceCI.enabledExtensionCount = enabledExtensionNames.size();
 		deviceCI.ppEnabledExtensionNames = enabledExtensionNames.begin();
 
-		vkCreateDevice(physicalDevice.device, &deviceCI, nullptr, &device);
+		vkCreateDevice(physicalDevice.device, &deviceCI, nullptr, &result.device);
 
-		if (device) {
-			vkGetDeviceQueue(device, physicalDevice.queues.graphics.value().index, 0, &queues.graphics);
-			vkGetDeviceQueue(device, physicalDevice.queues.present.value().index, 0, &queues.present);
-			return true;
-		} else {
-			return false;
+		if (result.device) {
+			vkGetDeviceQueue(result.device, physicalDevice.queues.graphics.value().index, 0, &result.queues.graphics);
+			vkGetDeviceQueue(result.device, physicalDevice.queues.present.value().index, 0, &result.queues.present);
 		}
+
+		return result;
 	}
 
 	void VulkanLogicalDevice::Destroy() {
-		if (!!device) vkDestroyDevice(device, nullptr);
+		if (!!device) {
+			vkDestroyDevice(device, nullptr);
+			device = nullptr;
+			queues.present = nullptr;
+			queues.graphics = nullptr;
+		}
 	}
 }

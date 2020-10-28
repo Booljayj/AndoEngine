@@ -5,6 +5,7 @@
 #include "Rendering/Vulkan/VulkanCommon.h"
 
 namespace Rendering {
+	/** Contains information about a physical device that can be used for Vulkan rendering */
 	struct VulkanPhysicalDevice {
 		struct QueueFamilyInfo {
 			uint32_t index;

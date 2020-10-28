@@ -7,6 +7,10 @@
 struct SDL_Window;
 
 namespace Rendering {
+	/**
+	 * Contains basic components for a Vulkan rendering system. These typically last for the lifetime of the application,
+	 * unless fundamental rendering parameters change.
+	 */
 	struct VulkanFramework {
 		/** The underlying vulkan instance */
 		VkInstance instance;
