@@ -155,6 +155,30 @@ namespace Rendering {
 		}
 	}
 
+	bool CreateFramebuffers(CTX_ARG, VulkanSwapchain& result, const VulkanLogicalDevice& logical) {
+		size_t const numFramebuffers = result.imageInfos.size();
+		result.framebuffers.resize(numFramebuffers);
+
+		for (size_t index = 0; index < numFramebuffers; ++index) {
+			VkImageView attachments[1] = {result.imageInfos[index].view};
+
+			VkFramebufferCreateInfo framebufferCI = {};
+			framebufferCI.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+			framebufferCI.renderPass = result.renderPass;
+			framebufferCI.attachmentCount = 1;
+			framebufferCI.pAttachments = attachments;
+			framebufferCI.width = result.extent.width;
+			framebufferCI.height = result.extent.height;
+			framebufferCI.layers = 1;
+
+			if (vkCreateFramebuffer(logical.device, &framebufferCI, nullptr, &result.framebuffers[index]) != VK_SUCCESS) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 	VulkanSwapchain VulkanSwapchain::Create(CTX_ARG, VkExtent2D const& extent, VkSurfaceKHR const& surface, VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical) {
 		using namespace VulkanSwapchainUtilities;
 		TEMP_ALLOCATOR_MARK();
@@ -205,6 +229,13 @@ namespace Rendering {
 	}
 
 	void VulkanSwapchain::Destroy(VulkanLogicalDevice const& logical) {
+		//Destroy the framebuffers
+		for (VkFramebuffer const& framebuffer : framebuffers) {
+			if (framebuffer) {
+				vkDestroyFramebuffer(logical.device, framebuffer, nullptr);
+			}
+		}
+
 		//Destroy the render pass
 		if (renderPass) {
 			vkDestroyRenderPass(logical.device, renderPass, nullptr);

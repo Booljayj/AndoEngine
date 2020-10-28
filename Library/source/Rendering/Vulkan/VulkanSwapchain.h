@@ -28,6 +28,8 @@ namespace Rendering {
 		std::vector<VulkanSwapchainImageInfo> imageInfos;
 		VkRenderPass renderPass;
 
+		std::vector<VkFramebuffer> framebuffers;
+
 		inline operator bool() const { return !!swapchain; }
 
 		static VulkanSwapchain Create(CTX_ARG, VkExtent2D const& extent, VkSurfaceKHR const& surface, VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical);
