@@ -1,5 +1,4 @@
 #pragma once
-#include "EntityTypes.h"
 
-#define ENTT_ID_TYPE EntityRuntimeID
+#define ENTT_ID_TYPE uint64_t
 #include <entt/entt.hpp>

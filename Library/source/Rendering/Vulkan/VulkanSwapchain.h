@@ -8,8 +8,9 @@
 namespace Rendering {
 	/** A specific swapchain image and the fence for using it */
 	struct VulkanSwapchainImageInfo {
-		VkImage image = nullptr;
+		VkImage raw = nullptr;
 		VkImageView view = nullptr;
+		VkFramebuffer framebuffer = nullptr;
 		VkFence fence = nullptr;
 	};
 
@@ -25,10 +26,8 @@ namespace Rendering {
 		VkExtent2D extent;
 		VkSurfaceTransformFlagBitsKHR preTransform;
 
-		std::vector<VulkanSwapchainImageInfo> imageInfos;
-		VkRenderPass renderPass;
-
-		std::vector<VkFramebuffer> framebuffers;
+		std::vector<VulkanSwapchainImageInfo> images;
+		VkRenderPass renderPass = nullptr;
 
 		inline operator bool() const { return !!swapchain; }
 

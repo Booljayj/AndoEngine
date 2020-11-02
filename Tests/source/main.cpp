@@ -39,7 +39,7 @@ void Shutdown(CTX_ARG) {
 
 	LOG(Main, Info, "Shutting down all systems...");
 
-	SHUTDOWN_SYSTEM(Main, renderingSystem);
+	SHUTDOWN_SYSTEM(Main, renderingSystem, registry);
 	SHUTDOWN_SYSTEM(Main, sdlWindowSystem);
 	SHUTDOWN_SYSTEM(Main, sdlEventSystem);
 	SHUTDOWN_SYSTEM(Main, sdlFrameworkSystem);
@@ -60,8 +60,8 @@ void MainLoop(CTX_ARG) {
 		while (timeController.StartUpdateFrame()) {
 			const Time& time = timeController.GetTime();
 
-			shutdownRequested |= renderingSystem.Update(CTX, time);
 			//@todo: Game Update
+			shutdownRequested |= !renderingSystem.Update(CTX, time, registry);
 
 			timeController.FinishUpdateFrame();
 		}

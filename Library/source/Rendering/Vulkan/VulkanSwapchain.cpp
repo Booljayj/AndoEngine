@@ -77,10 +77,10 @@ namespace Rendering {
 		}
 
 		bool CreateImageInfo(CTX_ARG, VulkanSwapchain& result, VulkanLogicalDevice const& logical) {
-			uint32_t imageCount;
-			vkGetSwapchainImagesKHR(logical.device, result.swapchain, &imageCount, nullptr);
-			VkImage* images = CTX.temp.Request<VkImage>(imageCount);
-			vkGetSwapchainImagesKHR(logical.device, result.swapchain, &imageCount, images);
+			uint32_t numImages;
+			vkGetSwapchainImagesKHR(logical.device, result.swapchain, &numImages, nullptr);
+			VkImage* raw = CTX.temp.Request<VkImage>(numImages);
+			vkGetSwapchainImagesKHR(logical.device, result.swapchain, &numImages, raw);
 
 			VkImageViewCreateInfo imageViewCI = {};
 			imageViewCI.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -103,18 +103,16 @@ namespace Rendering {
 			imageViewCI.subresourceRange.layerCount = 1;
 
 			// Get the swap chain buffers containing the image and imageview
-			result.imageInfos.resize(imageCount);
+			result.images.resize(numImages);
 			bool bSuccess = true;
-			for (uint32_t imageIndex = 0; imageIndex < imageCount; ++imageIndex) {
-				VkImage const& image = images[imageIndex];
-				VulkanSwapchainImageInfo& info = result.imageInfos[imageIndex];
-
+			for (uint32_t imageIndex = 0; imageIndex < numImages; ++imageIndex) {
+				VulkanSwapchainImageInfo& image = result.images[imageIndex];
 				//Assign the image handle
-				info.image = image;
+				image.raw = raw[imageIndex];
 
 				//Create the view for this image
-				imageViewCI.image = image;
-				bSuccess &= vkCreateImageView(logical.device, &imageViewCI, nullptr, &info.view) == VK_SUCCESS;
+				imageViewCI.image = image.raw;
+				bSuccess &= vkCreateImageView(logical.device, &imageViewCI, nullptr, &image.view) == VK_SUCCESS;
 			}
 
 			return bSuccess;
@@ -143,6 +141,15 @@ namespace Rendering {
 			subpass.colorAttachmentCount = 1;
 			subpass.pColorAttachments = &colorAttachmentRef;
 
+			//Subpass dependencies
+			VkSubpassDependency dependency{};
+			dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+			dependency.dstSubpass = 0;
+			dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			dependency.srcAccessMask = 0;
+			dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
 			//Information to create the full render pass, with all relevant attachments and subpasses.
 			VkRenderPassCreateInfo renderPassInfo{};
 			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -150,17 +157,18 @@ namespace Rendering {
 			renderPassInfo.pAttachments = &colorAttachment;
 			renderPassInfo.subpassCount = 1;
 			renderPassInfo.pSubpasses = &subpass;
+			renderPassInfo.dependencyCount = 1;
+			renderPassInfo.pDependencies = &dependency;
 
 			return vkCreateRenderPass(logical.device, &renderPassInfo, nullptr, &result.renderPass) == VK_SUCCESS;
 		}
 	}
 
 	bool CreateFramebuffers(CTX_ARG, VulkanSwapchain& result, const VulkanLogicalDevice& logical) {
-		size_t const numFramebuffers = result.imageInfos.size();
-		result.framebuffers.resize(numFramebuffers);
+		size_t const numFramebuffers = result.images.size();
 
 		for (size_t index = 0; index < numFramebuffers; ++index) {
-			VkImageView attachments[1] = {result.imageInfos[index].view};
+			VkImageView attachments[1] = {result.images[index].view};
 
 			VkFramebufferCreateInfo framebufferCI = {};
 			framebufferCI.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -171,7 +179,7 @@ namespace Rendering {
 			framebufferCI.height = result.extent.height;
 			framebufferCI.layers = 1;
 
-			if (vkCreateFramebuffer(logical.device, &framebufferCI, nullptr, &result.framebuffers[index]) != VK_SUCCESS) {
+			if (vkCreateFramebuffer(logical.device, &framebufferCI, nullptr, &result.images[index].framebuffer) != VK_SUCCESS) {
 				return false;
 			}
 		}
@@ -191,7 +199,8 @@ namespace Rendering {
 		bool const bSuccess =
 			CreateSwapchain(CTX, result, nullptr, surface, physical, logical) &&
 			CreateImageInfo(CTX, result, logical) &&
-			CreateRenderPasses(CTX, result, logical);
+			CreateRenderPasses(CTX, result, logical) &&
+			CreateFramebuffers(CTX, result, logical);
 
 		//If we only partially created everything, destroy what was created.
 		if (!bSuccess) result.Destroy(logical);
@@ -220,7 +229,8 @@ namespace Rendering {
 
 		//Get the swap chain images and create image views
 		bool const bSuccess = CreateImageInfo(CTX, result, logical) &&
-			CreateRenderPasses(CTX, result, logical);
+			CreateRenderPasses(CTX, result, logical) &&
+			CreateFramebuffers(CTX, result, logical);
 
 		//If we only partially created everything, destroy what was created.
 		if (!bSuccess) result.Destroy(logical);
@@ -230,9 +240,9 @@ namespace Rendering {
 
 	void VulkanSwapchain::Destroy(VulkanLogicalDevice const& logical) {
 		//Destroy the framebuffers
-		for (VkFramebuffer const& framebuffer : framebuffers) {
-			if (framebuffer) {
-				vkDestroyFramebuffer(logical.device, framebuffer, nullptr);
+		for (VulkanSwapchainImageInfo const& image : images) {
+			if (image.framebuffer) {
+				vkDestroyFramebuffer(logical.device, image.framebuffer, nullptr);
 			}
 		}
 
@@ -243,12 +253,14 @@ namespace Rendering {
 		}
 
 		//Destroy the image views
-		for (VulkanSwapchainImageInfo const& image : imageInfos) {
+		for (VulkanSwapchainImageInfo const& image : images) {
 			if (image.view) {
 				vkDestroyImageView(logical.device, image.view, nullptr);
 			}
 		}
-		imageInfos.clear();
+
+		//We have cleaned up all image-related data, so remove the information
+		images.clear();
 
 		//Destroy the swapchain
 		if (swapchain) {

@@ -9,8 +9,8 @@ if (!SystemName.Startup(CTX, ##__VA_ARGS__)) {\
 	return false;\
 }
 
-#define SHUTDOWN_SYSTEM(Category, SystemName)\
+#define SHUTDOWN_SYSTEM(Category, SystemName, ...)\
 LOG(Category, Info, "Shutdown "#SystemName);\
-if (!SystemName.Shutdown(CTX)) {\
+if (!SystemName.Shutdown(CTX, ##__VA_ARGS__)) {\
 	LOG(Category, Error, "Failed to shutdown " #SystemName);\
 }
