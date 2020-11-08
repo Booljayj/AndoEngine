@@ -1,4 +1,5 @@
 #include "Engine/LinearContainers.h"
+#include "Engine/LogCommands.h"
 #include "Rendering/Vulkan/VulkanSwapchain.h"
 
 namespace Rendering {
@@ -73,196 +74,52 @@ namespace Rendering {
 			//The old swapchain that is being replaced, which will be destroyed after the new one is created.
 			swapchainCI.oldSwapchain = previous;
 
+			assert(!result.swapchain);
 			return vkCreateSwapchainKHR(logical.device, &swapchainCI, nullptr, &result.swapchain) == VK_SUCCESS;
-		}
-
-		bool CreateImageInfo(CTX_ARG, VulkanSwapchain& result, VulkanLogicalDevice const& logical) {
-			uint32_t numImages;
-			vkGetSwapchainImagesKHR(logical.device, result.swapchain, &numImages, nullptr);
-			VkImage* raw = CTX.temp.Request<VkImage>(numImages);
-			vkGetSwapchainImagesKHR(logical.device, result.swapchain, &numImages, raw);
-
-			VkImageViewCreateInfo imageViewCI = {};
-			imageViewCI.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-
-			//Image data settings
-			imageViewCI.viewType = VK_IMAGE_VIEW_TYPE_2D;
-			imageViewCI.format = result.surfaceFormat.format;
-
-			//Component swizzling settings
-			imageViewCI.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-			imageViewCI.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-			imageViewCI.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-			imageViewCI.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-
-			//Image usage settings
-			imageViewCI.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			imageViewCI.subresourceRange.baseMipLevel = 0;
-			imageViewCI.subresourceRange.levelCount = 1;
-			imageViewCI.subresourceRange.baseArrayLayer = 0;
-			imageViewCI.subresourceRange.layerCount = 1;
-
-			// Get the swap chain buffers containing the image and imageview
-			result.images.resize(numImages);
-			bool bSuccess = true;
-			for (uint32_t imageIndex = 0; imageIndex < numImages; ++imageIndex) {
-				VulkanSwapchainImageInfo& image = result.images[imageIndex];
-				//Assign the image handle
-				image.raw = raw[imageIndex];
-
-				//Create the view for this image
-				imageViewCI.image = image.raw;
-				bSuccess &= vkCreateImageView(logical.device, &imageViewCI, nullptr, &image.view) == VK_SUCCESS;
-			}
-
-			return bSuccess;
-		}
-
-		bool CreateRenderPasses(CTX_ARG, VulkanSwapchain& result, const VulkanLogicalDevice& logical) {
-			//Descriptions of attachments
-			VkAttachmentDescription colorAttachment{};
-			colorAttachment.format = result.surfaceFormat.format;
-			colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-			colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-			colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-			colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-			colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-			colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-			//References to attachments
-			VkAttachmentReference colorAttachmentRef{};
-			colorAttachmentRef.attachment = 0;
-			colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-			//The color subpass, which uses the color attachment
-			VkSubpassDescription subpass{};
-			subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-			subpass.colorAttachmentCount = 1;
-			subpass.pColorAttachments = &colorAttachmentRef;
-
-			//Subpass dependencies
-			VkSubpassDependency dependency{};
-			dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-			dependency.dstSubpass = 0;
-			dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-			dependency.srcAccessMask = 0;
-			dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-			dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-			//Information to create the full render pass, with all relevant attachments and subpasses.
-			VkRenderPassCreateInfo renderPassInfo{};
-			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-			renderPassInfo.attachmentCount = 1;
-			renderPassInfo.pAttachments = &colorAttachment;
-			renderPassInfo.subpassCount = 1;
-			renderPassInfo.pSubpasses = &subpass;
-			renderPassInfo.dependencyCount = 1;
-			renderPassInfo.pDependencies = &dependency;
-
-			return vkCreateRenderPass(logical.device, &renderPassInfo, nullptr, &result.renderPass) == VK_SUCCESS;
 		}
 	}
 
-	bool CreateFramebuffers(CTX_ARG, VulkanSwapchain& result, const VulkanLogicalDevice& logical) {
-		size_t const numFramebuffers = result.images.size();
+	bool VulkanSwapchain::Create(CTX_ARG, VkExtent2D const& extent, VkSurfaceKHR const& surface, VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical) {
+		using namespace VulkanSwapchainUtilities;
+		TEMP_ALLOCATOR_MARK();
 
-		for (size_t index = 0; index < numFramebuffers; ++index) {
-			VkImageView attachments[1] = {result.images[index].view};
+		vkDeviceWaitIdle(logical.device);
 
-			VkFramebufferCreateInfo framebufferCI = {};
-			framebufferCI.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			framebufferCI.renderPass = result.renderPass;
-			framebufferCI.attachmentCount = 1;
-			framebufferCI.pAttachments = attachments;
-			framebufferCI.width = result.extent.width;
-			framebufferCI.height = result.extent.height;
-			framebufferCI.layers = 1;
+		SetupProperties(CTX, *this, extent, surface, physical);
 
-			if (vkCreateFramebuffer(logical.device, &framebufferCI, nullptr, &result.images[index].framebuffer) != VK_SUCCESS) {
-				return false;
-			}
+		if (!CreateSwapchain(CTX, *this, nullptr, surface, physical, logical)) {
+			LOG(Vulkan, Error, "Failed to create swapchain");
+			return false;
 		}
 
 		return true;
 	}
 
-	VulkanSwapchain VulkanSwapchain::Create(CTX_ARG, VkExtent2D const& extent, VkSurfaceKHR const& surface, VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical) {
+	bool VulkanSwapchain::Recreate(CTX_ARG, VkExtent2D const& extent, VkSurfaceKHR const& surface, VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical) {
 		using namespace VulkanSwapchainUtilities;
 		TEMP_ALLOCATOR_MARK();
 
 		vkDeviceWaitIdle(logical.device);
 
-		VulkanSwapchain result;
-		SetupProperties(CTX, result, extent, surface, physical);
+		SetupProperties(CTX, *this, extent, surface, physical);
 
-		bool const bSuccess =
-			CreateSwapchain(CTX, result, nullptr, surface, physical, logical) &&
-			CreateImageInfo(CTX, result, logical) &&
-			CreateRenderPasses(CTX, result, logical) &&
-			CreateFramebuffers(CTX, result, logical);
+		VkSwapchainKHR previous = swapchain;
+		swapchain = nullptr;
 
-		//If we only partially created everything, destroy what was created.
-		if (!bSuccess) result.Destroy(logical);
+		const bool bSuccess = CreateSwapchain(CTX, *this, previous, surface, physical, logical);
 
-		return result;
-	}
+		//Clean up the previous swapchain regardless of whether the creation of the new one is a success.
+		if (previous) vkDestroySwapchainKHR(logical.device, previous, nullptr);
 
-	VulkanSwapchain VulkanSwapchain::Recreate(CTX_ARG, VulkanSwapchain& previous, VkExtent2D const& extent, VkSurfaceKHR const& surface, VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical) {
-		using namespace VulkanSwapchainUtilities;
-		TEMP_ALLOCATOR_MARK();
-
-		vkDeviceWaitIdle(logical.device);
-
-		VulkanSwapchain result;
-		SetupProperties(CTX, result, extent, surface, physical);
-
-		bool const bCreatedSwapchain = CreateSwapchain(CTX, result, previous.swapchain, surface, physical, logical);
-
-		//Clean up the previous swapchain (regardless of whether the creation of the new one is a success)
-		if (previous) {
-			previous.Destroy(logical);
+		if (!bSuccess) {
+			LOG(Vulkan, Error, "Failed to recreate swapchain");
+			return false;
 		}
 
-		//During a recreate, if we didn't even start creating the new swapchain, we can stop here.
-		if (!bCreatedSwapchain) return result;
-
-		//Get the swap chain images and create image views
-		bool const bSuccess = CreateImageInfo(CTX, result, logical) &&
-			CreateRenderPasses(CTX, result, logical) &&
-			CreateFramebuffers(CTX, result, logical);
-
-		//If we only partially created everything, destroy what was created.
-		if (!bSuccess) result.Destroy(logical);
-
-		return result;
+		return true;
 	}
 
 	void VulkanSwapchain::Destroy(VulkanLogicalDevice const& logical) {
-		//Destroy the framebuffers
-		for (VulkanSwapchainImageInfo const& image : images) {
-			if (image.framebuffer) {
-				vkDestroyFramebuffer(logical.device, image.framebuffer, nullptr);
-			}
-		}
-
-		//Destroy the render pass
-		if (renderPass) {
-			vkDestroyRenderPass(logical.device, renderPass, nullptr);
-			renderPass = nullptr;
-		}
-
-		//Destroy the image views
-		for (VulkanSwapchainImageInfo const& image : images) {
-			if (image.view) {
-				vkDestroyImageView(logical.device, image.view, nullptr);
-			}
-		}
-
-		//We have cleaned up all image-related data, so remove the information
-		images.clear();
-
-		//Destroy the swapchain
 		if (swapchain) {
 			vkDestroySwapchainKHR(logical.device, swapchain, nullptr);
 			swapchain = nullptr;

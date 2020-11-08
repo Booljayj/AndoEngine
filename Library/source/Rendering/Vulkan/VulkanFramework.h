@@ -13,12 +13,14 @@ namespace Rendering {
 	 */
 	struct VulkanFramework {
 		/** The underlying vulkan instance */
-		VkInstance instance;
+		VkInstance instance = nullptr;
 		/** The surface tied to the window */
-		VkSurfaceKHR surface;
+		VkSurfaceKHR surface = nullptr;
 
 		/** The messenger responsible for interpreting debug messages */
-		VkDebugUtilsMessengerEXT messenger;
+		VkDebugUtilsMessengerEXT messenger = nullptr;
+
+		inline operator bool() const { return instance && surface && messenger; }
 
 		bool Create(CTX_ARG, SDL_Window* window);
 		void Destroy();

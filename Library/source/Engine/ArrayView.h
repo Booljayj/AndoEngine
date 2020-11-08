@@ -15,6 +15,12 @@ struct TArrayView {
 	: TArrayView(&value, 1)
 	{}
 
+	//Create from a static array
+	template<size_t Size>
+	constexpr TArrayView(T(&array)[Size])
+	: TArrayView(array, Size)
+	{}
+
 	//Create from an iterable container
 	template<typename ArrayType>
 	constexpr TArrayView(ArrayType const& array)

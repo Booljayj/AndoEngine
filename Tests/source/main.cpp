@@ -58,16 +58,16 @@ void MainLoop(CTX_ARG) {
 		sdlEventSystem.PollEvents(shutdownRequested);
 
 		while (timeController.StartUpdateFrame()) {
-			const Time& time = timeController.GetTime();
+			//const Time& time = timeController.GetTime();
 
 			//@todo: Game Update
-			shutdownRequested |= !renderingSystem.Update(CTX, time, registry);
 
 			timeController.FinishUpdateFrame();
 		}
 
 		if (!shutdownRequested) {
 			//const float interpolationAlpha = timeController.FrameInterpolationAlpha();
+			shutdownRequested |= !renderingSystem.Update(CTX, registry);
 		}
 	}
 }

@@ -1,6 +1,5 @@
 #include "Engine/Utility.h"
 #include "Rendering/Vulkan/VulkanPhysicalDevice.h"
-#include "Rendering/Vulkan/VulkanVersion.h"
 
 namespace Rendering {
 	VulkanPhysicalDevice VulkanPhysicalDevice::Get(CTX_ARG, VkPhysicalDevice const& device, VkSurfaceKHR const& surface) {

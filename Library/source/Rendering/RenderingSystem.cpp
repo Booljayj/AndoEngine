@@ -12,21 +12,17 @@ DEFINE_LOG_CATEGORY(Rendering, Warning);
 
 RenderingSystem::RenderingSystem()
 : shouldRecreateSwapchain(false)
-, shouldRebuildCommandBuffers(false)
 {}
 
-bool RenderingSystem::Startup(CTX_ARG, SDLWindowSystem& windowSystem, EntityRegistry& registry) {
+bool RenderingSystem::Startup(CTX_ARG, SDLWindowSystem& windowing, EntityRegistry& registry) {
 	using namespace Rendering;
 
 	// Vulkan instance
-	if (!framework.Create(CTX, windowSystem.GetMainWindow())) {
-		LOG(Rendering, Error, "Failed to create the Vulkan framework");
-		return false;
-	}
+	if (!framework.Create(CTX, windowing.GetMainWindow())) return false;
 
 	// Collect physical devices and select default one
 	{
-		TArrayView<char const*> const extensionNames = Rendering::VulkanPhysicalDevice::GetExtensionNames(CTX);
+		TArrayView<char const*> const extensionNames = VulkanPhysicalDevice::GetExtensionNames(CTX);
 
 		uint32_t deviceCount = 0;
 		vkEnumeratePhysicalDevices(framework.instance, &deviceCount, nullptr);
@@ -34,7 +30,7 @@ bool RenderingSystem::Startup(CTX_ARG, SDLWindowSystem& windowSystem, EntityRegi
 		vkEnumeratePhysicalDevices(framework.instance, &deviceCount, devices);
 
 		for (int32_t deviceIndex = 0; deviceIndex < deviceCount; ++deviceIndex) {
-			const Rendering::VulkanPhysicalDevice physicalDevice = Rendering::VulkanPhysicalDevice::Get(CTX, devices[deviceIndex], framework.surface);
+			const VulkanPhysicalDevice physicalDevice = VulkanPhysicalDevice::Get(CTX, devices[deviceIndex], framework.surface);
 			if (IsUsablePhysicalDevice(physicalDevice, extensionNames)) {
 				availablePhysicalDevices.push_back(physicalDevice);
 			}
@@ -52,34 +48,15 @@ bool RenderingSystem::Startup(CTX_ARG, SDLWindowSystem& windowSystem, EntityRegi
 	}
 
 	//Create the initial swapchain
-	{
-		shouldRecreateSwapchain = false;
-		swapchain = Rendering::VulkanSwapchain::Create(CTX, VkExtent2D{1024, 768}, framework.surface, *selectedPhysicalDevice, logicalDevice);
-		if (!swapchain) {
-			LOG(Rendering, Error, "Failed to create the swapchain");
-			return false;
-		}
-	}
+	shouldRecreateSwapchain = false;
+	if (!swapchain.Create(CTX, VkExtent2D{1024, 768}, framework.surface, *selectedPhysical, logical)) return false;
+	//Create the render passes
+	if (!passes.Create(CTX, logical, swapchain)) return false;
+	//Create the swapchain image information
+	if (!images.Create(CTX, logical, swapchain, passes)) return false;
 
-	//Create the command pool
-	{
-		commands = Rendering::VulkanCommands::Create(CTX, *selectedPhysicalDevice, logicalDevice);
-		if (!commands) {
-			LOG(Rendering, Error, "Failed to create the command pool");
-			return false;
-		}
-		//Initial command buffers are created during the first Update, when we know what pipelines should be included.
-		shouldRebuildCommandBuffers = true;
-	}
-
-	//Create the synchronizer
-	{
-		sync = Rendering::VulkanSynchronizer::Create(CTX, logicalDevice);
-		if (!sync) {
-			LOG(Rendering, Error, "Failed to create the synchronizer");
-			return false;
-		}
-	}
+	//Create the organizer that will be used for rendering
+	if (!organizer.Create(CTX, *selectedPhysical, logical, EBuffering::Double, images.size(), 1)) return false;
 
 	//@todo Create a group for renderable entities, once we have more than one component to include in the group (i.e. renderer and transform).
 
@@ -90,109 +67,59 @@ bool RenderingSystem::Shutdown(CTX_ARG, EntityRegistry& registry) {
 	using namespace Rendering;
 
 	//Wait for any in-progress work to finish before we start cleanup
-	if (logicalDevice) vkDeviceWaitIdle(logicalDevice.device);
+	if (logical) vkDeviceWaitIdle(logical.device);
 
 	registry.DestroyComponents<MaterialComponent, MeshRendererComponent>();
 
-	sync.Destroy(logicalDevice);
-	commands.Destroy(logicalDevice);
-	swapchain.Destroy(logicalDevice);
-	logicalDevice.Destroy();
+	organizer.Destroy(logical);
+	images.Destroy(logical);
+	passes.Destroy(logical);
+	swapchain.Destroy(logical);
+	logical.Destroy();
+	availablePhysicalDevices.clear();
 	framework.Destroy();
 	return true;
 }
 
-bool RenderingSystem::Update(CTX_ARG, Time const& time, EntityRegistry const& registry) {
+bool RenderingSystem::Update(CTX_ARG, EntityRegistry const& registry) {
+	using namespace Rendering;
+
 	//Recreate the swapchain if necessary. This happens periodically if the rendering parameters have changed significantly.
 	if (shouldRecreateSwapchain) {
 		shouldRecreateSwapchain = false;
 
-		//We need to rebuild command buffers if the swapchain has been modified
-		shouldRebuildCommandBuffers = true;
-
 		LOG(Rendering, Info, "Recreating swapchain");
-		swapchain = Rendering::VulkanSwapchain::Recreate(CTX, swapchain, VkExtent2D{1024, 768}, framework.surface, *selectedPhysicalDevice, logicalDevice);
-		if (!swapchain) {
-			LOG(Rendering, Error, "Failed to create a new swapchain");
-			return false;
-		}
+
+		//Wait for any current rendering operations to finish before continuing. This may cause an expected stutter.
+		vkDeviceWaitIdle(logical);
+
+		//Destroy resources that depend on the swapchain
+		organizer.Destroy(logical);
+		images.Destroy(logical);
+		passes.Destroy(logical);
+
+		//Recreate the swapchain and everythign depending on it. If any of this fails, we need to request a shutdown.
+		if (!swapchain.Recreate(CTX, VkExtent2D{1024, 768}, framework.surface, *selectedPhysical, logical)) return false;
+		if (!passes.Create(CTX, logical, swapchain)) return false;
+		if (!images.Create(CTX, logical, swapchain, passes)) return false;
+		if (!organizer.Create(CTX, *selectedPhysical, logical, EBuffering::Double, images.size(), 1)) return false;
 	}
 
-	//Rebuild the command buffers if necessary. This happens when we change what needs to be rendered, or if the rendering parameters
-	//have changed significantly.
-	if (shouldRebuildCommandBuffers) {
-		shouldRebuildCommandBuffers = false;
+	//Prepare the frame for rendering, which may wait for resources
+	if (!organizer.Prepare(CTX, logical, swapchain, images)) return false;
 
-		size_t const numBuffers = swapchain.images.size();
-		commands.ReallocateCommandBuffers(CTX, logicalDevice, numBuffers);
+	//Record the command buffer for this frame.
+	//@todo This would ideally be done with some acceleration structure that contains a mapping between the pipelines and all of
+	//      the geometry that should be drawn with that pipeline, to avoid binding the same pipeline more than once and to strip
+	//      out culled geometry.
+	auto const renderables = registry.GetView<MeshRendererComponent const>();
+	auto const materials = registry.GetView<MaterialComponent const>();
 
-		for (size_t index = 0; index < numBuffers; ++index) {
-			if (!RebuildCommandBuffer(CTX, registry, commands.buffers[index], swapchain.images[index])) {
-				LOGF(Rendering, Error, "Failed to rebuild command buffer %i", index);
-				return false;
-			}
-		}
-	}
+	bool const bRecordedBuffer = organizer.Record(
+		CTX, images,
+		[&](VkCommandBuffer buffer, VkFramebuffer framebuffer) {
+			ScopedRenderPass pass{buffer, passes.mainRenderPass, passes.mainClearValues, framebuffer, VkOffset2D{0, 0}, swapchain.extent};
 
-	//Render the actual frame
-	return sync.RenderFrame(CTX, logicalDevice, swapchain, commands);
-}
-
-bool RenderingSystem::SelectPhysicalDevice(CTX_ARG, uint32_t index) {
-	using namespace Rendering;
-
-	if (index != selectedPhysicalDeviceIndex) {
-		if (VulkanPhysicalDevice const* physicalDevice = GetPhysicalDevice(index)) {
-			TArrayView<char const*> const extensions = VulkanPhysicalDevice::GetExtensionNames(CTX);
-
-			VulkanLogicalDevice newLogicalDevice = VulkanLogicalDevice::Create(CTX, *physicalDevice, features, extensions);
-			if (!newLogicalDevice) {
-				LOGF(Rendering, Error, "Failed to create logical device for physical device %i", index);
-				return false;
-			}
-			logicalDevice = std::move(newLogicalDevice);
-
-			selectedPhysicalDevice = physicalDevice;
-			selectedPhysicalDeviceIndex = index;
-			shouldRecreateSwapchain = true;
-
-			physicalDevice->WriteDescription(std::cout);
-			return true;
-		}
-	}
-	return false;
-}
-
-bool RenderingSystem::IsUsablePhysicalDevice(const Rendering::VulkanPhysicalDevice& physicalDevice, TArrayView<char const*> const& extensionNames) {
-	return physicalDevice.HasRequiredQueues() && physicalDevice.HasRequiredExtensions(extensionNames) && physicalDevice.HasSwapchainSupport();
-}
-
-bool RenderingSystem::RebuildCommandBuffer(CTX_ARG, EntityRegistry const& registry, VkCommandBuffer buffer, Rendering::VulkanSwapchainImageInfo info) {
-	using namespace Rendering;
-
-	const auto renderables = registry.GetView<MeshRendererComponent const>();
-	const auto materials = registry.GetView<MaterialComponent const>();
-
-	return RecordCommandBuffer(
-		CTX, buffer,
-		[&](VkCommandBuffer buffer) {
-			//Record render pass 0
-			VkRenderPassBeginInfo renderPassInfo{};
-			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-			renderPassInfo.renderPass = swapchain.renderPass;
-			renderPassInfo.framebuffer = info.framebuffer;
-			renderPassInfo.renderArea.offset = {0, 0};
-			renderPassInfo.renderArea.extent = swapchain.extent;
-
-			VkClearValue clear;
-			clear.color.float32[3] = 1.0f;
-			renderPassInfo.clearValueCount = 1;
-			renderPassInfo.pClearValues = &clear;
-
-			vkCmdBeginRenderPass(buffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-			//@todo This would ideally be done with some acceleration structure that contains a mapping between the pipelines and all of
-			//      the geometry that should be drawn with that pipeline, to avoid binding the same pipeline more than once.
 			for (const auto id : renderables) {
 				auto& renderer = renderables.Get<MeshRendererComponent const>(id);
 				if (auto* material = materials.Find<MaterialComponent const>(renderer.material)) {
@@ -201,8 +128,41 @@ bool RenderingSystem::RebuildCommandBuffer(CTX_ARG, EntityRegistry const& regist
 					vkCmdDraw(buffer, 3, 1, 0, 0);
 				}
 			}
-
-			vkCmdEndRenderPass(buffer);
 		}
 	);
+	if (!bRecordedBuffer) return false;
+
+	//Submit the buffer for this frame
+	if (!organizer.Submit(CTX, logical, swapchain)) return false;
+
+	return true;
+}
+
+bool RenderingSystem::SelectPhysicalDevice(CTX_ARG, uint32_t index) {
+	using namespace Rendering;
+
+	if (index != selectedPhysicalIndex) {
+		if (VulkanPhysicalDevice const* newPhysical = GetPhysicalDevice(index)) {
+			TArrayView<char const*> const extensions = VulkanPhysicalDevice::GetExtensionNames(CTX);
+
+			VulkanLogicalDevice newLogical = VulkanLogicalDevice::Create(CTX, *newPhysical, features, extensions);
+			if (!newLogical) {
+				LOGF(Rendering, Error, "Failed to create logical device for physical device %i", index);
+				return false;
+			}
+			logical = std::move(newLogical);
+
+			selectedPhysical = newPhysical;
+			selectedPhysicalIndex = index;
+			shouldRecreateSwapchain = true;
+
+			selectedPhysical->WriteDescription(std::cout);
+			return true;
+		}
+	}
+	return false;
+}
+
+bool RenderingSystem::IsUsablePhysicalDevice(const Rendering::VulkanPhysicalDevice& physicalDevice, TArrayView<char const*> const& extensionNames) {
+	return physicalDevice.HasRequiredQueues() && physicalDevice.HasRequiredExtensions(extensionNames) && physicalDevice.HasSwapchainSupport();
 }

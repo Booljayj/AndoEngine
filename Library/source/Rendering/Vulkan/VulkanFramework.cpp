@@ -52,6 +52,7 @@ namespace Rendering {
 			//Debug messenger for messages that are sent during instance creation
 			instanceCI.pNext = &messengerCI;
 
+			assert(!instance);
 			if (vkCreateInstance(&instanceCI, nullptr, &instance) != VK_SUCCESS) {
 				LOG(Vulkan, Error, "Failed to create Vulkan instance");
 				return false;
@@ -59,28 +60,35 @@ namespace Rendering {
 		}
 
 		// Vulkan surface (via SDL)
-		{
-			if (SDL_Vulkan_CreateSurface(window, instance, &surface) != SDL_TRUE) {
-				LOG(Vulkan, Error, "Failed to create Vulkan window surface");
-				return false;
-			}
+		assert(!surface);
+		if (SDL_Vulkan_CreateSurface(window, instance, &surface) != SDL_TRUE) {
+			LOG(Vulkan, Error, "Failed to create Vulkan window surface");
+			return false;
 		}
 
 		// Vulkan Messenger
-		{
-			if (CreateDebugUtilsMessengerEXT(instance, &messengerCI, nullptr, &messenger) != VK_SUCCESS) {
-				LOG(Vulkan, Error, "Failed to create debug messenger");
-				return false;
-			}
+		assert(!messenger);
+		if (CreateDebugUtilsMessengerEXT(instance, &messengerCI, nullptr, &messenger) != VK_SUCCESS) {
+			LOG(Vulkan, Error, "Failed to create debug messenger");
+			return false;
 		}
 
 		return true;
 	}
 
 	void VulkanFramework::Destroy() {
-		if (!!messenger) DestroyDebugUtilsMessengerEXT(instance, messenger, nullptr);
-		if (!!surface) vkDestroySurfaceKHR(instance, surface, nullptr);
-		if (!!instance) vkDestroyInstance(instance, nullptr);
+		if (messenger) {
+			DestroyDebugUtilsMessengerEXT(instance, messenger, nullptr);
+			messenger = nullptr;
+		}
+		if (surface) {
+			vkDestroySurfaceKHR(instance, surface, nullptr);
+			surface = nullptr;
+		}
+		if (instance) {
+			vkDestroyInstance(instance, nullptr);
+			instance = nullptr;
+		}
 	}
 
 	TArrayView<char const*> VulkanFramework::GetValidationLayerNames(CTX_ARG) {

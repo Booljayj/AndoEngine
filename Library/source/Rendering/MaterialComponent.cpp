@@ -43,7 +43,7 @@ namespace Rendering {
 
 		Context& CTX = *registry.ctx<Context*>();
 		RenderingSystem const& rendering = *registry.ctx<RenderingSystem*>();
-		VulkanLogicalDevice const& logical = rendering.logicalDevice;
+		VulkanLogicalDevice const& logical = rendering.logical;
 		MaterialComponent& material = registry.get<MaterialComponent>(entity);
 
 		//@todo This is a very fixed method of creating the pipeline. Ideally, this should be configurable
@@ -190,7 +190,7 @@ namespace Rendering {
 		pipelineInfo.pDynamicState = nullptr; // Optional
 		//Additional data
 		pipelineInfo.layout = material.pipelineLayout;
-		pipelineInfo.renderPass = rendering.swapchain.renderPass;
+		pipelineInfo.renderPass = rendering.passes.mainRenderPass;
 		pipelineInfo.subpass = 0;
 		//Parent pipelines, if this pipeline derives from another
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
@@ -212,7 +212,7 @@ namespace Rendering {
 		MaterialComponent& material = registry.get<MaterialComponent>(entity);
 
 		if (material.pipelineLayout) {
-			vkDestroyPipelineLayout(rendering.logicalDevice.device, material.pipelineLayout, nullptr);
+			vkDestroyPipelineLayout(rendering.logical.device, material.pipelineLayout, nullptr);
 			material.pipelineLayout = nullptr;
 		}
 	}
