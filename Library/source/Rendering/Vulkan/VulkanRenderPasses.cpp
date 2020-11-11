@@ -56,10 +56,8 @@ namespace Rendering {
 	}
 
 	void VulkanRenderPasses::Destroy(VulkanLogicalDevice const& logical) {
-		if (mainRenderPass) {
-			vkDestroyRenderPass(logical.device, mainRenderPass, nullptr);
-			mainRenderPass = nullptr;
-		}
+		if (mainRenderPass) vkDestroyRenderPass(logical.device, mainRenderPass, nullptr);
+		mainRenderPass = nullptr;
 	}
 
 	ScopedRenderPass::ScopedRenderPass(VkCommandBuffer buffer, VkRenderPass pass, TArrayView<VkClearValue const> clearValues, VkFramebuffer framebuffer, VkOffset2D offset, VkExtent2D extent) {

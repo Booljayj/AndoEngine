@@ -5,6 +5,7 @@
 #include "Rendering/Vulkan/VulkanSwapchain.h"
 
 namespace Rendering {
+	/** Contains the render passes that can be used while recording command buffers */
 	struct VulkanRenderPasses {
 		/** The main render pass used each frame */
 		VkRenderPass mainRenderPass = nullptr;

@@ -66,6 +66,8 @@ bool RenderingSystem::Startup(CTX_ARG, SDLWindowSystem& windowing, EntityRegistr
 bool RenderingSystem::Shutdown(CTX_ARG, EntityRegistry& registry) {
 	using namespace Rendering;
 
+	availablePhysicalDevices.clear();
+
 	//Wait for any in-progress work to finish before we start cleanup
 	if (logical) vkDeviceWaitIdle(logical.device);
 
@@ -76,7 +78,6 @@ bool RenderingSystem::Shutdown(CTX_ARG, EntityRegistry& registry) {
 	passes.Destroy(logical);
 	swapchain.Destroy(logical);
 	logical.Destroy();
-	availablePhysicalDevices.clear();
 	framework.Destroy();
 	return true;
 }
@@ -91,7 +92,7 @@ bool RenderingSystem::Update(CTX_ARG, EntityRegistry const& registry) {
 		LOG(Rendering, Info, "Recreating swapchain");
 
 		//Wait for any current rendering operations to finish before continuing. This may cause an expected stutter.
-		vkDeviceWaitIdle(logical);
+		vkDeviceWaitIdle(logical.device);
 
 		//Destroy resources that depend on the swapchain
 		organizer.Destroy(logical);
@@ -105,36 +106,44 @@ bool RenderingSystem::Update(CTX_ARG, EntityRegistry const& registry) {
 		if (!organizer.Create(CTX, *selectedPhysical, logical, EBuffering::Double, images.size(), 1)) return false;
 	}
 
-	//Prepare the frame for rendering, which may wait for resources
-	if (!organizer.Prepare(CTX, logical, swapchain, images)) return false;
+	//Prepare the frame for rendering, which may need to wait for resources
+	EPreparationResult const result = organizer.Prepare(CTX, logical, swapchain, images);
+	if (result == EPreparationResult::Retry) {
+		if (++retryCount >= maxRetryCount) {
+			LOGF(Rendering, Error, "Too many subsequent frames (%i) have failed to render.", maxRetryCount);
+			return false;
+		}
+		return true;
+	}
+	if (result == EPreparationResult::Error) return false;
 
-	//Record the command buffer for this frame.
+	//Lambda to record rendering commands
 	//@todo This would ideally be done with some acceleration structure that contains a mapping between the pipelines and all of
 	//      the geometry that should be drawn with that pipeline, to avoid binding the same pipeline more than once and to strip
 	//      out culled geometry.
 	auto const renderables = registry.GetView<MeshRendererComponent const>();
 	auto const materials = registry.GetView<MaterialComponent const>();
 
-	bool const bRecordedBuffer = organizer.Record(
-		CTX, images,
-		[&](VkCommandBuffer buffer, VkFramebuffer framebuffer) {
-			ScopedRenderPass pass{buffer, passes.mainRenderPass, passes.mainClearValues, framebuffer, VkOffset2D{0, 0}, swapchain.extent};
+	auto const recorder = [&](VkCommandBuffer buffer, VkFramebuffer framebuffer) {
+		ScopedRenderPass pass{buffer, passes.mainRenderPass, passes.mainClearValues, framebuffer, VkOffset2D{0, 0}, swapchain.extent};
 
-			for (const auto id : renderables) {
-				auto& renderer = renderables.Get<MeshRendererComponent const>(id);
-				if (auto* material = materials.Find<MaterialComponent const>(renderer.material)) {
-					//@todo This should actually be binding the real geometry, instead of assuming the shader can draw 3 unspecified vertices
-					vkCmdBindPipeline(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, material->pipeline);
-					vkCmdDraw(buffer, 3, 1, 0, 0);
-				}
+		for (const auto id : renderables) {
+			auto& renderer = renderables.Get<MeshRendererComponent const>(id);
+			if (auto* material = materials.Find<MaterialComponent const>(renderer.material)) {
+				//@todo This should actually be binding the real geometry, instead of assuming the shader can draw 3 unspecified vertices
+				vkCmdBindPipeline(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, material->pipeline);
+				vkCmdDraw(buffer, 3, 1, 0, 0);
 			}
 		}
-	);
-	if (!bRecordedBuffer) return false;
+	};
 
-	//Submit the buffer for this frame
+	//Record rendering commands for this frame
+	if (!organizer.Record(CTX, images, recorder)) return false;
+
+	//Submit the rendering commands for this frame
 	if (!organizer.Submit(CTX, logical, swapchain)) return false;
 
+	retryCount = 0;
 	return true;
 }
 

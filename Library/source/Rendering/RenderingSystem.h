@@ -18,11 +18,14 @@ DECLARE_LOG_CATEGORY(Rendering);
 
 class RenderingSystem {
 public:
-	/** The vulkan framework for this application */
-	Rendering::VulkanFramework framework;
+	/** The maximum number of consecutive times we have failed to render a frame */
+	static constexpr uint8_t maxRetryCount = 5;
 
 	/** The enabled features on any physical device that this application uses */
 	VkPhysicalDeviceFeatures features;
+
+	/** The vulkan framework for this application */
+	Rendering::VulkanFramework framework;
 
 	/** The available physical devices which can be used */
 	std::vector<Rendering::VulkanPhysicalDevice> availablePhysicalDevices;
@@ -46,6 +49,9 @@ public:
 
 	/** Flags for tracking rendering behavior and changes */
 	uint8_t shouldRecreateSwapchain : 1;
+
+	/** The number of consecutive times we have failed to render a frame */
+	uint8_t retryCount = 0;
 
 	RenderingSystem();
 

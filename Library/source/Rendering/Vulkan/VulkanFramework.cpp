@@ -77,18 +77,13 @@ namespace Rendering {
 	}
 
 	void VulkanFramework::Destroy() {
-		if (messenger) {
-			DestroyDebugUtilsMessengerEXT(instance, messenger, nullptr);
-			messenger = nullptr;
-		}
-		if (surface) {
-			vkDestroySurfaceKHR(instance, surface, nullptr);
-			surface = nullptr;
-		}
-		if (instance) {
-			vkDestroyInstance(instance, nullptr);
-			instance = nullptr;
-		}
+		if (messenger) DestroyDebugUtilsMessengerEXT(instance, messenger, nullptr);
+		if (surface) vkDestroySurfaceKHR(instance, surface, nullptr);
+		if (instance) vkDestroyInstance(instance, nullptr);
+
+		messenger = nullptr;
+		surface = nullptr;
+		instance = nullptr;
 	}
 
 	TArrayView<char const*> VulkanFramework::GetValidationLayerNames(CTX_ARG) {

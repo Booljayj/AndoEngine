@@ -66,11 +66,9 @@ namespace Rendering {
 	}
 
 	void VulkanLogicalDevice::Destroy() {
-		if (!!device) {
-			vkDestroyDevice(device, nullptr);
-			device = nullptr;
-			queues.present = nullptr;
-			queues.graphics = nullptr;
-		}
+		if (device) vkDestroyDevice(device, nullptr);
+		device = nullptr;
+		queues.present = nullptr;
+		queues.graphics = nullptr;
 	}
 }

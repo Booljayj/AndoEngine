@@ -56,33 +56,33 @@ namespace Rendering {
 		VkShaderModule fragShaderModule = CreateShaderModule(CTX, material.fragment.c_str(), logical);
 		if (!fragShaderModule) return;
 
-		VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
-		vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-		vertShaderStageInfo.module = vertShaderModule;
-		vertShaderStageInfo.pName = "main";
+		VkPipelineShaderStageCreateInfo vertShaderStageCI{};
+		vertShaderStageCI.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		vertShaderStageCI.stage = VK_SHADER_STAGE_VERTEX_BIT;
+		vertShaderStageCI.module = vertShaderModule;
+		vertShaderStageCI.pName = "main";
 
-		VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
-		fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		fragShaderStageInfo.module = fragShaderModule;
-		fragShaderStageInfo.pName = "main";
+		VkPipelineShaderStageCreateInfo fragShaderStageCI{};
+		fragShaderStageCI.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		fragShaderStageCI.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+		fragShaderStageCI.module = fragShaderModule;
+		fragShaderStageCI.pName = "main";
 
-		VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
+		VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageCI, fragShaderStageCI};
 
 		//Vertex Input function
-		VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
-		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-		vertexInputInfo.vertexBindingDescriptionCount = 0;
-		vertexInputInfo.pVertexBindingDescriptions = nullptr;
-		vertexInputInfo.vertexAttributeDescriptionCount = 0;
-		vertexInputInfo.pVertexAttributeDescriptions = nullptr;
+		VkPipelineVertexInputStateCreateInfo vertexInputCI{};
+		vertexInputCI.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+		vertexInputCI.vertexBindingDescriptionCount = 0;
+		vertexInputCI.pVertexBindingDescriptions = nullptr;
+		vertexInputCI.vertexAttributeDescriptionCount = 0;
+		vertexInputCI.pVertexAttributeDescriptions = nullptr;
 
 		//Input assembly function
-		VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
-		inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-		inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-		inputAssembly.primitiveRestartEnable = VK_FALSE;
+		VkPipelineInputAssemblyStateCreateInfo inputAssemblyCI{};
+		inputAssemblyCI.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+		inputAssemblyCI.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+		inputAssemblyCI.primitiveRestartEnable = VK_FALSE;
 
 		//Viewport
 		VkViewport viewport{};
@@ -97,26 +97,26 @@ namespace Rendering {
 		scissor.offset = {0, 0};
 		scissor.extent = rendering.swapchain.extent;
 
-		VkPipelineViewportStateCreateInfo viewportState{};
-		viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-		viewportState.viewportCount = 1;
-		viewportState.pViewports = &viewport;
-		viewportState.scissorCount = 1;
-		viewportState.pScissors = &scissor;
+		VkPipelineViewportStateCreateInfo viewportStateCI{};
+		viewportStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+		viewportStateCI.viewportCount = 1;
+		viewportStateCI.pViewports = &viewport;
+		viewportStateCI.scissorCount = 1;
+		viewportStateCI.pScissors = &scissor;
 
 		//Rasterizer
-		VkPipelineRasterizationStateCreateInfo rasterizer{};
-		rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-		rasterizer.depthClampEnable = VK_FALSE;
-		rasterizer.rasterizerDiscardEnable = VK_FALSE;
-		rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
-		rasterizer.lineWidth = 1.0f;
-		rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-		rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
-		rasterizer.depthBiasEnable = VK_FALSE;
-		rasterizer.depthBiasConstantFactor = 0.0f;
-		rasterizer.depthBiasClamp = 0.0f;
-		rasterizer.depthBiasSlopeFactor = 0.0f;
+		VkPipelineRasterizationStateCreateInfo rasterizerCI{};
+		rasterizerCI.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+		rasterizerCI.depthClampEnable = VK_FALSE;
+		rasterizerCI.rasterizerDiscardEnable = VK_FALSE;
+		rasterizerCI.polygonMode = VK_POLYGON_MODE_FILL;
+		rasterizerCI.lineWidth = 1.0f;
+		rasterizerCI.cullMode = VK_CULL_MODE_BACK_BIT;
+		rasterizerCI.frontFace = VK_FRONT_FACE_CLOCKWISE;
+		rasterizerCI.depthBiasEnable = VK_FALSE;
+		rasterizerCI.depthBiasConstantFactor = 0.0f;
+		rasterizerCI.depthBiasClamp = 0.0f;
+		rasterizerCI.depthBiasSlopeFactor = 0.0f;
 
 		//Disabled for now, requires a GPU feature to enable
 		// //Multisampling
@@ -140,67 +140,67 @@ namespace Rendering {
 		colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
 		colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
 
-		VkPipelineColorBlendStateCreateInfo colorBlending{};
-		colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-		colorBlending.logicOpEnable = VK_FALSE;
-		colorBlending.logicOp = VK_LOGIC_OP_COPY; // Optional
-		colorBlending.attachmentCount = 1;
-		colorBlending.pAttachments = &colorBlendAttachment;
-		colorBlending.blendConstants[0] = 0.0f; // Optional
-		colorBlending.blendConstants[1] = 0.0f; // Optional
-		colorBlending.blendConstants[2] = 0.0f; // Optional
-		colorBlending.blendConstants[3] = 0.0f; // Optional
+		VkPipelineColorBlendStateCreateInfo colorBlendingCI{};
+		colorBlendingCI.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+		colorBlendingCI.logicOpEnable = VK_FALSE;
+		colorBlendingCI.logicOp = VK_LOGIC_OP_COPY; // Optional
+		colorBlendingCI.attachmentCount = 1;
+		colorBlendingCI.pAttachments = &colorBlendAttachment;
+		colorBlendingCI.blendConstants[0] = 0.0f; // Optional
+		colorBlendingCI.blendConstants[1] = 0.0f; // Optional
+		colorBlendingCI.blendConstants[2] = 0.0f; // Optional
+		colorBlendingCI.blendConstants[3] = 0.0f; // Optional
 
-		//Dynamic state
-		VkDynamicState dynamicStates[2] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_LINE_WIDTH};
+		// //Dynamic state
+		// VkDynamicState dynamicStates[2] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_LINE_WIDTH};
 
-		VkPipelineDynamicStateCreateInfo dynamicState{};
-		dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-		dynamicState.dynamicStateCount = 2;
-		dynamicState.pDynamicStates = dynamicStates;
+		// VkPipelineDynamicStateCreateInfo dynamicStateCI{};
+		// dynamicStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+		// dynamicStateCI.dynamicStateCount = 2;
+		// dynamicStateCI.pDynamicStates = dynamicStates;
 
 		//Create the pipeline layout
-		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipelineLayoutInfo.setLayoutCount = 0; // Optional
-		pipelineLayoutInfo.pSetLayouts = nullptr; // Optional
-		pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
-		pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
+		VkPipelineLayoutCreateInfo layoutCI{};
+		layoutCI.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		layoutCI.setLayoutCount = 0; // Optional
+		layoutCI.pSetLayouts = nullptr; // Optional
+		layoutCI.pushConstantRangeCount = 0; // Optional
+		layoutCI.pPushConstantRanges = nullptr; // Optional
 
-		if (vkCreatePipelineLayout(logical.device, &pipelineLayoutInfo, nullptr, &material.pipelineLayout) != VK_SUCCESS) {
+		if (vkCreatePipelineLayout(logical.device, &layoutCI, nullptr, &material.layout) != VK_SUCCESS) {
 			LOGF(Temp, Error, "Failed to create pipeline layout for material %s", entity);
 			DestroyShaderModule(vertShaderModule, logical);
 			DestroyShaderModule(fragShaderModule, logical);
 			return;
 		}
 
-		VkGraphicsPipelineCreateInfo pipelineInfo{};
-		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+		VkGraphicsPipelineCreateInfo pipelineCI{};
+		pipelineCI.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 		//Programmable stages
-		pipelineInfo.stageCount = 2;
-		pipelineInfo.pStages = shaderStages;
+		pipelineCI.stageCount = 2;
+		pipelineCI.pStages = shaderStages;
 		//Fixed states
-		pipelineInfo.pVertexInputState = &vertexInputInfo;
-		pipelineInfo.pInputAssemblyState = &inputAssembly;
-		pipelineInfo.pViewportState = &viewportState;
-		pipelineInfo.pRasterizationState = &rasterizer;
-		pipelineInfo.pMultisampleState = nullptr; //&multisampling;
-		pipelineInfo.pDepthStencilState = nullptr; // Optional
-		pipelineInfo.pColorBlendState = &colorBlending;
-		pipelineInfo.pDynamicState = nullptr; // Optional
+		pipelineCI.pVertexInputState = &vertexInputCI;
+		pipelineCI.pInputAssemblyState = &inputAssemblyCI;
+		pipelineCI.pViewportState = &viewportStateCI;
+		pipelineCI.pRasterizationState = &rasterizerCI;
+		pipelineCI.pMultisampleState = nullptr; //&multisampling;
+		pipelineCI.pDepthStencilState = nullptr; // Optional
+		pipelineCI.pColorBlendState = &colorBlendingCI;
+		pipelineCI.pDynamicState = nullptr; // Optional
 		//Additional data
-		pipelineInfo.layout = material.pipelineLayout;
-		pipelineInfo.renderPass = rendering.passes.mainRenderPass;
-		pipelineInfo.subpass = 0;
+		pipelineCI.layout = material.layout;
+		pipelineCI.renderPass = rendering.passes.mainRenderPass;
+		pipelineCI.subpass = 0;
 		//Parent pipelines, if this pipeline derives from another
-		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
-		pipelineInfo.basePipelineIndex = -1; // Optional
+		pipelineCI.basePipelineHandle = VK_NULL_HANDLE; // Optional
+		pipelineCI.basePipelineIndex = -1; // Optional
 
-		if (vkCreateGraphicsPipelines(logical.device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &material.pipeline) != VK_SUCCESS) {
+		if (vkCreateGraphicsPipelines(logical.device, VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &material.pipeline) != VK_SUCCESS) {
 			LOGF(Temp, Error, "Failed to create pipeline for material %i", entity);
 
-			vkDestroyPipelineLayout(logical.device, material.pipelineLayout, nullptr);
-			material.pipelineLayout = nullptr;
+			vkDestroyPipelineLayout(logical.device, material.layout, nullptr);
+			material.layout = nullptr;
 		}
 
 		DestroyShaderModule(vertShaderModule, logical);
@@ -211,9 +211,10 @@ namespace Rendering {
 		RenderingSystem const& rendering = *registry.ctx<RenderingSystem*>();
 		MaterialComponent& material = registry.get<MaterialComponent>(entity);
 
-		if (material.pipelineLayout) {
-			vkDestroyPipelineLayout(rendering.logical.device, material.pipelineLayout, nullptr);
-			material.pipelineLayout = nullptr;
-		}
+		if (material.pipeline) vkDestroyPipeline(rendering.logical.device, material.pipeline, nullptr);
+		if (material.layout) vkDestroyPipelineLayout(rendering.logical.device, material.layout, nullptr);
+
+		material.pipeline = nullptr;
+		material.layout = nullptr;
 	}
 }

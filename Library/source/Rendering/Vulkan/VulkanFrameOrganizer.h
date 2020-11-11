@@ -8,14 +8,24 @@
 #include "Rendering/Vulkan/VulkanSwapImages.h"
 
 namespace Rendering {
+	/** Frame Buffering levels, which determine the number of resources we'll cycle through for each frame */
 	enum class EBuffering : uint8_t {
 		None,
 		Double,
 		Triple,
 	};
 
+	enum class EPreparationResult : uint8_t {
+		/** The next step can be taken for rendering */
+		Success,
+		/** There has been an error, but we can retry rendering next frame */
+		Retry,
+		/** There has been a serious problem, and we should shut down */
+		Error,
+	};
+
 	/** Resources used for a single frame of rendering */
-	struct Frame {
+	struct FrameResources {
 		/** Command recording objects */
 		VkCommandPool pool = nullptr;
 		VkCommandBuffer buffer = nullptr;
@@ -25,33 +35,33 @@ namespace Rendering {
 		VkSemaphore renderFinishedSemaphore = nullptr;
 		VkFence fence = nullptr;
 
-		/** The current image index being used by this frame. Can change each time a frame is retrieved. */
-		uint32_t currentImageIndex = -1;
-
-		static bool IsValid(Frame const& f) { return f.pool && f.buffer && f.imageAvailableSemaphore && f.renderFinishedSemaphore && f.fence; }
+		static bool IsValid(FrameResources const& r) { return r.pool && r.buffer && r.imageAvailableSemaphore && r.renderFinishedSemaphore && r.fence; }
 	};
 
 	/** Keeps track of the resources used each frame, and how they should be used. */
 	struct VulkanFrameOrganizer {
-		std::vector<Frame> frames;
+		/** The resources that we will cycle through when rendering each frame */
+		std::vector<FrameResources> resources;
 		std::vector<VkFence> imageFences;
-		size_t currentFrameIndex = 0;
 
-		inline operator bool() const { return frames.size() > 0 && std::all_of(frames.begin(), frames.end(), Frame::IsValid); }
+		size_t currentResourceIndex = 0;
+		uint32_t currentImageIndex = -1;
+
+		inline operator bool() const { return resources.size() > 0 && imageFences.size() > 0 && std::all_of(resources.begin(), resources.end(), FrameResources::IsValid); }
 
 		bool Create(CTX_ARG, VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical, EBuffering buffering, size_t numImages, size_t numThreads);
 		void Destroy(VulkanLogicalDevice const& logical);
 
 		/** Prepare the next set of resources for rendering */
-		bool Prepare(CTX_ARG, VulkanLogicalDevice const& logical, VulkanSwapchain const& swapchain, VulkanSwapImages const& images);
+		EPreparationResult Prepare(CTX_ARG, VulkanLogicalDevice const& logical, VulkanSwapchain const& swapchain, VulkanSwapImages const& images);
 		/** Submit everything currently recorded so that it can be rendered. */
 		bool Submit(CTX_ARG, VulkanLogicalDevice const& logical, VulkanSwapchain const& swapchain);
 
 		/** Record commands to the current buffer */
 		template<typename FunctorType>
 		inline bool Record(CTX_ARG, VulkanSwapImages const& images, FunctorType&& recorder) {
-			Frame const& frame = frames[currentFrameIndex];
-			SwapImage const& image = images[frame.currentImageIndex];
+			FrameResources const& frame = resources[currentResourceIndex];
+			SwapImage const& image = images[currentImageIndex];
 
 			VkCommandBufferBeginInfo beginInfo{};
 			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;

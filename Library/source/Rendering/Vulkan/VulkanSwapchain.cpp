@@ -120,9 +120,7 @@ namespace Rendering {
 	}
 
 	void VulkanSwapchain::Destroy(VulkanLogicalDevice const& logical) {
-		if (swapchain) {
-			vkDestroySwapchainKHR(logical.device, swapchain, nullptr);
-			swapchain = nullptr;
-		}
+		if (swapchain) vkDestroySwapchainKHR(logical.device, swapchain, nullptr);
+		swapchain = nullptr;
 	}
 }

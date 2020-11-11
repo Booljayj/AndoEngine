@@ -29,12 +29,7 @@ namespace Rendering {
 		return Begin;
 	}
 
-	VKAPI_ATTR VkBool32 VKAPI_CALL VulkanDebugCallback(
-		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-		VkDebugUtilsMessageTypeFlagsEXT messageType,
-		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-		void* pUserData
-	) {
+	VKAPI_ATTR VkBool32 VKAPI_CALL VulkanDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
 		Context& CTX = *static_cast<Context*>(pUserData);
 		TEMP_ALLOCATOR_MARK();
 
@@ -72,24 +67,14 @@ namespace Rendering {
 		return messengerCI;
 	}
 
-	VkResult CreateDebugUtilsMessengerEXT(
-		VkInstance instance,
-		const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
-		const VkAllocationCallbacks* pAllocator,
-		VkDebugUtilsMessengerEXT* pDebugMessenger
-	) {
+	VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
     	auto const func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
-		if (func != nullptr) {
-			return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
-		} else {
-			return VK_ERROR_EXTENSION_NOT_PRESENT;
-		}
+		if (func) return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
+		else return VK_ERROR_EXTENSION_NOT_PRESENT;
 	}
 
 	void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator) {
 		auto const func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-		if (func != nullptr) {
-			func(instance, debugMessenger, pAllocator);
-		}
+		if (func) func(instance, debugMessenger, pAllocator);
 	}
 }
