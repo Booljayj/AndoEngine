@@ -13,6 +13,7 @@
 *.pch
 *.*.h
 *.*.cpp
+*.spv
 
 #### OS generated Files
 .DS_Store
