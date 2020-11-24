@@ -1,6 +1,6 @@
 # substeps
-MAKE_GENERATE := $(MAKE) -k -j 2 -f generate.mk
-MAKE_COMPILE := $(MAKE) -k -j 4 -f compile.mk
+MAKE_GENERATE := $(MAKE) -j2 -f generate.mk
+MAKE_COMPILE := $(MAKE) -j4 -f compile.mk
 
 all: compile
 

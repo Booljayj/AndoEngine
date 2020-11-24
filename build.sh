@@ -1,7 +1,7 @@
 #!/bin/sh
 printf \\033c
-make -C ./Library/
+gmake -C ./Library/ --no-print-directory
 if [ $? -eq 0 ]
 then
-  make -C ./Tests/
+  gmake -C ./Tests/ --no-print-directory
 fi
