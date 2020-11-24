@@ -18,7 +18,10 @@ namespace Rendering {
 		VkExtent2D extent;
 		VkSurfaceTransformFlagBitsKHR preTransform;
 
-		inline operator bool() const { return !!swapchain; }
+		/** The views for images in the swapchain */
+		std::vector<VkImageView> views;
+
+		inline operator bool() const { return swapchain && views.size() > 0 && std::find(views.begin(), views.end(), VkImageView{nullptr}) == views.end(); }
 
 		bool Create(CTX_ARG, VkExtent2D const& extent, VkSurfaceKHR const& surface, VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical);
 		bool Recreate(CTX_ARG, VkExtent2D const& extent, VkSurfaceKHR const& surface, VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical);

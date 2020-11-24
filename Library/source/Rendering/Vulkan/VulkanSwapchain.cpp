@@ -77,6 +77,51 @@ namespace Rendering {
 			assert(!result.swapchain);
 			return vkCreateSwapchainKHR(logical.device, &swapchainCI, nullptr, &result.swapchain) == VK_SUCCESS;
 		}
+
+		bool CreateImageViews(CTX_ARG, VulkanSwapchain& result, VulkanLogicalDevice const& logical) {
+			TEMP_ALLOCATOR_MARK();
+
+			//Get the raw images from the swapchain
+			uint32_t numImages = 0;
+			vkGetSwapchainImagesKHR(logical.device, result.swapchain, &numImages, nullptr);
+			VkImage* images = CTX.temp.Request<VkImage>(numImages);
+			vkGetSwapchainImagesKHR(logical.device, result.swapchain, &numImages, images);
+
+			if (numImages == 0) {
+				LOG(Vulkan, Error, "Swapchain has no images to retrieve");
+				return false;
+			}
+
+			result.views.resize(numImages);
+			for (uint32_t index = 0; index < numImages; ++index) {
+				//Create image view
+				VkImageViewCreateInfo viewCI{};
+				viewCI.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+				viewCI.image = images[index];
+				//Image data settings
+				viewCI.viewType = VK_IMAGE_VIEW_TYPE_2D;
+				viewCI.format = result.surfaceFormat.format;
+				//Component swizzling settings
+				viewCI.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+				viewCI.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+				viewCI.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+				viewCI.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+				//Image usage settings
+				viewCI.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				viewCI.subresourceRange.baseMipLevel = 0;
+				viewCI.subresourceRange.levelCount = 1;
+				viewCI.subresourceRange.baseArrayLayer = 0;
+				viewCI.subresourceRange.layerCount = 1;
+
+				assert(!result.views[index]);
+				if (vkCreateImageView(logical.device, &viewCI, nullptr, &result.views[index]) != VK_SUCCESS) {
+					LOGF(Vulkan, Error, "Failed to create image view %i", index);
+					return false;
+				}
+			}
+
+			return true;
+		}
 	}
 
 	bool VulkanSwapchain::Create(CTX_ARG, VkExtent2D const& extent, VkSurfaceKHR const& surface, VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical) {
@@ -87,7 +132,7 @@ namespace Rendering {
 
 		SetupProperties(CTX, *this, extent, surface, physical);
 
-		if (!CreateSwapchain(CTX, *this, nullptr, surface, physical, logical)) {
+		if (!CreateSwapchain(CTX, *this, nullptr, surface, physical, logical) || !CreateImageViews(CTX, *this, logical)) {
 			LOG(Vulkan, Error, "Failed to create swapchain");
 			return false;
 		}
@@ -103,10 +148,15 @@ namespace Rendering {
 
 		SetupProperties(CTX, *this, extent, surface, physical);
 
+		//Store the previous swapchain, and destroy the previous image views
 		VkSwapchainKHR previous = swapchain;
 		swapchain = nullptr;
+		for (VkImageView view : views) {
+			if (view) vkDestroyImageView(logical.device, view, nullptr);
+		}
+		views.clear();
 
-		const bool bSuccess = CreateSwapchain(CTX, *this, previous, surface, physical, logical);
+		const bool bSuccess = CreateSwapchain(CTX, *this, previous, surface, physical, logical) && CreateImageViews(CTX, *this, logical);
 
 		//Clean up the previous swapchain regardless of whether the creation of the new one is a success.
 		if (previous) vkDestroySwapchainKHR(logical.device, previous, nullptr);
@@ -120,7 +170,11 @@ namespace Rendering {
 	}
 
 	void VulkanSwapchain::Destroy(VulkanLogicalDevice const& logical) {
+		for (VkImageView view : views) {
+			if (view) vkDestroyImageView(logical.device, view, nullptr);
+		}
 		if (swapchain) vkDestroySwapchainKHR(logical.device, swapchain, nullptr);
+		views.clear();
 		swapchain = nullptr;
 	}
 }

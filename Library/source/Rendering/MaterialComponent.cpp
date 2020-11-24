@@ -6,13 +6,26 @@
 
 namespace Rendering {
 	namespace MaterialComponentUtility {
-		VkShaderModule CreateShaderModule(CTX_ARG, char const* name, VulkanLogicalDevice const& logical) {
+		struct ShaderModuleDeleter {
+			VulkanLogicalDevice const* logical;
+
+			ShaderModuleDeleter(VulkanLogicalDevice const& inLogical)
+			: logical(&inLogical)
+			{}
+
+			void operator()(VkShaderModule module) {
+				if (module) vkDestroyShaderModule(logical->device, module, nullptr);
+			}
+		};
+		using UniqueShaderModule = std::unique_ptr<VkShaderModule_T, ShaderModuleDeleter>;
+
+		UniqueShaderModule CreateShaderModule(CTX_ARG, char const* name, VulkanLogicalDevice const& logical) {
 			TEMP_ALLOCATOR_MARK();
 
 			std::string_view const filename = l_printf(CTX.temp, "data/shaders/%s.spv", name);
 			std::ifstream file(filename.data(), std::ios::ate | std::ios::binary);
 
-			if (!file.is_open()) return nullptr;
+			if (!file.is_open()) return UniqueShaderModule{ nullptr, logical };
 
 			size_t const bufferSize = (size_t) file.tellg();
 			char* const buffer = static_cast<char*>(CTX.temp.Request(bufferSize, sizeof(char), alignof(uint32_t)));
@@ -30,11 +43,7 @@ namespace Rendering {
 			if (vkCreateShaderModule(logical.device, &createInfo, nullptr, &module) != VK_SUCCESS) {
 				LOGF(Temp, Error, "Failed to create shader module for shader %s", name);
 			}
-			return module;
-		}
-
-		void DestroyShaderModule(VkShaderModule module, VulkanLogicalDevice const& logical) {
-    		vkDestroyShaderModule(logical.device, module, nullptr);
+			return UniqueShaderModule{ module, logical };
 		}
 	}
 
@@ -50,22 +59,22 @@ namespace Rendering {
 		//      using values from the material component. Ideally this wouldn't require storing a string
 		//      that defines the pipeline setup, but that is an option (like Unity material files).
 
-		VkShaderModule vertShaderModule = CreateShaderModule(CTX, material.vertex.c_str(), logical);
+		UniqueShaderModule const vertShaderModule = CreateShaderModule(CTX, material.vertex.c_str(), logical);
 		if (!vertShaderModule) return;
 
-		VkShaderModule fragShaderModule = CreateShaderModule(CTX, material.fragment.c_str(), logical);
+		UniqueShaderModule const fragShaderModule = CreateShaderModule(CTX, material.fragment.c_str(), logical);
 		if (!fragShaderModule) return;
 
 		VkPipelineShaderStageCreateInfo vertShaderStageCI{};
 		vertShaderStageCI.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		vertShaderStageCI.stage = VK_SHADER_STAGE_VERTEX_BIT;
-		vertShaderStageCI.module = vertShaderModule;
+		vertShaderStageCI.module = vertShaderModule.get();
 		vertShaderStageCI.pName = "main";
 
 		VkPipelineShaderStageCreateInfo fragShaderStageCI{};
 		fragShaderStageCI.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		fragShaderStageCI.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		fragShaderStageCI.module = fragShaderModule;
+		fragShaderStageCI.module = fragShaderModule.get();
 		fragShaderStageCI.pName = "main";
 
 		VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageCI, fragShaderStageCI};
@@ -169,8 +178,6 @@ namespace Rendering {
 
 		if (vkCreatePipelineLayout(logical.device, &layoutCI, nullptr, &material.layout) != VK_SUCCESS) {
 			LOGF(Temp, Error, "Failed to create pipeline layout for material %s", entity);
-			DestroyShaderModule(vertShaderModule, logical);
-			DestroyShaderModule(fragShaderModule, logical);
 			return;
 		}
 
@@ -190,7 +197,7 @@ namespace Rendering {
 		pipelineCI.pDynamicState = nullptr; // Optional
 		//Additional data
 		pipelineCI.layout = material.layout;
-		pipelineCI.renderPass = rendering.passes.mainRenderPass;
+		pipelineCI.renderPass = rendering.main.pass;
 		pipelineCI.subpass = 0;
 		//Parent pipelines, if this pipeline derives from another
 		pipelineCI.basePipelineHandle = VK_NULL_HANDLE; // Optional
@@ -198,13 +205,7 @@ namespace Rendering {
 
 		if (vkCreateGraphicsPipelines(logical.device, VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &material.pipeline) != VK_SUCCESS) {
 			LOGF(Temp, Error, "Failed to create pipeline for material %i", entity);
-
-			vkDestroyPipelineLayout(logical.device, material.layout, nullptr);
-			material.layout = nullptr;
 		}
-
-		DestroyShaderModule(vertShaderModule, logical);
-		DestroyShaderModule(fragShaderModule, logical);
 	}
 
 	void MaterialComponent::OnDestroy(entt::registry& registry, entt::entity entity) {

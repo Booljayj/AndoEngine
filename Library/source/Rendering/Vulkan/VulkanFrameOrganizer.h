@@ -5,7 +5,6 @@
 #include "Rendering/Vulkan/VulkanLogicalDevice.h"
 #include "Rendering/Vulkan/VulkanPhysicalDevice.h"
 #include "Rendering/Vulkan/VulkanSwapchain.h"
-#include "Rendering/Vulkan/VulkanSwapImages.h"
 
 namespace Rendering {
 	/** Frame Buffering levels, which determine the number of resources we'll cycle through for each frame */
@@ -53,15 +52,14 @@ namespace Rendering {
 		void Destroy(VulkanLogicalDevice const& logical);
 
 		/** Prepare the next set of resources for rendering */
-		EPreparationResult Prepare(CTX_ARG, VulkanLogicalDevice const& logical, VulkanSwapchain const& swapchain, VulkanSwapImages const& images);
+		EPreparationResult Prepare(CTX_ARG, VulkanLogicalDevice const& logical, VulkanSwapchain const& swapchain);
 		/** Submit everything currently recorded so that it can be rendered. */
 		bool Submit(CTX_ARG, VulkanLogicalDevice const& logical, VulkanSwapchain const& swapchain);
 
-		/** Record commands to the current buffer */
+		/** Record commands to the current buffer. Recorder must have the signature void(VkCommandBuffer,size_t). */
 		template<typename FunctorType>
-		inline bool Record(CTX_ARG, VulkanSwapImages const& images, FunctorType&& recorder) {
+		inline bool Record(CTX_ARG, FunctorType&& recorder) {
 			FrameResources const& frame = resources[currentResourceIndex];
-			SwapImage const& image = images[currentImageIndex];
 
 			VkCommandBufferBeginInfo beginInfo{};
 			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -73,7 +71,7 @@ namespace Rendering {
 				return false;
 			}
 
-			recorder(frame.buffer, image.framebuffer);
+			recorder(frame.buffer, currentImageIndex);
 
 			if (vkEndCommandBuffer(frame.buffer) != VK_SUCCESS) {
 				LOG(Vulkan, Error, "Failed to finish recording command buffer");

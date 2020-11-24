@@ -10,7 +10,6 @@
 #include "Rendering/Vulkan/VulkanPhysicalDevice.h"
 #include "Rendering/Vulkan/VulkanRenderPasses.h"
 #include "Rendering/Vulkan/VulkanSwapchain.h"
-#include "Rendering/Vulkan/VulkanSwapImages.h"
 
 struct SDLWindowSystem;
 
@@ -36,16 +35,13 @@ public:
 
 	/** The logical device for the currently selected physical device */
 	Rendering::VulkanLogicalDevice logical;
-
 	/** The swapchain that is currently being used for images */
 	Rendering::VulkanSwapchain swapchain;
-	/** The render passes used for rendering */
-	Rendering::VulkanRenderPasses passes;
-	/** The swapchain images used to draw each frame */
-	Rendering::VulkanSwapImages images;
-
 	/** The frame organizer that keeps track of resources used each frame */
 	Rendering::VulkanFrameOrganizer organizer;
+
+	/** The main render pass */
+	Rendering::TRenderPassInfo<1> main;
 
 	/** Flags for tracking rendering behavior and changes */
 	uint8_t shouldRecreateSwapchain : 1;
@@ -66,6 +62,10 @@ public:
 		else return nullptr;
 	}
 	bool SelectPhysicalDevice(CTX_ARG, uint32_t Index);
+
+protected:
+	bool CreateRenderPasses(CTX_ARG);
+	void DestroyRenderPasses(CTX_ARG);
 
 private:
 	bool IsUsablePhysicalDevice(const Rendering::VulkanPhysicalDevice& physicalDevice, TArrayView<char const*> const& extensionNames);

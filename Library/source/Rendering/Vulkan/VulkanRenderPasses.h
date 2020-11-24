@@ -5,21 +5,35 @@
 #include "Rendering/Vulkan/VulkanSwapchain.h"
 
 namespace Rendering {
-	/** Contains the render passes that can be used while recording command buffers */
-	struct VulkanRenderPasses {
-		/** The main render pass used each frame */
-		VkRenderPass mainRenderPass = nullptr;
-		/** Clear values for each of the attachments in the main render pass */
-		VkClearValue mainClearValues[1];
+	/** Holds all the values needed by a single render pass (plus any subpasses) with a certain number of attachments */
+	template<size_t NumAttachments>
+	struct TRenderPassInfo {
+		static_assert(NumAttachments > 0, "NumAttachments must be greater than 0");
 
-		inline operator bool() const { return !!mainRenderPass; }
+		/** The internal render pass object */
+		VkRenderPass pass = nullptr;
+		/** The clear values for each attachment in the render pass */
+		std::array<VkClearValue, NumAttachments> clearValues;
+		/** The frambuffers for each swapchain image to use with this render pass */
+		std::vector<VkFramebuffer> framebuffers;
 
-		bool Create(CTX_ARG, VulkanLogicalDevice const& logical, VulkanSwapchain const& swapchain);
-		void Destroy(VulkanLogicalDevice const& logical);
+		void Destroy(VulkanLogicalDevice const& logical) {
+			if (pass) vkDestroyRenderPass(logical.device, pass, nullptr);
+			for (VkFramebuffer framebuffer : framebuffers) {
+				if (framebuffer) vkDestroyFramebuffer(logical.device, framebuffer, nullptr);
+			}
+			framebuffers.clear();
+			pass = nullptr;
+		}
 	};
 
 	struct ScopedRenderPass {
 		VkCommandBuffer cachedBuffer = nullptr;
+
+		template<size_t NumAttachments>
+		ScopedRenderPass(VkCommandBuffer buffer, TRenderPassInfo<NumAttachments> info, size_t index, VkOffset2D offset, VkExtent2D extent)
+		: ScopedRenderPass(buffer, info.pass, info.clearValues, info.framebuffers[index], offset, extent)
+		{}
 
 		ScopedRenderPass(VkCommandBuffer buffer, VkRenderPass pass, TArrayView<VkClearValue const> clearValues, VkFramebuffer framebuffer, VkOffset2D offset, VkExtent2D extent);
 		~ScopedRenderPass();

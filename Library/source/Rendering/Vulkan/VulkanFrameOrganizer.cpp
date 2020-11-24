@@ -70,7 +70,7 @@ namespace Rendering {
 		currentResourceIndex = 0;
 	}
 
-	EPreparationResult VulkanFrameOrganizer::Prepare(CTX_ARG, VulkanLogicalDevice const& logical, VulkanSwapchain const& swapchain, VulkanSwapImages const& images) {
+	EPreparationResult VulkanFrameOrganizer::Prepare(CTX_ARG, VulkanLogicalDevice const& logical, VulkanSwapchain const& swapchain) {
 		constexpr uint64_t waitTime = 5'000'000'000;
 
 		FrameResources const& resource = resources[currentResourceIndex];
@@ -93,10 +93,9 @@ namespace Rendering {
 			LOG(Vulkan, Warning, "Timed out waiting for next available swapchain image");
 			return EPreparationResult::Retry;
 		}
-		if (currentImageIndex >= images.size() || currentImageIndex >= imageFences.size()) {
-			LOGF(Vulkan, Error, "Retrieved invalid image %i", currentImageIndex);
-			return EPreparationResult::Error;
-		}
+
+		//Expand the fences array to make sure it contains the current index.
+		if (currentImageIndex >= imageFences.size()) imageFences.resize(currentImageIndex + 1);
 
 		//If another resource is still using this image, wait for it to complete
 		if (imageFences[currentImageIndex] != VK_NULL_HANDLE) {
