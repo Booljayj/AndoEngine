@@ -11,7 +11,9 @@
 DEFINE_LOG_CATEGORY(Rendering, Warning);
 
 RenderingSystem::RenderingSystem()
-: shouldRecreateSwapchain(false)
+: retryCount(0)
+, shouldRecreateSwapchain(false)
+, shouldCreatePipelines(false)
 {}
 
 bool RenderingSystem::Startup(CTX_ARG, SDLWindowingSystem& windowing, EntityRegistry& registry) {
@@ -56,6 +58,14 @@ bool RenderingSystem::Startup(CTX_ARG, SDLWindowingSystem& windowing, EntityRegi
 	//Create the render passes
 	if (!CreateRenderPasses(CTX)) return false;
 
+	//Bind this rendering system as a context object callbacks can refer to it.
+	registry.Bind(this);
+	//Add the callbacks for rendering-related components.
+	registry.Callbacks<MaterialComponent>()
+		.Create<MaterialComponentOperations::OnCreate>()
+		.Destroy<MaterialComponentOperations::OnDestroy>()
+		.Modify<MaterialComponentOperations::OnModify>();
+
 	//@todo Create a group for renderable entities, once we have more than one component to include in the group (i.e. renderer and transform).
 
 	return true;
@@ -69,8 +79,7 @@ bool RenderingSystem::Shutdown(CTX_ARG, EntityRegistry& registry) {
 	//Wait for any in-progress work to finish before we start cleanup
 	if (logical) vkDeviceWaitIdle(logical.device);
 
-	registry.DestroyComponents<MaterialComponent, MeshRendererComponent>();
-
+	DestroyPipelines(registry);
 	DestroyRenderPasses(CTX);
 	organizer.Destroy(logical);
 	swapchain.Destroy(logical);
@@ -79,26 +88,41 @@ bool RenderingSystem::Shutdown(CTX_ARG, EntityRegistry& registry) {
 	return true;
 }
 
-bool RenderingSystem::Render(CTX_ARG, EntityRegistry const& registry) {
+bool RenderingSystem::Render(CTX_ARG, EntityRegistry& registry) {
 	using namespace Rendering;
 
 	//Recreate the swapchain if necessary. This happens periodically if the rendering parameters have changed significantly.
 	if (shouldRecreateSwapchain) {
 		shouldRecreateSwapchain = false;
+		shouldCreatePipelines = true;
 
 		LOG(Rendering, Info, "Recreating swapchain");
-
-		//Wait for any current rendering operations to finish before continuing. This may cause an expected stutter.
 		vkDeviceWaitIdle(logical.device);
 
 		//Destroy resources that depend on the swapchain
 		organizer.Destroy(logical);
+		DestroyPipelines(registry);
 		DestroyRenderPasses(CTX);
 
-		//Recreate the swapchain and everythign depending on it. If any of this fails, we need to request a shutdown.
+		//Recreate the swapchain and everything depending on it. If any of this fails, we need to request a shutdown.
 		if (!swapchain.Recreate(CTX, VkExtent2D{1024, 768}, framework.surface, *selectedPhysical, logical)) return false;
 		if (!organizer.Create(CTX, *selectedPhysical, logical, EBuffering::Double, swapchain.views.size(), 1)) return false;
 		if (!CreateRenderPasses(CTX)) return false;
+	}
+
+	//If we have stale pipelines, destroy them now
+	if (stalePipelineResources.size() > 0) {
+		LOG(Rendering, Info, "Destroying stale pipelines");
+		vkDeviceWaitIdle(logical.device);
+		DestroyStalePipelines();
+	}
+	//If we need to create any new pipelines, create them now
+	if (shouldCreatePipelines) {
+		shouldCreatePipelines = false;
+
+		LOG(Rendering, Info, "Creating new pipelines");
+		vkDeviceWaitIdle(logical.device);
+		CreatePipelines(CTX, registry);
 	}
 
 	//Prepare the frame for rendering, which may need to wait for resources
@@ -125,9 +149,11 @@ bool RenderingSystem::Render(CTX_ARG, EntityRegistry const& registry) {
 		for (const auto id : renderables) {
 			auto& renderer = renderables.Get<MeshRendererComponent const>(id);
 			if (auto* material = materials.Find<MaterialComponent const>(renderer.material)) {
-				//@todo This should actually be binding the real geometry, instead of assuming the shader can draw 3 unspecified vertices
-				vkCmdBindPipeline(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, material->pipeline);
-				vkCmdDraw(buffer, 3, 1, 0, 0);
+				if (material->resources) {
+					//@todo This should actually be binding the real geometry, instead of assuming the shader can draw 3 unspecified vertices
+					vkCmdBindPipeline(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, material->resources.pipeline);
+					vkCmdDraw(buffer, 3, 1, 0, 0);
+				}
 			}
 		}
 	};
@@ -165,6 +191,26 @@ bool RenderingSystem::SelectPhysicalDevice(CTX_ARG, uint32_t index) {
 		}
 	}
 	return false;
+}
+
+void RenderingSystem::MaterialComponentOperations::OnCreate(entt::registry& registry, entt::entity entity) {
+	RenderingSystem* rendering = registry.ctx<RenderingSystem*>();
+	rendering->shouldCreatePipelines = true;
+}
+
+void RenderingSystem::MaterialComponentOperations::OnDestroy(entt::registry& registry, entt::entity entity) {
+	using namespace Rendering;
+	RenderingSystem* rendering = registry.ctx<RenderingSystem*>();
+	MaterialComponent& material = registry.get<MaterialComponent>(entity);
+	rendering->MarkPipelineStale(material);
+}
+
+void RenderingSystem::MaterialComponentOperations::OnModify(entt::registry& registry, entt::entity entity) {
+	using namespace Rendering;
+	RenderingSystem* rendering = registry.ctx<RenderingSystem*>();
+	MaterialComponent& material = registry.get<MaterialComponent>(entity);
+	rendering->MarkPipelineStale(material);
+	rendering->shouldCreatePipelines = true;
 }
 
 bool RenderingSystem::CreateRenderPasses(CTX_ARG) {
@@ -273,6 +319,201 @@ bool RenderingSystem::CreateRenderPasses(CTX_ARG) {
 
 void RenderingSystem::DestroyRenderPasses(CTX_ARG) {
 	main.Destroy(logical);
+}
+
+void RenderingSystem::CreatePipelines(CTX_ARG, EntityRegistry& registry) {
+	using namespace Rendering;
+
+	//The library of shader modules that will stay loaded as long as we need to continue creating pipelines
+	Rendering::VulkanShaderModuleLibrary library{ logical.device };
+
+	auto const materials = registry.GetView<MaterialComponent>();
+	for (const auto id : materials) {
+		MaterialComponent& material = materials.Get<MaterialComponent>(id);
+		if (!material.resources) {
+			CreatePipeline(CTX, material, id, library);
+		}
+	}
+}
+
+void RenderingSystem::DestroyPipelines(EntityRegistry& registry) {
+	using namespace Rendering;
+	auto const materials = registry.GetView<MaterialComponent>();
+	for (const auto id : materials) {
+		MarkPipelineStale(materials.Get<MaterialComponent>(id));
+	}
+	DestroyStalePipelines();
+}
+
+void RenderingSystem::CreatePipeline(CTX_ARG, Rendering::MaterialComponent& material, EntityID id, Rendering::VulkanShaderModuleLibrary& library) {
+	using namespace Rendering;
+
+	//Create the pipeline layout
+	VkPipelineLayoutCreateInfo layoutCI{};
+	layoutCI.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	layoutCI.setLayoutCount = 0; // Optional
+	layoutCI.pSetLayouts = nullptr; // Optional
+	layoutCI.pushConstantRangeCount = 0; // Optional
+	layoutCI.pPushConstantRanges = nullptr; // Optional
+
+	assert(!material.resources.layout);
+	if (vkCreatePipelineLayout(logical.device, &layoutCI, nullptr, &material.resources.layout) != VK_SUCCESS) {
+		LOGF(Temp, Error, "Failed to create pipeline layout for material %i", id);
+		return;
+	}
+
+	VkShaderModule const vertShaderModule = library.GetModule(CTX, material.vertex);
+	if (!vertShaderModule) return;
+	VkShaderModule const fragShaderModule = library.GetModule(CTX, material.fragment);
+	if (!fragShaderModule) return;
+
+	VkPipelineShaderStageCreateInfo vertShaderStageCI{};
+	vertShaderStageCI.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	vertShaderStageCI.stage = VK_SHADER_STAGE_VERTEX_BIT;
+	vertShaderStageCI.module = vertShaderModule;
+	vertShaderStageCI.pName = "main";
+
+	VkPipelineShaderStageCreateInfo fragShaderStageCI{};
+	fragShaderStageCI.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	fragShaderStageCI.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+	fragShaderStageCI.module = fragShaderModule;
+	fragShaderStageCI.pName = "main";
+
+	VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageCI, fragShaderStageCI};
+
+	//Vertex Input function
+	VkPipelineVertexInputStateCreateInfo vertexInputCI{};
+	vertexInputCI.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	vertexInputCI.vertexBindingDescriptionCount = 0;
+	vertexInputCI.pVertexBindingDescriptions = nullptr;
+	vertexInputCI.vertexAttributeDescriptionCount = 0;
+	vertexInputCI.pVertexAttributeDescriptions = nullptr;
+
+	//Input assembly function
+	VkPipelineInputAssemblyStateCreateInfo inputAssemblyCI{};
+	inputAssemblyCI.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+	inputAssemblyCI.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	inputAssemblyCI.primitiveRestartEnable = VK_FALSE;
+
+	//Viewport
+	VkViewport viewport{};
+	viewport.x = 0.0f;
+	viewport.y = 0.0f;
+	viewport.width = (float)swapchain.extent.width;
+	viewport.height = (float)swapchain.extent.height;
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+
+	VkRect2D scissor{};
+	scissor.offset = {0, 0};
+	scissor.extent = swapchain.extent;
+
+	VkPipelineViewportStateCreateInfo viewportStateCI{};
+	viewportStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+	viewportStateCI.viewportCount = 1;
+	viewportStateCI.pViewports = &viewport;
+	viewportStateCI.scissorCount = 1;
+	viewportStateCI.pScissors = &scissor;
+
+	//Rasterizer
+	VkPipelineRasterizationStateCreateInfo rasterizerCI{};
+	rasterizerCI.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+	rasterizerCI.depthClampEnable = VK_FALSE;
+	rasterizerCI.rasterizerDiscardEnable = VK_FALSE;
+	rasterizerCI.polygonMode = VK_POLYGON_MODE_FILL;
+	rasterizerCI.lineWidth = 1.0f;
+	rasterizerCI.cullMode = VK_CULL_MODE_BACK_BIT;
+	rasterizerCI.frontFace = VK_FRONT_FACE_CLOCKWISE;
+	rasterizerCI.depthBiasEnable = VK_FALSE;
+	rasterizerCI.depthBiasConstantFactor = 0.0f;
+	rasterizerCI.depthBiasClamp = 0.0f;
+	rasterizerCI.depthBiasSlopeFactor = 0.0f;
+
+	//Multisampling
+	//Disabled for now, requires a GPU feature to enable
+	VkPipelineMultisampleStateCreateInfo multisamplingCI{};
+	multisamplingCI.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+	multisamplingCI.sampleShadingEnable = VK_FALSE;
+	multisamplingCI.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+	multisamplingCI.minSampleShading = 1.0f;
+	multisamplingCI.pSampleMask = nullptr;
+	multisamplingCI.alphaToCoverageEnable = VK_FALSE;
+	multisamplingCI.alphaToOneEnable = VK_FALSE;
+
+	//Color blending (alpha blending setup)
+	VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+	colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	colorBlendAttachment.blendEnable = VK_TRUE;
+	colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+	colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+	colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+	colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+	colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+	colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+
+	VkPipelineColorBlendStateCreateInfo colorBlendingCI{};
+	colorBlendingCI.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+	colorBlendingCI.logicOpEnable = VK_FALSE;
+	colorBlendingCI.logicOp = VK_LOGIC_OP_COPY; // Optional
+	colorBlendingCI.attachmentCount = 1;
+	colorBlendingCI.pAttachments = &colorBlendAttachment;
+	colorBlendingCI.blendConstants[0] = 0.0f; // Optional
+	colorBlendingCI.blendConstants[1] = 0.0f; // Optional
+	colorBlendingCI.blendConstants[2] = 0.0f; // Optional
+	colorBlendingCI.blendConstants[3] = 0.0f; // Optional
+
+	// //Dynamic state
+	// VkDynamicState dynamicStates[2] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_LINE_WIDTH};
+
+	// VkPipelineDynamicStateCreateInfo dynamicStateCI{};
+	// dynamicStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+	// dynamicStateCI.dynamicStateCount = 2;
+	// dynamicStateCI.pDynamicStates = dynamicStates;
+
+	VkGraphicsPipelineCreateInfo pipelineCI{};
+	pipelineCI.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	//Programmable stages
+	pipelineCI.stageCount = 2;
+	pipelineCI.pStages = shaderStages;
+	//Fixed states
+	pipelineCI.pVertexInputState = &vertexInputCI;
+	pipelineCI.pInputAssemblyState = &inputAssemblyCI;
+	pipelineCI.pViewportState = &viewportStateCI;
+	pipelineCI.pRasterizationState = &rasterizerCI;
+	pipelineCI.pMultisampleState = &multisamplingCI;
+	pipelineCI.pDepthStencilState = nullptr; // Optional
+	pipelineCI.pColorBlendState = &colorBlendingCI;
+	pipelineCI.pDynamicState = nullptr; // Optional
+	//Additional data
+	pipelineCI.layout = material.resources.layout;
+	pipelineCI.renderPass = main.pass;
+	pipelineCI.subpass = 0;
+	//Parent pipelines, if this pipeline derives from another
+	pipelineCI.basePipelineHandle = VK_NULL_HANDLE; // Optional
+	pipelineCI.basePipelineIndex = -1; // Optional
+
+	assert(!material.resources.pipeline);
+	if (vkCreateGraphicsPipelines(logical.device, VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &material.resources.pipeline) != VK_SUCCESS) {
+		LOGF(Temp, Error, "Failed to create pipeline for material %i", id);
+		//Make sure we destroy the layout as well.
+		vkDestroyPipelineLayout(logical.device, material.resources.layout, nullptr);
+	}
+}
+
+void RenderingSystem::MarkPipelineStale(Rendering::MaterialComponent& material) {
+	stalePipelineResources.push_back(material.resources);
+	material.resources = {};
+}
+
+void RenderingSystem::DestroyStalePipelines() {
+	using namespace Rendering;
+
+	//Destroy all the stale resources
+	for (VulkanPipelineResources resources : stalePipelineResources) {
+		if (resources.pipeline) vkDestroyPipeline(logical.device, resources.pipeline, nullptr);
+		if (resources.layout) vkDestroyPipelineLayout(logical.device, resources.layout, nullptr);
+	}
+	stalePipelineResources.clear();
 }
 
 bool RenderingSystem::IsUsablePhysicalDevice(const Rendering::VulkanPhysicalDevice& physicalDevice, TArrayView<char const*> const& extensionNames) {

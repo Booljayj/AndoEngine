@@ -73,6 +73,34 @@ public:
 	}
 };
 
+template<typename Type>
+struct ComponentCallbackBinder {
+public:
+	ComponentCallbackBinder() = delete;
+	ComponentCallbackBinder(entt::registry& inRegistry)
+	: registry(inRegistry)
+	{}
+
+	template<void(&func)(entt::registry&, entt::entity)>
+	ComponentCallbackBinder& Create() {
+		registry.on_construct<Type>().template connect<&func>();
+		return *this;
+	}
+	template<void(&func)(entt::registry&, entt::entity)>
+	ComponentCallbackBinder& Destroy() {
+		registry.on_destroy<Type>().template connect<&func>();
+		return *this;
+	}
+	template<void(&func)(entt::registry&, entt::entity)>
+	ComponentCallbackBinder& Modify() {
+		registry.on_update<Type>().template connect<&func>();
+		return *this;
+	}
+
+private:
+	entt::registry& registry;
+};
+
 /**
  * The registry which contains a set of entities. Entities can be created and retrieved from this registry.
  * It can also provide an object to iterate through entities that contain a specific set of components.
@@ -97,6 +125,10 @@ public:
     [[nodiscard]] inline EntityView<TTypeList<IncludedTypes...>, TTypeList<ExcludedTypes...>> GetView(TTypeList<ExcludedTypes...> excluded = {}) const {
 		return registry.view<IncludedTypes...>(entt::exclude<ExcludedTypes...>);
 	}
+	template<typename... IncludedTypes, typename... ExcludedTypes>
+    [[nodiscard]] inline EntityView<TTypeList<IncludedTypes...>, TTypeList<ExcludedTypes...>> GetView(TTypeList<ExcludedTypes...> excluded = {}) {
+		return registry.view<IncludedTypes...>(entt::exclude<ExcludedTypes...>);
+	}
 
 	/**
 	 * Create a group that controls the layout of a set of entities in memory, and can be used to iterate through them.
@@ -119,6 +151,14 @@ public:
 	[[nodiscard]] inline EntityGroup<TTypeList<OwnedTypes...>, TTypeList<IncludedTypes...>, TTypeList<ExcludedTypes...>> GetGroup(TTypeList<IncludedTypes...> included = {}, TTypeList<ExcludedTypes...> excluded = {}) const {
 		return registry.group<OwnedTypes...>(entt::get<IncludedTypes...>, entt::exclude<ExcludedTypes...>);
 	}
+
+	/** Get an object used to bind callbacks related to a specific component type */
+	template<typename Type>
+	[[nodiscard]] ComponentCallbackBinder<Type> Callbacks() { return ComponentCallbackBinder<Type>(registry); }
+
+	/** Bind a context object to this registry. It can be retrieved from the registry later. */
+	template<typename Type>
+	void Bind(Type* object) { registry.set<Type*>(object); }
 
 private:
 	entt::registry registry;

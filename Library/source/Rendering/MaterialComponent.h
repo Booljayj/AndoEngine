@@ -1,5 +1,7 @@
+#pragma once
 #include "EntityFramework/EntityRegistry.h"
 #include "Rendering/Vulkan/VulkanCommon.h"
+#include "Rendering/Vulkan/VulkanResources.h"
 
 namespace Rendering {
 	/** Describes a method of rendering geometry */
@@ -8,19 +10,16 @@ namespace Rendering {
 		std::string vertex;
 		std::string fragment;
 
-		VkPipeline pipeline;
-		VkPipelineLayout layout;
-
-		static void OnCreate(entt::registry& registry, entt::entity entity);
-		static void OnDestroy(entt::registry& registry, entt::entity entity);
+		/** Rendering resources for this material */
+		VulkanPipelineResources resources;
 
 		MaterialComponent(std::string_view inVertex, std::string_view inFragment)
-		: vertex(inVertex), fragment(inFragment), pipeline(nullptr), layout(nullptr)
+		: vertex(inVertex), fragment(inFragment)
 		{}
 	};
 
 	/** Combines a material with a set of parameters the material will use when rendering */
 	struct MaterialInstanceComponent {
-		EntityID master;
+		EntityID material;
 	};
 }
