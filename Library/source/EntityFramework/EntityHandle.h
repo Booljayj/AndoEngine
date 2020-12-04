@@ -17,6 +17,8 @@ public:
 	EntityHandle(const EntityHandle&) = default;
 	EntityHandle(entt::registry& inRegistry, entt::entity inID) : registry(&inRegistry), id(inID) {}
 
+	/** Returns the ID of the entity this handle refers to */
+	inline EntityID ID() const { return id; }
 	/** True if this handle does not point to an entity. */
 	inline bool IsNull() const { return registry->valid(id); }
 	/** True if this entity has no components assigned to it. */
@@ -53,6 +55,8 @@ public:
 
 	inline EntityConstHandle& operator=(const EntityHandle& other) { registry = other.registry; id = other.id; return *this; }
 
+	/** Returns the ID of the entity this handle refers to */
+	inline EntityID ID() const { return id; }
 	/** True if this handle does not point to an entity. */
 	inline bool IsNull() const { return registry->valid(id); }
 	/** True if this entity has no components assigned to it. */

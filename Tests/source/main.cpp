@@ -9,6 +9,9 @@
 #include "Rendering/RenderingSystem.h"
 #include "Profiling/ProfilerMacros.h"
 
+#include "Rendering/MaterialComponent.h"
+#include "Rendering/MeshRendererComponent.h"
+
 EntityRegistry registry;
 
 SDLFrameworkSystem sdlFramework;
@@ -81,6 +84,12 @@ int32_t main(int32_t argc, char const* argv[]) {
 	LOG(Main, Debug, "Compiled with " __VERSION__ " on " __DATE__);
 
 	if (Startup(CTX)) {
+		EntityHandle material = registry.Create();
+		material.Add<Rendering::MaterialComponent>("default.vert", "default.frag");
+
+		EntityHandle meshRenderer = registry.Create();
+		meshRenderer.Add<Rendering::MeshRendererComponent>(material.ID());
+
 		MainLoop(CTX);
 	}
 	Shutdown(CTX);
