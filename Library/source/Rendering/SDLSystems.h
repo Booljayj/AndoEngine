@@ -9,7 +9,7 @@ public:
 	bool Shutdown(CTX_ARG);
 };
 
-struct SDLEventSystem {
+struct SDLEventsSystem {
 protected:
 	std::vector<SDL_Event> frameEvents;
 
@@ -20,7 +20,7 @@ public:
 	void PollEvents(bool& requestShutdown);
 };
 
-struct SDLWindowSystem {
+struct SDLWindowingSystem {
 protected:
 	SDL_Window* mainWindow;
 

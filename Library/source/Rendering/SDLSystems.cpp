@@ -24,14 +24,14 @@ bool SDLFrameworkSystem::Shutdown(CTX_ARG) {
 	return true;
 }
 
-bool SDLEventSystem::Startup(CTX_ARG) {
+bool SDLEventsSystem::Startup(CTX_ARG) {
 	frameEvents.reserve(20);
 	return true;
 }
 
-bool SDLEventSystem::Shutdown(CTX_ARG) { return true; }
+bool SDLEventsSystem::Shutdown(CTX_ARG) { return true; }
 
-void SDLEventSystem::PollEvents(bool& requestShutdown) {
+void SDLEventsSystem::PollEvents(bool& requestShutdown) {
 	frameEvents.clear();
 	SDL_Event currentEvent;
 
@@ -43,7 +43,7 @@ void SDLEventSystem::PollEvents(bool& requestShutdown) {
 	}
 }
 
-bool SDLWindowSystem::Startup(CTX_ARG) {
+bool SDLWindowingSystem::Startup(CTX_ARG) {
 	mainWindow = SDL_CreateWindow("AndoSystem", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 800, SDL_WINDOW_SHOWN | SDL_WINDOW_VULKAN);
 	if (!mainWindow) {
 		LOGF(SDL, Error, "Failed to create SDL window: %i", SDL_GetError());
@@ -52,7 +52,8 @@ bool SDLWindowSystem::Startup(CTX_ARG) {
 	return true;
 }
 
-bool SDLWindowSystem::Shutdown(CTX_ARG) {
+bool SDLWindowingSystem::Shutdown(CTX_ARG) {
 	if (mainWindow) SDL_DestroyWindow(mainWindow);
+	mainWindow = nullptr;
 	return true;
 }

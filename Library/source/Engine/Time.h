@@ -1,43 +1,40 @@
 #pragma once
 #include "Engine/STL.h"
 
-//Used to hold current time information that can be used by systems
+/**
+ * Used to hold current time information that can be used by systems.
+ * Refresh: when the time values are updated using the high-precision time from the system clock, recalculating the time since the last refresh
+ * Update: a process that occurs with a period of unscaledDeltaSeconds.
+ * Frame: a process that occurs every time a refresh happens.
+ */
 struct Time {
-	//Seconds since the last frame
+	using Clock = std::chrono::system_clock;
+	using TimePoint = std::chrono::time_point<Clock>;
+
+	/** Seconds since the last fixed update */
 	float deltaSeconds = 1.0f/60.0f;
 
-	//The value of deltaSeconds before scaling is applied
+	/** The value of deltaSeconds before scaling is applied */
 	float unscaledDeltaSeconds = 1.0f/60.0f;
-	//Maximum allowed seconds since the last frame
+	/** Maximum allowed seconds since the last frame */
 	float maxDeltaSeconds = 1.0f/10.0f;
 
-	//Total seconds since the program started
+	/** Total seconds since the time tracking started */
 	float totalSeconds = 0.0f;
-	//The value of totalSeconds before scaling is applied
+	/** The value of totalSeconds before scaling is applied */
 	float unscaledTotalSeconds = 0.0f;
 
-	//Total unused seconds of frame time
+	/** Total amount of real seconds that have passed since the last update */
 	float accumulatedSeconds = 0.0f;
-	//Real seconds since the last frame
+	/** Total amount of real seconds that have passed since the last frame */
 	float elapsedSeconds = 0.0f;
-	//Number of frames that have passed since the program started. Can overflow.
-	uint32_t frameCount = 0;
+	/** Number of updates that have happened since the program started. Can overflow. */
+	uint32_t updateCount = 0;
 
-	//Time that the last frame occurred
-	std::chrono::time_point<std::chrono::system_clock> lastUpdateTimePoint;
-	//Time when this current frame is occurring
-	std::chrono::time_point<std::chrono::system_clock> currentUpdateTimePoint;
-
-	/** Get a new value for the current update time */
-	void RefreshTime();
-	/** Increase the accumulated time by the difference between the last and current time points */
-	void IncreaseAccumulatedTime();
-	/** Consume DT seconds from the accumulated time */
-	void ConsumeAccumulatedTime();
-	/** Increase total time by the delta time value */
-	void AdvanceDeltaTime();
-	/** Apply a scaling factor to delta time */
-	void ScaleDeltaTime(float scale);
+	/** Time that the last frame occurred */
+	TimePoint lastUpdateTimePoint;
+	/** Time when this current frame is occurring */
+	TimePoint currentUpdateTimePoint;
 };
 
 //Used to control the behavior of a time controller
@@ -59,9 +56,14 @@ public:
 
 	inline Time const& GetTime() const { return time; }
 	inline TimeControl& GetTimeControl() { return timeControl; }
-	inline float FrameInterpolationAlpha() const { return time.accumulatedSeconds / time.deltaSeconds; }
 
-	void AdvanceFrame();
-	bool StartUpdateFrame();
-	void FinishUpdateFrame();
+	/** The amount of progress from the previous update to the next update, expressed as a ratio from previous ot next */
+	inline float Alpha() const { return time.accumulatedSeconds / time.unscaledDeltaSeconds; }
+
+	/** Advance to the next frame, recording how much real time has passed. */
+	void NextFrame();
+	/** Attempt to start a fixed update for the target framerate. Returns true if enough time has passed to do a fixed update. */
+	bool StartUpdate();
+	/** Finish a fixed update for the target framerate */
+	void FinishUpdate();
 };

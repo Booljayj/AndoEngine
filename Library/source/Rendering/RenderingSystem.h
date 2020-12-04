@@ -11,13 +11,13 @@
 #include "Rendering/Vulkan/VulkanRenderPasses.h"
 #include "Rendering/Vulkan/VulkanSwapchain.h"
 
-struct SDLWindowSystem;
+struct SDLWindowingSystem;
 
 DECLARE_LOG_CATEGORY(Rendering);
 
 class RenderingSystem {
 public:
-	/** The maximum number of consecutive times we have failed to render a frame */
+	/** The maximum number of consecutive times we can fail to render a frame */
 	static constexpr uint8_t maxRetryCount = 5;
 
 	/** The enabled features on any physical device that this application uses */
@@ -51,10 +51,10 @@ public:
 
 	RenderingSystem();
 
-	bool Startup(CTX_ARG, SDLWindowSystem& windowing, EntityRegistry& registry);
+	bool Startup(CTX_ARG, SDLWindowingSystem& windowing, EntityRegistry& registry);
 	bool Shutdown(CTX_ARG, EntityRegistry& registry);
 
-	bool Update(CTX_ARG, EntityRegistry const& registry);
+	bool Render(CTX_ARG, EntityRegistry const& registry);
 
 	inline uint32_t NumPhysicalDevices() const { return availablePhysicalDevices.size(); }
 	inline const Rendering::VulkanPhysicalDevice* GetPhysicalDevice(uint32_t Index) const {

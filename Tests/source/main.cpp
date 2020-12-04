@@ -11,11 +11,11 @@
 
 EntityRegistry registry;
 
-SDLFrameworkSystem sdlFrameworkSystem;
-SDLEventSystem sdlEventSystem;
-SDLWindowSystem sdlWindowSystem;
+SDLFrameworkSystem sdlFramework;
+SDLEventsSystem sdlEvents;
+SDLWindowingSystem sdlWindowing;
 
-RenderingSystem renderingSystem;
+RenderingSystem rendering;
 
 DEFINE_LOG_CATEGORY(Main, Debug);
 DEFINE_PROFILE_CATEGORY(Main);
@@ -26,23 +26,22 @@ bool Startup(CTX_ARG) {
 	TEMP_ALLOCATOR_MARK();
 	LOG(Main, Info, "Starting up all systems...");
 
-	STARTUP_SYSTEM(Main, sdlFrameworkSystem);
-	STARTUP_SYSTEM(Main, sdlEventSystem);
-	STARTUP_SYSTEM(Main, sdlWindowSystem);
-	STARTUP_SYSTEM(Main, renderingSystem, sdlWindowSystem, registry);
+	STARTUP_SYSTEM(Main, sdlFramework);
+	STARTUP_SYSTEM(Main, sdlEvents);
+	STARTUP_SYSTEM(Main, sdlWindowing);
+	STARTUP_SYSTEM(Main, rendering, sdlWindowing, registry);
 	return true;
 }
 
 void Shutdown(CTX_ARG) {
 	PROFILE_FUNCTION(Main);
 	TEMP_ALLOCATOR_MARK();
-
 	LOG(Main, Info, "Shutting down all systems...");
 
-	SHUTDOWN_SYSTEM(Main, renderingSystem, registry);
-	SHUTDOWN_SYSTEM(Main, sdlWindowSystem);
-	SHUTDOWN_SYSTEM(Main, sdlEventSystem);
-	SHUTDOWN_SYSTEM(Main, sdlFrameworkSystem);
+	SHUTDOWN_SYSTEM(Main, rendering, registry);
+	SHUTDOWN_SYSTEM(Main, sdlWindowing);
+	SHUTDOWN_SYSTEM(Main, sdlEvents);
+	SHUTDOWN_SYSTEM(Main, sdlFramework);
 }
 
 void MainLoop(CTX_ARG) {
@@ -53,29 +52,30 @@ void MainLoop(CTX_ARG) {
 		PROFILE_DURATION("MainLoop", Main);
 		TEMP_ALLOCATOR_MARK();
 
-		timeController.AdvanceFrame();
+		timeController.NextFrame();
 
-		sdlEventSystem.PollEvents(shutdownRequested);
-
-		while (timeController.StartUpdateFrame()) {
+		while (timeController.StartUpdate()) {
+			//Main Update. Anything inside this loop runs with a fixed interval (possibly simulated based on variable rates)
 			//const Time& time = timeController.GetTime();
 
-			//@todo: Game Update
+			sdlEvents.PollEvents(shutdownRequested);
 
-			timeController.FinishUpdateFrame();
+			timeController.FinishUpdate();
 		}
 
 		if (!shutdownRequested) {
-			//const float interpolationAlpha = timeController.FrameInterpolationAlpha();
-			shutdownRequested |= !renderingSystem.Update(CTX, registry);
+			//Render. Anything inside this loop runs with a variable interval. Alpha will indicate the progress from the previous to the current main update.
+			//const float alpha = timeController.Alpha();
+			shutdownRequested |= !rendering.Render(CTX, registry);
 		}
 	}
 }
 
-int main(int argc, char const* argv[]) {
-	Context CTX{10000};
+int32_t main(int32_t argc, char const* argv[]) {
+	constexpr size_t capacity = 10'000;
+	Context CTX{capacity};
 	CTX.log.AddModule(std::make_shared<TerminalLoggerModule>());
-	//CTX.Log.AddModule( std::make_shared<FileLoggerModule>( "Main.log" ) );
+	//CTX.Log.AddModule(std::make_shared<FileLoggerModule>("Main.log"));
 
 	LOG(Main, Info, "Hello, World! This is AndoEngine.");
 	LOG(Main, Debug, "Compiled with " __VERSION__ " on " __DATE__);
@@ -83,13 +83,8 @@ int main(int argc, char const* argv[]) {
 	if (Startup(CTX)) {
 		MainLoop(CTX);
 	}
-
 	Shutdown(CTX);
 
-	LOGF(
-		Main, Info, "[TempBuffer]{ Current: %i/%i, Peak: %i/%i }",
-		CTX.temp.GetUsed(), CTX.temp.GetCapacity(), CTX.temp.GetPeakUsage(), CTX.temp.GetCapacity()
-	);
-
+	LOGF(Main, Info, "TempBuffer:{ Capacity: %i, Current: %i, Peak: %i }", capacity, CTX.temp.GetUsed(), CTX.temp.GetPeakUsage());
 	return 0;
 }

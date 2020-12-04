@@ -14,7 +14,7 @@ RenderingSystem::RenderingSystem()
 : shouldRecreateSwapchain(false)
 {}
 
-bool RenderingSystem::Startup(CTX_ARG, SDLWindowSystem& windowing, EntityRegistry& registry) {
+bool RenderingSystem::Startup(CTX_ARG, SDLWindowingSystem& windowing, EntityRegistry& registry) {
 	using namespace Rendering;
 
 	// Vulkan instance
@@ -79,7 +79,7 @@ bool RenderingSystem::Shutdown(CTX_ARG, EntityRegistry& registry) {
 	return true;
 }
 
-bool RenderingSystem::Update(CTX_ARG, EntityRegistry const& registry) {
+bool RenderingSystem::Render(CTX_ARG, EntityRegistry const& registry) {
 	using namespace Rendering;
 
 	//Recreate the swapchain if necessary. This happens periodically if the rendering parameters have changed significantly.
