@@ -18,7 +18,7 @@ SDLFrameworkSystem sdlFramework;
 SDLEventsSystem sdlEvents;
 SDLWindowingSystem sdlWindowing;
 
-RenderingSystem rendering;
+Rendering::RenderingSystem rendering;
 
 DEFINE_LOG_CATEGORY(Main, Debug);
 DEFINE_PROFILE_CATEGORY(Main);
