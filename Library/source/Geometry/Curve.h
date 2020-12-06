@@ -2,12 +2,11 @@
 #include "Engine/STL.h"
 #include "Geometry/CurveTypes.h"
 #include "Geometry/LinearAlgebra.h"
-#include "Utility/variant.hpp"
 
 namespace Geometry {
 	/* A polymorphic line segment */
 	struct Curve {
-		mpark::variant<LinearCurve, QuadraticCurve, CubicCurve> variant;
+		std::variant<LinearCurve, QuadraticCurve, CubicCurve> variant;
 
 		Curve();
 

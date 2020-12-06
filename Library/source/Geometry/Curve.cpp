@@ -8,24 +8,24 @@ namespace Geometry {
 	{}
 
 	glm::vec2 Curve::Position(float alpha) const {
-		return mpark::visit([&]( auto const& segment) { return segment.Position(alpha); }, variant);
+		return std::visit([&]( auto const& segment) { return segment.Position(alpha); }, variant);
 	}
 	glm::vec2 Curve::Direction(float alpha) const {
-		return mpark::visit([&](auto const& segment) { return segment.Direction(alpha); }, variant);
+		return std::visit([&](auto const& segment) { return segment.Direction(alpha); }, variant);
 	}
 	Rect Curve::Bounds() const {
-		return mpark::visit([&](auto const& segment) { return segment.Bounds(); }, variant);
+		return std::visit([&](auto const& segment) { return segment.Bounds(); }, variant);
 	}
 
 	CurveMinimumSignedDistance Curve::MinimumSignedDistance(glm::vec2 origin) const {
-		return mpark::visit([&](auto const& segment) { return segment.MinimumSignedDistance(origin); }, variant);
+		return std::visit([&](auto const& segment) { return segment.MinimumSignedDistance(origin); }, variant);
 	}
 
 	void Curve::SetStartPosition(glm::vec2 newStartPosition) {
-		return mpark::visit([&](auto& segment) { return segment.SetStartPosition(newStartPosition); }, variant);
+		return std::visit([&](auto& segment) { return segment.SetStartPosition(newStartPosition); }, variant);
 	}
 	void Curve::SetEndPosition(glm::vec2 newEndPosition) {
-		return mpark::visit([&](auto& segment) { return segment.SetEndPosition(newEndPosition); }, variant);
+		return std::visit([&](auto& segment) { return segment.SetEndPosition(newEndPosition); }, variant);
 	}
 
 	SignedDistance Curve::DistanceToPseudoDistance(CurveMinimumSignedDistance const& distance, glm::vec2 origin) const {

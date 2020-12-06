@@ -2,7 +2,6 @@
 #include "Geometry/Contour.h"
 #include "Geometry/Curve.h"
 #include "Geometry/LinearAlgebra.h"
-#include "Utility/variant.hpp"
 
 namespace Geometry {
 	Rect Contour::Bounds() const {
@@ -87,7 +86,7 @@ namespace Geometry {
 
 		if (curve.curves.size() == 1) {
 			ThirdsVisitor visitor;
-			mpark::visit(visitor, curve.curves[0].variant);
+			std::visit(visitor, curve.curves[0].variant);
 			curve.curves.resize(3);
 			curve.curves.insert(curve.curves.begin(), visitor.thirds.begin(), visitor.thirds.end());
 		}
