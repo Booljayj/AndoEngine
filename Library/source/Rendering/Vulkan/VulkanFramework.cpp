@@ -26,6 +26,8 @@ namespace Rendering {
 				return false;
 			}
 
+			version = VK_API_VERSION_1_1;
+
 			VkApplicationInfo appInfo = {};
 			appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 			//Application info
@@ -37,7 +39,7 @@ namespace Rendering {
 			appInfo.pEngineName = "AndoEngine";
 			appInfo.engineVersion = VK_MAKE_VERSION(0, 1, 0);
 			//Vulkan info
-			appInfo.apiVersion = VK_API_VERSION_1_0;
+			appInfo.apiVersion = version;
 
 			VkInstanceCreateInfo instanceCI = {};
 			instanceCI.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -115,20 +117,33 @@ namespace Rendering {
 	}
 
 	TArrayView<char const*> VulkanFramework::GetExtensionsNames(CTX_ARG, SDL_Window* window) {
-		constexpr uint32_t debugExtensionCount = 1;
-		static char const* debugExtensionNames[debugExtensionCount] = {VK_EXT_DEBUG_UTILS_EXTENSION_NAME};
+		//Standard extensions which the application requires
+		constexpr char const* standardExtensions[] = {
+			VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
+			VK_EXT_MEMORY_BUDGET_EXTENSION_NAME,
+		};
+		constexpr size_t numStandardExtensions = sizeof(standardExtensions) / sizeof(*standardExtensions);
 
-		uint32_t sdlExtensionCount = 0;
-		SDL_Vulkan_GetInstanceExtensions(window, &sdlExtensionCount, nullptr);
+		//Extensions needed by SDL
+		uint32_t numSDLExtensions = 0;
+		SDL_Vulkan_GetInstanceExtensions(window, &numSDLExtensions, nullptr);
+		char const** sdlExtensions = CTX.temp.Request<char const*>(numSDLExtensions);
+		SDL_Vulkan_GetInstanceExtensions(window, &numSDLExtensions, sdlExtensions);
 
-		const size_t extensionCount = debugExtensionCount + sdlExtensionCount;
-		char const** extensionNames = CTX.temp.Request<char const*>(extensionCount);
+		//Create the full list of extensions that will be provided to the API
+		const size_t numExtensions = numStandardExtensions + numSDLExtensions;
+		char const** extensions = CTX.temp.Request<char const*>(numExtensions);
 
-		//Append the standard and SDL extensions together into the destination array
-		std::memcpy(extensionNames, debugExtensionNames, (debugExtensionCount * sizeof(char const*)));
-		SDL_Vulkan_GetInstanceExtensions(window, &sdlExtensionCount, extensionNames + debugExtensionCount);
+		std::memcpy(
+			extensions,
+			standardExtensions, numStandardExtensions * sizeof(char const*)
+		);
+		std::memcpy(
+			extensions + numStandardExtensions,
+			sdlExtensions, numSDLExtensions * sizeof(char const*)
+		);
 
-		return TArrayView<char const*>{extensionNames, extensionCount};
+		return TArrayView<char const*>{extensions, numExtensions};
 	}
 
 	bool VulkanFramework::CanEnableExtensions(CTX_ARG, TArrayView<char const*> const& enabledExtensionNames) {

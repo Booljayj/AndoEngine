@@ -1,6 +1,7 @@
 #pragma once
 #include "Engine/Context.h"
 #include "Rendering/Vulkan/VulkanCommon.h"
+#include "Rendering/Vulkan/VulkanFramework.h"
 #include "Rendering/Vulkan/VulkanPhysicalDevice.h"
 
 namespace Rendering {
@@ -17,13 +18,19 @@ namespace Rendering {
 			VkQueue graphics = nullptr;
 		} queues;
 
+		/** The allocator for device memory */
+		VmaAllocator allocator;
+
 		VulkanLogicalDevice() = default;
 		VulkanLogicalDevice(VulkanLogicalDevice&& other);
 
 		VulkanLogicalDevice& operator=(VulkanLogicalDevice&& other);
-		inline operator bool() const { return !!device; }
+		inline operator bool() const { return device && allocator; }
 
-		static VulkanLogicalDevice Create(CTX_ARG, Rendering::VulkanPhysicalDevice const& physical, VkPhysicalDeviceFeatures const& features, TArrayView<char const*> const& extensions);
+		static VulkanLogicalDevice Create(CTX_ARG, VulkanFramework framework, VulkanPhysicalDevice const& physical, VkPhysicalDeviceFeatures const& features, TArrayView<char const*> const& extensions);
 		void Destroy();
+
+	private:
+		static VmaAllocatorCreateFlags GetAllocatorFlags();
 	};
 }

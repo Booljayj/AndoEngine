@@ -168,7 +168,7 @@ namespace Rendering {
 			if (VulkanPhysicalDevice const* newPhysical = GetPhysicalDevice(index)) {
 				TArrayView<char const*> const extensions = VulkanPhysicalDevice::GetExtensionNames(CTX);
 
-				VulkanLogicalDevice newLogical = VulkanLogicalDevice::Create(CTX, *newPhysical, features, extensions);
+				VulkanLogicalDevice newLogical = VulkanLogicalDevice::Create(CTX, framework, *newPhysical, features, extensions);
 				if (!newLogical) {
 					LOGF(Rendering, Error, "Failed to create logical device for physical device %i", index);
 					return false;

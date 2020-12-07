@@ -20,14 +20,14 @@ namespace Rendering {
 		return *this;
 	}
 
-	VulkanLogicalDevice VulkanLogicalDevice::Create(CTX_ARG, VulkanPhysicalDevice const& physicalDevice, VkPhysicalDeviceFeatures const& enabledFeatures, TArrayView<char const*> const& enabledExtensionNames) {
+	VulkanLogicalDevice VulkanLogicalDevice::Create(CTX_ARG, VulkanFramework framework, VulkanPhysicalDevice const& physical, VkPhysicalDeviceFeatures const& enabledFeatures, TArrayView<char const*> const& enabledExtensionNames) {
 		TEMP_ALLOCATOR_MARK();
 
 		VulkanLogicalDevice result;
 
 		l_unordered_set<uint32_t> uniqueQueueFamilies{CTX.temp};
-		uniqueQueueFamilies.insert(physicalDevice.queues.graphics.value().index);
-		uniqueQueueFamilies.insert(physicalDevice.queues.present.value().index);
+		uniqueQueueFamilies.insert(physical.queues.graphics.value().index);
+		uniqueQueueFamilies.insert(physical.queues.present.value().index);
 
 		l_vector<uint32_t> queueCreateInfoIndices{uniqueQueueFamilies.begin(), uniqueQueueFamilies.end(), CTX.temp};
 		uint32_t const queueCICount = queueCreateInfoIndices.size();
@@ -55,20 +55,37 @@ namespace Rendering {
 		deviceCI.enabledExtensionCount = enabledExtensionNames.size();
 		deviceCI.ppEnabledExtensionNames = enabledExtensionNames.begin();
 
-		vkCreateDevice(physicalDevice.device, &deviceCI, nullptr, &result.device);
+		vkCreateDevice(physical.device, &deviceCI, nullptr, &result.device);
 
 		if (result.device) {
-			vkGetDeviceQueue(result.device, physicalDevice.queues.graphics.value().index, 0, &result.queues.graphics);
-			vkGetDeviceQueue(result.device, physicalDevice.queues.present.value().index, 0, &result.queues.present);
+			vkGetDeviceQueue(result.device, physical.queues.graphics.value().index, 0, &result.queues.graphics);
+			vkGetDeviceQueue(result.device, physical.queues.present.value().index, 0, &result.queues.present);
+
+			//Create the allocator for device memory
+			VmaAllocatorCreateInfo allocatorInfo = {};
+			allocatorInfo.vulkanApiVersion = framework.version;
+			allocatorInfo.physicalDevice = physical.device;
+			allocatorInfo.device = result.device;
+			allocatorInfo.instance = framework.instance;
+			allocatorInfo.flags = GetAllocatorFlags();
+
+			vmaCreateAllocator(&allocatorInfo, &result.allocator);
 		}
 
 		return result;
 	}
 
 	void VulkanLogicalDevice::Destroy() {
+		vmaDestroyAllocator(allocator);
 		if (device) vkDestroyDevice(device, nullptr);
-		device = nullptr;
+		allocator = nullptr;
 		queues.present = nullptr;
 		queues.graphics = nullptr;
+		device = nullptr;
+	}
+
+	VmaAllocatorCreateFlags VulkanLogicalDevice::GetAllocatorFlags() {
+		return 0 |
+			VmaAllocatorCreateFlagBits::VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
 	}
 }

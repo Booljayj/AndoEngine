@@ -16,6 +16,8 @@ namespace Rendering {
 		VkInstance instance = nullptr;
 		/** The surface tied to the window */
 		VkSurfaceKHR surface = nullptr;
+		/** The oldest version of the VulkanAPI that this application requires */
+		VulkanVersion version = 0;
 
 		/** The messenger responsible for interpreting debug messages */
 		VkDebugUtilsMessengerEXT messenger = nullptr;
