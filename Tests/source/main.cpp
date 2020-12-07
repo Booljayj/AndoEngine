@@ -84,11 +84,14 @@ int32_t main(int32_t argc, char const* argv[]) {
 	LOG(Main, Debug, "Compiled with " __VERSION__ " on " __DATE__);
 
 	if (Startup(CTX)) {
-		EntityHandle material = registry.Create();
-		material.Add<Rendering::MaterialComponent>("default.vert", "default.frag");
+		EntityHandle testMaterialEntity = registry.Create();
+		Rendering::MaterialComponent& material = testMaterialEntity.Add<Rendering::MaterialComponent>();
+		material.fragment = "default.frag";
+		material.vertex = "default.vert";
 
-		EntityHandle meshRenderer = registry.Create();
-		meshRenderer.Add<Rendering::MeshRendererComponent>(material.ID());
+		EntityHandle testMeshRendererEntity = registry.Create();
+		Rendering::MeshRendererComponent& renderer = testMeshRendererEntity.Add<Rendering::MeshRendererComponent>();
+		renderer.material = testMaterialEntity.ID();
 
 		MainLoop(CTX);
 	}
