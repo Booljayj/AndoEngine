@@ -58,7 +58,7 @@ RM := rm -rf
 MKDIR := mkdir -p
 
 # flags (appended to existing defined flags)
-CXXFLAGS := $(CXXFLAGS) -std=gnu++17 -g -Wall -c -I./$(DIR_SOURCE) -I./$(DIR_GENERATED)
+CXXFLAGS := $(CXXFLAGS) -std=gnu++17 -g -Wall -Wno-nullability-completeness -c -I./$(DIR_SOURCE) -I./$(DIR_GENERATED)
 DEPENDENCY_FLAGS := -MMD -MP
 LDFLAGS := $(LDFLAGS)
 ARFLAGS := -static
