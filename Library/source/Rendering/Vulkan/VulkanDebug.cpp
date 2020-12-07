@@ -3,30 +3,32 @@
 #include "Rendering/Vulkan/VulkanCommon.h"
 #include "Rendering/Vulkan/VulkanDebug.h"
 
-namespace Rendering {
-	char const* GetTypePrefix(CTX_ARG, VkDebugUtilsMessageTypeFlagsEXT messageType) {
-		char* Begin = CTX.temp.Request<char>(7); //Request only enough to hold the maximum possible prefix
-		size_t Characters = 0;
+DEFINE_LOG_CATEGORY(VulkanMessage, Debug);
 
-		Begin[0] = '\0';
+namespace Rendering {
+	using TypePrefix = std::array<char, 7>;
+
+	TypePrefix GetTypePrefix(VkDebugUtilsMessageTypeFlagsEXT messageType) {
+		TypePrefix prefix;
+		size_t numCharacters = 0;
+
+		prefix[0] = '\0';
 		if (messageType & VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT) {
-			std::memcpy(Begin + Characters, "G|", 3);
-			Characters += 2;
+			std::memcpy(prefix.data() + numCharacters, "G|", 3);
+			numCharacters += 2;
 		}
 		if (messageType & VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT) {
-			std::memcpy(Begin + Characters, "V|", 3);
-			Characters += 2;
+			std::memcpy(prefix.data() + numCharacters, "V|", 3);
+			numCharacters += 2;
 		}
 		if (messageType & VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT) {
-			std::memcpy(Begin + Characters, "P|", 3);
-			Characters += 2;
+			std::memcpy(prefix.data() + numCharacters, "P|", 3);
+			numCharacters += 2;
 		}
 
 		//If we have any prefixes written, convert the trailing '|' into a space
-		if (Characters > 0) {
-			Begin[Characters-1] = ' ';
-		}
-		return Begin;
+		if (numCharacters > 0) prefix[numCharacters-1] = ' ';
+		return prefix;
 	}
 
 	VKAPI_ATTR VkBool32 VKAPI_CALL VulkanDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
@@ -34,16 +36,16 @@ namespace Rendering {
 		TEMP_ALLOCATOR_MARK();
 
 		static char const* format = "%s%s";
-		char const* prefix = GetTypePrefix(CTX, messageType);
+		TypePrefix const prefix = GetTypePrefix(messageType);
 
 		if (messageSeverity >= VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
-			LOGF(VulkanMessage, Error, format, prefix, pCallbackData->pMessage);
+			LOGF(VulkanMessage, Error, format, prefix.data(), pCallbackData->pMessage);
 		} else if (messageSeverity >= VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
-			LOGF(VulkanMessage, Warning, format, prefix, pCallbackData->pMessage);
+			LOGF(VulkanMessage, Warning, format, prefix.data(), pCallbackData->pMessage);
 		} else if (messageSeverity >= VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {
-			LOGF(VulkanMessage, Info, format, prefix, pCallbackData->pMessage);
+			LOGF(VulkanMessage, Info, format, prefix.data(), pCallbackData->pMessage);
 		} else {
-			LOGF(VulkanMessage, Debug, format, prefix, pCallbackData->pMessage);
+			LOGF(VulkanMessage, Debug, format, prefix.data(), pCallbackData->pMessage);
 		}
 
 		return VK_FALSE;
