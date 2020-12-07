@@ -16,4 +16,30 @@ namespace Rendering {
 			layout = nullptr;
 		}
 	};
+
+	/** A buffer and the memory allocation for it */
+	struct VulkanBuffer {
+		VkBuffer buffer = nullptr;
+		VmaAllocation allocation = nullptr;
+
+		inline operator bool() const { return buffer && allocation; }
+
+		inline void Destroy(VmaAllocator allocator) {
+			vmaDestroyBuffer(allocator, buffer, allocation);
+			buffer = nullptr;
+			allocation = nullptr;
+		}
+	};
+
+	struct VulkanMeshResources {
+		VulkanBuffer vertex;
+		VulkanBuffer index;
+
+		inline operator bool() const { return vertex && index; }
+
+		inline void Destroy(VmaAllocator allocator) {
+			vertex.Destroy(allocator);
+			index.Destroy(allocator);
+		}
+	};
 }

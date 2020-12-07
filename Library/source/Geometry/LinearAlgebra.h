@@ -1,6 +1,9 @@
 #pragma once
+#define GLM_FORCE_RADIANS
 #include <glm/common.hpp>
+#include <glm/glm.hpp>
 #include <glm/geometric.hpp>
+#include <glm/gtc/packing.hpp>
 #include <glm/matrix.hpp>
 #include "Engine/Utility.h"
 #include "Reflection/TypeResolver.h"

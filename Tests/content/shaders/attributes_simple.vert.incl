@@ -1,0 +1,11 @@
+//Attributes related to the Vertex_Simple type
+
+layout(location = 0) in vec3 inPosition;
+layout(location = 1) in vec4 inColor;
+layout(location = 2) in vec4 inNormal;
+
+layout(location = 3) in uint inUV0;
+layout(location = 4) in uint inUV1;
+layout(location = 5) in uint inUV2;
+
+layout(location = 0) out vec3 outFragColor;
