@@ -2,8 +2,8 @@
 #include "Engine/Logging/LogCategory.h"
 #include "Engine/TypeTraits.h"
 #include "EntityFramework/EntityHandle.h"
-#include "EntityFramework/EntityInternals.h"
 #include "EntityFramework/EntityTypes.h"
+#include "EntityFramework/EnTT.h"
 
 DECLARE_LOG_CATEGORY(Entity);
 

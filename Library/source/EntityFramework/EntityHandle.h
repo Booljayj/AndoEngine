@@ -2,8 +2,8 @@
 #include "Engine/Context.h"
 #include "Engine/LinearContainers.h"
 #include "Engine/STL.h"
-#include "EntityFramework/EntityInternals.h"
 #include "EntityFramework/EntityTypes.h"
+#include "EntityFramework/EnTT.h"
 #include "Reflection/TypeInfo.h"
 
 /**

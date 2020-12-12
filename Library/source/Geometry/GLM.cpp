@@ -1,4 +1,4 @@
-#include "Geometry/LinearAlgebra.h"
+#include "Geometry/GLM.h"
 #include "Reflection/StandardResolvers.h"
 #include "Reflection/StructTypeInfo.h"
 

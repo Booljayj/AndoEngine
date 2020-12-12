@@ -1,7 +1,6 @@
+#include "Rendering/Vulkan/VulkanDebug.h"
 #include "Engine/LinearStrings.h"
 #include "Engine/LogCommands.h"
-#include "Rendering/Vulkan/VulkanCommon.h"
-#include "Rendering/Vulkan/VulkanDebug.h"
 
 DEFINE_LOG_CATEGORY(VulkanMessage, Debug);
 

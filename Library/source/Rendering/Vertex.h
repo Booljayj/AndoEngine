@@ -1,8 +1,8 @@
 #pragma once
 #include "Engine/STL.h"
-#include "Geometry/LinearAlgebra.h"
+#include "Geometry/GLM.h"
 #include "Rendering/Color.h"
-#include "Rendering/Vulkan/VulkanCommon.h"
+#include "Rendering/Vulkan/Vulkan.h"
 
 namespace Rendering {
 	enum class EVertexType {

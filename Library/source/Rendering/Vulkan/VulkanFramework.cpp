@@ -1,6 +1,5 @@
-#include <SDL2/SDL_vulkan.h>
-#include "Engine/LogCommands.h"
 #include "Rendering/Vulkan/VulkanFramework.h"
+#include "Engine/LogCommands.h"
 #include "Rendering/Vulkan/VulkanDebug.h"
 
 namespace Rendering {

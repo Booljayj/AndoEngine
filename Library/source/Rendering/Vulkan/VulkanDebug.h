@@ -1,6 +1,6 @@
 #pragma once
 #include "Engine/Context.h"
-#include "Rendering/Vulkan/VulkanCommon.h"
+#include "Rendering/Vulkan/Vulkan.h"
 
 namespace Rendering {
 	/** Callback function invoked by the Vulkan API when a message should be logged */

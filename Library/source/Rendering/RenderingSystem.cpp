@@ -1,9 +1,8 @@
-#include <SDL2/SDL_vulkan.h>
 #include "Rendering/RenderingSystem.h"
 #include "Engine/LogCommands.h"
 #include "Engine/STL.h"
 #include "Engine/Utility.h"
-#include "Geometry/LinearAlgebra.h"
+#include "Geometry/GLM.h"
 #include "Rendering/MaterialComponent.h"
 #include "Rendering/MeshComponent.h"
 #include "Rendering/MeshRendererComponent.h"

@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include <glm/geometric.hpp>
 #include <glm/gtc/packing.hpp>
+#include <glm/gtx/exterior_product.hpp>
 #include <glm/matrix.hpp>
 #include "Engine/Utility.h"
 #include "Reflection/TypeResolver.h"

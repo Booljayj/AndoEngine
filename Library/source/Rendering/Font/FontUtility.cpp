@@ -1,5 +1,3 @@
-#include <ft2build.h>
-#include FT_OUTLINE_H
 #include "Rendering/Font/FontUtility.h"
 #include "Engine/LinearContainers.h"
 #include "Engine/Context.h"

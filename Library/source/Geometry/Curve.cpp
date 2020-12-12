@@ -1,5 +1,3 @@
-#include <glm/geometric.hpp>
-#include <glm/gtx/exterior_product.hpp>
 #include "Geometry/Curve.h"
 
 namespace Geometry {

@@ -1,5 +1,5 @@
 #pragma once
-#include "Rendering/Vulkan/VulkanCommon.h"
+#include "Rendering/Vulkan/Vulkan.h"
 #include "Rendering/Vulkan/VulkanLogicalDevice.h"
 
 namespace Rendering {

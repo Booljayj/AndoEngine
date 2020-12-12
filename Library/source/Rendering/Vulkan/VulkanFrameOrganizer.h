@@ -1,7 +1,7 @@
 #pragma once
 #include "Engine/Context.h"
 #include "Engine/LogCommands.h"
-#include "Rendering/Vulkan/VulkanCommon.h"
+#include "Rendering/Vulkan/Vulkan.h"
 #include "Rendering/Vulkan/VulkanLogicalDevice.h"
 #include "Rendering/Vulkan/VulkanPhysicalDevice.h"
 #include "Rendering/Vulkan/VulkanSwapchain.h"

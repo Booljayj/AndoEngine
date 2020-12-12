@@ -1,7 +1,6 @@
 #pragma once
 #include "EntityFramework/EntityRegistry.h"
 #include "Rendering/Vertex.h"
-#include "Rendering/Vulkan/VulkanCommon.h"
 #include "Rendering/Vulkan/VulkanResources.h"
 
 namespace Rendering {

@@ -2,7 +2,7 @@
 #include "Engine/ArrayView.h"
 #include "Engine/Context.h"
 #include "Engine/STL.h"
-#include "Rendering/Vulkan/VulkanCommon.h"
+#include "Rendering/Vulkan/Vulkan.h"
 
 namespace Rendering {
 	/** Contains information about a physical device that can be used for Vulkan rendering */

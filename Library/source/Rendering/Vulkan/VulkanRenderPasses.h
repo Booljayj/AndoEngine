@@ -1,6 +1,6 @@
 #pragma once
 #include "Engine/ArrayView.h"
-#include "Rendering/Vulkan/VulkanCommon.h"
+#include "Rendering/Vulkan/Vulkan.h"
 #include "Rendering/Vulkan/VulkanLogicalDevice.h"
 #include "Rendering/Vulkan/VulkanSwapchain.h"
 

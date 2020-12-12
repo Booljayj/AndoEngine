@@ -1,6 +1,6 @@
+#include "Rendering/Vulkan/VulkanLogicalDevice.h"
 #include "Engine/LinearContainers.h"
 #include "Engine/LogCommands.h"
-#include "Rendering/Vulkan/VulkanLogicalDevice.h"
 
 namespace Rendering {
 	VulkanLogicalDevice::VulkanLogicalDevice(VulkanLogicalDevice&& other) {

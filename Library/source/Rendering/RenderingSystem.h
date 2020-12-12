@@ -3,7 +3,7 @@
 #include "Engine/Logging/Logger.h"
 #include "Engine/Time.h"
 #include "EntityFramework/EntityRegistry.h"
-#include "Rendering/Vulkan/VulkanCommon.h"
+#include "Rendering/Vulkan/Vulkan.h"
 #include "Rendering/Vulkan/VulkanFrameOrganizer.h"
 #include "Rendering/Vulkan/VulkanFramework.h"
 #include "Rendering/Vulkan/VulkanLogicalDevice.h"

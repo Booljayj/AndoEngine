@@ -1,6 +1,6 @@
 #include "Engine/Context.h"
 #include "Engine/Hash.h"
-#include "Rendering/Vulkan/VulkanCommon.h"
+#include "Rendering/Vulkan/Vulkan.h"
 #include "Rendering/Vulkan/VulkanLogicalDevice.h"
 #include "Rendering/Vulkan/VulkanResources.h"
 

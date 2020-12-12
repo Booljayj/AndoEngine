@@ -1,6 +1,6 @@
 #pragma once
 #include "Engine/STL.h"
-#include "Geometry/LinearAlgebra.h"
+#include "Geometry/GLM.h"
 
 namespace Geometry {
 	/** Represents a 2D axially-aligned bounding box */

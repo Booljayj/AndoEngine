@@ -1,6 +1,6 @@
+#include "Rendering/Vulkan/VulkanSwapchain.h"
 #include "Engine/LinearContainers.h"
 #include "Engine/LogCommands.h"
-#include "Rendering/Vulkan/VulkanSwapchain.h"
 
 namespace Rendering {
 	namespace VulkanSwapchainUtilities {

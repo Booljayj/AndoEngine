@@ -2,7 +2,7 @@
 #include "Engine/STL.h"
 #include "Geometry/Rect.h"
 #include "Geometry/ColorChannel.h"
-#include "Geometry/LinearAlgebra.h"
+#include "Geometry/GLM.h"
 #include "Geometry/SignedDistance.h"
 
 namespace Geometry {

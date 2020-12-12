@@ -1,5 +1,5 @@
-#include "Engine/LogCommands.h"
 #include "Rendering/Vulkan/VulkanRenderPasses.h"
+#include "Engine/LogCommands.h"
 
 namespace Rendering {
 	ScopedRenderPass::ScopedRenderPass(VkCommandBuffer buffer, VkRenderPass pass, TArrayView<VkClearValue const> clearValues, VkFramebuffer framebuffer, VkOffset2D offset, VkExtent2D extent) {

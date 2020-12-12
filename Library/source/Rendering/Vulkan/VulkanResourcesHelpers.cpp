@@ -2,9 +2,6 @@
 #include "Engine/LogCommands.h"
 #include "Rendering/Vulkan/VulkanResourcesHelpers.h"
 
-#include <ios>
-
-
 namespace Rendering {
 	VulkanShaderModuleLibrary::VulkanShaderModuleLibrary(VkDevice inDevice)
 	: device(inDevice)

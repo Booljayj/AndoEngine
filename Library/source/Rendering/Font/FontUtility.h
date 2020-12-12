@@ -1,11 +1,10 @@
 #pragma once
-#include <ft2build.h>
-#include FT_FREETYPE_H
 #include "Engine/Context.h"
 #include "Engine/LinearContainers.h"
 #include "Engine/STL.h"
-#include "Geometry/LinearAlgebra.h"
+#include "Geometry/GLM.h"
 #include "Geometry/Shape.h"
+#include "Rendering/Font/FreeType.h"
 
 namespace Rendering {
 	/** Load the glyph for a code point */
