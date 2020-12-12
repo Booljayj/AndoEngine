@@ -1,6 +1,9 @@
 #include "Engine/LinearStrings.h"
 #include "Engine/LogCommands.h"
-#include "Rendering/Vulkan/VulkanShaderModuleLibrary.h"
+#include "Rendering/Vulkan/VulkanResourcesHelpers.h"
+
+#include <ios>
+
 
 namespace Rendering {
 	VulkanShaderModuleLibrary::VulkanShaderModuleLibrary(VkDevice inDevice)
@@ -55,5 +58,35 @@ namespace Rendering {
 
 		newEntry.module = module;
 		return module;
+	}
+
+	void VulkanMeshCreationHelper::Submit(VulkanMeshCreationResults const& result) {
+		//Keep track of the results
+		results.push_back(result);
+
+		//Submit the transfer requests
+		VkSubmitInfo submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &result.commands;
+
+		vkQueueSubmit(logical->queues.graphics, 1, &submitInfo, VK_NULL_HANDLE);
+
+		//Increment the number of iterations. If we've uploaded enough data, flush the queue so we can remove temporary resources
+		++flushIterations;
+		if (flushIterations > 1023) {
+			Flush();
+		}
+	}
+
+	void VulkanMeshCreationHelper::Flush() {
+		flushIterations = 0;
+		vkQueueWaitIdle(logical->queues.graphics);
+		vkResetCommandPool(logical->device, pool, 0);
+		for (VulkanMeshCreationResults& result : results) {
+			result.staging.vertex.Destroy(logical->allocator);
+			result.staging.index.Destroy(logical->allocator);
+		}
+		results.clear();
 	}
 }

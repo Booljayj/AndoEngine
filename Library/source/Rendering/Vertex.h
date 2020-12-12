@@ -28,8 +28,6 @@ namespace Rendering {
 
 	/** A simple 3D vertex */
 	struct Vertex_Simple {
-		using ThisClass = Vertex_Simple;
-
 		glm::vec3 position; Color color;
 		uint32_t normal; uint32_t uv0; uint32_t uv1; uint32_t uv2;
 
@@ -49,8 +47,6 @@ namespace Rendering {
 
 	/** A complex 3d vertex, with tangent space vectors */
 	struct Vertex_Complex {
-		using ThisClass = Vertex_Complex;
-
 		glm::vec3 position; Color color;
 		uint32_t normal; uint32_t tangent; uint32_t bitangent; uint32_t userData;
 		uint32_t uv0; uint32_t uv1; uint32_t uv2; uint32_t uv3;
@@ -81,7 +77,7 @@ namespace Rendering {
 	// 	{}
 	// };
 
-	// /** A complex skinned 3d vertex, with tangent space vectors and bone information */
+	// /** A complex skinned 3d vertex, with tangent space vectors */
 	// struct Vertex_ComplexSkinned {
 	// 	glm::vec3 position; Color color;
 	// 	uint32_t normal; uint32_t tangent; uint32_t bitangent; uint32_t userData;

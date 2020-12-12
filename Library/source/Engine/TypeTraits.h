@@ -8,6 +8,10 @@ struct TTypeList {};
 template<typename... Types>
 constexpr TTypeList<Types...> list;
 
+/** Return the sizes of all types summed together */
+template<typename... Types>
+constexpr size_t SumTypeSizes() { return (sizeof(Types) + ...); }
+
 namespace PointerTypes {
 	using StaticVariable = void*;
 	using StaticFunction = void(*)();

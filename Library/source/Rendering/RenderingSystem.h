@@ -3,7 +3,6 @@
 #include "Engine/Logging/Logger.h"
 #include "Engine/Time.h"
 #include "EntityFramework/EntityRegistry.h"
-#include "Rendering/MaterialComponent.h"
 #include "Rendering/Vulkan/VulkanCommon.h"
 #include "Rendering/Vulkan/VulkanFrameOrganizer.h"
 #include "Rendering/Vulkan/VulkanFramework.h"
@@ -11,15 +10,19 @@
 #include "Rendering/Vulkan/VulkanPhysicalDevice.h"
 #include "Rendering/Vulkan/VulkanRenderPasses.h"
 #include "Rendering/Vulkan/VulkanResources.h"
-#include "Rendering/Vulkan/VulkanShaderModuleLibrary.h"
+#include "Rendering/Vulkan/VulkanResourcesHelpers.h"
 #include "Rendering/Vulkan/VulkanSwapchain.h"
 
 struct SDLWindowingSystem;
+namespace Rendering {
+	struct MaterialComponent;
+	struct MeshComponent;
+}
 
 DECLARE_LOG_CATEGORY(Rendering);
 
 namespace Rendering {
-	class RenderingSystem {
+	struct RenderingSystem {
 	public:
 		/** The maximum number of consecutive times we can fail to render a frame */
 		static constexpr uint8_t maxRetryCount = 5;
@@ -51,6 +54,7 @@ namespace Rendering {
 		uint8_t retryCount : 4;
 		uint8_t shouldRecreateSwapchain : 1;
 		uint8_t shouldCreatePipelines : 1;
+		uint8_t shouldCreateMeshes : 1;
 
 		RenderingSystem();
 
@@ -58,6 +62,7 @@ namespace Rendering {
 		bool Shutdown(CTX_ARG, EntityRegistry& registry);
 
 		bool Render(CTX_ARG, EntityRegistry& registry);
+		void RebuildResources(CTX_ARG, EntityRegistry& registry);
 
 		inline uint32_t NumPhysicalDevices() const { return availablePhysicalDevices.size(); }
 		inline const Rendering::VulkanPhysicalDevice* GetPhysicalDevice(uint32_t Index) const {
@@ -73,9 +78,16 @@ namespace Rendering {
 			static void OnDestroy(entt::registry& registry, entt::entity entity);
 			static void OnModify(entt::registry& registry, entt::entity entity);
 		};
+		/** Contains callbacks related to mesh component operations */
+		struct MeshComponentOperations {
+			static void OnCreate(entt::registry& registry, entt::entity entity);
+			static void OnDestroy(entt::registry& registry, entt::entity entity);
+			static void OnModify(entt::registry& registry, entt::entity entity);
+		};
 
-		/** Pipeline resources that are pending destruction */
-		std::vector<Rendering::VulkanPipelineResources> stalePipelineResources;
+		/** Resources that are pending destruction */
+		std::vector<VulkanPipelineResources> stalePipelineResources;
+		std::vector<VulkanMeshResources> staleMeshResources;
 
 		/** Create or destroy the render passes used by this rendering system */
 		bool CreateRenderPasses(CTX_ARG);
@@ -84,16 +96,25 @@ namespace Rendering {
 		/** Create or destroy all pipeline resources */
 		void CreatePipelines(CTX_ARG, EntityRegistry& registry);
 		void DestroyPipelines(EntityRegistry& registry);
-
-		/** Create the pipeline resources for a material */
-		void CreatePipeline(CTX_ARG, Rendering::MaterialComponent& material, EntityID id, Rendering::VulkanShaderModuleLibrary& library);
 		/** Mark the pipeline resources on the material as stale */
-		void MarkPipelineStale(Rendering::MaterialComponent& material);
+		void MarkPipelineStale(MaterialComponent& material);
 		/** Destroy any stale pipeline resources */
 		void DestroyStalePipelines();
+
+		/** Create or destroy all mesh resources */
+		void CreateMeshes(CTX_ARG, EntityRegistry& registry);
+		/** Mark the mesh resources on a mesh component as stale */
+		void MarkMeshStale(MeshComponent& mesh);
+		/** Destroy any stale pipeline resources */
+		void DestroyStaleMeshes();
 
 	private:
 		/** Returns true if the physical device can actually be used by this rendering system */
 		bool IsUsablePhysicalDevice(const Rendering::VulkanPhysicalDevice& physicalDevice, TArrayView<char const*> const& extensionNames);
+
+		/** Create the pipeline resources for a material */
+		void CreatePipeline(CTX_ARG, MaterialComponent& material, EntityID id, VulkanShaderModuleLibrary& library);
+		/** Create the mesh resources for a mesh component */
+		VulkanMeshCreationResults CreateMesh(CTX_ARG, MeshComponent& mesh, EntityID id, VkCommandPool pool);
 	};
 }

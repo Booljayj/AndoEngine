@@ -10,6 +10,7 @@
 #include "Profiling/ProfilerMacros.h"
 
 #include "Rendering/MaterialComponent.h"
+#include "Rendering/MeshComponent.h"
 #include "Rendering/MeshRendererComponent.h"
 
 EntityRegistry registry;
@@ -84,14 +85,26 @@ int32_t main(int32_t argc, char const* argv[]) {
 	LOG(Main, Debug, "Compiled with " __VERSION__ " on " __DATE__);
 
 	if (Startup(CTX)) {
+		using namespace Rendering;
+
 		EntityHandle testMaterialEntity = registry.Create();
-		Rendering::MaterialComponent& material = testMaterialEntity.Add<Rendering::MaterialComponent>();
+		MaterialComponent& material = testMaterialEntity.Add<MaterialComponent>();
 		material.fragment = "default.frag";
 		material.vertex = "default.vert";
 
+		EntityHandle testMeshEntity = registry.Create();
+		MeshComponent& mesh = testMeshEntity.Add<MeshComponent>();
+		mesh.vertices = {
+			Vertex_Simple{{0.0f, -0.5f, 0.0f}, {255, 0, 0, 255}, {0,0,1}, {0,0}},
+			Vertex_Simple{{0.5f, 0.5f, 0.0f}, {0, 255, 0, 255}, {0,0,1}, {0,0}},
+			Vertex_Simple{{-0.5f, 0.5f, 0.0f}, {0, 0, 255, 255}, {0,0,1}, {0,0}},
+		};
+		mesh.indices = {0,1,2};
+
 		EntityHandle testMeshRendererEntity = registry.Create();
-		Rendering::MeshRendererComponent& renderer = testMeshRendererEntity.Add<Rendering::MeshRendererComponent>();
+		MeshRendererComponent& renderer = testMeshRendererEntity.Add<MeshRendererComponent>();
 		renderer.material = testMaterialEntity.ID();
+		renderer.mesh = testMeshEntity.ID();
 
 		MainLoop(CTX);
 	}

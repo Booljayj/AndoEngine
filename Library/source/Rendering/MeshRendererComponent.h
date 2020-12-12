@@ -3,5 +3,6 @@
 namespace Rendering {
 	struct MeshRendererComponent {
 		EntityID material;
+		EntityID mesh;
 	};
 }

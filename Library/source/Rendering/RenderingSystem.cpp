@@ -5,6 +5,7 @@
 #include "Engine/Utility.h"
 #include "Geometry/LinearAlgebra.h"
 #include "Rendering/MaterialComponent.h"
+#include "Rendering/MeshComponent.h"
 #include "Rendering/MeshRendererComponent.h"
 #include "Rendering/SDLSystems.h"
 
@@ -15,6 +16,7 @@ namespace Rendering {
 	: retryCount(0)
 	, shouldRecreateSwapchain(false)
 	, shouldCreatePipelines(false)
+	, shouldCreateMeshes(false)
 	{}
 
 	bool RenderingSystem::Startup(CTX_ARG, SDLWindowingSystem& windowing, EntityRegistry& registry) {
@@ -64,6 +66,10 @@ namespace Rendering {
 			.Create<MaterialComponentOperations::OnCreate>()
 			.Destroy<MaterialComponentOperations::OnDestroy>()
 			.Modify<MaterialComponentOperations::OnModify>();
+		registry.Callbacks<MeshComponent>()
+			.Create<MeshComponentOperations::OnCreate>()
+			.Destroy<MeshComponentOperations::OnDestroy>()
+			.Modify<MaterialComponentOperations::OnModify>();
 
 		//@todo Create a group for renderable entities, once we have more than one component to include in the group (i.e. renderer and transform).
 
@@ -74,9 +80,12 @@ namespace Rendering {
 		availablePhysicalDevices.clear();
 
 		//Wait for any in-progress work to finish before we start cleanup
-		if (logical) vkDeviceWaitIdle(logical.device);
+		if (organizer) organizer.WaitForCompletion(CTX, logical);
 
-		DestroyPipelines(registry);
+		registry.DestroyComponents<MaterialComponent, MeshComponent>();
+		DestroyStalePipelines();
+		DestroyStaleMeshes();
+
 		DestroyRenderPasses(CTX);
 		organizer.Destroy(logical);
 		swapchain.Destroy(logical);
@@ -105,20 +114,8 @@ namespace Rendering {
 			if (!CreateRenderPasses(CTX)) return false;
 		}
 
-		//If we have stale pipelines, destroy them now
-		if (stalePipelineResources.size() > 0) {
-			LOG(Rendering, Info, "Destroying stale pipelines");
-			vkDeviceWaitIdle(logical.device);
-			DestroyStalePipelines();
-		}
-		//If we need to create any new pipelines, create them now
-		if (shouldCreatePipelines) {
-			shouldCreatePipelines = false;
-
-			LOG(Rendering, Info, "Creating new pipelines");
-			vkDeviceWaitIdle(logical.device);
-			CreatePipelines(CTX, registry);
-		}
+		//Rebuild any resources, creating new ones and destroying stale ones
+		RebuildResources(CTX, registry);
 
 		//Prepare the frame for rendering, which may need to wait for resources
 		EPreparationResult const result = organizer.Prepare(CTX, logical, swapchain);
@@ -137,18 +134,27 @@ namespace Rendering {
 		//      out culled geometry.
 		auto const renderables = registry.GetView<MeshRendererComponent const>();
 		auto const materials = registry.GetView<MaterialComponent const>();
+		auto const meshes = registry.GetView<MeshComponent const>();
 
-		auto const recorder = [&](VkCommandBuffer buffer, size_t index) {
-			ScopedRenderPass pass{buffer, main, index, VkOffset2D{0, 0}, swapchain.extent};
+		auto const recorder = [&](VkCommandBuffer commands, size_t index) {
+			ScopedRenderPass pass{commands, main, index, VkOffset2D{0, 0}, swapchain.extent};
 
 			for (const auto id : renderables) {
 				auto& renderer = renderables.Get<MeshRendererComponent const>(id);
-				if (auto* material = materials.Find<MaterialComponent const>(renderer.material)) {
-					if (material->resources) {
-						//@todo This should actually be binding the real geometry, instead of assuming the shader can draw 3 unspecified vertices
-						vkCmdBindPipeline(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, material->resources.pipeline);
-						vkCmdDraw(buffer, 3, 1, 0, 0);
-					}
+
+				auto const* material = materials.Find<MaterialComponent const>(renderer.material);
+				auto const* mesh = meshes.Find<MeshComponent const>(renderer.mesh);
+				if (material && material->resources && mesh && mesh->resources) {
+					//Bind the pipeline that will be used for rendering
+					vkCmdBindPipeline(commands, VK_PIPELINE_BIND_POINT_GRAPHICS, material->resources.pipeline);
+
+					//Bind the vetex and index buffers for the mesh
+					VkDeviceSize const offset = 0;
+					vkCmdBindVertexBuffers(commands, 0, 1, &mesh->resources.vertex.buffer, &offset);
+					vkCmdBindIndexBuffer(commands, mesh->resources.index.buffer, 0, VK_INDEX_TYPE_UINT32);
+
+					//Submit the command to draw using the vertex and index buffers
+					vkCmdDrawIndexed(commands, static_cast<uint32_t>(mesh->indices.size()), 1, 0, 0, 0);
 				}
 			}
 		};
@@ -161,6 +167,29 @@ namespace Rendering {
 
 		retryCount = 0;
 		return true;
+	}
+
+	void RenderingSystem::RebuildResources(CTX_ARG, EntityRegistry& registry) {
+		const bool hasStaleResources = stalePipelineResources.size() > 0 || staleMeshResources.size() > 0;
+		if (hasStaleResources) {
+			LOG(Rendering, Info, "Destroying stale resources");
+			//Wait until the device is idle so we don't destroy resources that are in use
+			vkDeviceWaitIdle(logical.device);
+
+			DestroyStalePipelines();
+			DestroyStaleMeshes();
+		}
+
+		if (shouldCreatePipelines) {
+			shouldCreatePipelines = false;
+			LOG(Rendering, Info, "Creating new pipelines");
+			CreatePipelines(CTX, registry);
+		}
+		if (shouldCreateMeshes) {
+			shouldCreateMeshes = false;
+			LOG(Rendering, Info, "Creating new meshes");
+			CreateMeshes(CTX, registry);
+		}
 	}
 
 	bool RenderingSystem::SelectPhysicalDevice(CTX_ARG, uint32_t index) {
@@ -202,6 +231,24 @@ namespace Rendering {
 		MaterialComponent& material = registry.get<MaterialComponent>(entity);
 		rendering->MarkPipelineStale(material);
 		rendering->shouldCreatePipelines = true;
+	}
+
+	void RenderingSystem::MeshComponentOperations::OnCreate(entt::registry& registry, entt::entity entity) {
+		RenderingSystem* rendering = registry.ctx<RenderingSystem*>();
+		rendering->shouldCreateMeshes = true;
+	}
+
+	void RenderingSystem::MeshComponentOperations::OnDestroy(entt::registry& registry, entt::entity entity) {
+		RenderingSystem* rendering = registry.ctx<RenderingSystem*>();
+		MeshComponent& mesh = registry.get<MeshComponent>(entity);
+		rendering->MarkMeshStale(mesh);
+	}
+
+	void RenderingSystem::MeshComponentOperations::OnModify(entt::registry& registry, entt::entity entity) {
+		RenderingSystem* rendering = registry.ctx<RenderingSystem*>();
+		MeshComponent& mesh = registry.get<MeshComponent>(entity);
+		rendering->MarkMeshStale(mesh);
+		rendering->shouldCreateMeshes = true;
 	}
 
 	bool RenderingSystem::CreateRenderPasses(CTX_ARG) {
@@ -317,9 +364,7 @@ namespace Rendering {
 		auto const materials = registry.GetView<MaterialComponent>();
 		for (const auto id : materials) {
 			MaterialComponent& material = materials.Get<MaterialComponent>(id);
-			if (!material.resources) {
-				CreatePipeline(CTX, material, id, library);
-			}
+			if (!material.resources) CreatePipeline(CTX, material, id, library);
 		}
 	}
 
@@ -329,6 +374,48 @@ namespace Rendering {
 			MarkPipelineStale(materials.Get<MaterialComponent>(id));
 		}
 		DestroyStalePipelines();
+	}
+
+	void RenderingSystem::MarkPipelineStale(MaterialComponent& material) {
+		stalePipelineResources.push_back(material.resources);
+		material.resources = {};
+	}
+
+	void RenderingSystem::DestroyStalePipelines() {
+		for (VulkanPipelineResources resources : stalePipelineResources) {
+			resources.Destroy(logical.device);
+		}
+		stalePipelineResources.clear();
+	}
+
+	void RenderingSystem::CreateMeshes(CTX_ARG, EntityRegistry& registry) {
+		VulkanMeshCreationHelper helper{logical, organizer.pool};
+
+		auto const meshes = registry.GetView<MeshComponent>();
+		for (const auto id : meshes) {
+			MeshComponent& mesh = meshes.Get<MeshComponent>(id);
+			if (!mesh.resources) {
+				VulkanMeshCreationResults const result = CreateMesh(CTX, mesh, id, organizer.pool);
+				helper.Submit(result);
+			}
+		}
+		helper.Flush();
+	}
+
+	void RenderingSystem::MarkMeshStale(MeshComponent& mesh) {
+		staleMeshResources.push_back(mesh.resources);
+		mesh.resources = {};
+	}
+
+	void RenderingSystem::DestroyStaleMeshes() {
+		for (VulkanMeshResources resources : staleMeshResources) {
+			resources.Destroy(logical.allocator);
+		}
+		stalePipelineResources.clear();
+	}
+
+	bool RenderingSystem::IsUsablePhysicalDevice(const VulkanPhysicalDevice& physicalDevice, TArrayView<char const*> const& extensionNames) {
+		return physicalDevice.HasRequiredQueues() && physicalDevice.HasRequiredExtensions(extensionNames) && physicalDevice.HasSwapchainSupport();
 	}
 
 	void RenderingSystem::CreatePipeline(CTX_ARG, MaterialComponent& material, EntityID id, VulkanShaderModuleLibrary& library) {
@@ -366,12 +453,15 @@ namespace Rendering {
 		VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageCI, fragShaderStageCI};
 
 		//Vertex Input function
+		auto const bindings = Vertex_Simple::GetBindingDescription();
+		auto const attributes = Vertex_Simple::GetAttributeDescriptions();
+
 		VkPipelineVertexInputStateCreateInfo vertexInputCI{};
 		vertexInputCI.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-		vertexInputCI.vertexBindingDescriptionCount = 0;
-		vertexInputCI.pVertexBindingDescriptions = nullptr;
-		vertexInputCI.vertexAttributeDescriptionCount = 0;
-		vertexInputCI.pVertexAttributeDescriptions = nullptr;
+		vertexInputCI.vertexBindingDescriptionCount = 1;
+		vertexInputCI.pVertexBindingDescriptions = &bindings;
+		vertexInputCI.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributes.size());
+		vertexInputCI.pVertexAttributeDescriptions = attributes.data();
 
 		//Input assembly function
 		VkPipelineInputAssemblyStateCreateInfo inputAssemblyCI{};
@@ -484,21 +574,65 @@ namespace Rendering {
 		}
 	}
 
-	void RenderingSystem::MarkPipelineStale(MaterialComponent& material) {
-		stalePipelineResources.push_back(material.resources);
-		material.resources = {};
-	}
+	VulkanMeshCreationResults RenderingSystem::CreateMesh(CTX_ARG, MeshComponent& mesh, EntityID id, VkCommandPool pool) {
+		//Allocate a command buffer for vertex and index buffer creation
+		VkCommandBufferAllocateInfo bufferAI{};
+		bufferAI.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		bufferAI.commandPool = pool;
+		bufferAI.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		bufferAI.commandBufferCount = 1;
 
-	void RenderingSystem::DestroyStalePipelines() {
-		//Destroy all the stale resources
-		for (VulkanPipelineResources resources : stalePipelineResources) {
-			if (resources.pipeline) vkDestroyPipeline(logical.device, resources.pipeline, nullptr);
-			if (resources.layout) vkDestroyPipelineLayout(logical.device, resources.layout, nullptr);
+		VkCommandBuffer commands;
+		if (vkAllocateCommandBuffers(logical.device, &bufferAI, &commands) != VK_SUCCESS) {
+			LOG(Vulkan, Error, "Failed to allocate command buffers");
+			return VulkanMeshCreationResults{};
 		}
-		stalePipelineResources.clear();
-	}
 
-	bool RenderingSystem::IsUsablePhysicalDevice(const VulkanPhysicalDevice& physicalDevice, TArrayView<char const*> const& extensionNames) {
-		return physicalDevice.HasRequiredQueues() && physicalDevice.HasRequiredExtensions(extensionNames) && physicalDevice.HasSwapchainSupport();
+		//Begin recording the command buffer for staging commands
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+		if (vkBeginCommandBuffer(commands, &beginInfo) != VK_SUCCESS) {
+			LOG(Vulkan, Error, "Failed to begin recording command buffer");
+			return VulkanMeshCreationResults{};
+		}
+
+		//Create the vertex buffer
+		size_t const vertexSize = sizeof(decltype(MeshComponent::vertices)::value_type) * mesh.vertices.size();
+		VulkanBufferCreationResults vertex = CreateBufferWithData(logical, mesh.vertices.data(), vertexSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, commands);
+		if (!vertex) {
+			LOG(Vulkan, Error, "Failed to create vertex buffer");
+			vertex.Destroy(logical.allocator);
+			return VulkanMeshCreationResults{};
+		}
+
+		//Create the index buffer
+		size_t const indexSize = sizeof(decltype(MeshComponent::indices)::value_type) * mesh.indices.size();
+		VulkanBufferCreationResults index = CreateBufferWithData(logical, mesh.indices.data(), indexSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, commands);
+		if (!index) {
+			LOG(Vulkan, Error, "Failed to create index buffer");
+			vertex.Destroy(logical.allocator);
+			index.Destroy(logical.allocator);
+			return VulkanMeshCreationResults{};
+		}
+
+		//Finish recording the command buffer
+		if (vkEndCommandBuffer(commands) != VK_SUCCESS) {
+			LOG(Vulkan, Error, "Failed to finish recording command buffer");
+			vertex.Destroy(logical.allocator);
+			index.Destroy(logical.allocator);
+			return VulkanMeshCreationResults{};
+		}
+
+		//We've successfully created the mesh, so copy all the data into the outputs.
+		VulkanMeshCreationResults result;
+		result.commands = commands;
+		result.staging.vertex = vertex.staging;
+		result.staging.index = index.staging;
+
+		mesh.resources.vertex = vertex.gpu;
+		mesh.resources.index = index.gpu;
+		return result;
 	}
 }

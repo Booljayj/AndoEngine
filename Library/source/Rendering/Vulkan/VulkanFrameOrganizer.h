@@ -43,6 +43,10 @@ namespace Rendering {
 		std::vector<FrameResources> resources;
 		std::vector<VkFence> imageFences;
 
+		/** Command recording objects */
+		VkCommandPool pool = nullptr;
+		VkCommandBuffer stagingCommandBuffer = nullptr;
+
 		size_t currentResourceIndex = 0;
 		uint32_t currentImageIndex = -1;
 
@@ -80,5 +84,8 @@ namespace Rendering {
 
 			return true;
 		}
+
+		/** Wait for all work to complete, including all submitted rendering commands */
+		void WaitForCompletion(CTX_ARG, VulkanLogicalDevice const& logical);
 	};
 }

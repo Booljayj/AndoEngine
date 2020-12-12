@@ -1,4 +1,5 @@
 #include "Engine/LinearContainers.h"
+#include "Engine/LogCommands.h"
 #include "Rendering/Vulkan/VulkanLogicalDevice.h"
 
 namespace Rendering {
@@ -12,10 +13,12 @@ namespace Rendering {
 		device = other.device;
 		queues.graphics = other.queues.graphics;
 		queues.present = other.queues.present;
+		allocator = other.allocator;
 
 		other.device = nullptr;
 		other.queues.graphics = nullptr;
 		other.queues.present = nullptr;
+		other.allocator = nullptr;
 
 		return *this;
 	}
@@ -55,21 +58,26 @@ namespace Rendering {
 		deviceCI.enabledExtensionCount = enabledExtensionNames.size();
 		deviceCI.ppEnabledExtensionNames = enabledExtensionNames.begin();
 
-		vkCreateDevice(physical.device, &deviceCI, nullptr, &result.device);
+		assert(!result.device);
+		if (vkCreateDevice(physical.device, &deviceCI, nullptr, &result.device) != VK_SUCCESS) {
+			LOG(Vulkan, Error, "Failed to create command pool for logical device");
+			return result;
+		}
 
-		if (result.device) {
-			vkGetDeviceQueue(result.device, physical.queues.graphics.value().index, 0, &result.queues.graphics);
-			vkGetDeviceQueue(result.device, physical.queues.present.value().index, 0, &result.queues.present);
+		vkGetDeviceQueue(result.device, physical.queues.graphics.value().index, 0, &result.queues.graphics);
+		vkGetDeviceQueue(result.device, physical.queues.present.value().index, 0, &result.queues.present);
 
-			//Create the allocator for device memory
-			VmaAllocatorCreateInfo allocatorInfo = {};
-			allocatorInfo.vulkanApiVersion = framework.version;
-			allocatorInfo.physicalDevice = physical.device;
-			allocatorInfo.device = result.device;
-			allocatorInfo.instance = framework.instance;
-			allocatorInfo.flags = GetAllocatorFlags();
+		//Create the allocator for device memory
+		VmaAllocatorCreateInfo allocatorInfo = {};
+		allocatorInfo.physicalDevice = physical.device;
+		allocatorInfo.device = result.device;
+		allocatorInfo.instance = framework.instance;
+		allocatorInfo.vulkanApiVersion = framework.version;
+		allocatorInfo.flags = GetAllocatorFlags();
 
-			vmaCreateAllocator(&allocatorInfo, &result.allocator);
+		if (vmaCreateAllocator(&allocatorInfo, &result.allocator) != VK_SUCCESS) {
+			LOG(Vulkan, Error, "Failed to create memory allocator for logical device");
+			return result;
 		}
 
 		return result;
@@ -85,7 +93,6 @@ namespace Rendering {
 	}
 
 	VmaAllocatorCreateFlags VulkanLogicalDevice::GetAllocatorFlags() {
-		return 0 |
-			VmaAllocatorCreateFlagBits::VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
+		return 0;
 	}
 }

@@ -56,6 +56,29 @@ namespace Rendering {
 
 		imageFences.resize(numImages);
 
+		VkCommandPoolCreateInfo poolInfo{};
+		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+		poolInfo.queueFamilyIndex = physical.queues.graphics.value().index;
+		poolInfo.flags = 0; // Optional
+
+		assert(!pool);
+		if (vkCreateCommandPool(logical.device, &poolInfo, nullptr, &pool) != VK_SUCCESS) {
+			LOG(Vulkan, Error, "Failed to create general command pool");
+			return false;
+		}
+
+		VkCommandBufferAllocateInfo bufferAllocationInfo{};
+		bufferAllocationInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		bufferAllocationInfo.commandPool = pool;
+		bufferAllocationInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		bufferAllocationInfo.commandBufferCount = 1;
+
+		assert(!stagingCommandBuffer);
+		if (vkAllocateCommandBuffers(logical.device, &bufferAllocationInfo, &stagingCommandBuffer) != VK_SUCCESS) {
+			LOG(Vulkan, Error, "Failed to allocate general command buffers");
+			return false;
+		}
+
 		return true;
 	}
 
@@ -67,6 +90,7 @@ namespace Rendering {
 			if (resource.fence) vkDestroyFence(logical.device, resource.fence, nullptr);
 		}
 		resources.clear();
+		if (pool) vkDestroyCommandPool(logical.device, pool, nullptr);
 		currentResourceIndex = 0;
 	}
 
@@ -166,5 +190,16 @@ namespace Rendering {
 		//We've successfully finished rendering this resource, so move to the next resource
 		currentResourceIndex = (currentResourceIndex + 1) % resources.size();
 		return true;
+	}
+
+	void VulkanFrameOrganizer::WaitForCompletion(CTX_ARG, VulkanLogicalDevice const& logical) {
+		size_t numFences = resources.size();
+		VkFence* fences = CTX.temp.Request<VkFence>(numFences);
+		for (size_t index = 0; index < resources.size(); ++index) {
+			fences[index] = resources[index].fence;
+		}
+
+		vkWaitForFences(logical.device, numFences, fences, VK_TRUE, std::numeric_limits<uint64_t>::max());
+		vkDeviceWaitIdle(logical.device);
 	}
 }

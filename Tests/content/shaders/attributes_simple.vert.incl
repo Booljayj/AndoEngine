@@ -8,4 +8,4 @@ layout(location = 3) in uint inUV0;
 layout(location = 4) in uint inUV1;
 layout(location = 5) in uint inUV2;
 
-layout(location = 0) out vec3 outFragColor;
+layout(location = 0) out vec4 outFragColor;

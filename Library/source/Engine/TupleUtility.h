@@ -1,5 +1,16 @@
 #pragma once
 #include "Engine/STL.h"
+#include "Engine/TypeTraits.h"
+
+/** Returns the sizes of all types in the tuple summed together */
+template<typename TupleType>
+struct TupleElementSizes {
+	static constexpr size_t Sum() { return 0; }
+};
+template<typename... Types>
+struct TupleElementSizes<std::tuple<Types...>> {
+	static constexpr size_t Sum() { return SumTypeSizes<Types...>(); }
+};
 
 namespace TupleUtility {
 	namespace detail {

@@ -26,7 +26,7 @@ namespace Rendering {
 				return false;
 			}
 
-			version = VK_API_VERSION_1_1;
+			version = VK_API_VERSION_1_0;
 
 			VkApplicationInfo appInfo = {};
 			appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -120,7 +120,6 @@ namespace Rendering {
 		//Standard extensions which the application requires
 		constexpr char const* standardExtensions[] = {
 			VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
-			VK_EXT_MEMORY_BUDGET_EXTENSION_NAME,
 		};
 		constexpr size_t numStandardExtensions = sizeof(standardExtensions) / sizeof(*standardExtensions);
 
@@ -163,7 +162,10 @@ namespace Rendering {
 					break;
 				}
 			}
-			if (!extensionFound) return false;
+			if (!extensionFound) {
+				LOGF(Vulkan, Warning, "Cannot enable extension: %s", enabledExtensionName);
+				return false;
+			}
 		}
 		return true;
 	}
