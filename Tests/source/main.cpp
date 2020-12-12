@@ -5,7 +5,9 @@
 #include "Engine/Logging/FileLoggerModule.h"
 #include "EntityFramework/EntityRegistry.h"
 #include "EntityFramework/UtilityMacros.h"
-#include "Rendering/SDLSystems.h"
+#include "HAL/FrameworkSystem.h"
+#include "HAL/EventsSystem.h"
+#include "HAL/WindowingSystem.h"
 #include "Rendering/RenderingSystem.h"
 #include "Profiling/ProfilerMacros.h"
 
@@ -15,9 +17,9 @@
 
 EntityRegistry registry;
 
-SDLFrameworkSystem sdlFramework;
-SDLEventsSystem sdlEvents;
-SDLWindowingSystem sdlWindowing;
+HAL::FrameworkSystem framework;
+HAL::EventsSystem events;
+HAL::WindowingSystem windowing;
 
 Rendering::RenderingSystem rendering;
 
@@ -30,10 +32,10 @@ bool Startup(CTX_ARG) {
 	TEMP_ALLOCATOR_MARK();
 	LOG(Main, Info, "Starting up all systems...");
 
-	STARTUP_SYSTEM(Main, sdlFramework);
-	STARTUP_SYSTEM(Main, sdlEvents);
-	STARTUP_SYSTEM(Main, sdlWindowing);
-	STARTUP_SYSTEM(Main, rendering, sdlWindowing, registry);
+	STARTUP_SYSTEM(Main, framework);
+	STARTUP_SYSTEM(Main, events);
+	STARTUP_SYSTEM(Main, windowing);
+	STARTUP_SYSTEM(Main, rendering, windowing, registry);
 	return true;
 }
 
@@ -43,9 +45,9 @@ void Shutdown(CTX_ARG) {
 	LOG(Main, Info, "Shutting down all systems...");
 
 	SHUTDOWN_SYSTEM(Main, rendering, registry);
-	SHUTDOWN_SYSTEM(Main, sdlWindowing);
-	SHUTDOWN_SYSTEM(Main, sdlEvents);
-	SHUTDOWN_SYSTEM(Main, sdlFramework);
+	SHUTDOWN_SYSTEM(Main, windowing);
+	SHUTDOWN_SYSTEM(Main, events);
+	SHUTDOWN_SYSTEM(Main, framework);
 }
 
 void MainLoop(CTX_ARG) {
@@ -62,7 +64,7 @@ void MainLoop(CTX_ARG) {
 			//Main Update. Anything inside this loop runs with a fixed interval (possibly simulated based on variable rates)
 			//const Time& time = timeController.GetTime();
 
-			sdlEvents.PollEvents(shutdownRequested);
+			events.PollEvents(shutdownRequested);
 
 			timeController.FinishUpdate();
 		}

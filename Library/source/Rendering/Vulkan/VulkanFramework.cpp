@@ -3,7 +3,7 @@
 #include "Rendering/Vulkan/VulkanDebug.h"
 
 namespace Rendering {
-	bool VulkanFramework::Create(CTX_ARG, SDL_Window* window) {
+	bool VulkanFramework::Create(CTX_ARG, HAL::Window* window) {
 		TEMP_ALLOCATOR_MARK();
 
 		//Information to create a debug messenger, used in several locations within this function.
@@ -62,10 +62,14 @@ namespace Rendering {
 
 		// Vulkan surface (via SDL)
 		assert(!surface);
+#if SDL_ENABLED
 		if (SDL_Vulkan_CreateSurface(window, instance, &surface) != SDL_TRUE) {
 			LOG(Vulkan, Error, "Failed to create Vulkan window surface");
 			return false;
 		}
+#else
+		return false;
+#endif
 
 		// Vulkan Messenger
 		assert(!messenger);
@@ -115,21 +119,24 @@ namespace Rendering {
 		return true;
 	}
 
-	TArrayView<char const*> VulkanFramework::GetExtensionsNames(CTX_ARG, SDL_Window* window) {
+	TArrayView<char const*> VulkanFramework::GetExtensionsNames(CTX_ARG, HAL::Window* window) {
 		//Standard extensions which the application requires
 		constexpr char const* standardExtensions[] = {
 			VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
 		};
 		constexpr size_t numStandardExtensions = sizeof(standardExtensions) / sizeof(*standardExtensions);
 
+		uint32_t numHALExtensions = 0;
+		char const** halExtensions = nullptr;
+#if SDL_ENABLED
 		//Extensions needed by SDL
-		uint32_t numSDLExtensions = 0;
-		SDL_Vulkan_GetInstanceExtensions(window, &numSDLExtensions, nullptr);
-		char const** sdlExtensions = CTX.temp.Request<char const*>(numSDLExtensions);
-		SDL_Vulkan_GetInstanceExtensions(window, &numSDLExtensions, sdlExtensions);
+		SDL_Vulkan_GetInstanceExtensions(window, &numHALExtensions, nullptr);
+		halExtensions = CTX.temp.Request<char const*>(numHALExtensions);
+		SDL_Vulkan_GetInstanceExtensions(window, &numHALExtensions, halExtensions);
+#endif
 
 		//Create the full list of extensions that will be provided to the API
-		const size_t numExtensions = numStandardExtensions + numSDLExtensions;
+		const size_t numExtensions = numStandardExtensions + numHALExtensions;
 		char const** extensions = CTX.temp.Request<char const*>(numExtensions);
 
 		std::memcpy(
@@ -138,7 +145,7 @@ namespace Rendering {
 		);
 		std::memcpy(
 			extensions + numStandardExtensions,
-			sdlExtensions, numSDLExtensions * sizeof(char const*)
+			halExtensions, numHALExtensions * sizeof(char const*)
 		);
 
 		return TArrayView<char const*>{extensions, numExtensions};

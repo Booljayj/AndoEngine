@@ -3,10 +3,10 @@
 #include "Engine/STL.h"
 #include "Engine/Utility.h"
 #include "Geometry/GLM.h"
+#include "HAL/WindowingSystem.h"
 #include "Rendering/MaterialComponent.h"
 #include "Rendering/MeshComponent.h"
 #include "Rendering/MeshRendererComponent.h"
-#include "Rendering/SDLSystems.h"
 
 DEFINE_LOG_CATEGORY(Rendering, Warning);
 
@@ -18,7 +18,7 @@ namespace Rendering {
 	, shouldCreateMeshes(false)
 	{}
 
-	bool RenderingSystem::Startup(CTX_ARG, SDLWindowingSystem& windowing, EntityRegistry& registry) {
+	bool RenderingSystem::Startup(CTX_ARG, HAL::WindowingSystem& windowing, EntityRegistry& registry) {
 		// Vulkan instance
 		if (!framework.Create(CTX, windowing.GetMainWindow())) return false;
 

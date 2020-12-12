@@ -13,7 +13,9 @@
 #include "Rendering/Vulkan/VulkanResourcesHelpers.h"
 #include "Rendering/Vulkan/VulkanSwapchain.h"
 
-struct SDLWindowingSystem;
+namespace HAL {
+	struct WindowingSystem;
+}
 namespace Rendering {
 	struct MaterialComponent;
 	struct MeshComponent;
@@ -58,7 +60,7 @@ namespace Rendering {
 
 		RenderingSystem();
 
-		bool Startup(CTX_ARG, SDLWindowingSystem& windowing, EntityRegistry& registry);
+		bool Startup(CTX_ARG, HAL::WindowingSystem& windowing, EntityRegistry& registry);
 		bool Shutdown(CTX_ARG, EntityRegistry& registry);
 
 		bool Render(CTX_ARG, EntityRegistry& registry);
