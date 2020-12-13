@@ -66,23 +66,21 @@ namespace Rendering {
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		submitInfo.commandBufferCount = 1;
 		submitInfo.pCommandBuffers = &result.commands;
-
-		vkQueueSubmit(logical->queues.graphics, 1, &submitInfo, VK_NULL_HANDLE);
+		vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
 
 		//Increment the number of iterations. If we've uploaded enough data, flush the queue so we can remove temporary resources
 		++flushIterations;
-		if (flushIterations > 1023) {
+		if (flushIterations > 511) {
 			Flush();
 		}
 	}
 
 	void VulkanMeshCreationHelper::Flush() {
 		flushIterations = 0;
-		vkQueueWaitIdle(logical->queues.graphics);
-		vkResetCommandPool(logical->device, pool, 0);
+		vkQueueWaitIdle(queue);
+		vkResetCommandPool(device, pool, 0);
 		for (VulkanMeshCreationResults& result : results) {
-			result.staging.vertex.Destroy(logical->allocator);
-			result.staging.index.Destroy(logical->allocator);
+			result.staging.Destroy(allocator);
 		}
 		results.clear();
 	}

@@ -1,6 +1,5 @@
 #pragma once
 #include "Rendering/Vulkan/Vulkan.h"
-#include "Rendering/Vulkan/VulkanLogicalDevice.h"
 
 namespace Rendering {
 	/** Stores resources related to a graphics pipeline */
@@ -23,49 +22,54 @@ namespace Rendering {
 		VmaAllocation allocation = nullptr;
 
 		inline operator bool() const { return buffer && allocation; }
+		inline operator VkBuffer() const { return buffer; }
+		inline operator VmaAllocation() const { return allocation; }
 		inline void Destroy(VmaAllocator allocator) {
 			vmaDestroyBuffer(allocator, buffer, allocation);
 			buffer = nullptr;
 			allocation = nullptr;
 		}
 	};
+	/** Holds a vulkan buffer that will be destroyed at the end of the scope unless released */
+	struct UniqueVulkanBuffer {
+		VkBuffer buffer = nullptr;
+		VmaAllocation allocation = nullptr;
+		VmaAllocator allocator = nullptr;
 
-	/** The resulting buffers from uploading data to the GPU */
-	struct VulkanBufferCreationResults {
-		VulkanBuffer staging;
-		VulkanBuffer gpu;
+		UniqueVulkanBuffer() = default;
+		UniqueVulkanBuffer(UniqueVulkanBuffer&& other);
+		~UniqueVulkanBuffer();
 
-		inline operator bool() const { return staging && gpu; }
-		inline void Destroy(VmaAllocator allocator) {
-			staging.Destroy(allocator);
-			gpu.Destroy(allocator);
-		}
+		operator bool() const { return buffer && allocation; }
+		VulkanBuffer Release();
 	};
 
 	/** Create a buffer */
-	VulkanBuffer CreateBuffer(VulkanLogicalDevice const& logical, size_t size, VkBufferUsageFlags bufferUsage, VmaMemoryUsage memoryUsage);
-	/** Transfer the source data to the GPU and return the resulting buffers. The transfer process is recorded to the command buffer. */
-	VulkanBufferCreationResults CreateBufferWithData(VulkanLogicalDevice const& logical, void const* source, size_t size, VkBufferUsageFlags usage, VkCommandBuffer commands);
+	UniqueVulkanBuffer CreateBuffer(VmaAllocator allocator, size_t size, VkBufferUsageFlags bufferUsage, VmaMemoryUsage allocationUsage);
 
 	/** Stores resources related to a mesh */
 	struct VulkanMeshResources {
-		VulkanBuffer vertex;
-		VulkanBuffer index;
-		uint32_t numIndices;
+		VulkanBuffer buffer;
 
-		inline operator bool() const { return vertex; }
+		struct {
+			VkDeviceSize vertex;
+			VkDeviceSize index;
+		} offset;
+
+		struct {
+			uint32_t vertices;
+			uint32_t indices;
+		} size;
+
+		inline operator bool() const { return !!buffer; }
 		inline void Destroy(VmaAllocator allocator) {
-			vertex.Destroy(allocator);
-			index.Destroy(allocator);
+			buffer.Destroy(allocator);
 		}
 	};
 
 	/** The results of creating the resources for a new mesh */
 	struct VulkanMeshCreationResults {
 		VkCommandBuffer commands;
-		struct {
-			VulkanBuffer vertex;
-			VulkanBuffer index;
-		} staging;
+		VulkanBuffer staging;
 	};
 }

@@ -28,12 +28,13 @@ namespace Rendering {
 		std::vector<VulkanMeshCreationResults> results;
 		size_t flushIterations = 0;
 
-		VulkanLogicalDevice const* logical = nullptr;
+		VkDevice device = nullptr;
+		VmaAllocator allocator = nullptr;
+		VkQueue queue = nullptr;
 		VkCommandPool pool = nullptr;
 
-		VulkanMeshCreationHelper(VulkanLogicalDevice const& inLogical, VkCommandPool inPool)
-		: logical(&inLogical)
-		, pool(inPool)
+		VulkanMeshCreationHelper(VkDevice inDevice, VmaAllocator inAllocator, VkQueue inQueue, VkCommandPool inPool)
+		: device(inDevice), allocator(inAllocator), queue(inQueue), pool(inPool)
 		{}
 
 		void Submit(VulkanMeshCreationResults const& result);

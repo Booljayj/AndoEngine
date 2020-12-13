@@ -148,12 +148,13 @@ namespace Rendering {
 					vkCmdBindPipeline(commands, VK_PIPELINE_BIND_POINT_GRAPHICS, material->resources.pipeline);
 
 					//Bind the vetex and index buffers for the mesh
-					VkDeviceSize const offset = 0;
-					vkCmdBindVertexBuffers(commands, 0, 1, &mesh->resources.vertex.buffer, &offset);
-					vkCmdBindIndexBuffer(commands, mesh->resources.index.buffer, 0, VK_INDEX_TYPE_UINT32);
+					VkBuffer const vertexBuffers[] = { mesh->resources.buffer };
+					VkDeviceSize const vertexOffsets[] = { mesh->resources.offset.vertex };
+					vkCmdBindVertexBuffers(commands, 0, 1, vertexBuffers, vertexOffsets);
+					vkCmdBindIndexBuffer(commands, mesh->resources.buffer, mesh->resources.offset.index, VK_INDEX_TYPE_UINT32);
 
 					//Submit the command to draw using the vertex and index buffers
-					vkCmdDrawIndexed(commands, static_cast<uint32_t>(mesh->indices.size()), 1, 0, 0, 0);
+					vkCmdDrawIndexed(commands, mesh->resources.size.indices, 1, 0, 0, 0);
 				}
 			}
 		};
@@ -389,7 +390,7 @@ namespace Rendering {
 	}
 
 	void RenderingSystem::CreateMeshes(CTX_ARG, EntityRegistry& registry) {
-		VulkanMeshCreationHelper helper{logical, organizer.pool};
+		VulkanMeshCreationHelper helper{logical.device, logical.allocator, logical.queues.graphics, organizer.pool};
 
 		auto const meshes = registry.GetView<MeshComponent>();
 		for (const auto id : meshes) {
@@ -575,7 +576,47 @@ namespace Rendering {
 	}
 
 	VulkanMeshCreationResults RenderingSystem::CreateMesh(CTX_ARG, MeshComponent& mesh, EntityID id, VkCommandPool pool) {
-		//Allocate a command buffer for vertex and index buffer creation
+		//Calculate byte size values for the input mesh
+		size_t const vertexBytes = sizeof(decltype(MeshComponent::vertices)::value_type) * mesh.vertices.size();
+		size_t const indexBytes = sizeof(decltype(MeshComponent::indices)::value_type) * mesh.indices.size();
+		size_t const totalBytes = vertexBytes + indexBytes;
+
+		size_t const vertexOffset = 0;
+		size_t const indexOffset = vertexBytes;
+
+		//Create the staging buffer used to upload data to the GPU-only buffer
+		constexpr VkBufferUsageFlags stagingBufferFlags = VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+		constexpr VmaMemoryUsage stagingAllocationFlags = VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_ONLY;
+		UniqueVulkanBuffer staging = CreateBuffer(logical.allocator, totalBytes, stagingBufferFlags, stagingAllocationFlags);
+		if (!staging) {
+			LOG(Vulkan, Error, "Failed to create staging buffer");
+			return VulkanMeshCreationResults{};
+		}
+
+		//Fill the staging buffer with the source data
+		void* ptr;
+		if (vmaMapMemory(logical.allocator, staging.allocation, &ptr) != VK_SUCCESS) {
+			LOG(Vulkan, Error, "Failed to map staging buffer memory");
+			return VulkanMeshCreationResults{};
+		}
+		char* mapped = static_cast<char*>(ptr);
+		memcpy(mapped + vertexOffset, mesh.vertices.data(), vertexBytes);
+		memcpy(mapped + indexOffset , mesh.indices.data(), indexBytes);
+		vmaUnmapMemory(logical.allocator, staging.allocation);
+
+		//Create the target buffer that will contain the uploaded data for the GPU to use
+		constexpr VkBufferUsageFlags targetBufferFlags =
+			VkBufferUsageFlagBits::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
+			VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
+			VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+		constexpr VmaMemoryUsage targetMemoryFlags = VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY;
+		UniqueVulkanBuffer target = CreateBuffer(logical.allocator, totalBytes, targetBufferFlags, targetMemoryFlags);
+		if (!target) {
+			LOG(Vulkan, Error, "Failed to create gpu buffer");
+			return VulkanMeshCreationResults{};
+		}
+
+		//Allocate a command buffer for the transfer from the staging to the target buffer
 		VkCommandBufferAllocateInfo bufferAI{};
 		bufferAI.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 		bufferAI.commandPool = pool;
@@ -598,41 +639,30 @@ namespace Rendering {
 			return VulkanMeshCreationResults{};
 		}
 
-		//Create the vertex buffer
-		size_t const vertexSize = sizeof(decltype(MeshComponent::vertices)::value_type) * mesh.vertices.size();
-		VulkanBufferCreationResults vertex = CreateBufferWithData(logical, mesh.vertices.data(), vertexSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, commands);
-		if (!vertex) {
-			LOG(Vulkan, Error, "Failed to create vertex buffer");
-			vertex.Destroy(logical.allocator);
-			return VulkanMeshCreationResults{};
-		}
-
-		//Create the index buffer
-		size_t const indexSize = sizeof(decltype(MeshComponent::indices)::value_type) * mesh.indices.size();
-		VulkanBufferCreationResults index = CreateBufferWithData(logical, mesh.indices.data(), indexSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, commands);
-		if (!index) {
-			LOG(Vulkan, Error, "Failed to create index buffer");
-			vertex.Destroy(logical.allocator);
-			index.Destroy(logical.allocator);
-			return VulkanMeshCreationResults{};
-		}
+		//Record the command to transfer from the staging buffer to the target buffer
+		VkBufferCopy copy{};
+		copy.srcOffset = 0; // Optional
+		copy.dstOffset = 0; // Optional
+		copy.size = totalBytes;
+		vkCmdCopyBuffer(commands, staging.buffer, target.buffer, 1, &copy);
 
 		//Finish recording the command buffer
 		if (vkEndCommandBuffer(commands) != VK_SUCCESS) {
 			LOG(Vulkan, Error, "Failed to finish recording command buffer");
-			vertex.Destroy(logical.allocator);
-			index.Destroy(logical.allocator);
 			return VulkanMeshCreationResults{};
 		}
 
-		//We've successfully created the mesh, so copy all the data into the outputs.
+		//We've successfully created the buffers and recorded the command to transfer the data, so output all important values
+		mesh.resources.buffer = target.Release();
+		mesh.resources.offset.vertex = vertexOffset;
+		mesh.resources.offset.index = indexOffset;
+		mesh.resources.size.vertices = mesh.vertices.size();
+		mesh.resources.size.indices = mesh.indices.size();
+
 		VulkanMeshCreationResults result;
 		result.commands = commands;
-		result.staging.vertex = vertex.staging;
-		result.staging.index = index.staging;
+		result.staging = staging.Release();
 
-		mesh.resources.vertex = vertex.gpu;
-		mesh.resources.index = index.gpu;
 		return result;
 	}
 }

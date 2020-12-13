@@ -1,8 +1,28 @@
 #include "Rendering/Vulkan/VulkanResources.h"
 
 namespace Rendering {
-	VulkanBuffer CreateBuffer(VulkanLogicalDevice const& logical, size_t size, VkBufferUsageFlags bufferUsage, VmaMemoryUsage memoryUsage) {
+	UniqueVulkanBuffer::UniqueVulkanBuffer(UniqueVulkanBuffer&& other) {
+		std::swap(buffer, other.buffer);
+		std::swap(allocation, other.allocation);
+		std::swap(allocator, other.allocator);
+	}
+
+	UniqueVulkanBuffer::~UniqueVulkanBuffer() {
+		vmaDestroyBuffer(allocator, buffer, allocation);
+	}
+
+	VulkanBuffer UniqueVulkanBuffer::Release() {
 		VulkanBuffer result;
+		result.buffer = buffer;
+		result.allocation = allocation;
+		buffer = nullptr;
+		allocation = nullptr;
+		return result;
+	}
+
+	UniqueVulkanBuffer CreateBuffer(VmaAllocator allocator, size_t size, VkBufferUsageFlags bufferUsage, VmaMemoryUsage allocationUsage) {
+		UniqueVulkanBuffer result;
+		result.allocator = allocator;
 
 		VkBufferCreateInfo bufferCI{};
 		bufferCI.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -11,44 +31,9 @@ namespace Rendering {
 		bufferCI.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 		VmaAllocationCreateInfo allocCI = {};
-		allocCI.usage = memoryUsage;
+		allocCI.usage = allocationUsage;
 
-		vmaCreateBuffer(logical.allocator, &bufferCI, &allocCI, &result.buffer, &result.allocation, nullptr);
-		return result;
-	}
-
-	VulkanBufferCreationResults CreateBufferWithData(VulkanLogicalDevice const& logical, void const* source, size_t size, VkBufferUsageFlags usage, VkCommandBuffer commands) {
-		VulkanBufferCreationResults result;
-		if (size == 0) return result;
-
-		//Create the staging buffer
-		result.staging = CreateBuffer(logical, size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
-		if (!result.staging) return result;
-
-		//Create the GPU buffer
-		result.gpu = CreateBuffer(logical, size, usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
-		if (!result.gpu) {
-			result.staging.Destroy(logical.allocator);
-			return result;
-		}
-
-		//Fill the staging buffer with the source data
-		void* data;
-		if (vmaMapMemory(logical.allocator, result.staging.allocation, &data) != VK_SUCCESS) {
-			result.staging.Destroy(logical.allocator);
-			result.gpu.Destroy(logical.allocator);
-			return result;
-		}
-        memcpy(data, source, size);
-		vmaUnmapMemory(logical.allocator, result.staging.allocation);
-
-		//Record the command to transfer from the staging buffer to the gpu buffer
-		VkBufferCopy copy{};
-		copy.srcOffset = 0; // Optional
-		copy.dstOffset = 0; // Optional
-		copy.size = size;
-		vkCmdCopyBuffer(commands, result.staging.buffer, result.gpu.buffer, 1, &copy);
-
+		vmaCreateBuffer(allocator, &bufferCI, &allocCI, &result.buffer, &result.allocation, nullptr);
 		return result;
 	}
 }
