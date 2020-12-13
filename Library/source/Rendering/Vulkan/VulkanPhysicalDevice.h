@@ -40,6 +40,9 @@ namespace Rendering {
 
 		static TArrayView<char const*> GetExtensionNames(CTX_ARG);
 
+		VulkanVersion GetVulkanVersion() const { return VulkanVersion{properties.apiVersion}; }
+		VulkanVersion GetDriverVersion() const { return VulkanVersion{properties.driverVersion}; }
+
 		/** True if the device has all the queues required to be used */
 		bool HasRequiredQueues() const;
 		/** True if the device has all the extensions required to be used */
@@ -51,8 +54,5 @@ namespace Rendering {
 		VkExtent2D GetSwapExtent(VkSurfaceKHR const& surface, VkExtent2D const& desiredExtent) const;
 		/** Get the pre transform to use on this device */
 		VkSurfaceTransformFlagBitsKHR GetPreTransform(VkSurfaceKHR const& surface) const;
-
-		/** Write a description of the device and its properties to the stream */
-		void WriteDescription(std::ostream& stream) const;
 	};
 }

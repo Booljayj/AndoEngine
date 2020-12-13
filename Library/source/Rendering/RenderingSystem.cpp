@@ -207,7 +207,8 @@ namespace Rendering {
 				selectedPhysicalIndex = index;
 				shouldRecreateSwapchain = true;
 
-				selectedPhysical->WriteDescription(std::cout);
+				VulkanVersion const version = selectedPhysical->GetDriverVersion();
+				LOGF(Rendering, Info, "Selected device %s (%i.%i.%i)", selectedPhysical->properties.deviceName, version.major, version.minor, version.patch);
 				return true;
 			}
 		}

@@ -115,36 +115,4 @@ namespace Rendering {
 			return capabilities.currentTransform;
 		}
 	}
-
-	void VulkanPhysicalDevice::WriteDescription(std::ostream& stream) const {
-		stream << "Device Name: " << properties.deviceName << std::endl;
-		stream << "Device Type: " << properties.deviceType << std::endl; //@todo Mimic the behavior of vk::to_string(vk::PhysicalDeviceType) here for better formatting
-		stream << "API Version: " << VulkanVersion{properties.apiVersion} << std::endl;
-		stream << "Driver Version: " << VulkanVersion{properties.driverVersion} << std::endl;
-
-		stream << "Discovered Queue Families:" << std::endl;
-		const auto WriteQueue = [&](char const* name, std::optional<QueueFamilyInfo> info) {
-			stream << "\t" << name << ": ";
-			if (info.has_value()) {
-				stream << "Index: " << info.value().index << ", Count: " << info.value().count << std::endl;
-			} else {
-				stream << "Not found" << std::endl;
-			}
-		};
-		WriteQueue("graphics", queues.graphics);
-		WriteQueue("present", queues.present);
-
-		stream << "Supported Extensions:" << std::endl;
-
-		constexpr size_t groupSize = 4;
-		const size_t supportedExtensionCount = supportedExtensions.size();
-		for (size_t groupBegin = 0; groupBegin < supportedExtensionCount; groupBegin += groupSize) {
-			const size_t groupEnd = std::min(groupBegin + groupSize, supportedExtensionCount);
-			stream << "\t";
-			for (size_t extensionIndex = groupBegin; extensionIndex < groupEnd; ++extensionIndex) {
-				stream << supportedExtensions[extensionIndex] << ", ";
-			}
-			stream << std::endl;
-		}
-	}
 }
