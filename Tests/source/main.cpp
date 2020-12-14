@@ -97,11 +97,12 @@ int32_t main(int32_t argc, char const* argv[]) {
 		EntityHandle testMeshEntity = registry.Create();
 		MeshComponent& mesh = testMeshEntity.Add<MeshComponent>();
 		mesh.vertices = {
-			Vertex_Simple{{0.0f, -0.5f, 0.0f}, {255, 0, 0, 255}, {0,0,1}, {0,0}},
-			Vertex_Simple{{0.5f, 0.5f, 0.0f}, {0, 255, 0, 255}, {0,0,1}, {0,0}},
-			Vertex_Simple{{-0.5f, 0.5f, 0.0f}, {0, 0, 255, 255}, {0,0,1}, {0,0}},
+			Vertex_Simple{{-0.5f, -0.5f, 0.0f}, {255, 0, 0, 255}, {0,0,1}, {0,0}},
+			Vertex_Simple{{0.5f, -0.5f, 0.0f}, {0, 255, 0, 255}, {0,0,1}, {0,0}},
+			Vertex_Simple{{0.5f, 0.5f, 0.0f}, {0, 0, 255, 255}, {0,0,1}, {0,0}},
+			Vertex_Simple{{-0.5f, 0.5f, 0.0f}, {255, 255, 255, 255}, {0,0,1}, {0,0}},
 		};
-		mesh.indices = {0,1,2};
+		mesh.indices = {0, 1, 2, 2, 3, 0};
 
 		EntityHandle testMeshRendererEntity = registry.Create();
 		MeshRendererComponent& renderer = testMeshRendererEntity.Add<MeshRendererComponent>();
