@@ -62,9 +62,10 @@ namespace Rendering {
 	}
 
 	TArrayView<char const*> VulkanPhysicalDevice::GetExtensionNames(CTX_ARG) {
-		constexpr size_t extensionCount = 1;
-		static char const* extensionNames[extensionCount] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-		return TArrayView<char const*>{extensionNames, extensionCount};
+		return {
+			VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+			VK_KHR_MAINTENANCE3_EXTENSION_NAME,
+		};
 	}
 
 	bool VulkanPhysicalDevice::HasRequiredQueues() const {
