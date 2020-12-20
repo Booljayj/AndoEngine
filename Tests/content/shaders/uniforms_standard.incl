@@ -1,0 +1,12 @@
+//Standard uniforms for all vertex and fragment shaders
+
+layout(set = 0, binding = 0) uniform GlobalUniformBufferObject {
+	mat4 viewProjection;
+	mat4 viewProjectionInverse;
+	float time;
+} global;
+
+//@todo This should be `set = 2` once we have per-material-instance uniforms
+layout(set = 1, binding = 0) uniform ObjectUniformBufferObject {
+	mat4 modelViewProjection;
+} object;

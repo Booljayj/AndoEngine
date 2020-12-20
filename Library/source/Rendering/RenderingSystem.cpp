@@ -7,6 +7,7 @@
 #include "Rendering/MaterialComponent.h"
 #include "Rendering/MeshComponent.h"
 #include "Rendering/MeshRendererComponent.h"
+#include "Rendering/Uniforms.h"
 
 DEFINE_LOG_CATEGORY(Rendering, Warning);
 
@@ -116,8 +117,15 @@ namespace Rendering {
 		//Rebuild any resources, creating new ones and destroying stale ones
 		RebuildResources(CTX, registry);
 
+		//@todo This would ideally be done with some acceleration structure that contains a mapping between the pipelines and all of
+		//      the geometry that should be drawn with that pipeline, to avoid binding the same pipeline more than once and to strip
+		//      out culled geometry.
+		auto const renderables = registry.GetView<MeshRendererComponent const>();
+		auto const materials = registry.GetView<MaterialComponent const>();
+		auto const meshes = registry.GetView<MeshComponent const>();
+
 		//Prepare the frame for rendering, which may need to wait for resources
-		EPreparationResult const result = organizer.Prepare(CTX, logical, swapchain);
+		EPreparationResult const result = organizer.Prepare(CTX, logical, swapchain, renderables.size());
 		if (result == EPreparationResult::Retry) {
 			if (++retryCount >= maxRetryCount) {
 				LOGF(Rendering, Error, "Too many subsequent frames (%i) have failed to render.", maxRetryCount);
@@ -128,33 +136,50 @@ namespace Rendering {
 		if (result == EPreparationResult::Error) return false;
 
 		//Lambda to record rendering commands
-		//@todo This would ideally be done with some acceleration structure that contains a mapping between the pipelines and all of
-		//      the geometry that should be drawn with that pipeline, to avoid binding the same pipeline more than once and to strip
-		//      out culled geometry.
-		auto const renderables = registry.GetView<MeshRendererComponent const>();
-		auto const materials = registry.GetView<MaterialComponent const>();
-		auto const meshes = registry.GetView<MeshComponent const>();
+		auto const recorder = [&](const FrameResources& frame, size_t index) {
+			ScopedRenderPass pass{frame.commands, main, index, VkOffset2D{0, 0}, swapchain.extent};
 
-		auto const recorder = [&](VkCommandBuffer commands, size_t index) {
-			ScopedRenderPass pass{commands, main, index, VkOffset2D{0, 0}, swapchain.extent};
+			GlobalUniformBufferObject global;
+			global.viewProjection = glm::identity<glm::mat4>();
+			global.viewProjectionInverse = glm::inverse(global.viewProjection);
+			global.time = 0;
+			frame.uniforms.global.resources.Write(global, 0);
 
+			uint32_t objectIndex = 0;
 			for (const auto id : renderables) {
 				auto& renderer = renderables.Get<MeshRendererComponent const>(id);
 
 				auto const* material = materials.Find<MaterialComponent const>(renderer.material);
 				auto const* mesh = meshes.Find<MeshComponent const>(renderer.mesh);
 				if (material && material->resources && mesh && mesh->resources) {
+					//Write to the part of the object uniform buffer designated for this object
+					uint32_t const objectUniformsOffset = sizeof(ObjectUniformBufferObject) * objectIndex;
+					ObjectUniformBufferObject object;
+					object.modelViewProjection = glm::identity<glm::mat4>();
+					frame.uniforms.object.resources.Write(object, objectUniformsOffset);
+
 					//Bind the pipeline that will be used for rendering
-					vkCmdBindPipeline(commands, VK_PIPELINE_BIND_POINT_GRAPHICS, material->resources.pipeline);
+					vkCmdBindPipeline(frame.commands, VK_PIPELINE_BIND_POINT_GRAPHICS, material->resources.pipeline);
+
+					//Bind the descriptor sets to use for this draw command
+					VkDescriptorSet sets[] = {
+						frame.uniforms.global.set,
+						//materialInstance->resources.set,
+						frame.uniforms.object.set,
+					};
+					constexpr uint32_t numSets = sizeof(sets)/sizeof(sets[0]);
+					vkCmdBindDescriptorSets(frame.commands, VK_PIPELINE_BIND_POINT_GRAPHICS, material->resources.layout, 0, numSets, sets, 1, &objectUniformsOffset);
 
 					//Bind the vetex and index buffers for the mesh
 					VkBuffer const vertexBuffers[] = { mesh->resources.buffer };
 					VkDeviceSize const vertexOffsets[] = { mesh->resources.offset.vertex };
-					vkCmdBindVertexBuffers(commands, 0, 1, vertexBuffers, vertexOffsets);
-					vkCmdBindIndexBuffer(commands, mesh->resources.buffer, mesh->resources.offset.index, VK_INDEX_TYPE_UINT32);
+					vkCmdBindVertexBuffers(frame.commands, 0, 1, vertexBuffers, vertexOffsets);
+					vkCmdBindIndexBuffer(frame.commands, mesh->resources.buffer, mesh->resources.offset.index, VK_INDEX_TYPE_UINT32);
 
 					//Submit the command to draw using the vertex and index buffers
-					vkCmdDrawIndexed(commands, mesh->resources.size.indices, 1, 0, 0, 0);
+					vkCmdDrawIndexed(frame.commands, mesh->resources.size.indices, 1, 0, 0, 0);
+
+					++objectIndex;
 				}
 			}
 		};
@@ -365,7 +390,10 @@ namespace Rendering {
 		auto const materials = registry.GetView<MaterialComponent>();
 		for (const auto id : materials) {
 			MaterialComponent& material = materials.Get<MaterialComponent>(id);
-			if (!material.resources) CreatePipeline(CTX, material, id, library);
+			if (!material.resources) {
+				CreatePipeline(CTX, material, id, library);
+				if (!material.resources) material.resources.Destroy(logical.device);
+			}
 		}
 	}
 
@@ -390,14 +418,15 @@ namespace Rendering {
 	}
 
 	void RenderingSystem::CreateMeshes(CTX_ARG, EntityRegistry& registry) {
-		VulkanMeshCreationHelper helper{logical.device, logical.allocator, logical.queues.graphics, organizer.pool};
+		VulkanMeshCreationHelper helper{logical.device, logical.allocator, logical.queues.graphics, organizer.commandPool};
 
 		auto const meshes = registry.GetView<MeshComponent>();
 		for (const auto id : meshes) {
 			MeshComponent& mesh = meshes.Get<MeshComponent>(id);
 			if (!mesh.resources) {
-				VulkanMeshCreationResults const result = CreateMesh(CTX, mesh, id, organizer.pool);
+				VulkanMeshCreationResults const result = CreateMesh(CTX, mesh, id, organizer.commandPool);
 				helper.Submit(result);
+				if (!mesh.resources) mesh.resources.Destroy(logical.allocator);
 			}
 		}
 		helper.Flush();
@@ -420,18 +449,33 @@ namespace Rendering {
 	}
 
 	void RenderingSystem::CreatePipeline(CTX_ARG, MaterialComponent& material, EntityID id, VulkanShaderModuleLibrary& library) {
-		//Create the pipeline layout
-		VkPipelineLayoutCreateInfo layoutCI{};
-		layoutCI.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		layoutCI.setLayoutCount = 0; // Optional
-		layoutCI.pSetLayouts = nullptr; // Optional
-		layoutCI.pushConstantRangeCount = 0; // Optional
-		layoutCI.pPushConstantRanges = nullptr; // Optional
+		//Create the descriptor set layout
+		{
+			//@todo Actually create this on a per-material basis
+			material.resources.descriptors = nullptr;
+		}
 
-		assert(!material.resources.layout);
-		if (vkCreatePipelineLayout(logical.device, &layoutCI, nullptr, &material.resources.layout) != VK_SUCCESS) {
-			LOGF(Temp, Error, "Failed to create pipeline layout for material %i", id);
-			return;
+		//Create the pipeline layout
+		{
+			VkDescriptorSetLayout setLayouts[] = {
+				organizer.layout.global,
+				//material.resources.descriptors,
+				organizer.layout.object,
+			};
+			constexpr size_t numSetLayouts = sizeof(setLayouts)/sizeof(setLayouts[0]);
+
+			VkPipelineLayoutCreateInfo layoutCI{};
+			layoutCI.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+			layoutCI.setLayoutCount = numSetLayouts;
+			layoutCI.pSetLayouts = setLayouts;
+			layoutCI.pushConstantRangeCount = 0; // Optional
+			layoutCI.pPushConstantRanges = nullptr; // Optional
+
+			assert(!material.resources.layout);
+			if (vkCreatePipelineLayout(logical.device, &layoutCI, nullptr, &material.resources.layout) != VK_SUCCESS) {
+				LOGF(Temp, Error, "Failed to create pipeline layout for material %i", id);
+				return;
+			}
 		}
 
 		VkShaderModule const vertShaderModule = library.GetModule(CTX, material.vertex);
@@ -570,8 +614,6 @@ namespace Rendering {
 		assert(!material.resources.pipeline);
 		if (vkCreateGraphicsPipelines(logical.device, VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &material.resources.pipeline) != VK_SUCCESS) {
 			LOGF(Temp, Error, "Failed to create pipeline for material %i", id);
-			//Make sure we destroy the layout as well.
-			vkDestroyPipelineLayout(logical.device, material.resources.layout, nullptr);
 		}
 	}
 

@@ -1,119 +1,237 @@
 #include "Rendering/Vulkan/VulkanFrameOrganizer.h"
+#include "Rendering/Uniforms.h"
 
 namespace Rendering {
 	bool VulkanFrameOrganizer::Create(CTX_ARG, VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical, EBuffering buffering, size_t numImages, size_t numThreads) {
-		size_t const numResources = static_cast<size_t>(buffering) + 1;
-		assert(numResources > 0);
+		size_t const numFrames = static_cast<size_t>(buffering) + 1;
+		assert(numFrames > 0 && numFrames < 4);
 
-		resources.resize(numResources);
-		for (size_t index = 0; index < numResources; ++index) {
-			FrameResources& resource = resources[index];
+		//Create the descriptor pool
+		{
+			//Each frame should have:
+			//- One VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER (used by global uniforms)
+			//- One VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC (used by object uniforms)
+			//- Up to 16 VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER (used by samplers in the global or object uniforms)
+			//- Two descriptor sets (for global and object uniforms)
 
-			VkCommandPoolCreateInfo poolInfo{};
-			poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-			poolInfo.queueFamilyIndex = physical.queues.graphics.value().index;
-			poolInfo.flags = 0; // Optional
+			std::array<VkDescriptorPoolSize, 3> poolSizes;
+			poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			poolSizes[0].descriptorCount = numFrames;
+			poolSizes[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+			poolSizes[1].descriptorCount = numFrames;
+			poolSizes[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			poolSizes[2].descriptorCount = 16 * numFrames;
 
-			assert(!resource.pool);
-			if (vkCreateCommandPool(logical.device, &poolInfo, nullptr, &resource.pool) != VK_SUCCESS) {
-				LOGF(Vulkan, Error, "Failed to create command pool for resource %i", index);
+			VkDescriptorPoolCreateInfo descriptorPoolCI{};
+			descriptorPoolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+			descriptorPoolCI.poolSizeCount = poolSizes.size();
+			descriptorPoolCI.pPoolSizes = poolSizes.data();
+			descriptorPoolCI.maxSets = 2 * numFrames;
+
+			assert(!descriptorPool);
+			if (vkCreateDescriptorPool(logical.device, &descriptorPoolCI, nullptr, &descriptorPool) != VK_SUCCESS) {
+				LOG(Vulkan, Error, "Failed to create descriptor pool for resources");
 				return false;
 			}
+		}
 
-			VkCommandBufferAllocateInfo bufferAllocationInfo{};
-			bufferAllocationInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-			bufferAllocationInfo.commandPool = resource.pool;
-			bufferAllocationInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-			bufferAllocationInfo.commandBufferCount = 1;
+		//Create the descriptor set layout for global uniforms
+		{
+			std::array<VkDescriptorSetLayoutBinding, 1> bindings;
+			bindings[0] = GlobalUniformBufferObject::GetBinding();
 
-			assert(!resource.buffer);
-			if (vkAllocateCommandBuffers(logical.device, &bufferAllocationInfo, &resource.buffer) != VK_SUCCESS) {
-				LOGF(Vulkan, Error, "Failed to allocate command buffers from the command pool for resource %i", index);
+			VkDescriptorSetLayoutCreateInfo layoutCI{};
+			layoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+			layoutCI.bindingCount = bindings.size();
+			layoutCI.pBindings = bindings.data();
+
+			assert(!layout.global);
+			if (vkCreateDescriptorSetLayout(logical.device, &layoutCI, nullptr, &layout.global) != VK_SUCCESS) {
+				LOG(Vulkan, Error, "Failed to create descriptor set layout");
 				return false;
 			}
+		}
 
-			VkSemaphoreCreateInfo semaphoreInfo{};
-    		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+		//Create the descriptor set layout for object uniforms
+		{
+			std::array<VkDescriptorSetLayoutBinding, 1> bindings;
+			bindings[0] = ObjectUniformBufferObject::GetBinding();
 
-			if (vkCreateSemaphore(logical.device, &semaphoreInfo, nullptr, &resource.imageAvailableSemaphore) != VK_SUCCESS) {
-				LOGF(Vulkan, Error, "Failed to create image available semaphore for resource %i", index);
+			VkDescriptorSetLayoutCreateInfo layoutCI{};
+			layoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+			layoutCI.bindingCount = bindings.size();
+			layoutCI.pBindings = bindings.data();
+
+			assert(!layout.object);
+			if (vkCreateDescriptorSetLayout(logical.device, &layoutCI, nullptr, &layout.object) != VK_SUCCESS) {
+				LOG(Vulkan, Error, "Failed to create descriptor set layout");
 				return false;
 			}
-			if (vkCreateSemaphore(logical.device, &semaphoreInfo, nullptr, &resource.renderFinishedSemaphore) != VK_SUCCESS) {
-				LOGF(Vulkan, Error, "Failed to create render finished semaphore for resource %i", index);
-				return false;
+		}
+
+		resources.resize(numFrames);
+		for (size_t index = 0; index < numFrames; ++index) {
+			FrameResources& frame = resources[index];
+
+			//Create the command pool
+			{
+				VkCommandPoolCreateInfo poolInfo{};
+				poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+				poolInfo.queueFamilyIndex = physical.queues.graphics.value().index;
+				poolInfo.flags = 0; // Optional
+
+				if (vkCreateCommandPool(logical.device, &poolInfo, nullptr, &frame.commandPool) != VK_SUCCESS) {
+					LOGF(Vulkan, Error, "Failed to create command pool for frame %i", index);
+					return false;
+				}
 			}
 
-			VkFenceCreateInfo fenceInfo{};
-			fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-			fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+			//Allocate the command buffer
+			{
+				VkCommandBufferAllocateInfo bufferAllocationInfo{};
+				bufferAllocationInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+				bufferAllocationInfo.commandPool = frame.commandPool;
+				bufferAllocationInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+				bufferAllocationInfo.commandBufferCount = 1;
 
-			if (vkCreateFence(logical.device, &fenceInfo, nullptr, &resource.fence) != VK_SUCCESS) {
-				LOGF(Vulkan, Error, "Failed to create fence for resource %i", index);
-				return false;
+				if (vkAllocateCommandBuffers(logical.device, &bufferAllocationInfo, &frame.commands) != VK_SUCCESS) {
+					LOGF(Vulkan, Error, "Failed to allocate command buffers from the command pool for frame %i", index);
+					return false;
+				}
+			}
+
+			//Create the uniforms descriptors and resources
+			{
+				VkDescriptorSet sets[] = {nullptr, nullptr};
+				VkDescriptorSetLayout const layouts[] = {layout.global, layout.object};
+
+				VkDescriptorSetAllocateInfo descriptorSetAI{};
+				descriptorSetAI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+				descriptorSetAI.descriptorPool = descriptorPool;
+				descriptorSetAI.descriptorSetCount = 2;
+				descriptorSetAI.pSetLayouts = layouts;
+
+				if (vkAllocateDescriptorSets(logical.device, &descriptorSetAI, sets) != VK_SUCCESS) {
+					LOGF(Vulkan, Error, "Could not allocate descriptor sets for frame %i", index);
+					continue;
+				}
+
+				frame.uniforms.global.set = sets[0];
+				frame.uniforms.object.set = sets[1];
+
+				constexpr size_t globalsSize = sizeof(GlobalUniformBufferObject);
+				if (frame.uniforms.global.resources.Reserve(logical.allocator, globalsSize, globalsSize) == EResourceModifyResult::Error) {
+					LOGF(Vulkan, Error, "Could not reserve space for global uniforms for frame %i", index);
+				}
+				frame.uniforms.global.UpdateDescriptors<false>(logical.device);
+
+				constexpr size_t initialNumElements = 512;
+				if (frame.uniforms.object.resources.Reserve(logical.allocator, globalsSize, globalsSize * initialNumElements) == EResourceModifyResult::Error) {
+					LOGF(Vulkan, Error, "Could not reserve space for object uniforms for frame %i", index);
+				}
+				frame.uniforms.object.UpdateDescriptors<true>(logical.device);
+			}
+
+			//Create the semaphores
+			{
+				VkSemaphoreCreateInfo semaphoreInfo{};
+				semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+				if (vkCreateSemaphore(logical.device, &semaphoreInfo, nullptr, &frame.imageAvailableSemaphore) != VK_SUCCESS) {
+					LOGF(Vulkan, Error, "Failed to create image available semaphore for frame %i", index);
+					return false;
+				}
+				if (vkCreateSemaphore(logical.device, &semaphoreInfo, nullptr, &frame.renderFinishedSemaphore) != VK_SUCCESS) {
+					LOGF(Vulkan, Error, "Failed to create render finished semaphore for frame %i", index);
+					return false;
+				}
+			}
+
+			//Create the fence
+			{
+				VkFenceCreateInfo fenceInfo{};
+				fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+				fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+				if (vkCreateFence(logical.device, &fenceInfo, nullptr, &frame.fence) != VK_SUCCESS) {
+					LOGF(Vulkan, Error, "Failed to create fence for frame %i", index);
+					return false;
+				}
 			}
 		}
 
 		imageFences.resize(numImages);
 
-		VkCommandPoolCreateInfo poolInfo{};
-		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		poolInfo.queueFamilyIndex = physical.queues.graphics.value().index;
-		poolInfo.flags = 0; // Optional
+		//Create the generic command pool
+		{
+			VkCommandPoolCreateInfo poolInfo{};
+			poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+			poolInfo.queueFamilyIndex = physical.queues.graphics.value().index;
+			poolInfo.flags = 0; // Optional
 
-		assert(!pool);
-		if (vkCreateCommandPool(logical.device, &poolInfo, nullptr, &pool) != VK_SUCCESS) {
-			LOG(Vulkan, Error, "Failed to create general command pool");
-			return false;
+			assert(!commandPool);
+			if (vkCreateCommandPool(logical.device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
+				LOG(Vulkan, Error, "Failed to create general command pool");
+				return false;
+			}
 		}
 
-		VkCommandBufferAllocateInfo bufferAllocationInfo{};
-		bufferAllocationInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		bufferAllocationInfo.commandPool = pool;
-		bufferAllocationInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		bufferAllocationInfo.commandBufferCount = 1;
+		//Allocate the staging command buffer
+		{
+			VkCommandBufferAllocateInfo bufferAllocationInfo{};
+			bufferAllocationInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+			bufferAllocationInfo.commandPool = commandPool;
+			bufferAllocationInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+			bufferAllocationInfo.commandBufferCount = 1;
 
-		assert(!stagingCommandBuffer);
-		if (vkAllocateCommandBuffers(logical.device, &bufferAllocationInfo, &stagingCommandBuffer) != VK_SUCCESS) {
-			LOG(Vulkan, Error, "Failed to allocate general command buffers");
-			return false;
+			assert(!stagingCommandBuffer);
+			if (vkAllocateCommandBuffers(logical.device, &bufferAllocationInfo, &stagingCommandBuffer) != VK_SUCCESS) {
+				LOG(Vulkan, Error, "Failed to allocate general command buffers");
+				return false;
+			}
 		}
 
 		return true;
 	}
 
 	void VulkanFrameOrganizer::Destroy(VulkanLogicalDevice const& logical) {
-		for (FrameResources const& resource : resources) {
-			if (resource.pool) vkDestroyCommandPool(logical.device, resource.pool, nullptr);
-			if (resource.renderFinishedSemaphore) vkDestroySemaphore(logical.device, resource.renderFinishedSemaphore, nullptr);
-			if (resource.imageAvailableSemaphore) vkDestroySemaphore(logical.device, resource.imageAvailableSemaphore, nullptr);
-			if (resource.fence) vkDestroyFence(logical.device, resource.fence, nullptr);
+		for (FrameResources const& frame : resources) {
+			if (frame.commandPool) vkDestroyCommandPool(logical.device, frame.commandPool, nullptr);
+			frame.uniforms.global.resources.Destroy(logical.allocator);
+			frame.uniforms.object.resources.Destroy(logical.allocator);
+			if (frame.renderFinishedSemaphore) vkDestroySemaphore(logical.device, frame.renderFinishedSemaphore, nullptr);
+			if (frame.imageAvailableSemaphore) vkDestroySemaphore(logical.device, frame.imageAvailableSemaphore, nullptr);
+			if (frame.fence) vkDestroyFence(logical.device, frame.fence, nullptr);
 		}
 		resources.clear();
-		if (pool) vkDestroyCommandPool(logical.device, pool, nullptr);
+
+		if (descriptorPool) vkDestroyDescriptorPool(logical.device, descriptorPool, nullptr);
+		if (layout.object) vkDestroyDescriptorSetLayout(logical.device, layout.object, nullptr);
+		if (layout.global) vkDestroyDescriptorSetLayout(logical.device, layout.global, nullptr);
+		if (commandPool) vkDestroyCommandPool(logical.device, commandPool, nullptr);
 		currentResourceIndex = 0;
 	}
 
-	EPreparationResult VulkanFrameOrganizer::Prepare(CTX_ARG, VulkanLogicalDevice const& logical, VulkanSwapchain const& swapchain) {
+	EPreparationResult VulkanFrameOrganizer::Prepare(CTX_ARG, VulkanLogicalDevice const& logical, VulkanSwapchain const& swapchain, size_t numObjects) {
 		constexpr uint64_t waitTime = 5'000'000'000;
 
-		FrameResources const& resource = resources[currentResourceIndex];
+		FrameResources& frame = resources[currentResourceIndex];
 
-		//Wait for the resource fence to finish, indicating this resource is no longer in use
-		if (vkWaitForFences(logical.device, 1, &resource.fence, VK_TRUE, waitTime) != VK_SUCCESS) {
+		//Wait for the frame fence to finish, indicating this frame is no longer in use
+		if (vkWaitForFences(logical.device, 1, &frame.fence, VK_TRUE, waitTime) != VK_SUCCESS) {
 			LOG(Vulkan, Warning, "Timed out waiting for fence");
 			return EPreparationResult::Retry;
 		}
 
-		//Reset the command buffers used for this resource
-		if (vkResetCommandPool(logical.device, resource.pool, 0) != VK_SUCCESS) {
+		//Reset the command buffers used for this frame
+		if (vkResetCommandPool(logical.device, frame.commandPool, 0) != VK_SUCCESS) {
 			LOG(Vulkan, Error, "Unable to reset command pool");
 			return EPreparationResult::Error;
 		}
 
-		//Acquire the swapchain image that can be used for this resource
+		//Acquire the swapchain image that can be used for this frame
 		currentImageIndex = 0;
-		if (vkAcquireNextImageKHR(logical.device, swapchain.swapchain, waitTime, resource.imageAvailableSemaphore, VK_NULL_HANDLE, &currentImageIndex) != VK_SUCCESS) {
+		if (vkAcquireNextImageKHR(logical.device, swapchain.swapchain, waitTime, frame.imageAvailableSemaphore, VK_NULL_HANDLE, &currentImageIndex) != VK_SUCCESS) {
 			LOG(Vulkan, Warning, "Timed out waiting for next available swapchain image");
 			return EPreparationResult::Retry;
 		}
@@ -121,13 +239,25 @@ namespace Rendering {
 		//Expand the fences array to make sure it contains the current index.
 		if (currentImageIndex >= imageFences.size()) imageFences.resize(currentImageIndex + 1);
 
-		//If another resource is still using this image, wait for it to complete
+		//If another frame is still using this image, wait for it to complete
 		if (imageFences[currentImageIndex] != VK_NULL_HANDLE) {
 			if (vkWaitForFences(logical.device, 1, &imageFences[currentImageIndex], VK_TRUE, waitTime) != VK_SUCCESS) {
 				LOGF(Vulkan, Warning, "Timed out waiting for image fence %i", currentImageIndex);
 				return EPreparationResult::Retry;
 			}
 		}
+
+		constexpr size_t objectSize = sizeof(ObjectUniformBufferObject);
+		EResourceModifyResult const modifyResult = frame.uniforms.object.resources.Reserve(logical.allocator, objectSize, objectSize * numObjects);
+		switch (modifyResult) {
+			case EResourceModifyResult::Error:
+			return EPreparationResult::Error;
+
+			case EResourceModifyResult::Modified:
+			frame.uniforms.object.UpdateDescriptors<true>(logical.device);
+
+			default: break;
+		};
 
 		//We're good to start recording commands
 		return EPreparationResult::Success;
@@ -156,7 +286,7 @@ namespace Rendering {
 		submitInfo.pWaitDstStageMask = waitStages;
 
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &resource.buffer;
+		submitInfo.pCommandBuffers = &resource.commands;
 
 		VkSemaphore signalSemaphores[1] = {resource.renderFinishedSemaphore};
 		submitInfo.signalSemaphoreCount = 1;

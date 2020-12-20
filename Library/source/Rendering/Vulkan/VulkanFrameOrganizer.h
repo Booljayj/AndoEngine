@@ -4,6 +4,7 @@
 #include "Rendering/Vulkan/Vulkan.h"
 #include "Rendering/Vulkan/VulkanLogicalDevice.h"
 #include "Rendering/Vulkan/VulkanPhysicalDevice.h"
+#include "Rendering/Vulkan/VulkanResources.h"
 #include "Rendering/Vulkan/VulkanSwapchain.h"
 
 namespace Rendering {
@@ -26,15 +27,21 @@ namespace Rendering {
 	/** Resources used for a single frame of rendering */
 	struct FrameResources {
 		/** Command recording objects */
-		VkCommandPool pool = nullptr;
-		VkCommandBuffer buffer = nullptr;
+		VkCommandPool commandPool = nullptr;
+		VkCommandBuffer commands = nullptr;
+
+		/** Uniforms */
+		struct {
+			VulkanUniforms global;
+			VulkanUniforms object;
+		} uniforms;
 
 		/** Synchronization objects */
 		VkSemaphore imageAvailableSemaphore = nullptr;
 		VkSemaphore renderFinishedSemaphore = nullptr;
 		VkFence fence = nullptr;
 
-		static bool IsValid(FrameResources const& r) { return r.pool && r.buffer && r.imageAvailableSemaphore && r.renderFinishedSemaphore && r.fence; }
+		static bool IsValid(FrameResources const& r) { return r.commandPool && r.commands && r.uniforms.global && r.uniforms.object && r.imageAvailableSemaphore && r.renderFinishedSemaphore && r.fence; }
 	};
 
 	/** Keeps track of the resources used each frame, and how they should be used. */
@@ -44,8 +51,16 @@ namespace Rendering {
 		std::vector<VkFence> imageFences;
 
 		/** Command recording objects */
-		VkCommandPool pool = nullptr;
+		VkCommandPool commandPool = nullptr;
 		VkCommandBuffer stagingCommandBuffer = nullptr;
+
+		struct {
+			VkDescriptorSetLayout global;
+			VkDescriptorSetLayout object;
+		} layout;
+
+		/** The pool for descriptors used in each frame */
+		VkDescriptorPool descriptorPool;
 
 		size_t currentResourceIndex = 0;
 		uint32_t currentImageIndex = -1;
@@ -56,7 +71,7 @@ namespace Rendering {
 		void Destroy(VulkanLogicalDevice const& logical);
 
 		/** Prepare the next set of resources for rendering */
-		EPreparationResult Prepare(CTX_ARG, VulkanLogicalDevice const& logical, VulkanSwapchain const& swapchain);
+		EPreparationResult Prepare(CTX_ARG, VulkanLogicalDevice const& logical, VulkanSwapchain const& swapchain, size_t numObjects);
 		/** Submit everything currently recorded so that it can be rendered. */
 		bool Submit(CTX_ARG, VulkanLogicalDevice const& logical, VulkanSwapchain const& swapchain);
 
@@ -70,14 +85,14 @@ namespace Rendering {
 			beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 			beginInfo.pInheritanceInfo = nullptr; // Optional
 
-			if (vkBeginCommandBuffer(frame.buffer, &beginInfo) != VK_SUCCESS) {
+			if (vkBeginCommandBuffer(frame.commands, &beginInfo) != VK_SUCCESS) {
 				LOG(Vulkan, Error, "Failed to begin recording command buffer");
 				return false;
 			}
 
-			recorder(frame.buffer, currentImageIndex);
+			recorder(frame, currentImageIndex);
 
-			if (vkEndCommandBuffer(frame.buffer) != VK_SUCCESS) {
+			if (vkEndCommandBuffer(frame.commands) != VK_SUCCESS) {
 				LOG(Vulkan, Error, "Failed to finish recording command buffer");
 				return false;
 			}
