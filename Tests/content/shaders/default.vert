@@ -5,6 +5,6 @@
 #include "attributes_simple.vert.incl"
 
 void main() {
-    gl_Position = vec4(inPosition, 1.0);
+    gl_Position = object.modelViewProjection * vec4(inPosition, 1.0);
     outFragColor = inColor;
 }

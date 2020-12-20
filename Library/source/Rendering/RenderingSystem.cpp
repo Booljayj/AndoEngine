@@ -152,8 +152,9 @@ namespace Rendering {
 				auto const* material = materials.Find<MaterialComponent const>(renderer.material);
 				auto const* mesh = meshes.Find<MeshComponent const>(renderer.mesh);
 				if (material && material->resources && mesh && mesh->resources) {
-					//Write to the part of the object uniform buffer designated for this object
 					uint32_t const objectUniformsOffset = sizeof(ObjectUniformBufferObject) * objectIndex;
+
+					//Write to the part of the object uniform buffer designated for this object
 					ObjectUniformBufferObject object;
 					object.modelViewProjection = glm::identity<glm::mat4>();
 					frame.uniforms.object.resources.uniforms.WriteValue(object, objectUniformsOffset);
@@ -182,6 +183,9 @@ namespace Rendering {
 					++objectIndex;
 				}
 			}
+
+			vmaFlushAllocation(logical.allocator, frame.uniforms.global.resources.uniforms.allocation, 0, VK_WHOLE_SIZE);
+			vmaFlushAllocation(logical.allocator, frame.uniforms.object.resources.uniforms.allocation, 0, VK_WHOLE_SIZE);
 		};
 
 		//Record rendering commands for this frame

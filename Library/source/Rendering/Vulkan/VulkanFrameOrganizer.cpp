@@ -125,8 +125,9 @@ namespace Rendering {
 				}
 				frame.uniforms.global.UpdateDescriptors<false>(logical.device);
 
+				constexpr size_t objectsSize = sizeof(ObjectUniformBufferObject);
 				constexpr size_t initialNumElements = 512;
-				if (frame.uniforms.object.resources.Reserve(logical.allocator, globalsSize, globalsSize * initialNumElements) == EResourceModifyResult::Error) {
+				if (frame.uniforms.object.resources.Reserve(logical.allocator, objectsSize, objectsSize * initialNumElements) == EResourceModifyResult::Error) {
 					LOGF(Vulkan, Error, "Could not reserve space for object uniforms for frame %i", index);
 				}
 				frame.uniforms.object.UpdateDescriptors<true>(logical.device);
