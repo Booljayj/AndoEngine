@@ -168,8 +168,7 @@ namespace Rendering {
 						//materialInstance->resources.set,
 						frame.uniforms.object.set,
 					};
-					constexpr uint32_t numSets = sizeof(sets)/sizeof(sets[0]);
-					vkCmdBindDescriptorSets(frame.commands, VK_PIPELINE_BIND_POINT_GRAPHICS, material->resources.pipelineLayout, 0, numSets, sets, 1, &objectUniformsOffset);
+					vkCmdBindDescriptorSets(frame.commands, VK_PIPELINE_BIND_POINT_GRAPHICS, material->resources.pipelineLayout, 0, Num(sets), sets, 1, &objectUniformsOffset);
 
 					//Bind the vetex and index buffers for the mesh
 					VkBuffer const vertexBuffers[] = { mesh->resources.buffer };
@@ -469,11 +468,10 @@ namespace Rendering {
 				//resources.descriptors,
 				organizer.descriptorSetLayout.object,
 			};
-			constexpr size_t numSetLayouts = sizeof(setLayouts)/sizeof(setLayouts[0]);
 
 			VkPipelineLayoutCreateInfo layoutCI{};
 			layoutCI.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-			layoutCI.setLayoutCount = numSetLayouts;
+			layoutCI.setLayoutCount = Num(setLayouts);
 			layoutCI.pSetLayouts = setLayouts;
 			layoutCI.pushConstantRangeCount = 0; // Optional
 			layoutCI.pPushConstantRanges = nullptr; // Optional

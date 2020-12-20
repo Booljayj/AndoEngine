@@ -6,6 +6,10 @@
 //Utility to convert an expanded macro to a string
 #define STRINGIFY_MACRO(x) STRINGIFY(x)
 
+/** Calculates the number of elements in a static array */
+template<typename T, size_t N>
+constexpr size_t Num(T(&array)[N]) { return N; }
+
 namespace Utility {
 	/** Write a value to a buffer using an exact number of digits in reverse order. */
 	void WriteReversedValue(uint16_t value, const uint8_t numDigits, char* buffer);
