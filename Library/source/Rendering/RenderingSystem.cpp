@@ -143,7 +143,7 @@ namespace Rendering {
 			global.viewProjection = glm::identity<glm::mat4>();
 			global.viewProjectionInverse = glm::inverse(global.viewProjection);
 			global.time = 0;
-			frame.uniforms.global.resources.Write(global, 0);
+			frame.uniforms.global.resources.uniforms.WriteValue(global, 0);
 
 			uint32_t objectIndex = 0;
 			for (const auto id : renderables) {
@@ -156,7 +156,7 @@ namespace Rendering {
 					uint32_t const objectUniformsOffset = sizeof(ObjectUniformBufferObject) * objectIndex;
 					ObjectUniformBufferObject object;
 					object.modelViewProjection = glm::identity<glm::mat4>();
-					frame.uniforms.object.resources.Write(object, objectUniformsOffset);
+					frame.uniforms.object.resources.uniforms.WriteValue(object, objectUniformsOffset);
 
 					//Bind the pipeline that will be used for rendering
 					vkCmdBindPipeline(frame.commands, VK_PIPELINE_BIND_POINT_GRAPHICS, material->resources.pipeline);
@@ -168,7 +168,7 @@ namespace Rendering {
 						frame.uniforms.object.set,
 					};
 					constexpr uint32_t numSets = sizeof(sets)/sizeof(sets[0]);
-					vkCmdBindDescriptorSets(frame.commands, VK_PIPELINE_BIND_POINT_GRAPHICS, material->resources.layout, 0, numSets, sets, 1, &objectUniformsOffset);
+					vkCmdBindDescriptorSets(frame.commands, VK_PIPELINE_BIND_POINT_GRAPHICS, material->resources.pipelineLayout, 0, numSets, sets, 1, &objectUniformsOffset);
 
 					//Bind the vetex and index buffers for the mesh
 					VkBuffer const vertexBuffers[] = { mesh->resources.buffer };
@@ -385,14 +385,15 @@ namespace Rendering {
 
 	void RenderingSystem::CreatePipelines(CTX_ARG, EntityRegistry& registry) {
 		//The library of shader modules that will stay loaded as long as we need to continue creating pipelines
-		VulkanShaderModuleLibrary library{ logical.device };
+		VulkanPipelineCreationHelper helper{logical.device};
 
 		auto const materials = registry.GetView<MaterialComponent>();
 		for (const auto id : materials) {
 			MaterialComponent& material = materials.Get<MaterialComponent>(id);
 			if (!material.resources) {
-				CreatePipeline(CTX, material, id, library);
-				if (!material.resources) material.resources.Destroy(logical.device);
+				VulkanPipelineResources const resources = CreatePipeline(CTX, material, id, helper);
+				if (resources) material.resources = resources;
+				else resources.Destroy(logical.device);
 			}
 		}
 	}
@@ -411,7 +412,7 @@ namespace Rendering {
 	}
 
 	void RenderingSystem::DestroyStalePipelines() {
-		for (VulkanPipelineResources resources : stalePipelineResources) {
+		for (VulkanPipelineResources const& resources : stalePipelineResources) {
 			resources.Destroy(logical.device);
 		}
 		stalePipelineResources.clear();
@@ -424,9 +425,9 @@ namespace Rendering {
 		for (const auto id : meshes) {
 			MeshComponent& mesh = meshes.Get<MeshComponent>(id);
 			if (!mesh.resources) {
-				VulkanMeshCreationResults const result = CreateMesh(CTX, mesh, id, organizer.commandPool);
-				helper.Submit(result);
-				if (!mesh.resources) mesh.resources.Destroy(logical.allocator);
+				VulkanMeshResources const resources = CreateMesh(CTX, mesh, id, organizer.commandPool, helper);
+				if (resources) mesh.resources = resources;
+				else resources.Destroy(logical.allocator);
 			}
 		}
 		helper.Flush();
@@ -448,19 +449,21 @@ namespace Rendering {
 		return physicalDevice.HasRequiredQueues() && physicalDevice.HasRequiredExtensions(extensionNames) && physicalDevice.HasSwapchainSupport();
 	}
 
-	void RenderingSystem::CreatePipeline(CTX_ARG, MaterialComponent& material, EntityID id, VulkanShaderModuleLibrary& library) {
+	VulkanPipelineResources RenderingSystem::CreatePipeline(CTX_ARG, MaterialComponent const& material, EntityID id, VulkanPipelineCreationHelper& helper) {
+		VulkanPipelineResources resources;
+
 		//Create the descriptor set layout
 		{
 			//@todo Actually create this on a per-material basis
-			material.resources.descriptors = nullptr;
+			resources.descriptorSetLayout = nullptr;
 		}
 
 		//Create the pipeline layout
 		{
 			VkDescriptorSetLayout setLayouts[] = {
-				organizer.layout.global,
-				//material.resources.descriptors,
-				organizer.layout.object,
+				organizer.descriptorSetLayout.global,
+				//resources.descriptors,
+				organizer.descriptorSetLayout.object,
 			};
 			constexpr size_t numSetLayouts = sizeof(setLayouts)/sizeof(setLayouts[0]);
 
@@ -471,17 +474,15 @@ namespace Rendering {
 			layoutCI.pushConstantRangeCount = 0; // Optional
 			layoutCI.pPushConstantRanges = nullptr; // Optional
 
-			assert(!material.resources.layout);
-			if (vkCreatePipelineLayout(logical.device, &layoutCI, nullptr, &material.resources.layout) != VK_SUCCESS) {
+			if (vkCreatePipelineLayout(logical.device, &layoutCI, nullptr, &resources.pipelineLayout) != VK_SUCCESS) {
 				LOGF(Temp, Error, "Failed to create pipeline layout for material %i", id);
-				return;
+				return resources;
 			}
 		}
 
-		VkShaderModule const vertShaderModule = library.GetModule(CTX, material.vertex);
-		if (!vertShaderModule) return;
-		VkShaderModule const fragShaderModule = library.GetModule(CTX, material.fragment);
-		if (!fragShaderModule) return;
+		VkShaderModule const vertShaderModule = helper.GetModule(CTX, material.vertex);
+		VkShaderModule const fragShaderModule = helper.GetModule(CTX, material.fragment);
+		if (!vertShaderModule || !fragShaderModule) return resources;
 
 		VkPipelineShaderStageCreateInfo vertShaderStageCI{};
 		vertShaderStageCI.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -604,20 +605,23 @@ namespace Rendering {
 		pipelineCI.pColorBlendState = &colorBlendingCI;
 		pipelineCI.pDynamicState = nullptr; // Optional
 		//Additional data
-		pipelineCI.layout = material.resources.layout;
+		pipelineCI.layout = resources.pipelineLayout;
 		pipelineCI.renderPass = main.pass;
 		pipelineCI.subpass = 0;
 		//Parent pipelines, if this pipeline derives from another
 		pipelineCI.basePipelineHandle = VK_NULL_HANDLE; // Optional
 		pipelineCI.basePipelineIndex = -1; // Optional
 
-		assert(!material.resources.pipeline);
-		if (vkCreateGraphicsPipelines(logical.device, VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &material.resources.pipeline) != VK_SUCCESS) {
+		if (vkCreateGraphicsPipelines(logical.device, VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &resources.pipeline) != VK_SUCCESS) {
 			LOGF(Temp, Error, "Failed to create pipeline for material %i", id);
 		}
+
+		return resources;
 	}
 
-	VulkanMeshCreationResults RenderingSystem::CreateMesh(CTX_ARG, MeshComponent& mesh, EntityID id, VkCommandPool pool) {
+	VulkanMeshResources RenderingSystem::CreateMesh(CTX_ARG, MeshComponent const& mesh, EntityID id, VkCommandPool pool, VulkanMeshCreationHelper& helper) {
+		VulkanMeshResources resources;
+
 		//Calculate byte size values for the input mesh
 		size_t const vertexBytes = sizeof(decltype(MeshComponent::vertices)::value_type) * mesh.vertices.size();
 		size_t const indexBytes = sizeof(decltype(MeshComponent::indices)::value_type) * mesh.indices.size();
@@ -629,22 +633,15 @@ namespace Rendering {
 		//Create the staging buffer used to upload data to the GPU-only buffer
 		constexpr VkBufferUsageFlags stagingBufferFlags = VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 		constexpr VmaMemoryUsage stagingAllocationFlags = VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_ONLY;
-		UniqueVulkanBuffer staging = CreateBuffer(logical.allocator, totalBytes, stagingBufferFlags, stagingAllocationFlags);
+		VulkanMappedBuffer const staging = CreateMappedBuffer(logical.allocator, totalBytes, stagingBufferFlags, stagingAllocationFlags);
 		if (!staging) {
 			LOG(Vulkan, Error, "Failed to create staging buffer");
-			return VulkanMeshCreationResults{};
+			return resources;
 		}
 
 		//Fill the staging buffer with the source data
-		void* ptr;
-		if (vmaMapMemory(logical.allocator, staging.allocation, &ptr) != VK_SUCCESS) {
-			LOG(Vulkan, Error, "Failed to map staging buffer memory");
-			return VulkanMeshCreationResults{};
-		}
-		char* mapped = static_cast<char*>(ptr);
-		memcpy(mapped + vertexOffset, mesh.vertices.data(), vertexBytes);
-		memcpy(mapped + indexOffset , mesh.indices.data(), indexBytes);
-		vmaUnmapMemory(logical.allocator, staging.allocation);
+		staging.WriteArray(MakeView(mesh.vertices), vertexOffset);
+		staging.WriteArray(MakeView(mesh.indices), indexOffset);
 
 		//Create the target buffer that will contain the uploaded data for the GPU to use
 		constexpr VkBufferUsageFlags targetBufferFlags =
@@ -652,10 +649,11 @@ namespace Rendering {
 			VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
 			VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 		constexpr VmaMemoryUsage targetMemoryFlags = VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY;
-		UniqueVulkanBuffer target = CreateBuffer(logical.allocator, totalBytes, targetBufferFlags, targetMemoryFlags);
-		if (!target) {
+		resources.buffer = CreateBuffer(logical.allocator, totalBytes, targetBufferFlags, targetMemoryFlags);
+		if (!resources.buffer) {
 			LOG(Vulkan, Error, "Failed to create gpu buffer");
-			return VulkanMeshCreationResults{};
+			helper.Submit(staging, nullptr);
+			return resources;
 		}
 
 		//Allocate a command buffer for the transfer from the staging to the target buffer
@@ -668,7 +666,8 @@ namespace Rendering {
 		VkCommandBuffer commands;
 		if (vkAllocateCommandBuffers(logical.device, &bufferAI, &commands) != VK_SUCCESS) {
 			LOG(Vulkan, Error, "Failed to allocate command buffers");
-			return VulkanMeshCreationResults{};
+			helper.Submit(staging, nullptr);
+			return resources;
 		}
 
 		//Begin recording the command buffer for staging commands
@@ -678,7 +677,8 @@ namespace Rendering {
 
 		if (vkBeginCommandBuffer(commands, &beginInfo) != VK_SUCCESS) {
 			LOG(Vulkan, Error, "Failed to begin recording command buffer");
-			return VulkanMeshCreationResults{};
+			helper.Submit(staging, nullptr);
+			return resources;
 		}
 
 		//Record the command to transfer from the staging buffer to the target buffer
@@ -686,25 +686,23 @@ namespace Rendering {
 		copy.srcOffset = 0; // Optional
 		copy.dstOffset = 0; // Optional
 		copy.size = totalBytes;
-		vkCmdCopyBuffer(commands, staging.buffer, target.buffer, 1, &copy);
+		vkCmdCopyBuffer(commands, staging.buffer, resources.buffer, 1, &copy);
 
 		//Finish recording the command buffer
 		if (vkEndCommandBuffer(commands) != VK_SUCCESS) {
 			LOG(Vulkan, Error, "Failed to finish recording command buffer");
-			return VulkanMeshCreationResults{};
+			helper.Submit(staging, nullptr);
+			return resources;
 		}
 
-		//We've successfully created the buffers and recorded the command to transfer the data, so output all important values
-		mesh.resources.buffer = target.Release();
-		mesh.resources.offset.vertex = vertexOffset;
-		mesh.resources.offset.index = indexOffset;
-		mesh.resources.size.vertices = mesh.vertices.size();
-		mesh.resources.size.indices = mesh.indices.size();
+		//Submit the buffer and commands. We've successfully created everything
+		helper.Submit(staging, commands);
 
-		VulkanMeshCreationResults result;
-		result.commands = commands;
-		result.staging = staging.Release();
-
-		return result;
+		//Record the size and offset information. This is the primary way we'll know that the resources are valid
+		resources.offset.vertex = 0;
+		resources.offset.index = vertexBytes;
+		resources.size.vertices = mesh.vertices.size();
+		resources.size.indices = mesh.indices.size();
+		return resources;
 	}
 }

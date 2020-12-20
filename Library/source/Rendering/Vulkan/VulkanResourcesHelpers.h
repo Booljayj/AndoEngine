@@ -6,10 +6,10 @@
 
 namespace Rendering {
 	/** A library of loaded shader modules which can be re-used to create pipelines */
-	struct VulkanShaderModuleLibrary {
+	struct VulkanPipelineCreationHelper {
 	public:
-		VulkanShaderModuleLibrary(VkDevice inDevice);
-		~VulkanShaderModuleLibrary();
+		VulkanPipelineCreationHelper(VkDevice inDevice);
+		~VulkanPipelineCreationHelper();
 
 		/** Get an already-loaded module, or load a new one */
 		VkShaderModule GetModule(CTX_ARG, std::string_view name);
@@ -25,8 +25,7 @@ namespace Rendering {
 	};
 
 	struct VulkanMeshCreationHelper {
-		std::vector<VulkanMeshCreationResults> results;
-		size_t flushIterations = 0;
+		std::vector<VulkanMappedBuffer> stagingBuffers;
 
 		VkDevice device = nullptr;
 		VmaAllocator allocator = nullptr;
@@ -37,7 +36,7 @@ namespace Rendering {
 		: device(inDevice), allocator(inAllocator), queue(inQueue), pool(inPool)
 		{}
 
-		void Submit(VulkanMeshCreationResults const& result);
+		void Submit(VulkanMappedBuffer const& staging, VkCommandBuffer commands);
 		void Flush();
 	};
 }

@@ -65,3 +65,18 @@ private:
 	T const* begin_ = nullptr;
 	size_t size_ = 0;
 };
+
+template<typename T>
+TArrayView<T> MakeView(T const& value) { return TArrayView<T>{value}; }
+
+template<typename T, size_t N>
+TArrayView<T> MakeView(T(&array)[N]) { return TArrayView<T>{array}; }
+
+template<typename T, typename AllocatorType>
+TArrayView<T> MakeView(std::vector<T, AllocatorType> const& vector) { return TArrayView<T>{vector}; }
+
+template<typename T, size_t N>
+TArrayView<T> MakeView(std::array<T, N> const& array) { return TArrayView<T>{array}; }
+
+template<typename T>
+TArrayView<T> MakeView(std::initializer_list<T> const& list) { return TArrayView<T>{list}; }

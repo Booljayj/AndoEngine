@@ -57,7 +57,7 @@ namespace Rendering {
 		struct {
 			VkDescriptorSetLayout global;
 			VkDescriptorSetLayout object;
-		} layout;
+		} descriptorSetLayout;
 
 		/** The pool for descriptors used in each frame */
 		VkDescriptorPool descriptorPool;

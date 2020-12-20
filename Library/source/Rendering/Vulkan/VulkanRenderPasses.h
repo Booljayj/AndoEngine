@@ -35,7 +35,7 @@ namespace Rendering {
 		: ScopedRenderPass(buffer, info.pass, info.clearValues, info.framebuffers[index], offset, extent)
 		{}
 
-		ScopedRenderPass(VkCommandBuffer buffer, VkRenderPass pass, TArrayView<VkClearValue const> clearValues, VkFramebuffer framebuffer, VkOffset2D offset, VkExtent2D extent);
+		ScopedRenderPass(VkCommandBuffer buffer, VkRenderPass pass, TArrayView<VkClearValue> clearValues, VkFramebuffer framebuffer, VkOffset2D offset, VkExtent2D extent);
 		~ScopedRenderPass();
 	};
 }

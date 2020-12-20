@@ -2,7 +2,7 @@
 #include "Engine/LogCommands.h"
 
 namespace Rendering {
-	ScopedRenderPass::ScopedRenderPass(VkCommandBuffer buffer, VkRenderPass pass, TArrayView<VkClearValue const> clearValues, VkFramebuffer framebuffer, VkOffset2D offset, VkExtent2D extent) {
+	ScopedRenderPass::ScopedRenderPass(VkCommandBuffer buffer, VkRenderPass pass, TArrayView<VkClearValue> clearValues, VkFramebuffer framebuffer, VkOffset2D offset, VkExtent2D extent) {
 		cachedBuffer = buffer;
 
 		VkRenderPassBeginInfo renderPassInfo{};

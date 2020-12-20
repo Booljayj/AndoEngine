@@ -115,8 +115,8 @@ namespace Rendering {
 		bool IsUsablePhysicalDevice(const Rendering::VulkanPhysicalDevice& physicalDevice, TArrayView<char const*> const& extensionNames);
 
 		/** Create the pipeline resources for a material */
-		void CreatePipeline(CTX_ARG, MaterialComponent& material, EntityID id, VulkanShaderModuleLibrary& library);
+		VulkanPipelineResources CreatePipeline(CTX_ARG, MaterialComponent const& material, EntityID id, VulkanPipelineCreationHelper& helper);
 		/** Create the mesh resources for a mesh component */
-		VulkanMeshCreationResults CreateMesh(CTX_ARG, MeshComponent& mesh, EntityID id, VkCommandPool pool);
+		VulkanMeshResources CreateMesh(CTX_ARG, MeshComponent const& mesh, EntityID id, VkCommandPool pool, VulkanMeshCreationHelper& helper);
 	};
 }

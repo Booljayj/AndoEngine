@@ -3,18 +3,18 @@
 #include "Rendering/Vulkan/VulkanResourcesHelpers.h"
 
 namespace Rendering {
-	VulkanShaderModuleLibrary::VulkanShaderModuleLibrary(VkDevice inDevice)
+	VulkanPipelineCreationHelper::VulkanPipelineCreationHelper(VkDevice inDevice)
 	: device(inDevice)
 	{}
 
-	VulkanShaderModuleLibrary::~VulkanShaderModuleLibrary() {
+	VulkanPipelineCreationHelper::~VulkanPipelineCreationHelper() {
 		for (Entry entry : entries) {
 			if (entry.module) vkDestroyShaderModule(device, entry.module, nullptr);
 		}
 	}
 
-	VkShaderModule VulkanShaderModuleLibrary::GetModule(CTX_ARG, std::string_view name) {
-		Hash32 const nameHash = Hash32{ name };
+	VkShaderModule VulkanPipelineCreationHelper::GetModule(CTX_ARG, std::string_view name) {
+		Hash32 const nameHash = Hash32{name};
 
 		//Try to find an existing loaded shader entry
 		auto const iter = std::find_if(entries.begin(), entries.end(), [=](auto const& entry) { return entry.hash == nameHash; });
@@ -35,7 +35,7 @@ namespace Rendering {
 			return nullptr;
 		}
 
-		size_t const bufferSize = (size_t) file.tellg();
+		size_t const bufferSize = static_cast<size_t>(file.tellg());
 		char* const buffer = static_cast<char*>(CTX.temp.Request(bufferSize, sizeof(char), alignof(uint32_t)));
 
 		file.seekg(0);
@@ -57,31 +57,32 @@ namespace Rendering {
 		return module;
 	}
 
-	void VulkanMeshCreationHelper::Submit(VulkanMeshCreationResults const& result) {
+	void VulkanMeshCreationHelper::Submit(VulkanMappedBuffer const& staging, VkCommandBuffer commands) {
+		constexpr size_t NumStagingBuffersPerFlush = 512;
 		//Keep track of the results
-		results.push_back(result);
+		stagingBuffers.push_back(staging);
 
-		//Submit the transfer requests
-		VkSubmitInfo submitInfo{};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &result.commands;
-		vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
+		if (commands) {
+			//Submit the transfer requests
+			VkSubmitInfo submitInfo{};
+			submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+			submitInfo.commandBufferCount = 1;
+			submitInfo.pCommandBuffers = &commands;
+			vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
+		}
 
-		//Increment the number of iterations. If we've uploaded enough data, flush the queue so we can remove temporary resources
-		++flushIterations;
-		if (flushIterations > 511) {
+		//If we've uploaded enough data, flush the queue so we can remove temporary resources
+		if (stagingBuffers.size() >= NumStagingBuffersPerFlush) {
 			Flush();
 		}
 	}
 
 	void VulkanMeshCreationHelper::Flush() {
-		flushIterations = 0;
 		vkQueueWaitIdle(queue);
 		vkResetCommandPool(device, pool, 0);
-		for (VulkanMeshCreationResults& result : results) {
-			result.staging.Destroy(allocator);
+		for (VulkanMappedBuffer const& staging : stagingBuffers) {
+			staging.Destroy(allocator);
 		}
-		results.clear();
+		stagingBuffers.clear();
 	}
 }

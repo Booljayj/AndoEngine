@@ -45,8 +45,8 @@ namespace Rendering {
 			layoutCI.bindingCount = bindings.size();
 			layoutCI.pBindings = bindings.data();
 
-			assert(!layout.global);
-			if (vkCreateDescriptorSetLayout(logical.device, &layoutCI, nullptr, &layout.global) != VK_SUCCESS) {
+			assert(!descriptorSetLayout.global);
+			if (vkCreateDescriptorSetLayout(logical.device, &layoutCI, nullptr, &descriptorSetLayout.global) != VK_SUCCESS) {
 				LOG(Vulkan, Error, "Failed to create descriptor set layout");
 				return false;
 			}
@@ -62,8 +62,8 @@ namespace Rendering {
 			layoutCI.bindingCount = bindings.size();
 			layoutCI.pBindings = bindings.data();
 
-			assert(!layout.object);
-			if (vkCreateDescriptorSetLayout(logical.device, &layoutCI, nullptr, &layout.object) != VK_SUCCESS) {
+			assert(!descriptorSetLayout.object);
+			if (vkCreateDescriptorSetLayout(logical.device, &layoutCI, nullptr, &descriptorSetLayout.object) != VK_SUCCESS) {
 				LOG(Vulkan, Error, "Failed to create descriptor set layout");
 				return false;
 			}
@@ -103,7 +103,7 @@ namespace Rendering {
 			//Create the uniforms descriptors and resources
 			{
 				VkDescriptorSet sets[] = {nullptr, nullptr};
-				VkDescriptorSetLayout const layouts[] = {layout.global, layout.object};
+				VkDescriptorSetLayout const layouts[] = {descriptorSetLayout.global, descriptorSetLayout.object};
 
 				VkDescriptorSetAllocateInfo descriptorSetAI{};
 				descriptorSetAI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -206,8 +206,8 @@ namespace Rendering {
 		resources.clear();
 
 		if (descriptorPool) vkDestroyDescriptorPool(logical.device, descriptorPool, nullptr);
-		if (layout.object) vkDestroyDescriptorSetLayout(logical.device, layout.object, nullptr);
-		if (layout.global) vkDestroyDescriptorSetLayout(logical.device, layout.global, nullptr);
+		if (descriptorSetLayout.object) vkDestroyDescriptorSetLayout(logical.device, descriptorSetLayout.object, nullptr);
+		if (descriptorSetLayout.global) vkDestroyDescriptorSetLayout(logical.device, descriptorSetLayout.global, nullptr);
 		if (commandPool) vkDestroyCommandPool(logical.device, commandPool, nullptr);
 		currentResourceIndex = 0;
 	}

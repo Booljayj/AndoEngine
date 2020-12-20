@@ -11,15 +11,21 @@ namespace Rendering {
 
 	/** Stores resources related to a graphics pipeline */
 	struct VulkanPipelineResources {
-		VkDescriptorSetLayout descriptors = nullptr;
-		VkPipelineLayout layout = nullptr;
+		VkDescriptorSetLayout descriptorSetLayout = nullptr;
+		VkPipelineLayout pipelineLayout = nullptr;
 		VkPipeline pipeline = nullptr;
 
-		inline operator bool() const { return pipeline && layout; }
+		inline operator bool() const { return pipeline && pipelineLayout; }
+
+		inline void Destroy(VkDevice device) const {
+			if (pipeline) vkDestroyPipeline(device, pipeline, nullptr);
+			if (pipelineLayout) vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+			if (descriptorSetLayout) vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+		}
 		inline void Destroy(VkDevice device) {
 			if (pipeline) vkDestroyPipeline(device, pipeline, nullptr);
-			if (layout) vkDestroyPipelineLayout(device, layout, nullptr);
-			if (descriptors) vkDestroyDescriptorSetLayout(device, descriptors, nullptr);
+			if (pipelineLayout) vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+			if (descriptorSetLayout) vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
 			*this = VulkanPipelineResources{};
 		}
 	};
@@ -56,10 +62,11 @@ namespace Rendering {
 		}
 
 		/** Write a value at a specific offset in the buffer */
+		inline void Write(void const* begin, size_t size, size_t offset) const { memcpy(mapped + offset, begin, size); }
 		template<typename T>
-		inline void Write(T const& value, size_t offset) const { memcpy(mapped + offset, &value, sizeof(T)); }
+		inline void WriteValue(T const& value, size_t offset) const { Write(&value, sizeof(T), offset); }
 		template<typename T>
-		inline void Write(TArrayView<T const> values, size_t offset) const { memcpy(mapped + offset, values.begin(), sizeof(T) * values.size()); }
+		inline void WriteArray(TArrayView<T> values, size_t offset) const { Write(values.begin(), values.size() * sizeof(T), offset); }
 	};
 
 	/** A buffer and the memory allocation for it. Memory is persistently mapped for CPU access. */
@@ -82,29 +89,15 @@ namespace Rendering {
 		}
 
 		/** Write a value at a specific offset in the buffer */
+		inline void Write(void const* begin, size_t size, size_t offset) const { memcpy(mapped + offset, begin, size); }
 		template<typename T>
-		inline void Write(T const& value, size_t offset) const { memcpy(mapped + offset, &value, sizeof(T)); }
+		inline void WriteValue(T const& value, size_t offset) const { Write(&value, sizeof(T), offset); }
 		template<typename T>
-		inline void Write(TArrayView<T const> values, size_t offset) const { memcpy(mapped + offset, values.begin(), sizeof(T) * values.size()); }
-	};
-
-	/** Holds a vulkan buffer that will be destroyed at the end of the scope unless released */
-	struct UniqueVulkanBuffer {
-		VkBuffer buffer = nullptr;
-		VmaAllocation allocation = nullptr;
-		VmaAllocator allocator = nullptr;
-		VkDeviceSize capacity = 0;
-
-		UniqueVulkanBuffer() = default;
-		UniqueVulkanBuffer(UniqueVulkanBuffer&& other);
-		~UniqueVulkanBuffer();
-
-		operator bool() const { return buffer && allocation; }
-		VulkanBuffer Release();
+		inline void WriteArray(TArrayView<T> values, size_t offset) const { Write(values.begin(), values.size() * sizeof(T), offset); }
 	};
 
 	/** Create a buffer */
-	UniqueVulkanBuffer CreateBuffer(VmaAllocator allocator, size_t capacity, VkBufferUsageFlags bufferUsage, VmaMemoryUsage allocationUsage);
+	VulkanBuffer CreateBuffer(VmaAllocator allocator, size_t capacity, VkBufferUsageFlags bufferUsage, VmaMemoryUsage allocationUsage);
 	VulkanMappedBuffer CreateMappedBuffer(VmaAllocator allocator, size_t capacity, VkBufferUsageFlags bufferUsage, VmaMemoryUsage allocationUsage);
 
 	/** Stores resources related to a mesh */
@@ -121,16 +114,15 @@ namespace Rendering {
 			uint32_t indices;
 		} size;
 
-		inline operator bool() const { return !!buffer; }
-		inline void Destroy(VmaAllocator allocator) {
+		inline operator bool() const { return buffer && size.vertices > 0 && size.indices > 0; }
+
+		inline void Destroy(VmaAllocator allocator) const {
 			buffer.Destroy(allocator);
 		}
-	};
-
-	/** The results of creating the resources for a new mesh */
-	struct VulkanMeshCreationResults {
-		VkCommandBuffer commands;
-		VulkanBuffer staging;
+		inline void Destroy(VmaAllocator allocator) {
+			buffer.Destroy(allocator);
+			*this = VulkanMeshResources{};
+		}
 	};
 
 	/** Holds resources related to uniforms */
@@ -149,9 +141,6 @@ namespace Rendering {
 		}
 
 		EResourceModifyResult Reserve(VmaAllocator allocator, size_t newSize, size_t newCapacity);
-
-		template<typename T>
-		inline void Write(T const& value, size_t offset) const { uniforms.Write(value, offset); }
 	};
 
 	/** Holds resources and the descriptor set that describes them */
