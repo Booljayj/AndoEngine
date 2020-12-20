@@ -32,7 +32,7 @@ namespace Rendering {
 
 		template<size_t NumAttachments>
 		ScopedRenderPass(VkCommandBuffer buffer, TRenderPassInfo<NumAttachments> info, size_t index, VkOffset2D offset, VkExtent2D extent)
-		: ScopedRenderPass(buffer, info.pass, info.clearValues, info.framebuffers[index], offset, extent)
+		: ScopedRenderPass(buffer, info.pass, MakeView(info.clearValues), info.framebuffers[index], offset, extent)
 		{}
 
 		ScopedRenderPass(VkCommandBuffer buffer, VkRenderPass pass, TArrayView<VkClearValue> clearValues, VkFramebuffer framebuffer, VkOffset2D offset, VkExtent2D extent);

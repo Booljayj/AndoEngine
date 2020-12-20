@@ -5,32 +5,11 @@ template<typename T>
 struct TArrayView {
 	constexpr TArrayView() = default;
 
-	//Create from a pointer to the beginning of an array and the size of the array
-	constexpr TArrayView(T const* inBegin, size_t inSize)
-	: begin_(inBegin), size_(inSize)
-	{}
+	constexpr TArrayView(T const* inBegin, size_t inSize) : begin_(inBegin), size_(inSize) {}
+	constexpr TArrayView(T const& value) : TArrayView(&value, 1) {}
+	constexpr TArrayView(std::initializer_list<T> const& list) : TArrayView(list.begin(), list.size()) {}
 
-	//Create from a single value
-	constexpr TArrayView(T const& value)
-	: TArrayView(&value, 1)
-	{}
-
-	//Create from a static array
-	template<size_t Size>
-	constexpr TArrayView(T(&array)[Size])
-	: TArrayView(array, Size)
-	{}
-
-	//Create from an iterable container
-	template<typename ArrayType>
-	constexpr TArrayView(ArrayType const& array)
-	: TArrayView(array.data(), array.end() - array.begin())
-	{}
-
-	//Create from an initializer list
-	constexpr TArrayView(std::initializer_list<T> const& list)
-	: TArrayView(list.begin(), list.size())
-	{}
+	template<size_t Size> constexpr TArrayView(T(&array)[Size]) : TArrayView(array, Size) {}
 
 	constexpr inline T const& operator[](size_t index) const { return begin_[index]; }
 	constexpr inline operator bool() const {return size_ == 0;}
@@ -73,10 +52,10 @@ template<typename T, size_t N>
 TArrayView<T> MakeView(T(&array)[N]) { return TArrayView<T>{array}; }
 
 template<typename T, typename AllocatorType>
-TArrayView<T> MakeView(std::vector<T, AllocatorType> const& vector) { return TArrayView<T>{vector}; }
+TArrayView<T> MakeView(std::vector<T, AllocatorType> const& vector) { return TArrayView<T>{vector.data(), vector.size()}; }
 
 template<typename T, size_t N>
-TArrayView<T> MakeView(std::array<T, N> const& array) { return TArrayView<T>{array}; }
+TArrayView<T> MakeView(std::array<T, N> const& array) { return TArrayView<T>{array.data(), array.size()}; }
 
 template<typename T>
 TArrayView<T> MakeView(std::initializer_list<T> const& list) { return TArrayView<T>{list}; }
