@@ -41,13 +41,14 @@ namespace Rendering {
 		return result;
 	}
 
-	EResourceModifyResult VulkanUniformResources::Reserve(VmaAllocator allocator, size_t newElementSize, size_t newCapacity) {
-		if (newCapacity > uniforms.capacity) {
+	EResourceModifyResult VulkanUniforms::Reserve(VmaAllocator allocator, size_t newElementSize, size_t newNumElements) {
+		size_t const newCapacity = newElementSize * newNumElements;
+		if (newCapacity > ubo.capacity) {
 			elementSize = newElementSize;
-			uniforms.Destroy(allocator);
+			ubo.Destroy(allocator);
 
-			uniforms = CreateMappedBuffer(allocator, newCapacity, VkBufferUsageFlagBits::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU);
-			if (!uniforms) return EResourceModifyResult::Error;
+			ubo = CreateMappedBuffer(allocator, newCapacity, VkBufferUsageFlagBits::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU);
+			if (!ubo) return EResourceModifyResult::Error;
 			else return EResourceModifyResult::Modified;
 
 		} else if (newElementSize != elementSize) {

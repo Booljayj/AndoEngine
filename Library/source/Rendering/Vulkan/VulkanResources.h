@@ -51,10 +51,7 @@ namespace Rendering {
 
 		/** Map the memory for CPU access. Returns true if successful. */
 		bool Map(VmaAllocator allocator) {
-			void* data = nullptr;
-			vmaMapMemory(allocator, allocation, &data);
-			mapped = static_cast<char*>(data);
-			return !!mapped;
+			return vmaMapMemory(allocator, allocation, reinterpret_cast<void**>(&mapped)) == VK_SUCCESS;
 		}
 		/** Unmap the memory that has been previously mapped */
 		inline void Unmap(VmaAllocator allocator) {
@@ -125,38 +122,32 @@ namespace Rendering {
 		}
 	};
 
-	/** Holds resources related to uniforms */
-	struct VulkanUniformResources {
-		VulkanMappedBuffer uniforms;
-		size_t elementSize = 0;
-
-		inline operator bool() const { return uniforms && elementSize > 0; }
-
-		inline void Destroy(VmaAllocator allocator) const {
-			uniforms.Destroy(allocator);
-		}
-		inline void Destroy(VmaAllocator allocator) {
-			uniforms.Destroy(allocator);
-			elementSize = 0;
-		}
-
-		EResourceModifyResult Reserve(VmaAllocator allocator, size_t newSize, size_t newCapacity);
-	};
-
 	/** Holds resources and the descriptor set that describes them */
 	struct VulkanUniforms {
 		VkDescriptorSet set = nullptr;
-		VulkanUniformResources resources;
+		VulkanMappedBuffer ubo;
+		size_t elementSize = 0;
 
-		inline operator bool() const { return set && resources; }
+		inline operator bool() const { return set && ubo && elementSize > 0; }
+
+		inline void Destroy(VmaAllocator allocator) const {
+			ubo.Destroy(allocator);
+		}
+		inline void Destroy(VmaAllocator allocator) {
+			ubo.Destroy(allocator);
+			elementSize = 0;
+		}
+
+		/** Reserve a certain amount of space in the ubo buffer */
+		EResourceModifyResult Reserve(VmaAllocator allocator, size_t newElementSize, size_t newNumElements);
 
 		/** Update the descriptor set so it describes the resources */
 		template<bool UseDynamicOffsets>
 		inline void UpdateDescriptors(VkDevice device) {
 			VkDescriptorBufferInfo bufferInfo{};
-			bufferInfo.buffer = resources.uniforms.buffer;
+			bufferInfo.buffer = ubo.buffer;
 			bufferInfo.offset = 0;
-			bufferInfo.range = resources.elementSize;
+			bufferInfo.range = elementSize;
 
 			VkWriteDescriptorSet descriptorWrite{};
 			descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;

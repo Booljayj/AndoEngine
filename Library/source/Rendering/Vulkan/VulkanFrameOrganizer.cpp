@@ -119,15 +119,12 @@ namespace Rendering {
 				frame.uniforms.global.set = sets[0];
 				frame.uniforms.object.set = sets[1];
 
-				constexpr size_t globalsSize = sizeof(GlobalUniformBufferObject);
-				if (frame.uniforms.global.resources.Reserve(logical.allocator, globalsSize, globalsSize) == EResourceModifyResult::Error) {
+				if (frame.uniforms.global.Reserve(logical.allocator, sizeof(GlobalUniformBufferObject), 1) == EResourceModifyResult::Error) {
 					LOGF(Vulkan, Error, "Could not reserve space for global uniforms for frame %i", index);
 				}
 				frame.uniforms.global.UpdateDescriptors<false>(logical.device);
 
-				constexpr size_t objectsSize = sizeof(ObjectUniformBufferObject);
-				constexpr size_t initialNumElements = 512;
-				if (frame.uniforms.object.resources.Reserve(logical.allocator, objectsSize, objectsSize * initialNumElements) == EResourceModifyResult::Error) {
+				if (frame.uniforms.object.Reserve(logical.allocator, sizeof(ObjectUniformBufferObject), 512) == EResourceModifyResult::Error) {
 					LOGF(Vulkan, Error, "Could not reserve space for object uniforms for frame %i", index);
 				}
 				frame.uniforms.object.UpdateDescriptors<true>(logical.device);
@@ -198,8 +195,8 @@ namespace Rendering {
 	void VulkanFrameOrganizer::Destroy(VulkanLogicalDevice const& logical) {
 		for (FrameResources const& frame : resources) {
 			if (frame.commandPool) vkDestroyCommandPool(logical.device, frame.commandPool, nullptr);
-			frame.uniforms.global.resources.Destroy(logical.allocator);
-			frame.uniforms.object.resources.Destroy(logical.allocator);
+			frame.uniforms.global.Destroy(logical.allocator);
+			frame.uniforms.object.Destroy(logical.allocator);
 			if (frame.renderFinishedSemaphore) vkDestroySemaphore(logical.device, frame.renderFinishedSemaphore, nullptr);
 			if (frame.imageAvailableSemaphore) vkDestroySemaphore(logical.device, frame.imageAvailableSemaphore, nullptr);
 			if (frame.fence) vkDestroyFence(logical.device, frame.fence, nullptr);
@@ -248,8 +245,7 @@ namespace Rendering {
 			}
 		}
 
-		constexpr size_t objectSize = sizeof(ObjectUniformBufferObject);
-		EResourceModifyResult const modifyResult = frame.uniforms.object.resources.Reserve(logical.allocator, objectSize, objectSize * numObjects);
+		EResourceModifyResult const modifyResult = frame.uniforms.object.Reserve(logical.allocator, sizeof(ObjectUniformBufferObject), numObjects);
 		switch (modifyResult) {
 			case EResourceModifyResult::Error:
 			return EPreparationResult::Error;
@@ -265,14 +261,17 @@ namespace Rendering {
 	}
 
 	bool VulkanFrameOrganizer::Submit(CTX_ARG, VulkanLogicalDevice const& logical, VulkanSwapchain const& swapchain) {
-		FrameResources const& resource = resources[currentResourceIndex];
+		FrameResources const& frame = resources[currentResourceIndex];
 
-		//Assign this resource's fence as the one using the swap image so other resources that try to use this image know to wait
-		std::replace(imageFences.begin(), imageFences.end(), resource.fence, VkFence{VK_NULL_HANDLE});
-		imageFences[currentImageIndex] = resource.fence;
+		vmaFlushAllocation(logical.allocator, frame.uniforms.global.ubo.allocation, 0, VK_WHOLE_SIZE);
+		vmaFlushAllocation(logical.allocator, frame.uniforms.object.ubo.allocation, 0, VK_WHOLE_SIZE);
 
-		//Reset the fence for this resource, so we can start another rendering process that it will track
-		if (vkResetFences(logical.device, 1, &resource.fence) != VK_SUCCESS) {
+		//Assign this frame's fence as the one using the swap image so other frames that try to use this image know to wait
+		std::replace(imageFences.begin(), imageFences.end(), frame.fence, VkFence{VK_NULL_HANDLE});
+		imageFences[currentImageIndex] = frame.fence;
+
+		//Reset the fence for this frame, so we can start another rendering process that it will track
+		if (vkResetFences(logical.device, 1, &frame.fence) != VK_SUCCESS) {
 			LOGF(Vulkan, Error, "Unable to reset image fence %i", currentImageIndex);
 			return false;
 		}
@@ -280,21 +279,21 @@ namespace Rendering {
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-		VkSemaphore waitSemaphores[1] = {resource.imageAvailableSemaphore};
+		VkSemaphore waitSemaphores[1] = {frame.imageAvailableSemaphore};
 		VkPipelineStageFlags waitStages[1] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 		submitInfo.waitSemaphoreCount = 1;
 		submitInfo.pWaitSemaphores = waitSemaphores;
 		submitInfo.pWaitDstStageMask = waitStages;
 
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &resource.commands;
+		submitInfo.pCommandBuffers = &frame.commands;
 
-		VkSemaphore signalSemaphores[1] = {resource.renderFinishedSemaphore};
+		VkSemaphore signalSemaphores[1] = {frame.renderFinishedSemaphore};
 		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.pSignalSemaphores = signalSemaphores;
 
 		//Submit the actual command buffer
-		if (vkQueueSubmit(logical.queues.graphics, 1, &submitInfo, resource.fence) != VK_SUCCESS) {
+		if (vkQueueSubmit(logical.queues.graphics, 1, &submitInfo, frame.fence) != VK_SUCCESS) {
 			LOG(Vulkan, Error, "Failed to submit command buffer to qraphics queue");
 			return false;
 		}

@@ -143,7 +143,7 @@ namespace Rendering {
 			global.viewProjection = glm::identity<glm::mat4>();
 			global.viewProjectionInverse = glm::inverse(global.viewProjection);
 			global.time = 0;
-			frame.uniforms.global.resources.uniforms.WriteValue(global, 0);
+			frame.uniforms.global.ubo.WriteValue(global, 0);
 
 			uint32_t objectIndex = 0;
 			for (const auto id : renderables) {
@@ -157,7 +157,7 @@ namespace Rendering {
 					//Write to the part of the object uniform buffer designated for this object
 					ObjectUniformBufferObject object;
 					object.modelViewProjection = glm::identity<glm::mat4>();
-					frame.uniforms.object.resources.uniforms.WriteValue(object, objectUniformsOffset);
+					frame.uniforms.object.ubo.WriteValue(object, objectUniformsOffset);
 
 					//Bind the pipeline that will be used for rendering
 					vkCmdBindPipeline(frame.commands, VK_PIPELINE_BIND_POINT_GRAPHICS, material->resources.pipeline);
@@ -182,9 +182,6 @@ namespace Rendering {
 					++objectIndex;
 				}
 			}
-
-			vmaFlushAllocation(logical.allocator, frame.uniforms.global.resources.uniforms.allocation, 0, VK_WHOLE_SIZE);
-			vmaFlushAllocation(logical.allocator, frame.uniforms.object.resources.uniforms.allocation, 0, VK_WHOLE_SIZE);
 		};
 
 		//Record rendering commands for this frame
