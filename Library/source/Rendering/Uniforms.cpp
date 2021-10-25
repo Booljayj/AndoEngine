@@ -1,7 +1,7 @@
 #include "Rendering/Uniforms.h"
 
 namespace Rendering {
-	VkDescriptorSetLayoutBinding GlobalUniformBufferObject::GetBinding() {
+	VkDescriptorSetLayoutBinding GlobalUniforms::GetBinding() {
 		VkDescriptorSetLayoutBinding binding;
 		binding.binding = 0;
 		binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -11,7 +11,7 @@ namespace Rendering {
 		return binding;
 	}
 
-	VkDescriptorSetLayoutBinding ObjectUniformBufferObject::GetBinding() {
+	VkDescriptorSetLayoutBinding ObjectUniforms::GetBinding() {
 		VkDescriptorSetLayoutBinding binding;
 		binding.binding = 0;
 		binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;

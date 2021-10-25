@@ -27,7 +27,7 @@ namespace Rendering {
 			return VK_PRESENT_MODE_FIFO_KHR;
 		}
 
-		void SetupProperties(CTX_ARG, VulkanSwapchain& result, VkExtent2D const& extent, VkSurfaceKHR const& surface, VulkanPhysicalDevice const& physical) {
+		void SetupProperties(CTX_ARG, VulkanSwapchain& result, glm::vec2 const& extent, VkSurfaceKHR const& surface, VulkanPhysicalDevice const& physical) {
 			result.surfaceFormat = ChooseSwapSurfaceFormat(physical.presentation.surfaceFormats);
 			result.presentMode = ChooseSwapPresentMode(physical.presentation.presentModes);
 			result.extent = physical.GetSwapExtent(surface, extent);
@@ -45,7 +45,7 @@ namespace Rendering {
 			swapchainCI.minImageCount = imageCountMinimum;
 			swapchainCI.imageFormat = result.surfaceFormat.format;
 			swapchainCI.imageColorSpace = result.surfaceFormat.colorSpace;
-			swapchainCI.imageExtent = result.extent;
+			swapchainCI.imageExtent = VkExtent2D{ result.extent.x, result.extent.y };
 			swapchainCI.imageArrayLayers = 1;
 			swapchainCI.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
@@ -124,7 +124,7 @@ namespace Rendering {
 		}
 	}
 
-	bool VulkanSwapchain::Create(CTX_ARG, VkExtent2D const& extent, VkSurfaceKHR const& surface, VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical) {
+	bool VulkanSwapchain::Create(CTX_ARG, glm::u32vec2 const& extent, VkSurfaceKHR const& surface, VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical) {
 		using namespace VulkanSwapchainUtilities;
 		TEMP_ALLOCATOR_MARK();
 
@@ -140,7 +140,7 @@ namespace Rendering {
 		return true;
 	}
 
-	bool VulkanSwapchain::Recreate(CTX_ARG, VkExtent2D const& extent, VkSurfaceKHR const& surface, VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical) {
+	bool VulkanSwapchain::Recreate(CTX_ARG, glm::u32vec2 const& extent, VkSurfaceKHR const& surface, VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical) {
 		using namespace VulkanSwapchainUtilities;
 		TEMP_ALLOCATOR_MARK();
 

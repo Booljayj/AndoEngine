@@ -16,7 +16,7 @@ public:
 
 	static const TFlags None;
 
-	constexpr inline TFlags() : flags(0) {}
+	constexpr inline TFlags() = default;
 	constexpr inline TFlags(const TFlags& other) : flags(other.flags) {}
 	constexpr inline TFlags(UnderlyingType inFlags) : flags(inFlags) {}
 	constexpr inline TFlags(EnumType inFlag) : flags(1 << (UnderlyingType)inFlag) {}
@@ -48,9 +48,9 @@ public:
 	constexpr inline TFlags Union(TFlags other) const noexcept { return flags | other.flags; }
 	/** Returns the set of flags in this but without the flags in other */
 	constexpr inline TFlags Subtraction(TFlags other) const noexcept { return flags & ~other.flags; }
-	/** Returns the set of common flags in both this and the other */
+	/** Returns the set of flags in both this and other */
 	constexpr inline TFlags Intersection(TFlags other) const noexcept { return flags & other.flags; }
-	/** Returns the set of flags that are different in this and the other */
+	/** Returns the set of flags that are different in this and other */
 	constexpr inline TFlags Difference(TFlags other) const noexcept { return flags ^ other.flags; }
 
 	/** True if this set of flags contains the value */
@@ -61,11 +61,11 @@ public:
 	constexpr inline bool HasAny(TFlags other) const noexcept { return (flags & other.flags) != 0; }
 
 protected:
-	UnderlyingType flags;
+	UnderlyingType flags = 0;
 };
 
-template<typename EnumType>
-const TFlags<EnumType> TFlags<EnumType>::None{0};
+template<typename EnumType_>
+const TFlags<EnumType_> TFlags<EnumType_>::None;
 
 #define TFLAGS_METHODS(DerivedType)\
 	using TFlags<DerivedType::EnumType>::TFlags;\

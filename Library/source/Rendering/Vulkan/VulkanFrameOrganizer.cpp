@@ -38,7 +38,7 @@ namespace Rendering {
 		//Create the descriptor set layout for global uniforms
 		{
 			std::array<VkDescriptorSetLayoutBinding, 1> bindings;
-			bindings[0] = GlobalUniformBufferObject::GetBinding();
+			bindings[0] = GlobalUniforms::GetBinding();
 
 			VkDescriptorSetLayoutCreateInfo layoutCI{};
 			layoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -55,7 +55,7 @@ namespace Rendering {
 		//Create the descriptor set layout for object uniforms
 		{
 			std::array<VkDescriptorSetLayoutBinding, 1> bindings;
-			bindings[0] = ObjectUniformBufferObject::GetBinding();
+			bindings[0] = ObjectUniforms::GetBinding();
 
 			VkDescriptorSetLayoutCreateInfo layoutCI{};
 			layoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -119,12 +119,12 @@ namespace Rendering {
 				frame.uniforms.global.set = sets[0];
 				frame.uniforms.object.set = sets[1];
 
-				if (frame.uniforms.global.Reserve(logical.allocator, sizeof(GlobalUniformBufferObject), 1) == EResourceModifyResult::Error) {
+				if (frame.uniforms.global.Reserve(logical.allocator, sizeof(GlobalUniforms), 1) == EResourceModifyResult::Error) {
 					LOGF(Vulkan, Error, "Could not reserve space for global uniforms for frame %i", index);
 				}
 				frame.uniforms.global.UpdateDescriptors<false>(logical.device);
 
-				if (frame.uniforms.object.Reserve(logical.allocator, sizeof(ObjectUniformBufferObject), 512) == EResourceModifyResult::Error) {
+				if (frame.uniforms.object.Reserve(logical.allocator, sizeof(ObjectUniforms), 512) == EResourceModifyResult::Error) {
 					LOGF(Vulkan, Error, "Could not reserve space for object uniforms for frame %i", index);
 				}
 				frame.uniforms.object.UpdateDescriptors<true>(logical.device);
@@ -135,11 +135,11 @@ namespace Rendering {
 				VkSemaphoreCreateInfo semaphoreInfo{};
 				semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-				if (vkCreateSemaphore(logical.device, &semaphoreInfo, nullptr, &frame.imageAvailableSemaphore) != VK_SUCCESS) {
+				if (vkCreateSemaphore(logical.device, &semaphoreInfo, nullptr, &frame.semaphores.imageAvailable) != VK_SUCCESS) {
 					LOGF(Vulkan, Error, "Failed to create image available semaphore for frame %i", index);
 					return false;
 				}
-				if (vkCreateSemaphore(logical.device, &semaphoreInfo, nullptr, &frame.renderFinishedSemaphore) != VK_SUCCESS) {
+				if (vkCreateSemaphore(logical.device, &semaphoreInfo, nullptr, &frame.semaphores.renderFinished) != VK_SUCCESS) {
 					LOGF(Vulkan, Error, "Failed to create render finished semaphore for frame %i", index);
 					return false;
 				}
@@ -197,8 +197,8 @@ namespace Rendering {
 			if (frame.commandPool) vkDestroyCommandPool(logical.device, frame.commandPool, nullptr);
 			frame.uniforms.global.Destroy(logical.allocator);
 			frame.uniforms.object.Destroy(logical.allocator);
-			if (frame.renderFinishedSemaphore) vkDestroySemaphore(logical.device, frame.renderFinishedSemaphore, nullptr);
-			if (frame.imageAvailableSemaphore) vkDestroySemaphore(logical.device, frame.imageAvailableSemaphore, nullptr);
+			if (frame.semaphores.renderFinished) vkDestroySemaphore(logical.device, frame.semaphores.renderFinished, nullptr);
+			if (frame.semaphores.imageAvailable) vkDestroySemaphore(logical.device, frame.semaphores.imageAvailable, nullptr);
 			if (frame.fence) vkDestroyFence(logical.device, frame.fence, nullptr);
 		}
 		resources.clear();
@@ -229,7 +229,7 @@ namespace Rendering {
 
 		//Acquire the swapchain image that can be used for this frame
 		currentImageIndex = 0;
-		if (vkAcquireNextImageKHR(logical.device, swapchain.swapchain, waitTime, frame.imageAvailableSemaphore, VK_NULL_HANDLE, &currentImageIndex) != VK_SUCCESS) {
+		if (vkAcquireNextImageKHR(logical.device, swapchain.swapchain, waitTime, frame.semaphores.imageAvailable, VK_NULL_HANDLE, &currentImageIndex) != VK_SUCCESS) {
 			LOG(Vulkan, Warning, "Timed out waiting for next available swapchain image");
 			return EPreparationResult::Retry;
 		}
@@ -245,7 +245,7 @@ namespace Rendering {
 			}
 		}
 
-		EResourceModifyResult const modifyResult = frame.uniforms.object.Reserve(logical.allocator, sizeof(ObjectUniformBufferObject), numObjects);
+		EResourceModifyResult const modifyResult = frame.uniforms.object.Reserve(logical.allocator, sizeof(ObjectUniforms), numObjects);
 		switch (modifyResult) {
 			case EResourceModifyResult::Error:
 			return EPreparationResult::Error;
@@ -279,17 +279,18 @@ namespace Rendering {
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-		VkSemaphore waitSemaphores[1] = {frame.imageAvailableSemaphore};
-		VkPipelineStageFlags waitStages[1] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-		submitInfo.waitSemaphoreCount = 1;
+		VkSemaphore const waitSemaphores[] = { frame.semaphores.imageAvailable };
+		VkPipelineStageFlags const waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+		static_assert(std::size(waitSemaphores) == std::size(waitStages), "Number of semaphores must equal number of stages");
+		submitInfo.waitSemaphoreCount = std::size(waitSemaphores);
 		submitInfo.pWaitSemaphores = waitSemaphores;
 		submitInfo.pWaitDstStageMask = waitStages;
 
 		submitInfo.commandBufferCount = 1;
 		submitInfo.pCommandBuffers = &frame.commands;
 
-		VkSemaphore signalSemaphores[1] = {frame.renderFinishedSemaphore};
-		submitInfo.signalSemaphoreCount = 1;
+		VkSemaphore const signalSemaphores[] = { frame.semaphores.renderFinished };
+		submitInfo.signalSemaphoreCount = std::size(signalSemaphores);
 		submitInfo.pSignalSemaphores = signalSemaphores;
 
 		//Submit the actual command buffer
@@ -305,8 +306,8 @@ namespace Rendering {
 		presentInfo.waitSemaphoreCount = 1;
 		presentInfo.pWaitSemaphores = signalSemaphores;
 
-		VkSwapchainKHR swapChains[1] = {swapchain.swapchain};
-		presentInfo.swapchainCount = 1;
+		VkSwapchainKHR const swapChains[] = { swapchain.swapchain };
+		presentInfo.swapchainCount = std::size(swapChains);
 		presentInfo.pSwapchains = swapChains;
 		presentInfo.pImageIndices = &currentImageIndex;
 
@@ -323,7 +324,7 @@ namespace Rendering {
 	}
 
 	void VulkanFrameOrganizer::WaitForCompletion(CTX_ARG, VulkanLogicalDevice const& logical) {
-		size_t numFences = resources.size();
+		size_t const numFences = resources.size();
 		VkFence* fences = CTX.temp.Request<VkFence>(numFences);
 		for (size_t index = 0; index < resources.size(); ++index) {
 			fences[index] = resources[index].fence;

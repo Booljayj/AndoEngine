@@ -16,8 +16,11 @@ namespace Reflection {
 		DECLARE_RESOLVER(glm::vec3);
 		DECLARE_RESOLVER(glm::vec4);
 
-		DECLARE_RESOLVER(glm::ivec2);
-		DECLARE_RESOLVER(glm::ivec3);
+		DECLARE_RESOLVER(glm::u32vec2);
+		DECLARE_RESOLVER(glm::u32vec3);
+
+		DECLARE_RESOLVER(glm::i32vec2);
+		DECLARE_RESOLVER(glm::i32vec3);
 
 		DECLARE_RESOLVER(glm::mat2x2);
 		DECLARE_RESOLVER(glm::mat2x3);

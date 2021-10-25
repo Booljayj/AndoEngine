@@ -1,7 +1,9 @@
 #pragma once
 #include "Engine/ArrayView.h"
 #include "Engine/Context.h"
+#include "Engine/LinearContainers.h"
 #include "Engine/STL.h"
+#include "Geometry/GLM.h"
 #include "Rendering/Vulkan/Vulkan.h"
 
 namespace Rendering {
@@ -38,7 +40,7 @@ namespace Rendering {
 		/** Get the information for a device that will be used with a surface */
 		static VulkanPhysicalDevice Get(CTX_ARG, VkPhysicalDevice const& device, VkSurfaceKHR const& surface);
 
-		static TArrayView<char const*> GetExtensionNames(CTX_ARG);
+		static l_vector<char const*> GetExtensionNames(CTX_ARG);
 
 		VulkanVersion GetVulkanVersion() const { return VulkanVersion{properties.apiVersion}; }
 		VulkanVersion GetDriverVersion() const { return VulkanVersion{properties.driverVersion}; }
@@ -51,7 +53,7 @@ namespace Rendering {
 		bool HasSwapchainSupport() const;
 
 		/** Get the swap extent based on the desired size and the current device extent */
-		VkExtent2D GetSwapExtent(VkSurfaceKHR const& surface, VkExtent2D const& desiredExtent) const;
+		glm::u32vec2 GetSwapExtent(VkSurfaceKHR const& surface, glm::u32vec2 const& desiredExtent) const;
 		/** Get the pre transform to use on this device */
 		VkSurfaceTransformFlagBitsKHR GetPreTransform(VkSurfaceKHR const& surface) const;
 	};

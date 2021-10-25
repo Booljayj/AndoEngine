@@ -61,11 +61,13 @@ namespace Rendering {
 		return Result;
 	}
 
-	TArrayView<char const*> VulkanPhysicalDevice::GetExtensionNames(CTX_ARG) {
-		return {
+	l_vector<char const*> VulkanPhysicalDevice::GetExtensionNames(CTX_ARG) {
+		l_vector<char const*> result{ CTX.temp };
+		result = {
 			VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 			VK_KHR_MAINTENANCE3_EXTENSION_NAME,
 		};
+		return result;
 	}
 
 	bool VulkanPhysicalDevice::HasRequiredQueues() const {
@@ -90,17 +92,17 @@ namespace Rendering {
 		return !presentation.surfaceFormats.empty() && !presentation.presentModes.empty();
 	}
 
-	VkExtent2D VulkanPhysicalDevice::GetSwapExtent(VkSurfaceKHR const& surface, VkExtent2D const& desiredExtent) const {
+	glm::u32vec2 VulkanPhysicalDevice::GetSwapExtent(VkSurfaceKHR const& surface, glm::u32vec2 const& desiredExtent) const {
 		//Get the current device capabilities, which includes the current size if it has been set
 		VkSurfaceCapabilitiesKHR capabilities;
 		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &capabilities);
 
 		if (capabilities.currentExtent.width != UINT32_MAX) {
-			return capabilities.currentExtent;
+			return glm::u32vec2{ capabilities.currentExtent.width, capabilities.currentExtent.height };
 		} else {
-			VkExtent2D actualExtent;
-			actualExtent.width = std::clamp(desiredExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
-			actualExtent.height = std::clamp(desiredExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+			glm::u32vec2 actualExtent;
+			actualExtent.x = std::clamp(desiredExtent.x, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+			actualExtent.y = std::clamp(desiredExtent.y, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
 			return actualExtent;
 		}
 	}

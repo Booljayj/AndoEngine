@@ -26,7 +26,7 @@ public:
 
 	/** Returns true if this entity has all the component types */
 	template<typename... T>
-	inline bool Has() const { return registry->has<T...>(id); }
+	inline bool Has() const { return registry->all_of<T...>(id); }
 	/** Returns the component types from this entity. Undefined if the entity does not own the component types. */
 	template<typename... T>
 	inline decltype(auto) Get() const { return registry->get<T...>(id); }
@@ -64,7 +64,7 @@ public:
 
 	/** Returns true if this entity has all the component types */
 	template<typename... T>
-	inline bool Has() const { return registry->has<T...>(id); }
+	inline bool Has() const { return registry->all_of<T...>(id); }
 	/** Returns the component types from this entity. Undefined if the entity does not own the component types. */
 	template<typename... T>
 	inline decltype(auto) Get() const { return registry->get<std::add_const<T>...>(id); }

@@ -9,7 +9,9 @@ struct TArrayView {
 	constexpr TArrayView(T const& value) : TArrayView(&value, 1) {}
 	constexpr TArrayView(std::initializer_list<T> const& list) : TArrayView(list.begin(), list.size()) {}
 
-	template<size_t Size> constexpr TArrayView(T(&array)[Size]) : TArrayView(array, Size) {}
+	template<size_t Size> constexpr TArrayView(T const (&array)[Size]) : TArrayView(array, Size) {}
+	template<size_t Size> constexpr TArrayView(std::array<T, Size> const& array) : TArrayView(array.data(), Size) {}
+	template<typename Allocator> constexpr TArrayView(std::vector<T, Allocator> const& vector) : TArrayView(vector.data(), vector.size()) {}
 
 	constexpr inline T const& operator[](size_t index) const { return begin_[index]; }
 	constexpr inline operator bool() const {return size_ == 0;}
@@ -44,18 +46,3 @@ private:
 	T const* begin_ = nullptr;
 	size_t size_ = 0;
 };
-
-template<typename T>
-TArrayView<T> MakeView(T const& value) { return TArrayView<T>{value}; }
-
-template<typename T, size_t N>
-TArrayView<T> MakeView(T(&array)[N]) { return TArrayView<T>{array}; }
-
-template<typename T, typename AllocatorType>
-TArrayView<T> MakeView(std::vector<T, AllocatorType> const& vector) { return TArrayView<T>{vector.data(), vector.size()}; }
-
-template<typename T, size_t N>
-TArrayView<T> MakeView(std::array<T, N> const& array) { return TArrayView<T>{array.data(), array.size()}; }
-
-template<typename T>
-TArrayView<T> MakeView(std::initializer_list<T> const& list) { return TArrayView<T>{list}; }

@@ -4,7 +4,7 @@
 
 namespace Rendering {
 	/** Object for uniforms that are modified per-frame */
-	struct GlobalUniformBufferObject {
+	struct GlobalUniforms {
 		glm::mat4 viewProjection = glm::identity<glm::mat4>();
 		glm::mat4 viewProjectionInverse = glm::identity<glm::mat4>();
 		float time = 0;
@@ -13,7 +13,7 @@ namespace Rendering {
 	};
 
 	/** Object for uniforms that are modified per-draw-call */
-	struct ObjectUniformBufferObject {
+	struct ObjectUniforms {
 		glm::mat4 modelViewProjection = glm::identity<glm::mat4>();
 
 		static VkDescriptorSetLayoutBinding GetBinding();

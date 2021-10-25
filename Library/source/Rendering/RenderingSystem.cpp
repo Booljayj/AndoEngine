@@ -25,7 +25,7 @@ namespace Rendering {
 
 		// Collect physical devices and select default one
 		{
-			TArrayView<char const*> const extensionNames = VulkanPhysicalDevice::GetExtensionNames(CTX);
+			l_vector<char const*> const extensionNames = VulkanPhysicalDevice::GetExtensionNames(CTX);
 
 			uint32_t deviceCount = 0;
 			vkEnumeratePhysicalDevices(framework.instance, &deviceCount, nullptr);
@@ -52,7 +52,7 @@ namespace Rendering {
 
 		//Create the initial swapchain
 		shouldRecreateSwapchain = false;
-		if (!swapchain.Create(CTX, VkExtent2D{1024, 768}, framework.surface, *selectedPhysical, logical)) return false;
+		if (!swapchain.Create(CTX, {1024, 768}, framework.surface, *selectedPhysical, logical)) return false;
 		//Create the organizer that will be used for rendering
 		if (!organizer.Create(CTX, *selectedPhysical, logical, EBuffering::Double, swapchain.views.size(), 1)) return false;
 
@@ -109,7 +109,7 @@ namespace Rendering {
 			DestroyRenderPasses(CTX);
 
 			//Recreate the swapchain and everything depending on it. If any of this fails, we need to request a shutdown.
-			if (!swapchain.Recreate(CTX, VkExtent2D{1024, 768}, framework.surface, *selectedPhysical, logical)) return false;
+			if (!swapchain.Recreate(CTX, {1024, 768}, framework.surface, *selectedPhysical, logical)) return false;
 			if (!organizer.Create(CTX, *selectedPhysical, logical, EBuffering::Double, swapchain.views.size(), 1)) return false;
 			if (!CreateRenderPasses(CTX)) return false;
 		}
@@ -137,9 +137,27 @@ namespace Rendering {
 
 		//Lambda to record rendering commands
 		auto const recorder = [&](const FrameResources& frame, size_t index) {
-			ScopedRenderPass pass{frame.commands, main, index, VkOffset2D{0, 0}, swapchain.extent};
+			//Create a scope for all commands that belong to the primary render pass
+			ScopedRenderPass pass{ frame.commands, primaryRenderPass, primaryClearValues, framebuffers[index], Geometry::ScreenRect{ glm::vec2{0.0f}, swapchain.extent } };
 
-			GlobalUniformBufferObject global;
+			//Set the viewport and scissor that we are currently rendering for.
+			VkViewport viewport{};
+			viewport.x = 0.0f;
+			viewport.y = 0.0f;
+			viewport.width = (float)swapchain.extent.x;
+			viewport.height = (float)swapchain.extent.y;
+			viewport.minDepth = 0.0f;
+			viewport.maxDepth = 1.0f;
+
+			VkRect2D scissor{};
+			scissor.offset = {0, 0};
+			scissor.extent = VkExtent2D{ swapchain.extent.x, swapchain.extent.y };
+
+			vkCmdSetViewport(frame.commands, 0, 1, &viewport);
+			vkCmdSetScissor(frame.commands, 0, 1, &scissor);
+
+			//Write global uniform values that can be accessed by shaders
+			GlobalUniforms global;
 			global.viewProjection = glm::identity<glm::mat4>();
 			global.viewProjectionInverse = glm::inverse(global.viewProjection);
 			global.time = 0;
@@ -152,10 +170,10 @@ namespace Rendering {
 				auto const* material = materials.Find<MaterialComponent const>(renderer.material);
 				auto const* mesh = meshes.Find<MeshComponent const>(renderer.mesh);
 				if (material && material->resources && mesh && mesh->resources) {
-					uint32_t const objectUniformsOffset = sizeof(ObjectUniformBufferObject) * objectIndex;
+					uint32_t const objectUniformsOffset = sizeof(ObjectUniforms) * objectIndex;
 
 					//Write to the part of the object uniform buffer designated for this object
-					ObjectUniformBufferObject object;
+					ObjectUniforms object;
 					object.modelViewProjection = glm::identity<glm::mat4>();
 					frame.uniforms.object.ubo.WriteValue(object, objectUniformsOffset);
 
@@ -168,7 +186,7 @@ namespace Rendering {
 						//materialInstance->resources.set,
 						frame.uniforms.object.set,
 					};
-					vkCmdBindDescriptorSets(frame.commands, VK_PIPELINE_BIND_POINT_GRAPHICS, material->resources.pipelineLayout, 0, Num(sets), sets, 1, &objectUniformsOffset);
+					vkCmdBindDescriptorSets(frame.commands, VK_PIPELINE_BIND_POINT_GRAPHICS, material->resources.pipelineLayout, 0, std::size(sets), sets, 1, &objectUniformsOffset);
 
 					//Bind the vetex and index buffers for the mesh
 					VkBuffer const vertexBuffers[] = { mesh->resources.buffer };
@@ -283,8 +301,10 @@ namespace Rendering {
 			ColorAttachment,
 			MAX_ATTACHMENT
 		};
+
 		std::array<VkAttachmentDescription, MAX_ATTACHMENT> descriptions;
 		std::memset(&descriptions, 0, sizeof(descriptions));
+		primaryClearValues.resize(MAX_ATTACHMENT);
 		{
 			VkAttachmentDescription& colorDescription = descriptions[ColorAttachment];
 			colorDescription.format = swapchain.surfaceFormat.format;
@@ -296,7 +316,7 @@ namespace Rendering {
 			colorDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 			colorDescription.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-			main.clearValues[ColorAttachment].color = VkClearColorValue{{0.0f, 0.0f, 0.0f, 1.0f}};
+			primaryClearValues[ColorAttachment].color = VkClearColorValue{{0.0f, 0.0f, 0.0f, 1.0f}};
 		}
 
 		//Subpasses
@@ -345,8 +365,8 @@ namespace Rendering {
 		passCI.dependencyCount = dependencies.size();
 		passCI.pDependencies = dependencies.data();
 
-		assert(!main.pass);
-		if (vkCreateRenderPass(logical.device, &passCI, nullptr, &main.pass) != VK_SUCCESS) {
+		assert(!primaryRenderPass);
+		if (vkCreateRenderPass(logical.device, &passCI, nullptr, &primaryRenderPass) != VK_SUCCESS) {
 			LOG(Vulkan, Error, "Failed to create main render pass");
 			return false;
 		}
@@ -355,22 +375,22 @@ namespace Rendering {
 		std::array<VkImageView, MAX_ATTACHMENT> attachments;
 
 		const size_t numImages = swapchain.views.size();
-		main.framebuffers.resize(numImages);
+		framebuffers.resize(numImages);
 		for (size_t index = 0; index < numImages; ++index) {
 			attachments[ColorAttachment] = swapchain.views[index];
 
 			//Create the framebuffer
 			VkFramebufferCreateInfo framebufferCI{};
 			framebufferCI.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			framebufferCI.renderPass = main.pass;
+			framebufferCI.renderPass = primaryRenderPass;
 			framebufferCI.attachmentCount = 1;
 			framebufferCI.pAttachments = attachments.data();
-			framebufferCI.width = swapchain.extent.width;
-			framebufferCI.height = swapchain.extent.height;
+			framebufferCI.width = swapchain.extent.x;
+			framebufferCI.height = swapchain.extent.y;
 			framebufferCI.layers = 1;
 
-			assert(!main.framebuffers[index]);
-			if (vkCreateFramebuffer(logical.device, &framebufferCI, nullptr, &main.framebuffers[index]) != VK_SUCCESS) {
+			assert(!framebuffers[index]);
+			if (vkCreateFramebuffer(logical.device, &framebufferCI, nullptr, &framebuffers[index]) != VK_SUCCESS) {
 				LOGF(Vulkan, Error, "Failed to create frambuffer %i", index);
 				return false;
 			}
@@ -380,7 +400,12 @@ namespace Rendering {
 	}
 
 	void RenderingSystem::DestroyRenderPasses(CTX_ARG) {
-		main.Destroy(logical);
+		if (primaryRenderPass) vkDestroyRenderPass(logical.device, primaryRenderPass, nullptr);
+		for (VkFramebuffer framebuffer : framebuffers) {
+			if (framebuffer) vkDestroyFramebuffer(logical.device, framebuffer, nullptr);
+		}
+		framebuffers.clear();
+		primaryRenderPass = nullptr;
 	}
 
 	void RenderingSystem::CreatePipelines(CTX_ARG, EntityRegistry& registry) {
@@ -468,7 +493,7 @@ namespace Rendering {
 
 			VkPipelineLayoutCreateInfo layoutCI{};
 			layoutCI.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-			layoutCI.setLayoutCount = Num(setLayouts);
+			layoutCI.setLayoutCount = std::size(setLayouts);
 			layoutCI.pSetLayouts = setLayouts;
 			layoutCI.pushConstantRangeCount = 0; // Optional
 			layoutCI.pPushConstantRanges = nullptr; // Optional
@@ -515,24 +540,12 @@ namespace Rendering {
 		inputAssemblyCI.primitiveRestartEnable = VK_FALSE;
 
 		//Viewport
-		VkViewport viewport{};
-		viewport.x = 0.0f;
-		viewport.y = 0.0f;
-		viewport.width = (float)swapchain.extent.width;
-		viewport.height = (float)swapchain.extent.height;
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-
-		VkRect2D scissor{};
-		scissor.offset = {0, 0};
-		scissor.extent = swapchain.extent;
-
 		VkPipelineViewportStateCreateInfo viewportStateCI{};
 		viewportStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 		viewportStateCI.viewportCount = 1;
-		viewportStateCI.pViewports = &viewport;
+		viewportStateCI.pViewports = nullptr; //provided dynamically
 		viewportStateCI.scissorCount = 1;
-		viewportStateCI.pScissors = &scissor;
+		viewportStateCI.pScissors = nullptr; //provided dynamically
 
 		//Rasterizer
 		VkPipelineRasterizationStateCreateInfo rasterizerCI{};
@@ -581,14 +594,15 @@ namespace Rendering {
 		colorBlendingCI.blendConstants[2] = 0.0f; // Optional
 		colorBlendingCI.blendConstants[3] = 0.0f; // Optional
 
-		// //Dynamic state
-		// VkDynamicState dynamicStates[2] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_LINE_WIDTH};
+		//Dynamic state
+		VkDynamicState dynamicStates[2] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
 
-		// VkPipelineDynamicStateCreateInfo dynamicStateCI{};
-		// dynamicStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-		// dynamicStateCI.dynamicStateCount = 2;
-		// dynamicStateCI.pDynamicStates = dynamicStates;
+		VkPipelineDynamicStateCreateInfo dynamicStateCI{};
+		dynamicStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+		dynamicStateCI.dynamicStateCount = 2;
+		dynamicStateCI.pDynamicStates = dynamicStates;
 
+		//Final pipeline creation
 		VkGraphicsPipelineCreateInfo pipelineCI{};
 		pipelineCI.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 		//Programmable stages
@@ -602,10 +616,10 @@ namespace Rendering {
 		pipelineCI.pMultisampleState = &multisamplingCI;
 		pipelineCI.pDepthStencilState = nullptr; // Optional
 		pipelineCI.pColorBlendState = &colorBlendingCI;
-		pipelineCI.pDynamicState = nullptr; // Optional
+		pipelineCI.pDynamicState = &dynamicStateCI;
 		//Additional data
 		pipelineCI.layout = resources.pipelineLayout;
-		pipelineCI.renderPass = main.pass;
+		pipelineCI.renderPass = primaryRenderPass;
 		pipelineCI.subpass = 0;
 		//Parent pipelines, if this pipeline derives from another
 		pipelineCI.basePipelineHandle = VK_NULL_HANDLE; // Optional
@@ -639,8 +653,8 @@ namespace Rendering {
 		}
 
 		//Fill the staging buffer with the source data
-		staging.WriteArray(MakeView(mesh.vertices), vertexOffset);
-		staging.WriteArray(MakeView(mesh.indices), indexOffset);
+		staging.WriteArray<Vertex_Simple>(mesh.vertices, vertexOffset);
+		staging.WriteArray<uint32_t>(mesh.indices, indexOffset);
 
 		//Create the target buffer that will contain the uploaded data for the GPU to use
 		constexpr VkBufferUsageFlags targetBufferFlags =

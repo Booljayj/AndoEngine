@@ -30,18 +30,32 @@ namespace Reflection {
 			VariableInfo{ &glm::vec4::w, name_w, nullptr, FVariableFlags::None }
 		});
 
-	const TStructTypeInfo<glm::ivec2> info_ivec2 = TStructTypeInfo<glm::ivec2>{}
+	const TStructTypeInfo<glm::u32vec2> info_u32vec2 = TStructTypeInfo<glm::u32vec2>{}
 		.Description("2D integer vector")
 		.Variables({
-			VariableInfo{ &glm::ivec2::x, name_x, nullptr, FVariableFlags::None },
-			VariableInfo{ &glm::ivec2::x, name_y, nullptr, FVariableFlags::None }
+			VariableInfo{ &glm::u32vec2::x, name_x, nullptr, FVariableFlags::None },
+			VariableInfo{ &glm::u32vec2::x, name_y, nullptr, FVariableFlags::None }
 		});
-	const TStructTypeInfo<glm::ivec3> info_ivec3 = TStructTypeInfo<glm::ivec3>{}
+	const TStructTypeInfo<glm::uvec3> info_u32vec3 = TStructTypeInfo<glm::u32vec3>{}
 		.Description("3D integer vector")
 		.Variables({
-			VariableInfo{ &glm::ivec3::x, name_x, nullptr, FVariableFlags::None },
-			VariableInfo{ &glm::ivec3::y, name_y, nullptr, FVariableFlags::None },
-			VariableInfo{ &glm::ivec3::z, name_z, nullptr, FVariableFlags::None }
+			VariableInfo{ &glm::u32vec3::x, name_x, nullptr, FVariableFlags::None },
+			VariableInfo{ &glm::u32vec3::y, name_y, nullptr, FVariableFlags::None },
+			VariableInfo{ &glm::u32vec3::z, name_z, nullptr, FVariableFlags::None }
+		});
+
+	const TStructTypeInfo<glm::i32vec2> info_i32vec2 = TStructTypeInfo<glm::i32vec2>{}
+		.Description("2D integer vector")
+		.Variables({
+			VariableInfo{ &glm::i32vec2::x, name_x, nullptr, FVariableFlags::None },
+			VariableInfo{ &glm::i32vec2::x, name_y, nullptr, FVariableFlags::None }
+		});
+	const TStructTypeInfo<glm::ivec3> info_i32vec3 = TStructTypeInfo<glm::i32vec3>{}
+		.Description("3D integer vector")
+		.Variables({
+			VariableInfo{ &glm::i32vec3::x, name_x, nullptr, FVariableFlags::None },
+			VariableInfo{ &glm::i32vec3::y, name_y, nullptr, FVariableFlags::None },
+			VariableInfo{ &glm::i32vec3::z, name_z, nullptr, FVariableFlags::None }
 		});
 
 	const std::string_view name_column0 = "column0"sv;
@@ -125,8 +139,11 @@ namespace Reflection {
 		DEFINE_RESOLVER(glm::vec3, vec3);
 		DEFINE_RESOLVER(glm::vec4, vec4);
 
-		DEFINE_RESOLVER(glm::ivec2, ivec2);
-		DEFINE_RESOLVER(glm::ivec3, ivec3);
+		DEFINE_RESOLVER(glm::u32vec2, u32vec2);
+		DEFINE_RESOLVER(glm::u32vec3, u32vec3);
+
+		DEFINE_RESOLVER(glm::i32vec2, i32vec2);
+		DEFINE_RESOLVER(glm::i32vec3, i32vec3);
 
 		DEFINE_RESOLVER(glm::mat2x2, mat2x2);
 		DEFINE_RESOLVER(glm::mat2x3, mat2x3);

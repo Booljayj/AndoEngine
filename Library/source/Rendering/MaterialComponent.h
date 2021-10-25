@@ -4,7 +4,7 @@
 #include "Rendering/Vulkan/VulkanResources.h"
 
 namespace Rendering {
-	/** Describes a method of rendering geometry */
+	/** Describes a method of rendering geometry, also called a GraphicsPipeline or Shader */
 	struct MaterialComponent {
 		/** TEMP Names of files to load to create vertex and fragment shader modules. Should be replaced by components that contain that information */
 		std::string vertex;

@@ -8,17 +8,18 @@
 #include "Rendering/Vulkan/VulkanSwapchain.h"
 
 namespace Rendering {
-	/** Frame Buffering levels, which determine the number of resources we'll cycle through for each frame */
+	/** Buffering levels, which determine the number of frames we'll cycle through for rendering */
 	enum class EBuffering : uint8_t {
 		None,
 		Double,
 		Triple,
 	};
 
+	/** The result of preparing to render a frame */
 	enum class EPreparationResult : uint8_t {
 		/** The next step can be taken for rendering */
 		Success,
-		/** There has been an error, but we can retry rendering next frame */
+		/** There has been an error that prevents rendering, but we can retry rendering next frame */
 		Retry,
 		/** There has been a serious problem, and we should shut down */
 		Error,
@@ -37,16 +38,18 @@ namespace Rendering {
 		} uniforms;
 
 		/** Synchronization objects */
-		VkSemaphore imageAvailableSemaphore = nullptr;
-		VkSemaphore renderFinishedSemaphore = nullptr;
+		struct {
+			VkSemaphore imageAvailable = nullptr;
+			VkSemaphore renderFinished = nullptr;
+		} semaphores;
 		VkFence fence = nullptr;
 
-		static bool IsValid(FrameResources const& r) { return r.commandPool && r.commands && r.uniforms.global && r.uniforms.object && r.imageAvailableSemaphore && r.renderFinishedSemaphore && r.fence; }
+		static bool IsValid(FrameResources const& r) { return r.commandPool && r.commands && r.uniforms.global && r.uniforms.object && r.semaphores.imageAvailable && r.semaphores.renderFinished && r.fence; }
 	};
 
-	/** Keeps track of the resources used each frame, and how they should be used. */
+	/** Keeps track of the resources used each frame, and how they should be used to render a number of viewports. */
 	struct VulkanFrameOrganizer {
-		/** The resources that we will cycle through when rendering each frame */
+		/** The frames that we will cycle through when rendering */
 		std::vector<FrameResources> resources;
 		std::vector<VkFence> imageFences;
 
@@ -75,7 +78,7 @@ namespace Rendering {
 		/** Submit everything currently recorded so that it can be rendered. */
 		bool Submit(CTX_ARG, VulkanLogicalDevice const& logical, VulkanSwapchain const& swapchain);
 
-		/** Record commands to the current buffer. Recorder must have the signature void(VkCommandBuffer,size_t). */
+		/** Record commands to the current buffer */
 		template<typename FunctorType>
 		inline bool Record(CTX_ARG, FunctorType&& recorder) {
 			FrameResources const& frame = resources[currentResourceIndex];

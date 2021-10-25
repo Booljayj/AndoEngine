@@ -49,8 +49,12 @@ namespace Rendering {
 		/** The frame organizer that keeps track of resources used each frame */
 		Rendering::VulkanFrameOrganizer organizer;
 
-		/** The main render pass */
-		Rendering::TRenderPassInfo<1> main;
+		/** The primary render pass used for scene rendering */
+		VkRenderPass primaryRenderPass;
+		/** Clear values used with the primary render pass */
+		std::vector<VkClearValue> primaryClearValues;
+		/** The framebuffers for rendering on the swapchain using the primary render pass */
+		std::vector<VkFramebuffer> framebuffers;
 
 		/** Bits for tracking rendering behavior and changes */
 		uint8_t retryCount : 4;
