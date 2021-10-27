@@ -7,10 +7,7 @@
                 "${workspaceRoot}/Library/generated",
                 "${workspaceRoot}/Tests/source",
                 "/usr/local/include",
-                "/usr/local/include/freetype2",
-                "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include",
-                "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1",
-                "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/10.0.1/include"
+                "/usr/local/include/freetype2"
             ],
             "defines": [],
             "intelliSenseMode": "clang-x64",
@@ -19,9 +16,7 @@
                     "${workspaceRoot}/Library/source",
                     "${workspaceRoot}/Library/generated",
                     "${workspaceRoot}/Tests/source",
-                    "/usr/local/include",
-                    "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include",
-                    "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/10.0.1/include"
+                    "/usr/local/include"
                 ],
                 "limitSymbolsToIncludedHeaders": true,
                 "databaseFilename": ""
