@@ -6,6 +6,7 @@
 #include "Rendering/Vulkan/VulkanPhysicalDevice.h"
 #include "Rendering/Vulkan/VulkanResources.h"
 #include "Rendering/Vulkan/VulkanSwapchain.h"
+#include "Rendering/Vulkan/VulkanUniformLayouts.h"
 
 namespace Rendering {
 	/** Buffering levels, which determine the number of frames we'll cycle through for rendering */
@@ -57,11 +58,6 @@ namespace Rendering {
 		VkCommandPool commandPool = nullptr;
 		VkCommandBuffer stagingCommandBuffer = nullptr;
 
-		struct {
-			VkDescriptorSetLayout global;
-			VkDescriptorSetLayout object;
-		} descriptorSetLayout;
-
 		/** The pool for descriptors used in each frame */
 		VkDescriptorPool descriptorPool;
 
@@ -70,7 +66,7 @@ namespace Rendering {
 
 		inline operator bool() const { return resources.size() > 0 && imageFences.size() > 0 && std::all_of(resources.begin(), resources.end(), FrameResources::IsValid); }
 
-		bool Create(CTX_ARG, VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical, EBuffering buffering, size_t numImages, size_t numThreads);
+		bool Create(CTX_ARG, VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical, VulkanUniformLayouts const& uniformLayouts, EBuffering buffering, size_t numImages, size_t numThreads);
 		void Destroy(VulkanLogicalDevice const& logical);
 
 		/** Prepare the next set of resources for rendering */

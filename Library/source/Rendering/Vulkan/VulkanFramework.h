@@ -13,17 +13,15 @@ namespace Rendering {
 	struct VulkanFramework {
 		/** The underlying vulkan instance */
 		VkInstance instance = nullptr;
-		/** The surface tied to the window */
-		VkSurfaceKHR surface = nullptr;
 		/** The oldest version of the VulkanAPI that this application requires */
 		VulkanVersion version = VK_API_VERSION_1_0;
 
 		/** The messenger responsible for interpreting debug messages */
 		VkDebugUtilsMessengerEXT messenger = nullptr;
 
-		inline operator bool() const { return instance && surface && messenger; }
+		inline operator bool() const { return instance && messenger; }
 
-		bool Create(CTX_ARG, HAL::Window* window);
+		bool Create(CTX_ARG, HAL::Window* primaryWindow);
 		void Destroy();
 
 	private:

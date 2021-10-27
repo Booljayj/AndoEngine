@@ -2,7 +2,7 @@
 #include "Rendering/Uniforms.h"
 
 namespace Rendering {
-	bool VulkanFrameOrganizer::Create(CTX_ARG, VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical, EBuffering buffering, size_t numImages, size_t numThreads) {
+	bool VulkanFrameOrganizer::Create(CTX_ARG, VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical, VulkanUniformLayouts const& uniformLayouts, EBuffering buffering, size_t numImages, size_t numThreads) {
 		size_t const numFrames = static_cast<size_t>(buffering) + 1;
 		assert(numFrames > 0 && numFrames < 4);
 
@@ -31,40 +31,6 @@ namespace Rendering {
 			assert(!descriptorPool);
 			if (vkCreateDescriptorPool(logical.device, &descriptorPoolCI, nullptr, &descriptorPool) != VK_SUCCESS) {
 				LOG(Vulkan, Error, "Failed to create descriptor pool for resources");
-				return false;
-			}
-		}
-
-		//Create the descriptor set layout for global uniforms
-		{
-			std::array<VkDescriptorSetLayoutBinding, 1> bindings;
-			bindings[0] = GlobalUniforms::GetBinding();
-
-			VkDescriptorSetLayoutCreateInfo layoutCI{};
-			layoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-			layoutCI.bindingCount = bindings.size();
-			layoutCI.pBindings = bindings.data();
-
-			assert(!descriptorSetLayout.global);
-			if (vkCreateDescriptorSetLayout(logical.device, &layoutCI, nullptr, &descriptorSetLayout.global) != VK_SUCCESS) {
-				LOG(Vulkan, Error, "Failed to create descriptor set layout");
-				return false;
-			}
-		}
-
-		//Create the descriptor set layout for object uniforms
-		{
-			std::array<VkDescriptorSetLayoutBinding, 1> bindings;
-			bindings[0] = ObjectUniforms::GetBinding();
-
-			VkDescriptorSetLayoutCreateInfo layoutCI{};
-			layoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-			layoutCI.bindingCount = bindings.size();
-			layoutCI.pBindings = bindings.data();
-
-			assert(!descriptorSetLayout.object);
-			if (vkCreateDescriptorSetLayout(logical.device, &layoutCI, nullptr, &descriptorSetLayout.object) != VK_SUCCESS) {
-				LOG(Vulkan, Error, "Failed to create descriptor set layout");
 				return false;
 			}
 		}
@@ -102,8 +68,8 @@ namespace Rendering {
 
 			//Create the uniforms descriptors and resources
 			{
-				VkDescriptorSet sets[] = {nullptr, nullptr};
-				VkDescriptorSetLayout const layouts[] = {descriptorSetLayout.global, descriptorSetLayout.object};
+				VkDescriptorSet sets[] = { nullptr, nullptr };
+				VkDescriptorSetLayout const layouts[] = { uniformLayouts.global, uniformLayouts.object };
 
 				VkDescriptorSetAllocateInfo descriptorSetAI{};
 				descriptorSetAI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -204,8 +170,6 @@ namespace Rendering {
 		resources.clear();
 
 		if (descriptorPool) vkDestroyDescriptorPool(logical.device, descriptorPool, nullptr);
-		if (descriptorSetLayout.object) vkDestroyDescriptorSetLayout(logical.device, descriptorSetLayout.object, nullptr);
-		if (descriptorSetLayout.global) vkDestroyDescriptorSetLayout(logical.device, descriptorSetLayout.global, nullptr);
 		if (commandPool) vkDestroyCommandPool(logical.device, commandPool, nullptr);
 		currentResourceIndex = 0;
 	}

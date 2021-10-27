@@ -3,6 +3,7 @@
 #include "Engine/Logging/Logger.h"
 #include "Engine/Time.h"
 #include "EntityFramework/EntityRegistry.h"
+#include "Rendering/Surface.h"
 #include "Rendering/Vulkan/Vulkan.h"
 #include "Rendering/Vulkan/VulkanFrameOrganizer.h"
 #include "Rendering/Vulkan/VulkanFramework.h"
@@ -12,6 +13,7 @@
 #include "Rendering/Vulkan/VulkanResources.h"
 #include "Rendering/Vulkan/VulkanResourcesHelpers.h"
 #include "Rendering/Vulkan/VulkanSwapchain.h"
+#include "Rendering/Vulkan/VulkanUniformLayouts.h"
 
 namespace HAL {
 	struct WindowingSystem;
@@ -44,21 +46,27 @@ namespace Rendering {
 
 		/** The logical device for the currently selected physical device */
 		Rendering::VulkanLogicalDevice logical;
-		/** The swapchain that is currently being used for images */
-		Rendering::VulkanSwapchain swapchain;
-		/** The frame organizer that keeps track of resources used each frame */
-		Rendering::VulkanFrameOrganizer organizer;
+
+		/** The primary rendering surface */
+		Rendering::PrimarySurface primarySurface;
+		/** The surface format of the primary surface, which is used when rendering to all surfaces */
+		VkSurfaceFormatKHR primarySurfaceFormat;
+		/** Additional surfaces used for rendering */
+		std::vector<std::unique_ptr<Rendering::Surface>> secondarySurfaces;
 
 		/** The primary render pass used for scene rendering */
-		VkRenderPass primaryRenderPass;
-		/** Clear values used with the primary render pass */
-		std::vector<VkClearValue> primaryClearValues;
+		VulkanRenderPass primaryRenderPass;
 		/** The framebuffers for rendering on the swapchain using the primary render pass */
 		std::vector<VkFramebuffer> framebuffers;
 
+		/** Uniform layouts for standard uniforms */
+		VulkanUniformLayouts uniformLayouts;
+
+		/** Command recording objects */
+		VkCommandPool commandPool = nullptr;
+
 		/** Bits for tracking rendering behavior and changes */
 		uint8_t retryCount : 4;
-		uint8_t shouldRecreateSwapchain : 1;
 		uint8_t shouldCreatePipelines : 1;
 		uint8_t shouldCreateMeshes : 1;
 

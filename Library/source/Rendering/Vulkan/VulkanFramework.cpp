@@ -3,7 +3,7 @@
 #include "Rendering/Vulkan/VulkanDebug.h"
 
 namespace Rendering {
-	bool VulkanFramework::Create(CTX_ARG, HAL::Window* window) {
+	bool VulkanFramework::Create(CTX_ARG, HAL::Window* primaryWindow) {
 		TEMP_ALLOCATOR_MARK();
 
 		//Information to create a debug messenger, used in several locations within this function.
@@ -19,7 +19,7 @@ namespace Rendering {
 			}
 
 			//Check for extension support
-			TArrayView<char const*> const enabledExtensionNames = GetExtensionsNames(CTX, window);
+			TArrayView<char const*> const enabledExtensionNames = GetExtensionsNames(CTX, primaryWindow);
 			if (!CanEnableExtensions(CTX, enabledExtensionNames)) {
 				LOG(Vulkan, Error, "Cannot enable required instance extensions");
 				return false;
@@ -60,17 +60,6 @@ namespace Rendering {
 			}
 		}
 
-		// Vulkan surface (via SDL)
-		assert(!surface);
-#if SDL_ENABLED
-		if (SDL_Vulkan_CreateSurface(window, instance, &surface) != SDL_TRUE) {
-			LOG(Vulkan, Error, "Failed to create Vulkan window surface");
-			return false;
-		}
-#else
-		return false;
-#endif
-
 		// Vulkan Messenger
 		assert(!messenger);
 		if (CreateDebugUtilsMessengerEXT(instance, &messengerCI, nullptr, &messenger) != VK_SUCCESS) {
@@ -83,11 +72,9 @@ namespace Rendering {
 
 	void VulkanFramework::Destroy() {
 		if (messenger) DestroyDebugUtilsMessengerEXT(instance, messenger, nullptr);
-		if (surface) vkDestroySurfaceKHR(instance, surface, nullptr);
 		if (instance) vkDestroyInstance(instance, nullptr);
 
 		messenger = nullptr;
-		surface = nullptr;
 		instance = nullptr;
 	}
 
@@ -125,7 +112,7 @@ namespace Rendering {
 			VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
 			VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
 		};
-		constexpr size_t numStandardExtensions = sizeof(standardExtensions) / sizeof(*standardExtensions);
+		constexpr size_t numStandardExtensions = std::size(standardExtensions);
 
 		uint32_t numHALExtensions = 0;
 		char const** halExtensions = nullptr;

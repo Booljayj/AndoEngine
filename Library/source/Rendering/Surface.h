@@ -1,0 +1,66 @@
+#pragma once
+#include "Engine/Context.h"
+#include "Geometry/GLM.h"
+#include "Rendering/Vulkan/Vulkan.h"
+#include "Rendering/Vulkan/VulkanFrameOrganizer.h"
+#include "Rendering/Vulkan/VulkanRenderPasses.h"
+#include "Rendering/Vulkan/VulkanSwapchain.h"
+
+namespace Rendering {
+	struct RenderingSystem;
+
+	/** A surface tied to a given window, which is used by a RenderSystem for rendering */
+	struct Surface {
+	public:
+		/** The maximum number of consecutive times we can fail to render a frame */
+		static constexpr uint8_t maxRetryCount = 5;
+
+		/** The internal surface tied to this surface */
+		VkSurfaceKHR surface = nullptr;
+		/** The swapchain that is currently being used for images */
+		VulkanSwapchain swapchain;
+		/** The frame organizer that keeps track of resources used each frame */
+		VulkanFrameOrganizer organizer;
+		/** The framebuffers for rendering on the swapchain using the primary render pass */
+		std::vector<VkFramebuffer> framebuffers;
+
+		Surface(RenderingSystem const& inOwner);
+
+		inline bool IsValid() const { return surface && swapchain; }
+		inline bool IsSwapchainDirty() const { return shouldRecreateSwapchain; }
+
+		bool Create(CTX_ARG, HAL::Window* window, glm::u32vec2 const& size);
+		bool CreateSwapchain(CTX_ARG, VulkanPhysicalDevice const& physical, VkSurfaceFormatKHR surfaceFormat, TArrayView<VulkanRenderPass> passes);
+		bool RecreateSwapchain(CTX_ARG, VulkanPhysicalDevice const& physical, VkSurfaceFormatKHR surfaceFormat, TArrayView<VulkanRenderPass> passes);
+		void Destroy();
+
+		bool Render(CTX_ARG, VulkanLogicalDevice const& logical, TArrayView<VulkanRenderPass> passes, EntityRegistry& registry);
+
+		/** Change the size of this surface */
+		void Resize(glm::u32vec2 const& newSize);
+
+		/** Block until pending work is complete */
+		void WaitForCompletion(CTX_ARG, VulkanLogicalDevice const& logical);
+
+	private:
+		RenderingSystem const& owner;
+		glm::u32vec2 imageSize;
+
+		uint8_t retryCount : 1;
+		uint8_t shouldRecreateSwapchain : 1;
+	};
+
+	/** The primary surface managed by a render system. A system always creates a primary surface, and uses it to determine rendering capabilities. */
+	struct PrimarySurface : public Surface {
+		using Surface::Surface;
+
+		/** Get information about how a physical device can be used with this surface */
+		VulkanPhysicalDevice GetPhysicalDevice(CTX_ARG, VkPhysicalDevice device);
+
+		/** Returns whether the physical device can be used to render to this surface */
+		bool IsPhysicalDeviceUsable(VulkanPhysicalDevice const&) const;
+
+		/** Get the preferred surface format when rendering to this surface with the given physical device */
+		VkSurfaceFormatKHR GetPreferredSurfaceFormat(VulkanPhysicalDevice const& physical);
+	};
+}
