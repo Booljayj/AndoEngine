@@ -6,114 +6,79 @@
 #include "Rendering/Uniforms.h"
 
 namespace Rendering {
-	Surface::Surface(RenderingSystem const& inOwner)
-	: owner(inOwner)
+	Surface::Surface(CTX_ARG, RenderingSystem const& inOwner, HAL::Window inWindow)
+	: id(inWindow.id)
+	, window(inWindow)
+	, owner(inOwner)
 	, retryCount(0)
 	, shouldRecreateSwapchain(false)
-	{}
-
-	bool Surface::Create(CTX_ARG, HAL::Window* window, glm::u32vec2 const& size) {
+	{
 		// Vulkan surface (via SDL)
 		assert(!surface);
 #if SDL_ENABLED
-		if (SDL_Vulkan_CreateSurface(window, owner.framework.instance, &surface) != SDL_TRUE) {
+		if (SDL_Vulkan_CreateSurface(window.handle, owner.framework.instance, &surface) != SDL_TRUE) {
 			LOG(Vulkan, Error, "Failed to create Vulkan window surface");
-			return false;
 		}
-#else
-		return false;
-#endif
 
-		return true;
+		int32_t width = 1;
+		int32_t height = 1;
+		SDL_Vulkan_GetDrawableSize(window.handle, &width, &height);
+		imageSize = glm::u32vec2{ static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
+#endif
 	}
 
-	bool Surface::CreateSwapchain(CTX_ARG, VulkanPhysicalDevice const& physical, VkSurfaceFormatKHR surfaceFormat, TArrayView<VulkanRenderPass> passes) {
+	VulkanPhysicalDevice Surface::GetPhysicalDevice(CTX_ARG, VkPhysicalDevice device) {
+		return VulkanPhysicalDevice::Get(CTX, device, surface);
+	}
+
+	bool Surface::IsPhysicalDeviceUsable(VulkanPhysicalDevice const& physical) const {
+		return physical.HasRequiredQueues() && physical.HasSwapchainSupport();
+	}
+
+	VkSurfaceFormatKHR Surface::GetPreferredSurfaceFormat(VulkanPhysicalDevice const& physical) {
+		for (const auto& availableSurfaceFormat : physical.presentation.surfaceFormats) {
+			if (availableSurfaceFormat.format == VK_FORMAT_B8G8R8A8_UNORM && availableSurfaceFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+				return availableSurfaceFormat;
+			}
+		}
+		return physical.presentation.surfaceFormats[0];
+	}
+
+	bool Surface::CreateSwapchain(CTX_ARG, VulkanPhysicalDevice const& physical, VkSurfaceFormatKHR surfaceFormat, VulkanRenderPasses const& passes) {
 		imageSize = physical.GetSwapExtent(surface, imageSize);
 
 		if (!swapchain.Create(CTX, imageSize, surface, *owner.selectedPhysical, owner.logical)) return false;
 		if (!organizer.Create(CTX, *owner.selectedPhysical, owner.logical, owner.uniformLayouts, EBuffering::Double, swapchain.views.size(), 1)) return false;
 
-		//Create one framebuffer for each image in the swapchain, binding the image as one of the attachments for the primary render pass
-		std::array<VkImageView, 1> attachments;
-
-		const size_t numImages = swapchain.views.size();
-		framebuffers.resize(numImages);
-		for (size_t index = 0; index < numImages; ++index) {
-			attachments[0] = swapchain.views[index];
-
-			//Create the framebuffer
-			VkFramebufferCreateInfo framebufferCI{};
-			framebufferCI.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			framebufferCI.renderPass = passes[0].pass;
-			framebufferCI.attachmentCount = 1;
-			framebufferCI.pAttachments = attachments.data();
-			framebufferCI.width = imageSize.x;
-			framebufferCI.height = imageSize.y;
-			framebufferCI.layers = 1;
-
-			assert(!framebuffers[index]);
-			if (vkCreateFramebuffer(owner.logical.device, &framebufferCI, nullptr, &framebuffers[index]) != VK_SUCCESS) {
-				LOGF(Vulkan, Error, "Failed to create frambuffer %i", index);
-				return false;
-			}
-		}
+		SurfaceRenderPass::AttachmentImageViews sharedImageViews;
+		if (!passes.surface.CreateFramebuffers(CTX, owner.logical, sharedImageViews, swapchain.views, imageSize, framebuffers.surface)) return false;
 
 		return true;
 	}
 
-	bool Surface::RecreateSwapchain(CTX_ARG, VulkanPhysicalDevice const& physical, VkSurfaceFormatKHR surfaceFormat, TArrayView<VulkanRenderPass> passes) {
-		//Destroy old framebuffers
-		const size_t numOldImages = swapchain.views.size();
-		for (size_t index = 0; index < numOldImages; ++index) {
-			if (framebuffers[index]) vkDestroyFramebuffer(owner.logical.device, framebuffers[index], nullptr);
-		}
-		framebuffers.clear();
+	bool Surface::RecreateSwapchain(CTX_ARG, VulkanPhysicalDevice const& physical, VkSurfaceFormatKHR surfaceFormat, VulkanRenderPasses const& passes) {
+		passes.surface.DestroyFramebuffers(owner.logical, framebuffers.surface);
 
 		imageSize = physical.GetSwapExtent(surface, imageSize);
 
 		if (!swapchain.Recreate(CTX, imageSize, surface, *owner.selectedPhysical, owner.logical)) return false;
 		if (!organizer.Create(CTX, *owner.selectedPhysical, owner.logical, owner.uniformLayouts, EBuffering::Double, swapchain.views.size(), 1)) return false;
 
-		//Create one framebuffer for each image in the swapchain, binding the image as one of the attachments for the primary render pass
-		std::array<VkImageView, 1> attachments;
-
-		const size_t numImages = swapchain.views.size();
-		framebuffers.resize(numImages);
-		for (size_t index = 0; index < numImages; ++index) {
-			attachments[0] = swapchain.views[index];
-
-			//Create the framebuffer
-			VkFramebufferCreateInfo framebufferCI{};
-			framebufferCI.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			framebufferCI.renderPass = passes[0].pass;
-			framebufferCI.attachmentCount = 1;
-			framebufferCI.pAttachments = attachments.data();
-			framebufferCI.width = imageSize.x;
-			framebufferCI.height = imageSize.y;
-			framebufferCI.layers = 1;
-
-			assert(!framebuffers[index]);
-			if (vkCreateFramebuffer(owner.logical.device, &framebufferCI, nullptr, &framebuffers[index]) != VK_SUCCESS) {
-				LOGF(Vulkan, Error, "Failed to create frambuffer %i", index);
-				return false;
-			}
-		}
+		SurfaceRenderPass::AttachmentImageViews sharedImageViews;
+		if (!passes.surface.CreateFramebuffers(CTX, owner.logical, sharedImageViews, swapchain.views, imageSize, framebuffers.surface)) return false;
 
 		return true;
 	}
 
-	void Surface::Destroy() {
-		for (VkFramebuffer framebuffer : framebuffers) {
-			if (framebuffer) vkDestroyFramebuffer(owner.logical.device, framebuffer, nullptr);
-		}
-		framebuffers.clear();
+	void Surface::Destroy(VulkanFramework const& framework, VulkanLogicalDevice const& logical) {
+		SurfaceRenderPass::DestroyFramebuffers(owner.logical, framebuffers.surface);
 
-		if (organizer) organizer.Destroy(owner.logical);
-		if (swapchain) swapchain.Destroy(owner.logical);
-		if (surface) vkDestroySurfaceKHR(owner.framework.instance, surface, nullptr);
+		if (organizer) organizer.Destroy(logical);
+		if (swapchain) swapchain.Destroy(logical);
+		if (surface) vkDestroySurfaceKHR(framework.instance, surface, nullptr);
 	}
 
-	bool Surface::Render(CTX_ARG, VulkanLogicalDevice const& logical, TArrayView<VulkanRenderPass> passes, EntityRegistry& registry) {
+	bool Surface::Render(CTX_ARG, VulkanLogicalDevice const& logical, VulkanRenderPasses const& passes, EntityRegistry& registry) {
 		//@todo This would ideally be done with some acceleration structure that contains a mapping between the pipelines and all of
 		//      the geometry that should be drawn with that pipeline, to avoid binding the same pipeline more than once and to strip
 		//      out culled geometry.
@@ -134,8 +99,8 @@ namespace Rendering {
 
 		//Lambda to record rendering commands
 		auto const recorder = [&](const FrameResources& frame, size_t index) {
-			//Create a scope for all commands that belong to the primary render pass
-			ScopedRenderPass pass{ frame.commands, passes[0], framebuffers[index], Geometry::ScreenRect{ glm::vec2{0.0f}, swapchain.extent } };
+			//Create a scope for all commands that belong to the surface render pass
+			const SurfaceRenderPass::ScopedRecord scope{ frame.commands, passes.surface, framebuffers.surface[index], Geometry::ScreenRect{ glm::vec2{0.0f}, swapchain.extent } };
 
 			//Set the viewport and scissor that we are currently rendering for.
 			VkViewport viewport{};
@@ -211,22 +176,5 @@ namespace Rendering {
 
 	void Surface::WaitForCompletion(CTX_ARG, VulkanLogicalDevice const& logical) {
 		organizer.WaitForCompletion(CTX, logical);
-	}
-
-	VulkanPhysicalDevice PrimarySurface::GetPhysicalDevice(CTX_ARG, VkPhysicalDevice device) {
-		return VulkanPhysicalDevice::Get(CTX, device, surface);
-	}
-
-	bool PrimarySurface::IsPhysicalDeviceUsable(VulkanPhysicalDevice const& physical) const {
-		return physical.HasRequiredQueues() && physical.HasSwapchainSupport();
-	}
-
-	VkSurfaceFormatKHR PrimarySurface::GetPreferredSurfaceFormat(VulkanPhysicalDevice const& physical) {
-		for (const auto& availableSurfaceFormat : physical.presentation.surfaceFormats) {
-			if (availableSurfaceFormat.format == VK_FORMAT_B8G8R8A8_UNORM && availableSurfaceFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-				return availableSurfaceFormat;
-			}
-		}
-		return physical.presentation.surfaceFormats[0];
 	}
 }

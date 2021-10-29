@@ -7,24 +7,25 @@
 #include "Rendering/MaterialComponent.h"
 #include "Rendering/MeshComponent.h"
 #include "Rendering/MeshRendererComponent.h"
+#include "Rendering/Vulkan/VulkanRenderPasses.h"
 #include "Rendering/Uniforms.h"
 
 DEFINE_LOG_CATEGORY(Rendering, Warning);
 
 namespace Rendering {
 	RenderingSystem::RenderingSystem()
-	: primarySurface(*this)
-	, retryCount(0)
+	: retryCount(0)
 	, shouldCreatePipelines(false)
 	, shouldCreateMeshes(false)
 	{}
 
 	bool RenderingSystem::Startup(CTX_ARG, HAL::WindowingSystem& windowing, EntityRegistry& registry) {
 		// Vulkan instance
-		if (!framework.Create(CTX, windowing.GetMainWindow())) return false;
+		if (!framework.Create(CTX, windowing.GetPrimaryWindow())) return false;
 
 		//Create the primary surface for the primary window
-		if (!primarySurface.Create(CTX, windowing.GetMainWindow(), { 1024, 720 })) return false;
+		primarySurface = CreateSurface(CTX, windowing.GetPrimaryWindow());
+		if (!primarySurface) return false;
 
 		// Collect physical devices and select default one
 		{
@@ -36,7 +37,7 @@ namespace Rendering {
 			vkEnumeratePhysicalDevices(framework.instance, &deviceCount, devices);
 
 			for (int32_t deviceIndex = 0; deviceIndex < deviceCount; ++deviceIndex) {
-				const VulkanPhysicalDevice physicalDevice = primarySurface.GetPhysicalDevice(CTX, devices[deviceIndex]);
+				const VulkanPhysicalDevice physicalDevice = primarySurface->GetPhysicalDevice(CTX, devices[deviceIndex]);
 				if (IsUsablePhysicalDevice(physicalDevice, extensionNames)) {
 					availablePhysicalDevices.push_back(physicalDevice);
 				}
@@ -54,7 +55,7 @@ namespace Rendering {
 		}
 
 		//Create the render passes
-		if (!CreateRenderPasses(CTX)) return false;
+		if (!passes.Create(CTX, logical, primarySurfaceFormat.format)) return false;
 		if (!uniformLayouts.Create(CTX, logical)) return false;
 
 		//Create the command pool
@@ -71,7 +72,7 @@ namespace Rendering {
 		}
 
 		//Create the swapchain on the primary surface
-		primarySurface.CreateSwapchain(CTX, *selectedPhysical, primarySurfaceFormat, primaryRenderPass);
+		primarySurface->CreateSwapchain(CTX, *selectedPhysical, primarySurfaceFormat, passes);
 
 		//Bind this rendering system as a context object callbacks can refer to it.
 		registry.Bind(this);
@@ -94,22 +95,20 @@ namespace Rendering {
 		availablePhysicalDevices.clear();
 
 		//Wait for any in-progress work to finish before we start cleanup
-		for (std::unique_ptr<Surface> const& surface : secondarySurfaces) {
+		for (auto const& surface : surfaces) {
 			surface->WaitForCompletion(CTX, logical);
 		}
-		primarySurface.WaitForCompletion(CTX, logical);
 
 		registry.DestroyComponents<MaterialComponent, MeshComponent>();
 		DestroyStalePipelines();
 		DestroyStaleMeshes();
 
-		for (std::unique_ptr<Surface> const& surface : secondarySurfaces) {
-			surface->Destroy();
+		for (auto const& surface : surfaces) {
+			surface->Destroy(framework, logical);
 		}
-		primarySurface.Destroy();
 
 		uniformLayouts.Destroy(logical);
-		DestroyRenderPasses(CTX);
+		passes.Destroy(logical);
 		vkDestroyCommandPool(logical.device, commandPool, nullptr);
 		logical.Destroy();
 		framework.Destroy();
@@ -118,17 +117,11 @@ namespace Rendering {
 
 	bool RenderingSystem::Render(CTX_ARG, EntityRegistry& registry) {
 		//Recreate swapchains if necessary. This happens periodically if the rendering parameters have changed significantly.
-		if (primarySurface.IsSwapchainDirty()) {
-			LOG(Rendering, Info, "Recreating swapchain");
-			vkDeviceWaitIdle(logical.device);
-			primarySurface.RecreateSwapchain(CTX, *selectedPhysical, primarySurfaceFormat, primaryRenderPass);
-		}
-
-		for (std::unique_ptr<Surface> const& surface : secondarySurfaces) {
+		for (auto const& surface : surfaces) {
 			if (surface->IsSwapchainDirty()) {
 				LOG(Rendering, Info, "Recreating swapchain");
 				vkDeviceWaitIdle(logical.device);
-				primarySurface.RecreateSwapchain(CTX, *selectedPhysical, primarySurfaceFormat, primaryRenderPass);
+				surface->RecreateSwapchain(CTX, *selectedPhysical, primarySurfaceFormat, passes);
 			}
 		}
 
@@ -136,9 +129,8 @@ namespace Rendering {
 		RebuildResources(CTX, registry);
 
 		bool success = true;
-		success &= primarySurface.Render(CTX, logical, primaryRenderPass, registry);
-		for (std::unique_ptr<Surface> const& surface : secondarySurfaces) {
-			success &= surface->Render(CTX, logical, primaryRenderPass, registry);
+		for (auto const& surface : surfaces) {
+			success &= surface->Render(CTX, logical, passes, registry);
 		}
 
 		return success;
@@ -181,7 +173,7 @@ namespace Rendering {
 
 				selectedPhysical = newPhysical;
 				selectedPhysicalIndex = index;
-				primarySurfaceFormat = primarySurface.GetPreferredSurfaceFormat(*selectedPhysical);
+				primarySurfaceFormat = primarySurface->GetPreferredSurfaceFormat(*selectedPhysical);
 
 				VulkanVersion const version = selectedPhysical->GetDriverVersion();
 				LOGF(Rendering, Info, "Selected device %s (%i.%i.%i)", selectedPhysical->properties.deviceName, version.major, version.minor, version.patch);
@@ -189,6 +181,38 @@ namespace Rendering {
 			}
 		}
 		return false;
+	}
+
+	Surface* RenderingSystem::CreateSurface(CTX_ARG, HAL::Window window) {
+		//Check if we already have a surface for this window, and return it if we do
+		if (Surface* existing = FindSurface(window.id)) return existing;
+
+		//Create the new surface and verify that it is functional
+		std::unique_ptr<Surface> surface = std::make_unique<Surface>(CTX, *this, window);
+		if (!surface->IsValidSurface()) return nullptr;
+
+		//Add the surface to the collection of surfaces, and return a raw pointer to it
+		surfaces.emplace_back(std::move(surface));
+		return surfaces.back().get();
+	}
+
+	Surface* RenderingSystem::FindSurface(uint32_t id) const {
+		const auto iter = std::find_if(surfaces.begin(), surfaces.end(), [&](const auto& surface) { return surface->id == id; });
+		if (iter != surfaces.end()) return iter->get();
+		else return nullptr;
+	}
+
+	void RenderingSystem::DestroySurface(CTX_ARG, uint32_t id) {
+		//The primary surface cannot be destroyed through this method, only during shutdown
+		if (primarySurface->id != id) {
+			const auto iter = std::find_if(surfaces.begin(), surfaces.end(), [&](const auto& surface) { return surface->id == id; });
+			if (iter != surfaces.end()) {
+				(*iter)->Destroy(framework, logical);
+				surfaces.erase(iter);
+			} else {
+				LOGF(Rendering, Warning, "Unable to destroy surface, no surface found with id %i", id);
+			}
+		}
 	}
 
 	void RenderingSystem::MaterialComponentOperations::OnCreate(entt::registry& registry, entt::entity entity) {
@@ -225,95 +249,6 @@ namespace Rendering {
 		MeshComponent& mesh = registry.get<MeshComponent>(entity);
 		rendering->MarkMeshStale(mesh);
 		rendering->shouldCreateMeshes = true;
-	}
-
-	bool RenderingSystem::CreateRenderPasses(CTX_ARG) {
-		//Attachments
-		enum EAttachment : uint8_t {
-			ColorAttachment,
-			MAX_ATTACHMENT
-		};
-
-		std::array<VkAttachmentDescription, MAX_ATTACHMENT> descriptions;
-		std::memset(&descriptions, 0, sizeof(descriptions));
-		primaryRenderPass.clearValues.resize(MAX_ATTACHMENT);
-		{
-			VkAttachmentDescription& colorDescription = descriptions[ColorAttachment];
-			colorDescription.format = primarySurfaceFormat.format;
-			colorDescription.samples = VK_SAMPLE_COUNT_1_BIT;
-			colorDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-			colorDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-			colorDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-			colorDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-			colorDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			colorDescription.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-			primaryRenderPass.clearValues[ColorAttachment].color = VkClearColorValue{{0.0f, 0.0f, 0.0f, 1.0f}};
-		}
-
-		//Subpasses
-		enum ESubpass : uint8_t {
-			ColorSubpass,
-			MAX_SUBPASS
-		};
-		std::array<VkSubpassDescription, MAX_SUBPASS> subpasses;
-		std::memset(&subpasses, 0, sizeof(subpasses));
-		{
-			VkSubpassDescription& colorSubpass = subpasses[ColorSubpass];
-
-			VkAttachmentReference colorReference;
-			colorReference.attachment = ColorAttachment;
-			colorReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-			colorSubpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-			colorSubpass.colorAttachmentCount = 1;
-			colorSubpass.pColorAttachments = &colorReference;
-		}
-
-		//Subpass dependencies
-		enum EDependencies : uint8_t {
-			ExternalToColorDependency,
-			MAX_DEPENDENCY
-		};
-		std::array<VkSubpassDependency, MAX_DEPENDENCY> dependencies;
-		std::memset(&dependencies, 0, sizeof(dependencies));
-		{
-			VkSubpassDependency& dependency = dependencies[ExternalToColorDependency];
-			dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-			dependency.dstSubpass = ColorSubpass;
-			dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-			dependency.srcAccessMask = 0;
-			dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-			dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-		}
-
-		//Information to create the full render pass, with all relevant attachments and subpasses.
-		VkRenderPassCreateInfo passCI{};
-		passCI.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		passCI.attachmentCount = descriptions.size();
-		passCI.pAttachments = descriptions.data();
-		passCI.subpassCount = subpasses.size();
-		passCI.pSubpasses = subpasses.data();
-		passCI.dependencyCount = dependencies.size();
-		passCI.pDependencies = dependencies.data();
-
-		assert(!primaryRenderPass.pass);
-		if (vkCreateRenderPass(logical.device, &passCI, nullptr, &primaryRenderPass.pass) != VK_SUCCESS) {
-			LOG(Vulkan, Error, "Failed to create main render pass");
-			return false;
-		}
-
-		return true;
-	}
-
-	void RenderingSystem::DestroyRenderPasses(CTX_ARG) {
-		if (primaryRenderPass.pass) vkDestroyRenderPass(logical.device, primaryRenderPass.pass, nullptr);
-		for (VkFramebuffer framebuffer : framebuffers) {
-			if (framebuffer) vkDestroyFramebuffer(logical.device, framebuffer, nullptr);
-		}
-		framebuffers.clear();
-		primaryRenderPass.pass = nullptr;
-		primaryRenderPass.clearValues.clear();
 	}
 
 	void RenderingSystem::CreatePipelines(CTX_ARG, EntityRegistry& registry) {
@@ -527,7 +462,7 @@ namespace Rendering {
 		pipelineCI.pDynamicState = &dynamicStateCI;
 		//Additional data
 		pipelineCI.layout = resources.pipelineLayout;
-		pipelineCI.renderPass = primaryRenderPass.pass;
+		pipelineCI.renderPass = passes.surface.pass;
 		pipelineCI.subpass = 0;
 		//Parent pipelines, if this pipeline derives from another
 		pipelineCI.basePipelineHandle = VK_NULL_HANDLE; // Optional

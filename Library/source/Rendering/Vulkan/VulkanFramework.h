@@ -21,14 +21,14 @@ namespace Rendering {
 
 		inline operator bool() const { return instance && messenger; }
 
-		bool Create(CTX_ARG, HAL::Window* primaryWindow);
+		bool Create(CTX_ARG, HAL::Window window);
 		void Destroy();
 
 	private:
 		static TArrayView<char const*> GetValidationLayerNames(CTX_ARG);
 		static bool CanEnableValidationLayers(CTX_ARG, TArrayView<char const*> const& enabledLayerNames);
 
-		static TArrayView<char const*> GetExtensionsNames(CTX_ARG, HAL::Window* window);
+		static TArrayView<char const*> GetExtensionsNames(CTX_ARG, HAL::Window window);
 		static bool CanEnableExtensions(CTX_ARG, TArrayView<char const*> const& enabledExtensionNames);
 	};
 }

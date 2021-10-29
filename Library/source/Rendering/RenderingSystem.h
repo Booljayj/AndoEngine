@@ -48,16 +48,14 @@ namespace Rendering {
 		Rendering::VulkanLogicalDevice logical;
 
 		/** The primary rendering surface */
-		Rendering::PrimarySurface primarySurface;
+		Surface* primarySurface;
+		/** Surfaces used for rendering */
+		std::vector<std::unique_ptr<Surface>> surfaces;
 		/** The surface format of the primary surface, which is used when rendering to all surfaces */
 		VkSurfaceFormatKHR primarySurfaceFormat;
-		/** Additional surfaces used for rendering */
-		std::vector<std::unique_ptr<Rendering::Surface>> secondarySurfaces;
 
-		/** The primary render pass used for scene rendering */
-		VulkanRenderPass primaryRenderPass;
-		/** The framebuffers for rendering on the swapchain using the primary render pass */
-		std::vector<VkFramebuffer> framebuffers;
+		/** The render passes used for scene rendering */
+		VulkanRenderPasses passes;
 
 		/** Uniform layouts for standard uniforms */
 		VulkanUniformLayouts uniformLayouts;
@@ -85,6 +83,13 @@ namespace Rendering {
 		}
 		bool SelectPhysicalDevice(CTX_ARG, uint32_t Index);
 
+		/** Find a surface using its id */
+		Surface* FindSurface(uint32_t id) const;
+		/** Create a new surface bound to the given window */
+		Surface* CreateSurface(CTX_ARG, HAL::Window window);
+		/** Destroy a surface using its id */
+		void DestroySurface(CTX_ARG, uint32_t id);
+
 	protected:
 		/** Contains callbacks related to material component operations */
 		struct MaterialComponentOperations {
@@ -102,10 +107,6 @@ namespace Rendering {
 		/** Resources that are pending destruction */
 		std::vector<VulkanPipelineResources> stalePipelineResources;
 		std::vector<VulkanMeshResources> staleMeshResources;
-
-		/** Create or destroy the render passes used by this rendering system */
-		bool CreateRenderPasses(CTX_ARG);
-		void DestroyRenderPasses(CTX_ARG);
 
 		/** Create or destroy all pipeline resources */
 		void CreatePipelines(CTX_ARG, EntityRegistry& registry);

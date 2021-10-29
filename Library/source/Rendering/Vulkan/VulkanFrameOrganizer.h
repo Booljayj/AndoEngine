@@ -59,7 +59,7 @@ namespace Rendering {
 		VkCommandBuffer stagingCommandBuffer = nullptr;
 
 		/** The pool for descriptors used in each frame */
-		VkDescriptorPool descriptorPool;
+		VkDescriptorPool descriptorPool = nullptr;
 
 		size_t currentResourceIndex = 0;
 		uint32_t currentImageIndex = -1;

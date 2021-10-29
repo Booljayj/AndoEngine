@@ -3,7 +3,7 @@
 #include "Rendering/Vulkan/VulkanDebug.h"
 
 namespace Rendering {
-	bool VulkanFramework::Create(CTX_ARG, HAL::Window* primaryWindow) {
+	bool VulkanFramework::Create(CTX_ARG, HAL::Window window) {
 		TEMP_ALLOCATOR_MARK();
 
 		//Information to create a debug messenger, used in several locations within this function.
@@ -19,7 +19,7 @@ namespace Rendering {
 			}
 
 			//Check for extension support
-			TArrayView<char const*> const enabledExtensionNames = GetExtensionsNames(CTX, primaryWindow);
+			TArrayView<char const*> const enabledExtensionNames = GetExtensionsNames(CTX, window);
 			if (!CanEnableExtensions(CTX, enabledExtensionNames)) {
 				LOG(Vulkan, Error, "Cannot enable required instance extensions");
 				return false;
@@ -106,7 +106,7 @@ namespace Rendering {
 		return true;
 	}
 
-	TArrayView<char const*> VulkanFramework::GetExtensionsNames(CTX_ARG, HAL::Window* window) {
+	TArrayView<char const*> VulkanFramework::GetExtensionsNames(CTX_ARG, HAL::Window window) {
 		//Standard extensions which the application requires
 		constexpr char const* standardExtensions[] = {
 			VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
@@ -118,9 +118,9 @@ namespace Rendering {
 		char const** halExtensions = nullptr;
 #if SDL_ENABLED
 		//Extensions needed by SDL
-		SDL_Vulkan_GetInstanceExtensions(window, &numHALExtensions, nullptr);
+		SDL_Vulkan_GetInstanceExtensions(window.handle, &numHALExtensions, nullptr);
 		halExtensions = CTX.temp.Request<char const*>(numHALExtensions);
-		SDL_Vulkan_GetInstanceExtensions(window, &numHALExtensions, halExtensions);
+		SDL_Vulkan_GetInstanceExtensions(window.handle, &numHALExtensions, halExtensions);
 #endif
 
 		//Create the full list of extensions that will be provided to the API
