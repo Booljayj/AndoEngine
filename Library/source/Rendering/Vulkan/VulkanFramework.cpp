@@ -1,25 +1,28 @@
 #include "Rendering/Vulkan/VulkanFramework.h"
 #include "Engine/LogCommands.h"
-#include "Rendering/Vulkan/VulkanDebug.h"
 
 namespace Rendering {
 	bool VulkanFramework::Create(CTX_ARG, HAL::Window window) {
 		TEMP_ALLOCATOR_MARK();
 
+#ifdef VULKAN_DEBUG
 		//Information to create a debug messenger, used in several locations within this function.
-		VkDebugUtilsMessengerCreateInfoEXT const messengerCI = Rendering::GetDebugUtilsMessengerCreateInfo(CTX);
+		VkDebugUtilsMessengerCreateInfoEXT const messengerCI = GetDebugUtilsMessengerCreateInfo(CTX);
+#endif
 
 		// Vulkan Instance
 		{
+#ifdef VULKAN_DEBUG
 			//Check for validation layer support
-			TArrayView<char const*> const enabledLayerNames = GetValidationLayerNames(CTX);
+			l_vector<char const*> const enabledLayerNames = GetValidationLayerNames(CTX);
 			if (!CanEnableValidationLayers(CTX, enabledLayerNames)) {
 				LOG(Vulkan, Error, "Cannot enable required validation layers");
 				return false;
 			}
+#endif
 
 			//Check for extension support
-			TArrayView<char const*> const enabledExtensionNames = GetExtensionsNames(CTX, window);
+			l_vector<char const*> const enabledExtensionNames = GetExtensionsNames(CTX, window);
 			if (!CanEnableExtensions(CTX, enabledExtensionNames)) {
 				LOG(Vulkan, Error, "Cannot enable required instance extensions");
 				return false;
@@ -27,9 +30,9 @@ namespace Rendering {
 
 			version = VK_API_VERSION_1_0;
 
-			VkApplicationInfo appInfo = {};
-			appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 			//Application info
+			VkApplicationInfo appInfo;
+			appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 			//@todo Get this information from a common, configurable location
 			appInfo.pApplicationName = "DefaultProject";
 			appInfo.applicationVersion = VK_MAKE_VERSION(0, 1, 0);
@@ -40,18 +43,19 @@ namespace Rendering {
 			//Vulkan info
 			appInfo.apiVersion = version;
 
-			VkInstanceCreateInfo instanceCI = {};
+			VkInstanceCreateInfo instanceCI;
 			instanceCI.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 			instanceCI.pApplicationInfo = &appInfo;
 			//Extensions
 			instanceCI.enabledExtensionCount = enabledExtensionNames.size();
-			instanceCI.ppEnabledExtensionNames = enabledExtensionNames.begin();
-
+			instanceCI.ppEnabledExtensionNames = enabledExtensionNames.data();
+#ifdef VULKAN_DEBUG
 			//Validation layers
 			instanceCI.enabledLayerCount = enabledLayerNames.size();
-			instanceCI.ppEnabledLayerNames = enabledLayerNames.begin();
+			instanceCI.ppEnabledLayerNames = enabledLayerNames.data();
 			//Debug messenger for messages that are sent during instance creation
 			instanceCI.pNext = &messengerCI;
+#endif
 
 			assert(!instance);
 			if (vkCreateInstance(&instanceCI, nullptr, &instance) != VK_SUCCESS) {
@@ -60,28 +64,122 @@ namespace Rendering {
 			}
 		}
 
+#ifdef VULKAN_DEBUG
 		// Vulkan Messenger
+		createMessenger = GetFunction<PFN_vkCreateDebugUtilsMessengerEXT>("vkCreateDebugUtilsMessengerEXT");
+		destroyMessenger = GetFunction<PFN_vkDestroyDebugUtilsMessengerEXT>("vkDestroyDebugUtilsMessengerEXT");
+		if (!createMessenger || !destroyMessenger) {
+			LOG(Vulkan, Error, "Failed to find debug messenger extension methods");
+			return false;
+		}
+
 		assert(!messenger);
-		if (CreateDebugUtilsMessengerEXT(instance, &messengerCI, nullptr, &messenger) != VK_SUCCESS) {
+		if (createMessenger(instance, &messengerCI, nullptr, &messenger) != VK_SUCCESS) {
 			LOG(Vulkan, Error, "Failed to create debug messenger");
 			return false;
 		}
+#endif
 
 		return true;
 	}
 
 	void VulkanFramework::Destroy() {
-		if (messenger) DestroyDebugUtilsMessengerEXT(instance, messenger, nullptr);
-		if (instance) vkDestroyInstance(instance, nullptr);
-
+#ifdef VULKAN_DEBUG
+		if (messenger) destroyMessenger(instance, messenger, nullptr);
 		messenger = nullptr;
+		createMessenger = nullptr;
+		destroyMessenger = nullptr;
+#endif
+
+		if (instance) vkDestroyInstance(instance, nullptr);
 		instance = nullptr;
+		version = VK_API_VERSION_1_0;
 	}
 
-	TArrayView<char const*> VulkanFramework::GetValidationLayerNames(CTX_ARG) {
-		constexpr uint32_t enabledLayerCount = 1;
-		static char const* enabledLayerNames[enabledLayerCount] = {"VK_LAYER_KHRONOS_validation"};
-		return TArrayView<char const*>{enabledLayerNames, enabledLayerCount};
+#ifdef VULKAN_DEBUG
+	VKAPI_ATTR VkBool32 VKAPI_CALL VulkanFramework::VulkanDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
+		Context& CTX = *static_cast<Context*>(pUserData);
+		TEMP_ALLOCATOR_MARK();
+
+		//Create a prefix based on the message type flags
+		std::string_view prefix;
+		if (messageType & VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT) {
+			prefix = "G "sv;
+		}
+		if (messageType & VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT) {
+			prefix = "V "sv;
+		}
+		if (messageType & VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT) {
+			prefix = "P "sv;
+		}
+
+		//Create a string that provides additional contextual information
+		StringBuilder contextBuilder{ CTX.temp };
+		//Add a list of object names referenced by this message
+		if (pCallbackData->objectCount > 0) {
+			contextBuilder << "; Objects: "sv;
+
+			contextBuilder << pCallbackData->pObjects[0].pObjectName;
+			for (size_t index = 1; index < pCallbackData->objectCount; ++index) {
+				contextBuilder << ", "sv;
+				contextBuilder << pCallbackData->pObjects[index].pObjectName;
+			}
+		}
+		//Add a list of queue labels referenced by this message
+		if (pCallbackData->queueLabelCount > 0) {
+			contextBuilder << "; Queues: "sv;
+
+			contextBuilder << pCallbackData->pQueueLabels[0].pLabelName;
+			for (size_t index = 1; index < pCallbackData->queueLabelCount; ++index) {
+				contextBuilder << ", "sv;
+				contextBuilder << pCallbackData->pQueueLabels[index].pLabelName;
+			}
+		}
+		//Add a list of command labels referenced by this message
+		if (pCallbackData->cmdBufLabelCount > 0) {
+			contextBuilder << "; Command Buffers: "sv;
+
+			contextBuilder << pCallbackData->pCmdBufLabels[0].pLabelName;
+			for (size_t index = 1; index < pCallbackData->cmdBufLabelCount; ++index) {
+				contextBuilder << ", "sv;
+				contextBuilder << pCallbackData->pCmdBufLabels[index].pLabelName;
+			}
+		}
+
+		//Log the message
+		if (messageSeverity & VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
+			LOGF(VulkanMessage, Error, "%s%i %s%s", prefix, pCallbackData->messageIdNumber, pCallbackData->pMessage, contextBuilder.Get());
+		} else if (messageSeverity & VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
+			LOGF(VulkanMessage, Warning, "%s%i %s%s", prefix, pCallbackData->messageIdNumber, pCallbackData->pMessage, contextBuilder.Get());
+		} else if (messageSeverity & VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {
+			LOGF(VulkanMessage, Info, "%s%i %s%s", prefix, pCallbackData->messageIdNumber, pCallbackData->pMessage, contextBuilder.Get());
+		} else {
+			LOGF(VulkanMessage, Debug, "%s%i %s%s", prefix, pCallbackData->messageIdNumber, pCallbackData->pMessage, contextBuilder.Get());
+		}
+
+		return VK_FALSE;
+	}
+
+	VkDebugUtilsMessengerCreateInfoEXT VulkanFramework::GetDebugUtilsMessengerCreateInfo(CTX_ARG) {
+		VkDebugUtilsMessengerCreateInfoEXT messengerCI = {};
+		messengerCI.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+		messengerCI.messageSeverity =
+			//VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+			//VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
+			VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+			VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+		messengerCI.messageType =
+			//VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+			VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+			VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+		messengerCI.pfnUserCallback = &VulkanFramework::VulkanDebugCallback;
+		messengerCI.pUserData = &CTX;
+
+		return messengerCI;
+	}
+
+	l_vector<char const*> VulkanFramework::GetValidationLayerNames(CTX_ARG) {
+		return l_vector<char const*>{ { "VK_LAYER_KHRONOS_validation" }, CTX.temp };
 	}
 
 	bool VulkanFramework::CanEnableValidationLayers(CTX_ARG, TArrayView<char const*> const& enabledLayerNames) {
@@ -105,15 +203,19 @@ namespace Rendering {
 		}
 		return true;
 	}
+#endif
 
-	TArrayView<char const*> VulkanFramework::GetExtensionsNames(CTX_ARG, HAL::Window window) {
+	l_vector<char const*> VulkanFramework::GetExtensionsNames(CTX_ARG, HAL::Window window) {
 		//Standard extensions which the application requires
 		constexpr char const* standardExtensions[] = {
+#ifdef VULKAN_DEBUG
 			VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
+#endif
 			VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
 		};
 		constexpr size_t numStandardExtensions = std::size(standardExtensions);
 
+		//Extensions required by the HAL
 		uint32_t numHALExtensions = 0;
 		char const** halExtensions = nullptr;
 #if SDL_ENABLED
@@ -124,19 +226,13 @@ namespace Rendering {
 #endif
 
 		//Create the full list of extensions that will be provided to the API
-		const size_t numExtensions = numStandardExtensions + numHALExtensions;
-		char const** extensions = CTX.temp.Request<char const*>(numExtensions);
+		l_vector<char const*> extensions{ CTX.temp };
+		extensions.reserve(numStandardExtensions + numHALExtensions);
 
-		std::memcpy(
-			extensions,
-			standardExtensions, numStandardExtensions * sizeof(char const*)
-		);
-		std::memcpy(
-			extensions + numStandardExtensions,
-			halExtensions, numHALExtensions * sizeof(char const*)
-		);
+		extensions.insert(extensions.end(), standardExtensions, standardExtensions + numStandardExtensions);
+		extensions.insert(extensions.end(), halExtensions, halExtensions + numHALExtensions);
 
-		return TArrayView<char const*>{extensions, numExtensions};
+		return extensions;
 	}
 
 	bool VulkanFramework::CanEnableExtensions(CTX_ARG, TArrayView<char const*> const& enabledExtensionNames) {

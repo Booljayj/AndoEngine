@@ -6,6 +6,7 @@
 #include "ThirdParty/vk_mem_alloc.h"
 
 DECLARE_LOG_CATEGORY(Vulkan);
+DECLARE_LOG_CATEGORY(VulkanMessage);
 
 namespace Rendering {
 	/** Wrapper for a Vulkan-style version number to make it easier to print it out to a stream */

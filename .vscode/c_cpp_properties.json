@@ -9,7 +9,7 @@
                 "/usr/local/include",
                 "/usr/local/include/freetype2"
             ],
-            "defines": [],
+            "defines": ["VULKAN_DEBUG"],
             "intelliSenseMode": "clang-x64",
             "browse": {
                 "path": [

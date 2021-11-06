@@ -80,6 +80,12 @@ namespace Rendering {
 			return result;
 		}
 
+#if VULKAN_DEBUG
+		result.functionSetDebugName = framework.GetFunction<PFN_vkSetDebugUtilsObjectNameEXT>("vkSetDebugUtilsObjectNameEXT");
+		result.SetDebugName(result.queues.graphics, "graphics queue");
+		result.SetDebugName(result.queues.present, "present queue");
+#endif
+
 		return result;
 	}
 
@@ -90,7 +96,24 @@ namespace Rendering {
 		queues.present = nullptr;
 		queues.graphics = nullptr;
 		device = nullptr;
+#ifdef VULKAN_DEBUG
+		functionSetDebugName = nullptr;
+#endif
 	}
+
+#ifdef VULKAN_DEBUG
+	VkResult VulkanLogicalDevice::SetDebugName(void* object, VkObjectType type, char const* name) const {
+		if (functionSetDebugName) {
+			VkDebugUtilsObjectNameInfoEXT info;
+			info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+			info.objectType = type;
+			info.objectHandle  = reinterpret_cast<uint64_t>(object);
+			info.pObjectName = name;
+			return functionSetDebugName(device, &info);
+		}
+		else return VK_ERROR_EXTENSION_NOT_PRESENT;
+	}
+#endif
 
 	VmaAllocatorCreateFlags VulkanLogicalDevice::GetAllocatorFlags() {
 		return 0;

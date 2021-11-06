@@ -30,7 +30,18 @@ namespace Rendering {
 		static VulkanLogicalDevice Create(CTX_ARG, VulkanFramework framework, VulkanPhysicalDevice const& physical, VkPhysicalDeviceFeatures const& features, TArrayView<char const*> const& extensions);
 		void Destroy();
 
+#ifdef VULKAN_DEBUG
+#define SET_DEBUG_NAME_IMPL(Class, type) inline VkResult SetDebugName(Class object, char const* name) const { return SetDebugName(object, type, name); }
+		SET_DEBUG_NAME_IMPL(VkQueue, VK_OBJECT_TYPE_QUEUE);
+#undef SET_DEBUG_NAME_IMPL
+#endif
+
 	private:
+#ifdef VULKAN_DEBUG
+		PFN_vkSetDebugUtilsObjectNameEXT functionSetDebugName = nullptr;
+		VkResult SetDebugName(void* object, VkObjectType type, char const* name) const;
+#endif
+
 		static VmaAllocatorCreateFlags GetAllocatorFlags();
 	};
 }
