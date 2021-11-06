@@ -5,6 +5,6 @@ StreamLoggerModule::StreamLoggerModule(std::ostream& stream)
 : streamPtr(&stream)
 {}
 
-void StreamLoggerModule::InternalProcessMessage(LogOutputData const& outputData) {
+void StreamLoggerModule::ProcessMessage(LogOutputData const& outputData) {
 	*streamPtr << outputData << std::endl;
 }

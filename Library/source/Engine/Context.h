@@ -26,8 +26,6 @@ private:
 public:
 	/** Buffer used for dynamic allocation of small, temporary objects within the thread */
 	HeapBuffer temp;
-	/** Logger object used to print output */
-	Logger log;
 
 	inline std::thread::id GetThreadID() const { return threadID; }
 };

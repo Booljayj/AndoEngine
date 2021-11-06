@@ -14,10 +14,10 @@ public:
 	{}
 
 	inline std::string_view GetName() const { return name; };
-	/** True if the output with the specified verbosity should be shown right now for this category */
+	/** Get the minimum verbosity level which should be shown for this category */
 	inline ELogVerbosity GetShownVerbosity() const { return verbosity.load(); }
-	/** Modify the verbosity level that is allow for output that belongs to this category */
-	inline void SetShownVerbosity( ELogVerbosity newVerbosity ) { verbosity.store( newVerbosity ); }
+	/** Modify the minimum verbosity level that should be shown for this category */
+	inline void SetShownVerbosity( ELogVerbosity newVerbosity ) { verbosity.store(newVerbosity); }
 };
 
 #define DECLARE_LOG_CATEGORY(Name)\

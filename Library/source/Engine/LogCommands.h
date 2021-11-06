@@ -13,31 +13,31 @@ namespace LoggingInternal {
 	/** Helper template to resolve compiler-removed output */
 	template<ELogVerbosity Verbosity>
 	inline typename std::enable_if<(Verbosity >= MINIMUM_LOG_VERBOSITY)>::type
-	LogHelper(CTX_ARG, LogCategory const& category, char const* location, char const* message) {
-		CTX.log.Output(category, Verbosity, location, message);
+	LogHelper(LogCategory const& category, char const* location, char const* message) {
+		Logger::Get().Output(category, Verbosity, location, message);
 	}
 	template<ELogVerbosity Verbosity>
 	inline typename std::enable_if<(Verbosity < MINIMUM_LOG_VERBOSITY)>::type
-	LogHelper(CTX_ARG, LogCategory const& category, char const* location, char const* message) { /** no-op, removed by compiler */ }
+	LogHelper(LogCategory const& category, char const* location, char const* message) { /** no-op, removed by compiler */ }
 
 	/** Helper template to resolve compiler-removed formatted output */
 	template<ELogVerbosity Verbosity, typename... ArgTypes>
 	inline typename std::enable_if<(Verbosity >= MINIMUM_LOG_VERBOSITY)>::type
-	LogFormattedHelper(CTX_ARG, LogCategory const& category, char const* location, char const* message, ArgTypes&&... args) {
-		CTX.log.Output(category, Verbosity, location, l_printf(CTX.temp, message, std::forward<ArgTypes>(args)...));
+	LogFormattedHelper(LogCategory const& category, char const* location, char const* message, ArgTypes&&... args) {
+		Logger::Get().Output(category, Verbosity, location, l_printf(*threadHeapBuffer, message, std::forward<ArgTypes>(args)...));
 	}
 	template<ELogVerbosity Verbosity, typename... ArgTypes>
 	inline typename std::enable_if<(Verbosity < MINIMUM_LOG_VERBOSITY)>::type
-	LogFormattedHelper(CTX_ARG, LogCategory const& category, char const* location, char const* message, ArgTypes&&... args) { /** no-op, removed by compiler */ }
+	LogFormattedHelper(LogCategory const& category, char const* location, char const* message, ArgTypes&&... args) { /** no-op, removed by compiler */ }
 }
 
 /** Expands to a string that describes the file location where it appears */
 #define LOCATION __FILE__ ":" STRINGIFY_MACRO(__LINE__)
 
 /** Log a message to the current context's logger */
-#define LOG(Category, Verbosity, Message) LoggingInternal::LogHelper<ELogVerbosity::Verbosity>(CTX, Log ## Category, LOCATION, Message)
+#define LOG(Category, Verbosity, Message) LoggingInternal::LogHelper<ELogVerbosity::Verbosity>(Log ## Category, LOCATION, Message)
 /** Log a formatted message to the current context's logger */
-#define LOGF(Category, Verbosity, Message, ...) LoggingInternal::LogFormattedHelper<ELogVerbosity::Verbosity>(CTX, Log ## Category, LOCATION, Message, __VA_ARGS__)
+#define LOGF(Category, Verbosity, Message, ...) LoggingInternal::LogFormattedHelper<ELogVerbosity::Verbosity>(Log ## Category, LOCATION, Message, __VA_ARGS__)
 
 #else
 #define LOG(Category, Verbosity, Message)

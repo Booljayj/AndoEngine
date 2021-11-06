@@ -80,8 +80,7 @@ void MainLoop(CTX_ARG) {
 int32_t main(int32_t argc, char const* argv[]) {
 	constexpr size_t capacity = 10'000;
 	Context CTX{capacity};
-	CTX.log.AddModule(std::make_shared<TerminalLoggerModule>());
-	//CTX.Log.AddModule(std::make_shared<FileLoggerModule>("Main.log"));
+	Logger::Get().CreateModule<TerminalLoggerModule>();
 
 	LOG(Main, Info, "Hello, World! This is AndoEngine.");
 	LOG(Main, Debug, "Compiled with " __VERSION__ " on " __DATE__);

@@ -1,12 +1,13 @@
 #pragma once
-#include "Engine/Logging/LoggerModule.h"
+#include "Engine/Logging/Logger.h"
 #include "Engine/STL.h"
 
+/** Writes output to a stream */
 struct StreamLoggerModule : public LoggerModule {
-protected:
-	std::ostream* streamPtr;
-	virtual void InternalProcessMessage(LogOutputData const& outputData) override;
-
 public:
 	StreamLoggerModule(std::ostream& stream);
+	virtual void ProcessMessage(LogOutputData const& outputData) override;
+
+protected:
+	std::ostream* streamPtr;
 };

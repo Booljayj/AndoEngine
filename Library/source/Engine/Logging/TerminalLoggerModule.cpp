@@ -1,9 +1,10 @@
 #include "Engine/Logging/TerminalLoggerModule.h"
 #include "Engine/Logging/LogOutputData.h"
 #include "Engine/Logging/LogUtility.h"
+#include "Engine/STL.h"
 #include "Engine/TerminalColors.h"
 
-void TerminalLoggerModule::InternalProcessMessage( LogOutputData const& outputData ) {
+void TerminalLoggerModule::ProcessMessage(LogOutputData const& outputData) {
 	switch (outputData.verbosity) {
 		case ELogVerbosity::Debug:
 		std::cout << LogUtility::GetTerminalColor(ELogVerbosity::Debug) << outputData << TERM_NoColor << std::endl;

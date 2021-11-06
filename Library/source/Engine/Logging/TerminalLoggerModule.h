@@ -1,9 +1,8 @@
 #pragma once
-#include "Engine/Logging/LoggerModule.h"
-#include "Engine/STL.h"
+#include "Engine/Logging/Logger.h"
 
-/** A logger module which prints to standard output streams with terminal formatting */
+/** Writes output to the standard output streams with terminal formatting */
 struct TerminalLoggerModule : public LoggerModule {
-protected:
-	virtual void InternalProcessMessage(LogOutputData const& outputData) override;
+public:
+	virtual void ProcessMessage(LogOutputData const& outputData) override;
 };
