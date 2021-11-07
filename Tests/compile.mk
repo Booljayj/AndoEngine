@@ -12,4 +12,6 @@ LIBS := AndoEngine SDL2 GLEW vulkan MoltenVK
 LIB_PATHS := ../Library
 FRAMEWORKS := OpenGL
 
+DEFINE := VULKAN_DEBUG
+
 include ../make/std_compile.mk
