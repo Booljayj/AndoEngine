@@ -28,16 +28,16 @@ namespace Rendering {
 
 		VulkanLogicalDevice result;
 
-		l_unordered_set<uint32_t> uniqueQueueFamilies{CTX.temp};
+		l_unordered_set<uint32_t> uniqueQueueFamilies{ 2 };
 		uniqueQueueFamilies.insert(physical.queues.graphics.value().index);
 		uniqueQueueFamilies.insert(physical.queues.present.value().index);
 
-		l_vector<uint32_t> queueCreateInfoIndices{uniqueQueueFamilies.begin(), uniqueQueueFamilies.end(), CTX.temp};
+		l_vector<uint32_t> const queueCreateInfoIndices{ uniqueQueueFamilies.begin(), uniqueQueueFamilies.end() };
 		uint32_t const queueCICount = queueCreateInfoIndices.size();
 
 		float queuePriority = 1.0f;
 
-		VkDeviceQueueCreateInfo* const queueCIs = CTX.temp.Request<VkDeviceQueueCreateInfo>(queueCICount);
+		VkDeviceQueueCreateInfo* const queueCIs = threadHeapBuffer->Request<VkDeviceQueueCreateInfo>(queueCICount);
 		for (uint32_t queueFamilyIndex = 0; queueFamilyIndex < queueCICount; ++queueFamilyIndex) {
 			VkDeviceQueueCreateInfo& queueCI = queueCIs[queueFamilyIndex];
 			queueCI = {};
@@ -104,7 +104,7 @@ namespace Rendering {
 #ifdef VULKAN_DEBUG
 	VkResult VulkanLogicalDevice::SetDebugName(void* object, VkObjectType type, char const* name) const {
 		if (functionSetDebugName) {
-			VkDebugUtilsObjectNameInfoEXT info;
+			VkDebugUtilsObjectNameInfoEXT info{};
 			info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
 			info.objectType = type;
 			info.objectHandle  = reinterpret_cast<uint64_t>(object);

@@ -19,7 +19,7 @@ namespace Rendering {
 		} queues;
 
 		/** The allocator for device memory */
-		VmaAllocator allocator;
+		VmaAllocator allocator = nullptr;
 
 		VulkanLogicalDevice() = default;
 		VulkanLogicalDevice(VulkanLogicalDevice&& other);

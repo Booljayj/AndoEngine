@@ -17,7 +17,7 @@ namespace Rendering {
 	private:
 		struct Entry {
 			Hash32 hash;
-			VkShaderModule module;
+			VkShaderModule module = nullptr;
 		};
 
 		VkDevice device;

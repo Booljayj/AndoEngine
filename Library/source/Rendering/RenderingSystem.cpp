@@ -13,12 +13,6 @@
 DEFINE_LOG_CATEGORY(Rendering, Warning);
 
 namespace Rendering {
-	RenderingSystem::RenderingSystem()
-	: retryCount(0)
-	, shouldCreatePipelines(false)
-	, shouldCreateMeshes(false)
-	{}
-
 	bool RenderingSystem::Startup(CTX_ARG, HAL::WindowingSystem& windowing, EntityRegistry& registry) {
 		// Vulkan instance
 		if (!framework.Create(CTX, windowing.GetPrimaryWindow())) return false;
@@ -33,7 +27,7 @@ namespace Rendering {
 
 			uint32_t deviceCount = 0;
 			vkEnumeratePhysicalDevices(framework.instance, &deviceCount, nullptr);
-			VkPhysicalDevice* devices = CTX.temp.Request<VkPhysicalDevice>(deviceCount);
+			VkPhysicalDevice* devices = threadHeapBuffer->Request<VkPhysicalDevice>(deviceCount);
 			vkEnumeratePhysicalDevices(framework.instance, &deviceCount, devices);
 
 			for (int32_t deviceIndex = 0; deviceIndex < deviceCount; ++deviceIndex) {
@@ -94,22 +88,24 @@ namespace Rendering {
 	bool RenderingSystem::Shutdown(CTX_ARG, EntityRegistry& registry) {
 		availablePhysicalDevices.clear();
 
-		//Wait for any in-progress work to finish before we start cleanup
-		for (auto const& surface : surfaces) {
-			surface->WaitForCompletion(CTX, logical);
+		if (logical) {
+			//Wait for any in-progress work to finish before we start cleanup
+			for (auto const& surface : surfaces) {
+				surface->WaitForCompletion(CTX, logical);
+			}
+
+			registry.DestroyComponents<MaterialComponent, MeshComponent>();
+			DestroyStalePipelines();
+			DestroyStaleMeshes();
+
+			for (auto const& surface : surfaces) {
+				surface->Destroy(framework, logical);
+			}
+
+			uniformLayouts.Destroy(logical);
+			passes.Destroy(logical);
+			vkDestroyCommandPool(logical.device, commandPool, nullptr);
 		}
-
-		registry.DestroyComponents<MaterialComponent, MeshComponent>();
-		DestroyStalePipelines();
-		DestroyStaleMeshes();
-
-		for (auto const& surface : surfaces) {
-			surface->Destroy(framework, logical);
-		}
-
-		uniformLayouts.Destroy(logical);
-		passes.Destroy(logical);
-		vkDestroyCommandPool(logical.device, commandPool, nullptr);
 		logical.Destroy();
 		framework.Destroy();
 		return true;
@@ -275,7 +271,8 @@ namespace Rendering {
 	}
 
 	void RenderingSystem::MarkPipelineStale(MaterialComponent& material) {
-		stalePipelineResources.push_back(material.resources);
+		stalePipelineResources.emplace_back(material.resources);
+		//stalePipelineResources.push_back(material.resources);
 		material.resources = {};
 	}
 

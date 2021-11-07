@@ -35,7 +35,7 @@ namespace Rendering {
 
 		/** A framebuffer which can be used with this pass */
 		struct Framebuffer {
-			VkFramebuffer internal;
+			VkFramebuffer internal = nullptr;
 		};
 		using Framebuffers = std::vector<Framebuffer>;
 
@@ -48,7 +48,7 @@ namespace Rendering {
 			VkCommandBuffer cachedCommands;
 		};
 
-		VkRenderPass pass;
+		VkRenderPass pass = nullptr;
 		VkClearValue clearValues[EAttachments::MAX];
 
 		static void DestroyFramebuffers(VulkanLogicalDevice const& logical, Framebuffers& framebuffers);

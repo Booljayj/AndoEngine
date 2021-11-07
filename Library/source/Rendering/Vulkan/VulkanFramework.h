@@ -38,7 +38,7 @@ namespace Rendering {
 		/** Callback function invoked by the Vulkan API when a message should be logged */
 		static VKAPI_ATTR VkBool32 VKAPI_CALL VulkanDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData);
 		/** Get the creation info struct for the debug messenger */
-		static VkDebugUtilsMessengerCreateInfoEXT GetDebugUtilsMessengerCreateInfo(CTX_ARG);
+		static VkDebugUtilsMessengerCreateInfoEXT GetDebugUtilsMessengerCreateInfo();
 
 		static l_vector<char const*> GetValidationLayerNames(CTX_ARG);
 		static bool CanEnableValidationLayers(CTX_ARG, TArrayView<char const*> const& enabledLayerNames);

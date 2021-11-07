@@ -6,8 +6,8 @@
 namespace Rendering {
 	struct VulkanUniformLayouts {
 		/** Uniform layouts */
-		VkDescriptorSetLayout global;
-		VkDescriptorSetLayout object;
+		VkDescriptorSetLayout global = nullptr;
+		VkDescriptorSetLayout object = nullptr;
 
 		bool Create(CTX_ARG, VulkanLogicalDevice const& logical);
 		void Destroy(VulkanLogicalDevice const& logical);

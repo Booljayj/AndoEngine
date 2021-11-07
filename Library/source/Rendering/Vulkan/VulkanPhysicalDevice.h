@@ -10,25 +10,25 @@ namespace Rendering {
 	/** Contains information about a physical device that can be used for Vulkan rendering */
 	struct VulkanPhysicalDevice {
 		struct QueueFamilyInfo {
-			uint32_t index;
-			uint32_t count;
+			uint32_t index = std::numeric_limits<uint32_t>::max();
+			uint32_t count = std::numeric_limits<uint32_t>::max();
 		};
 
 		/** The underlying device */
 		VkPhysicalDevice device = nullptr;
 
 		/** The properties of this physical device (such as device limits and API versions) */
-		VkPhysicalDeviceProperties properties;
+		VkPhysicalDeviceProperties properties = {};
 		/** The features available on this physical device */
-		VkPhysicalDeviceFeatures features;
+		VkPhysicalDeviceFeatures features = {};
 		/** The names of all extensions supported on this physical device */
 		std::vector<std::string> supportedExtensions;
 
 		/** Details about surface, format, and present mode support on this device */
 		struct {
-			VkSurfaceCapabilitiesKHR capabilities;
-			std::vector<VkSurfaceFormatKHR> surfaceFormats;
-			std::vector<VkPresentModeKHR> presentModes;
+			VkSurfaceCapabilitiesKHR capabilities = {};
+			std::vector<VkSurfaceFormatKHR> surfaceFormats = {};
+			std::vector<VkPresentModeKHR> presentModes = {};
 		} presentation;
 
 		/** The optional information for different types of queues on this device */

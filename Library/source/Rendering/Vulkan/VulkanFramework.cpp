@@ -7,7 +7,7 @@ namespace Rendering {
 
 #ifdef VULKAN_DEBUG
 		//Information to create a debug messenger, used in several locations within this function.
-		VkDebugUtilsMessengerCreateInfoEXT const messengerCI = GetDebugUtilsMessengerCreateInfo(CTX);
+		VkDebugUtilsMessengerCreateInfoEXT const messengerCI = GetDebugUtilsMessengerCreateInfo();
 #endif
 
 		// Vulkan Instance
@@ -31,7 +31,7 @@ namespace Rendering {
 			version = VK_API_VERSION_1_0;
 
 			//Application info
-			VkApplicationInfo appInfo;
+			VkApplicationInfo appInfo{};
 			appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 			//@todo Get this information from a common, configurable location
 			appInfo.pApplicationName = "DefaultProject";
@@ -43,7 +43,7 @@ namespace Rendering {
 			//Vulkan info
 			appInfo.apiVersion = version;
 
-			VkInstanceCreateInfo instanceCI;
+			VkInstanceCreateInfo instanceCI{};
 			instanceCI.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 			instanceCI.pApplicationInfo = &appInfo;
 			//Extensions
@@ -98,7 +98,6 @@ namespace Rendering {
 
 #ifdef VULKAN_DEBUG
 	VKAPI_ATTR VkBool32 VKAPI_CALL VulkanFramework::VulkanDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
-		Context& CTX = *static_cast<Context*>(pUserData);
 		TEMP_ALLOCATOR_MARK();
 
 		//Create a prefix based on the message type flags
@@ -114,13 +113,13 @@ namespace Rendering {
 		}
 
 		//Create a string that provides additional contextual information
-		StringBuilder contextBuilder{ CTX.temp };
-		//Add a list of object names referenced by this message
-		if (pCallbackData->objectCount > 0) {
+		StringBuilder contextBuilder;
+		//Add a list of object names referenced by this message. The first object is already part of the message.
+		if (pCallbackData->objectCount > 1) {
 			contextBuilder << "; Objects: "sv;
 
-			contextBuilder << pCallbackData->pObjects[0].pObjectName;
-			for (size_t index = 1; index < pCallbackData->objectCount; ++index) {
+			contextBuilder << pCallbackData->pObjects[1].pObjectName;
+			for (size_t index = 2; index < pCallbackData->objectCount; ++index) {
 				contextBuilder << ", "sv;
 				contextBuilder << pCallbackData->pObjects[index].pObjectName;
 			}
@@ -160,7 +159,7 @@ namespace Rendering {
 		return VK_FALSE;
 	}
 
-	VkDebugUtilsMessengerCreateInfoEXT VulkanFramework::GetDebugUtilsMessengerCreateInfo(CTX_ARG) {
+	VkDebugUtilsMessengerCreateInfoEXT VulkanFramework::GetDebugUtilsMessengerCreateInfo() {
 		VkDebugUtilsMessengerCreateInfoEXT messengerCI = {};
 		messengerCI.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
 		messengerCI.messageSeverity =
@@ -173,13 +172,12 @@ namespace Rendering {
 			VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
 			VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 		messengerCI.pfnUserCallback = &VulkanFramework::VulkanDebugCallback;
-		messengerCI.pUserData = &CTX;
 
 		return messengerCI;
 	}
 
 	l_vector<char const*> VulkanFramework::GetValidationLayerNames(CTX_ARG) {
-		return l_vector<char const*>{ { "VK_LAYER_KHRONOS_validation" }, CTX.temp };
+		return l_vector<char const*>{ "VK_LAYER_KHRONOS_validation" };
 	}
 
 	bool VulkanFramework::CanEnableValidationLayers(CTX_ARG, TArrayView<char const*> const& enabledLayerNames) {
@@ -187,7 +185,7 @@ namespace Rendering {
 
 		uint32_t availableLayerCount;
 		vkEnumerateInstanceLayerProperties(&availableLayerCount, nullptr);
-		VkLayerProperties* availableLayers = CTX.temp.Request<VkLayerProperties>(availableLayerCount);
+		VkLayerProperties* availableLayers = threadHeapBuffer->Request<VkLayerProperties>(availableLayerCount);
 		vkEnumerateInstanceLayerProperties(&availableLayerCount, availableLayers);
 
 		for (char const* enabledLayerName : enabledLayerNames) {
@@ -221,12 +219,12 @@ namespace Rendering {
 #if SDL_ENABLED
 		//Extensions needed by SDL
 		SDL_Vulkan_GetInstanceExtensions(window.handle, &numHALExtensions, nullptr);
-		halExtensions = CTX.temp.Request<char const*>(numHALExtensions);
+		halExtensions = threadHeapBuffer->Request<char const*>(numHALExtensions);
 		SDL_Vulkan_GetInstanceExtensions(window.handle, &numHALExtensions, halExtensions);
 #endif
 
 		//Create the full list of extensions that will be provided to the API
-		l_vector<char const*> extensions{ CTX.temp };
+		l_vector<char const*> extensions;
 		extensions.reserve(numStandardExtensions + numHALExtensions);
 
 		extensions.insert(extensions.end(), standardExtensions, standardExtensions + numStandardExtensions);
@@ -240,7 +238,7 @@ namespace Rendering {
 
 		uint32_t availableExtensionCount;
 		vkEnumerateInstanceExtensionProperties(nullptr, &availableExtensionCount, nullptr);
-		VkExtensionProperties* availableExtensions = CTX.temp.Request<VkExtensionProperties>(availableExtensionCount);
+		VkExtensionProperties* availableExtensions = threadHeapBuffer->Request<VkExtensionProperties>(availableExtensionCount);
 		vkEnumerateInstanceExtensionProperties(nullptr, &availableExtensionCount, availableExtensions);
 
 		for (char const* enabledExtensionName : enabledExtensionNames) {

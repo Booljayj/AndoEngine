@@ -289,7 +289,7 @@ namespace Rendering {
 
 	void VulkanFrameOrganizer::WaitForCompletion(CTX_ARG, VulkanLogicalDevice const& logical) {
 		size_t const numFences = resources.size();
-		VkFence* fences = CTX.temp.Request<VkFence>(numFences);
+		VkFence* fences = threadHeapBuffer->Request<VkFence>(numFences);
 		for (size_t index = 0; index < resources.size(); ++index) {
 			fences[index] = resources[index].fence;
 		}

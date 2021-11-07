@@ -1,7 +1,7 @@
 #pragma once
 #include "Engine/Context.h"
 #include "Engine/Logging/Logger.h"
-#include "Engine/Time.h"
+#include "Engine/STL.h"
 #include "EntityFramework/EntityRegistry.h"
 #include "Rendering/Surface.h"
 #include "Rendering/Vulkan/Vulkan.h"
@@ -32,27 +32,27 @@ namespace Rendering {
 		static constexpr uint8_t maxRetryCount = 5;
 
 		/** The enabled features on any physical device that this application uses */
-		VkPhysicalDeviceFeatures features;
+		VkPhysicalDeviceFeatures features = {};
 
 		/** The vulkan framework for this application */
-		Rendering::VulkanFramework framework;
+		VulkanFramework framework;
 
 		/** The available physical devices which can be used */
-		std::vector<Rendering::VulkanPhysicalDevice> availablePhysicalDevices;
+		std::vector<VulkanPhysicalDevice> availablePhysicalDevices;
 		/** The current selected physical device */
-		Rendering::VulkanPhysicalDevice const* selectedPhysical = nullptr;
+		VulkanPhysicalDevice const* selectedPhysical = nullptr;
 		/** The index of the currently selected physical device */
-		uint32_t selectedPhysicalIndex = (uint32_t)-1;
+		uint32_t selectedPhysicalIndex = std::numeric_limits<uint32_t>::max();
 
 		/** The logical device for the currently selected physical device */
-		Rendering::VulkanLogicalDevice logical;
+		VulkanLogicalDevice logical;
 
 		/** The primary rendering surface */
-		Surface* primarySurface;
+		Surface* primarySurface = nullptr;
 		/** Surfaces used for rendering */
 		std::vector<std::unique_ptr<Surface>> surfaces;
 		/** The surface format of the primary surface, which is used when rendering to all surfaces */
-		VkSurfaceFormatKHR primarySurfaceFormat;
+		VkSurfaceFormatKHR primarySurfaceFormat = {};
 
 		/** The render passes used for scene rendering */
 		VulkanRenderPasses passes;
@@ -63,12 +63,12 @@ namespace Rendering {
 		/** Command recording objects */
 		VkCommandPool commandPool = nullptr;
 
-		/** Bits for tracking rendering behavior and changes */
-		uint8_t retryCount : 4;
-		uint8_t shouldCreatePipelines : 1;
-		uint8_t shouldCreateMeshes : 1;
+		/** Flags for tracking rendering behavior and changes */
+		uint8_t retryCount = 0;
+		bool shouldCreatePipelines = false;
+		bool shouldCreateMeshes = false;
 
-		RenderingSystem();
+		RenderingSystem() = default;
 
 		bool Startup(CTX_ARG, HAL::WindowingSystem& windowing, EntityRegistry& registry);
 		bool Shutdown(CTX_ARG, EntityRegistry& registry);

@@ -27,3 +27,5 @@ void* HeapBuffer::Request(size_t count, size_t size, size_t alignment) noexcept 
 	}
 	return nullptr;
 }
+
+thread_local HeapBuffer* threadHeapBuffer = nullptr;

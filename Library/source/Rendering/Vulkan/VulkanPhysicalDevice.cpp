@@ -13,7 +13,7 @@ namespace Rendering {
 		{
 			uint32_t extensionCount = 0;
 			vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
-			VkExtensionProperties* extensions = CTX.temp.Request<VkExtensionProperties>(extensionCount);
+			VkExtensionProperties* extensions = threadHeapBuffer->Request<VkExtensionProperties>(extensionCount);
 			vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, extensions);
 
 			Result.supportedExtensions.reserve(extensionCount);
@@ -37,7 +37,7 @@ namespace Rendering {
 		{
 			uint32_t queueFamilyCount = 0;
 			vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
-			VkQueueFamilyProperties* queueFamilies = CTX.temp.Request<VkQueueFamilyProperties>(queueFamilyCount);
+			VkQueueFamilyProperties* queueFamilies = threadHeapBuffer->Request<VkQueueFamilyProperties>(queueFamilyCount);
 			vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies);
 
 			for (uint32_t queueIndex = 0; queueIndex < queueFamilyCount; ++queueIndex) {
@@ -62,7 +62,7 @@ namespace Rendering {
 	}
 
 	l_vector<char const*> VulkanPhysicalDevice::GetExtensionNames(CTX_ARG) {
-		l_vector<char const*> result{ CTX.temp };
+		l_vector<char const*> result;
 		result = {
 			VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 			VK_KHR_MAINTENANCE3_EXTENSION_NAME,

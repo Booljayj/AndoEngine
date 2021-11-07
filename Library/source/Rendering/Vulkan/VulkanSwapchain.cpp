@@ -84,7 +84,7 @@ namespace Rendering {
 			//Get the raw images from the swapchain
 			uint32_t numImages = 0;
 			vkGetSwapchainImagesKHR(logical.device, result.swapchain, &numImages, nullptr);
-			VkImage* images = CTX.temp.Request<VkImage>(numImages);
+			VkImage* images = threadHeapBuffer->Request<VkImage>(numImages);
 			vkGetSwapchainImagesKHR(logical.device, result.swapchain, &numImages, images);
 
 			if (numImages == 0) {

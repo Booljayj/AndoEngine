@@ -14,10 +14,10 @@ namespace Rendering {
 	struct VulkanSwapchain {
 		VkSwapchainKHR swapchain = nullptr;
 
-		VkSurfaceFormatKHR surfaceFormat;
-		VkPresentModeKHR presentMode;
+		VkSurfaceFormatKHR surfaceFormat = {};
+		VkPresentModeKHR presentMode = {};
 		glm::u32vec2 extent;
-		VkSurfaceTransformFlagBitsKHR preTransform;
+		VkSurfaceTransformFlagBitsKHR preTransform = {};
 
 		/** The views for images in the swapchain */
 		std::vector<VkImageView> views;

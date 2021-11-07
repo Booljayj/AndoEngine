@@ -24,7 +24,7 @@ namespace LoggingInternal {
 	template<ELogVerbosity Verbosity, typename... ArgTypes>
 	inline typename std::enable_if<(Verbosity >= MINIMUM_LOG_VERBOSITY)>::type
 	LogFormattedHelper(LogCategory const& category, char const* location, char const* message, ArgTypes&&... args) {
-		Logger::Get().Output(category, Verbosity, location, l_printf(*threadHeapBuffer, message, std::forward<ArgTypes>(args)...));
+		Logger::Get().Output(category, Verbosity, location, l_printf(message, std::forward<ArgTypes>(args)...));
 	}
 	template<ELogVerbosity Verbosity, typename... ArgTypes>
 	inline typename std::enable_if<(Verbosity < MINIMUM_LOG_VERBOSITY)>::type

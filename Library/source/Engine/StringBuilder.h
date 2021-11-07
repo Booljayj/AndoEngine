@@ -9,6 +9,7 @@ struct StringBuilder {
 	{
 		*buffer.GetCursor() = '\0';
 	}
+	StringBuilder() : StringBuilder(*threadHeapBuffer) {}
 
 	/** The size of the string that has been written */
 	size_t Size() const { return buffer.GetCursor() - string; }

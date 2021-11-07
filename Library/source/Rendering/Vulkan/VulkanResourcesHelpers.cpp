@@ -27,7 +27,7 @@ namespace Rendering {
 
 		TEMP_ALLOCATOR_MARK();
 
-		std::string_view const filename = l_printf(CTX.temp, "content/shaders/compiled/%s.spv", name.data());
+		std::string_view const filename = l_printf("content/shaders/compiled/%s.spv", name.data());
 		std::ifstream file(filename.data(), std::ios::ate | std::ios::binary);
 
 		if (!file.is_open()) {
@@ -36,7 +36,7 @@ namespace Rendering {
 		}
 
 		size_t const bufferSize = static_cast<size_t>(file.tellg());
-		char* const buffer = static_cast<char*>(CTX.temp.Request(bufferSize, sizeof(char), alignof(uint32_t)));
+		char* const buffer = static_cast<char*>(threadHeapBuffer->Request(bufferSize, sizeof(char), alignof(uint32_t)));
 
 		file.seekg(0);
 		file.read(buffer, bufferSize);

@@ -12,3 +12,4 @@ using l_u16string = l_basic_string<char16_t>;
 using l_u32string = l_basic_string<char32_t>;
 
 std::string_view l_printf(HeapBuffer& buffer, char const* format, ...);
+std::string_view l_printf(char const* format, ...);

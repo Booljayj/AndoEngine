@@ -80,31 +80,24 @@ public:
 	void* Request(size_t count, size_t size, size_t alignment) noexcept;
 };
 
-/** std allocator that uses a HeapBuffer to manage allocations. */
+/** The pointer to the heap buffer for temporary allocations in each thread. */
+extern thread_local HeapBuffer* threadHeapBuffer;
+
+/** std allocator that uses a linear buffer to manage allocations. If not provided a buffer, it will use the thread-local HeapBuffer. */
 template<typename T>
 class TLinearAllocator {
 	template<typename U>
 	friend class TLinearAllocator;
 
-protected:
-	HeapBuffer* buffer = nullptr;
-
 public:
 	using value_type = T;
 	using propagate_on_container_move_assignment = std::true_type;
 
-	TLinearAllocator() = delete;
-	TLinearAllocator(HeapBuffer& inBuffer)
-	: buffer(&inBuffer)
-	{}
-
+	TLinearAllocator() : buffer(threadHeapBuffer) {}
+	TLinearAllocator(HeapBuffer& inBuffer) : buffer(&inBuffer) {}
 	TLinearAllocator(TLinearAllocator const&) = default;
-
 	template<typename U>
-	TLinearAllocator(TLinearAllocator<U> const& other)
-	: buffer(other.buffer)
-	{}
-
+	TLinearAllocator(TLinearAllocator<U> const& other) : buffer(other.buffer) {}
 	~TLinearAllocator() = default;
 
 	T* allocate(size_t count, void const* hint = nullptr) {
@@ -145,4 +138,7 @@ public:
 	void destroy(U* pointer) {
 		pointer->~U();
 	}
+
+private:
+	HeapBuffer* buffer;
 };

@@ -102,13 +102,13 @@ namespace Rendering {
 		VulkanBuffer buffer;
 
 		struct {
-			VkDeviceSize vertex;
-			VkDeviceSize index;
+			VkDeviceSize vertex = 0;
+			VkDeviceSize index = 0;
 		} offset;
 
 		struct {
-			uint32_t vertices;
-			uint32_t indices;
+			uint32_t vertices = 0;
+			uint32_t indices = 0;
 		} size;
 
 		inline operator bool() const { return buffer && size.vertices > 0 && size.indices > 0; }
