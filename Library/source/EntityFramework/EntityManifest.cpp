@@ -15,7 +15,7 @@
  * They are kept as text to make inspection much easier, especially with respect to overrides.
  */
 
-void EntityManifest::LoadManifestFile(CTX_ARG, std::string_view filename) {
+void EntityManifest::LoadManifestFile(std::string_view filename) {
 	// std::ifstream file{ filename.data() };
 	// size_t const bufferSize = CTX.temp.GetAvailable();
 

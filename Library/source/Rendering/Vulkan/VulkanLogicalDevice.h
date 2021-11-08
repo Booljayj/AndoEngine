@@ -1,5 +1,4 @@
 #pragma once
-#include "Engine/Context.h"
 #include "Rendering/Vulkan/Vulkan.h"
 #include "Rendering/Vulkan/VulkanFramework.h"
 #include "Rendering/Vulkan/VulkanPhysicalDevice.h"
@@ -27,7 +26,7 @@ namespace Rendering {
 		VulkanLogicalDevice& operator=(VulkanLogicalDevice&& other);
 		inline operator bool() const { return device && allocator; }
 
-		static VulkanLogicalDevice Create(CTX_ARG, VulkanFramework framework, VulkanPhysicalDevice const& physical, VkPhysicalDeviceFeatures const& features, TArrayView<char const*> const& extensions);
+		static VulkanLogicalDevice Create(VulkanFramework framework, VulkanPhysicalDevice const& physical, VkPhysicalDeviceFeatures const& features, TArrayView<char const*> const& extensions);
 		void Destroy();
 
 #ifdef VULKAN_DEBUG

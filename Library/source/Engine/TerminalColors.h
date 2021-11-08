@@ -1,3 +1,5 @@
+#pragma once
+
 #define TERM_NoColor "\033[0m"
 
 // Regular Colors

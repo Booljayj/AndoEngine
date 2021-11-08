@@ -1,5 +1,4 @@
 #pragma once
-#include "Engine/Context.h"
 #include "Engine/LogCommands.h"
 #include "Rendering/Vulkan/Vulkan.h"
 #include "Rendering/Vulkan/VulkanLogicalDevice.h"
@@ -66,17 +65,17 @@ namespace Rendering {
 
 		inline operator bool() const { return resources.size() > 0 && imageFences.size() > 0 && std::all_of(resources.begin(), resources.end(), FrameResources::IsValid); }
 
-		bool Create(CTX_ARG, VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical, VulkanUniformLayouts const& uniformLayouts, EBuffering buffering, size_t numImages, size_t numThreads);
+		bool Create(VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical, VulkanUniformLayouts const& uniformLayouts, EBuffering buffering, size_t numImages, size_t numThreads);
 		void Destroy(VulkanLogicalDevice const& logical);
 
 		/** Prepare the next set of resources for rendering */
-		EPreparationResult Prepare(CTX_ARG, VulkanLogicalDevice const& logical, VulkanSwapchain const& swapchain, size_t numObjects);
+		EPreparationResult Prepare(VulkanLogicalDevice const& logical, VulkanSwapchain const& swapchain, size_t numObjects);
 		/** Submit everything currently recorded so that it can be rendered. */
-		bool Submit(CTX_ARG, VulkanLogicalDevice const& logical, VulkanSwapchain const& swapchain);
+		bool Submit(VulkanLogicalDevice const& logical, VulkanSwapchain const& swapchain);
 
 		/** Record commands to the current buffer */
 		template<typename FunctorType>
-		inline bool Record(CTX_ARG, FunctorType&& recorder) {
+		inline bool Record(FunctorType&& recorder) {
 			FrameResources const& frame = resources[currentResourceIndex];
 
 			VkCommandBufferBeginInfo beginInfo{};
@@ -100,6 +99,6 @@ namespace Rendering {
 		}
 
 		/** Wait for all work to complete, including all submitted rendering commands */
-		void WaitForCompletion(CTX_ARG, VulkanLogicalDevice const& logical);
+		void WaitForCompletion(VulkanLogicalDevice const& logical);
 	};
 }

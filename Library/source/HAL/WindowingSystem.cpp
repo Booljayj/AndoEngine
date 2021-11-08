@@ -2,9 +2,9 @@
 #include "Engine/LogCommands.h"
 
 namespace HAL {
-	bool WindowingSystem::Startup(CTX_ARG) {
+	bool WindowingSystem::Startup() {
 #if SDL_ENABLED
-		primaryWindow = CreateWindow(CTX);
+		primaryWindow = CreateWindow();
 		if (!primaryWindow) {
 			LOGF(SDL, Error, "Failed to create SDL window: %i", SDL_GetError());
 			return false;
@@ -15,7 +15,7 @@ namespace HAL {
 #endif
 	}
 
-	bool WindowingSystem::Shutdown(CTX_ARG) {
+	bool WindowingSystem::Shutdown() {
 		for (Window const& window : windows) {
 #if SDL_ENABLED
 			SDL_DestroyWindow(window.handle);
@@ -33,7 +33,7 @@ namespace HAL {
 		else return Window{};
 	}
 
-	Window WindowingSystem::CreateWindow(CTX_ARG) {
+	Window WindowingSystem::CreateWindow() {
 		Window::HandleType handle = SDL_CreateWindow("AndoSystem", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 800, SDL_WINDOW_SHOWN | SDL_WINDOW_VULKAN);
 		if (!handle) return Window{};
 
@@ -45,7 +45,7 @@ namespace HAL {
 		return window;
 	}
 
-	void WindowingSystem::DestroyWindow(CTX_ARG, uint32_t id) {
+	void WindowingSystem::DestroyWindow(uint32_t id) {
 		//The primary window cannot be destroyed with this method, only during shutdown
 		if (primaryWindow != id) {
 			const auto iter = std::find(windows.begin(), windows.end(), id);

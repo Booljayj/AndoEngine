@@ -13,7 +13,7 @@ namespace Rendering {
 		}
 	}
 
-	VkShaderModule VulkanPipelineCreationHelper::GetModule(CTX_ARG, std::string_view name) {
+	VkShaderModule VulkanPipelineCreationHelper::GetModule(std::string_view name) {
 		Hash32 const nameHash = Hash32{name};
 
 		//Try to find an existing loaded shader entry

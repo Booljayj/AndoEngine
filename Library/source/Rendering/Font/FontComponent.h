@@ -1,10 +1,7 @@
 #pragma once
-#include "Engine/Context.h"
 #include "Engine/Flags.h"
-#include "Engine/LinearAllocator.h"
-#include "Engine/LinearContainers.h"
-#include "Engine/LinearStrings.h"
 #include "Engine/STL.h"
+#include "Engine/Temporary.h"
 #include "EntityFramework/EntityTypes.h"
 #include "Geometry/Rect.h"
 
@@ -21,7 +18,7 @@ struct CodePointFrequencyTracker {
 	std::unordered_map<char32_t, uint32_t> codePointFrequencyMap;
 
 	/** Add the contents of a string to the tracked code points */
-	void TrackCodePoints(CTX_ARG, std::string_view string) {
+	void TrackCodePoints(std::string_view string) {
 		//@todo The standard code converting algorithms won't allow the use of the temporary allocator.
 		// This is a no-go, we need to find an alternate method
 
@@ -33,30 +30,28 @@ struct CodePointFrequencyTracker {
 	}
 
 	/** Returns a temporary array of all code points in this set, ordered with the most frequent code points first */
-	l_vector<char32_t> GetOrderedCodePoints(CTX_ARG) const {
+	t_vector<char32_t> GetOrderedCodePoints() const {
 		size_t const count = codePointFrequencyMap.size();
-		char* const startingCurrent = CTX.temp.GetCursor();
 		//Create a temporary array to hold all the pairs in the map
-		l_vector<std::pair<char32_t, uint32_t>> pairs{CTX.temp};
+		t_vector<std::pair<char32_t, uint32_t>> pairs;
 		pairs.reserve(count);
-		for( const std::pair<char32_t, uint32_t>& characterFrequencyPair : codePointFrequencyMap ) {
+		for (std::pair<char32_t, uint32_t> const& characterFrequencyPair : codePointFrequencyMap) {
 			pairs.push_back( characterFrequencyPair );
 		}
 		//Sort the pairs descending by frequency, then ascending by code point
 		std::sort(
 			pairs.begin(), pairs.end(),
-			[]( const auto& pairA, const auto& pairB ) {
+			[](auto const& pairA, auto const& pairB) {
 				if (pairA.second != pairB.second) return pairA.second > pairB.second;
 				else return pairB.first < pairB.first;
 			}
 		);
 		//Reset the temporary storage so that pairs and characters start at the same offset
-		CTX.temp.SetCursor(startingCurrent);
-		l_vector<char32_t> characters{CTX.temp};
+		t_vector<char32_t> characters;
 		characters.resize(count);
 		//Copy the first value of each pair to the return array. Since pairs and characters occupy the same memory but the
 		// elements of pairs are larger, we always read ahead of or at the write location.
-		for( size_t index = 0; index < count; ++index ) {
+		for (size_t index = 0; index < count; ++index) {
 			characters[index] = pairs[index].first;
 		}
 		return characters;
@@ -72,7 +67,7 @@ struct FontFaceComponent {
 	std::vector<std::tuple<char32_t, char32_t, float>> kerning;
 
 	/** The texture page where the glyph images are stored */
-	EntityRuntimeID page;
+	EntityID page;
 };
 
 struct FontFamilyComponent {
@@ -100,6 +95,6 @@ struct FontFamilyComponent {
 		EHanGlyphType hanGlyphType;
 	};
 
-	EntityRuntimeID defaultFontFace;
-	std::vector<std::pair<FontAttributes, EntityRuntimeID>> variants;
+	EntityID defaultFontFace;
+	std::vector<std::pair<FontAttributes, EntityID>> variants;
 };

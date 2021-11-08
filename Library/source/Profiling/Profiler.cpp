@@ -9,14 +9,14 @@ namespace Profiling {
 		return instance;
 	}
 
-	bool Profiler::BeginSession(CTX_ARG, std::string_view name) {
+	bool Profiler::BeginSession(std::string_view name) {
 		if (name.empty()) {
 			name = "Profile"sv;
 		}
 
 		const std::unique_lock lock{ sessionMutex };
 
-		session = std::make_unique<Session>(CTX, name);
+		session = std::make_unique<Session>(name);
 
 		if (!session || !session->IsValid()) {
 			LOGF(Profiler, Error, "Could not start profiling session '%s'.", name);
@@ -82,7 +82,7 @@ namespace Profiling {
 		return std::hash<std::thread::id>{}(std::this_thread::get_id());
 	}
 
-	Profiler::Session::Session(CTX_ARG, std::string_view inName)
+	Profiler::Session::Session(std::string_view inName)
 	: name(inName)
 	{
 		beginTimePoint = Profiling::Now();

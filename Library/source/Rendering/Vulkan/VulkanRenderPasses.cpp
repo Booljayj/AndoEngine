@@ -29,7 +29,7 @@ namespace Rendering {
 		framebuffers.clear();
 	}
 
-	bool SurfaceRenderPass::Create(CTX_ARG, VulkanLogicalDevice const& logical, VkFormat format) {
+	bool SurfaceRenderPass::Create(VulkanLogicalDevice const& logical, VkFormat format) {
 		//Attachments
 		std::array<VkAttachmentDescription, EAttachments::MAX> descriptions;
 		std::memset(&descriptions, 0, sizeof(descriptions));
@@ -109,7 +109,7 @@ namespace Rendering {
 		pass = nullptr;
 	}
 
-	bool SurfaceRenderPass::CreateFramebuffers(CTX_ARG, VulkanLogicalDevice const& logical, AttachmentImageViews const& sharedImageViews, TArrayView<VkImageView> colorImageViews, glm::u32vec2 const& size, Framebuffers& framebuffers) const {
+	bool SurfaceRenderPass::CreateFramebuffers(VulkanLogicalDevice const& logical, AttachmentImageViews const& sharedImageViews, TArrayView<VkImageView> colorImageViews, glm::u32vec2 const& size, Framebuffers& framebuffers) const {
 		AttachmentImageViews attachments;
 		//Copy the shared images into the attachments
 
@@ -137,8 +137,8 @@ namespace Rendering {
 		return true;
 	}
 
-	bool VulkanRenderPasses::Create(CTX_ARG, VulkanLogicalDevice const& logical, VkFormat format) {
-		if (!surface.Create(CTX, logical, format)) return false;
+	bool VulkanRenderPasses::Create(VulkanLogicalDevice const& logical, VkFormat format) {
+		if (!surface.Create(logical, format)) return false;
 		return true;
 	}
 

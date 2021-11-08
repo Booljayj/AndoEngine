@@ -1,12 +1,12 @@
 #include "HAL/EventsSystem.h"
 
 namespace HAL {
-	bool EventsSystem::Startup(CTX_ARG) {
+	bool EventsSystem::Startup() {
 		frameEvents.reserve(20);
 		return true;
 	}
 
-	bool EventsSystem::Shutdown(CTX_ARG) { return true; }
+	bool EventsSystem::Shutdown() { return true; }
 
 	void EventsSystem::PollEvents(bool& requestShutdown) {
 		frameEvents.clear();

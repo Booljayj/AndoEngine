@@ -1,4 +1,4 @@
-#include "Engine/Context.h"
+#pragma once
 #include "Engine/STL.h"
 #include "EntityFramework/EntityRegistry.h"
 #include "EntityFramework/EntityTypes.h"
@@ -32,14 +32,14 @@ namespace Rendering {
 		virtual ~View() = default;
 
 		/** Prepare to render commands for this view for a single frame */
-		virtual EPreparationResult Prepare(CTX_ARG, EntityRegistry const& registry, FrameResources& frame) const = 0;
+		virtual EPreparationResult Prepare(EntityRegistry const& registry, FrameResources& frame) const = 0;
 		/** Record rendering commands for this view for a single frame */
-		virtual void Record(CTX_ARG, const EntityRegistry& registry, const FrameResources& frame, size_t index) const = 0;
+		virtual void Record(const EntityRegistry& registry, const FrameResources& frame, size_t index) const = 0;
 
 		/** Create the resources used in this view */
-		virtual bool CreateResources(CTX_ARG, VulkanLogicalDevice const& logical, VulkanSwapchain const& swapchain) = 0;
+		virtual bool CreateResources(VulkanLogicalDevice const& logical, VulkanSwapchain const& swapchain) = 0;
 		/** Destroy the resources for this view. Called when they are no longer going to be used, or before we need to create them again */
-		virtual void DestroyResources(CTX_ARG, VulkanLogicalDevice const& logical);
+		virtual void DestroyResources(VulkanLogicalDevice const& logical);
 
 		/** Reposition the part of the window to which this viewport should render */
 		virtual void Reposition(glm::ivec2 newExtent, glm::ivec2 newOffset) = 0;

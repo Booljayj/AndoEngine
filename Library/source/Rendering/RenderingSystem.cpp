@@ -13,17 +13,17 @@
 DEFINE_LOG_CATEGORY(Rendering, Warning);
 
 namespace Rendering {
-	bool RenderingSystem::Startup(CTX_ARG, HAL::WindowingSystem& windowing, EntityRegistry& registry) {
+	bool RenderingSystem::Startup(HAL::WindowingSystem& windowing, EntityRegistry& registry) {
 		// Vulkan instance
-		if (!framework.Create(CTX, windowing.GetPrimaryWindow())) return false;
+		if (!framework.Create(windowing.GetPrimaryWindow())) return false;
 
 		//Create the primary surface for the primary window
-		primarySurface = CreateSurface(CTX, windowing.GetPrimaryWindow());
+		primarySurface = CreateSurface(windowing.GetPrimaryWindow());
 		if (!primarySurface) return false;
 
 		// Collect physical devices and select default one
 		{
-			t_vector<char const*> const extensionNames = VulkanPhysicalDevice::GetExtensionNames(CTX);
+			t_vector<char const*> const extensionNames = VulkanPhysicalDevice::GetExtensionNames();
 
 			uint32_t deviceCount = 0;
 			vkEnumeratePhysicalDevices(framework.instance, &deviceCount, nullptr);
@@ -31,7 +31,7 @@ namespace Rendering {
 			vkEnumeratePhysicalDevices(framework.instance, &deviceCount, devices.data());
 
 			for (int32_t deviceIndex = 0; deviceIndex < deviceCount; ++deviceIndex) {
-				const VulkanPhysicalDevice physicalDevice = primarySurface->GetPhysicalDevice(CTX, devices[deviceIndex]);
+				const VulkanPhysicalDevice physicalDevice = primarySurface->GetPhysicalDevice(devices[deviceIndex]);
 				if (IsUsablePhysicalDevice(physicalDevice, extensionNames)) {
 					availablePhysicalDevices.push_back(physicalDevice);
 				}
@@ -42,15 +42,15 @@ namespace Rendering {
 				return false;
 			}
 
-			if (!SelectPhysicalDevice(CTX, 0)) {
+			if (!SelectPhysicalDevice(0)) {
 				LOG(Rendering, Error, "Failed to select default physical device");
 				return false;
 			}
 		}
 
 		//Create the render passes
-		if (!passes.Create(CTX, logical, primarySurfaceFormat.format)) return false;
-		if (!uniformLayouts.Create(CTX, logical)) return false;
+		if (!passes.Create(logical, primarySurfaceFormat.format)) return false;
+		if (!uniformLayouts.Create(logical)) return false;
 
 		//Create the command pool
 		{
@@ -66,7 +66,7 @@ namespace Rendering {
 		}
 
 		//Create the swapchain on the primary surface
-		primarySurface->CreateSwapchain(CTX, *selectedPhysical, primarySurfaceFormat, passes);
+		primarySurface->CreateSwapchain(*selectedPhysical, primarySurfaceFormat, passes);
 
 		//Bind this rendering system as a context object callbacks can refer to it.
 		registry.Bind(this);
@@ -85,13 +85,13 @@ namespace Rendering {
 		return true;
 	}
 
-	bool RenderingSystem::Shutdown(CTX_ARG, EntityRegistry& registry) {
+	bool RenderingSystem::Shutdown(EntityRegistry& registry) {
 		availablePhysicalDevices.clear();
 
 		if (logical) {
 			//Wait for any in-progress work to finish before we start cleanup
 			for (auto const& surface : surfaces) {
-				surface->WaitForCompletion(CTX, logical);
+				surface->WaitForCompletion(logical);
 			}
 
 			registry.DestroyComponents<MaterialComponent, MeshComponent>();
@@ -111,28 +111,28 @@ namespace Rendering {
 		return true;
 	}
 
-	bool RenderingSystem::Render(CTX_ARG, EntityRegistry& registry) {
+	bool RenderingSystem::Render(EntityRegistry& registry) {
 		//Recreate swapchains if necessary. This happens periodically if the rendering parameters have changed significantly.
 		for (auto const& surface : surfaces) {
 			if (surface->IsSwapchainDirty()) {
 				LOG(Rendering, Info, "Recreating swapchain");
 				vkDeviceWaitIdle(logical.device);
-				surface->RecreateSwapchain(CTX, *selectedPhysical, primarySurfaceFormat, passes);
+				surface->RecreateSwapchain(*selectedPhysical, primarySurfaceFormat, passes);
 			}
 		}
 
 		//Rebuild any resources, creating new ones and destroying stale ones
-		RebuildResources(CTX, registry);
+		RebuildResources(registry);
 
 		bool success = true;
 		for (auto const& surface : surfaces) {
-			success &= surface->Render(CTX, logical, passes, registry);
+			success &= surface->Render(logical, passes, registry);
 		}
 
 		return success;
 	}
 
-	void RenderingSystem::RebuildResources(CTX_ARG, EntityRegistry& registry) {
+	void RenderingSystem::RebuildResources(EntityRegistry& registry) {
 		const bool hasStaleResources = stalePipelineResources.size() > 0 || staleMeshResources.size() > 0;
 		if (hasStaleResources) {
 			LOG(Rendering, Info, "Destroying stale resources");
@@ -146,21 +146,21 @@ namespace Rendering {
 		if (shouldCreatePipelines) {
 			shouldCreatePipelines = false;
 			LOG(Rendering, Info, "Creating new pipelines");
-			CreatePipelines(CTX, registry);
+			CreatePipelines(registry);
 		}
 		if (shouldCreateMeshes) {
 			shouldCreateMeshes = false;
 			LOG(Rendering, Info, "Creating new meshes");
-			CreateMeshes(CTX, registry);
+			CreateMeshes(registry);
 		}
 	}
 
-	bool RenderingSystem::SelectPhysicalDevice(CTX_ARG, uint32_t index) {
+	bool RenderingSystem::SelectPhysicalDevice(uint32_t index) {
 		if (index != selectedPhysicalIndex) {
 			if (VulkanPhysicalDevice const* newPhysical = GetPhysicalDevice(index)) {
-				TArrayView<char const*> const extensions = VulkanPhysicalDevice::GetExtensionNames(CTX);
+				TArrayView<char const*> const extensions = VulkanPhysicalDevice::GetExtensionNames();
 
-				VulkanLogicalDevice newLogical = VulkanLogicalDevice::Create(CTX, framework, *newPhysical, features, extensions);
+				VulkanLogicalDevice newLogical = VulkanLogicalDevice::Create(framework, *newPhysical, features, extensions);
 				if (!newLogical) {
 					LOGF(Rendering, Error, "Failed to create logical device for physical device %i", index);
 					return false;
@@ -179,12 +179,12 @@ namespace Rendering {
 		return false;
 	}
 
-	Surface* RenderingSystem::CreateSurface(CTX_ARG, HAL::Window window) {
+	Surface* RenderingSystem::CreateSurface(HAL::Window window) {
 		//Check if we already have a surface for this window, and return it if we do
 		if (Surface* existing = FindSurface(window.id)) return existing;
 
 		//Create the new surface and verify that it is functional
-		std::unique_ptr<Surface> surface = std::make_unique<Surface>(CTX, *this, window);
+		std::unique_ptr<Surface> surface = std::make_unique<Surface>(*this, window);
 		if (!surface->IsValidSurface()) return nullptr;
 
 		//Add the surface to the collection of surfaces, and return a raw pointer to it
@@ -198,7 +198,7 @@ namespace Rendering {
 		else return nullptr;
 	}
 
-	void RenderingSystem::DestroySurface(CTX_ARG, uint32_t id) {
+	void RenderingSystem::DestroySurface(uint32_t id) {
 		//The primary surface cannot be destroyed through this method, only during shutdown
 		if (primarySurface->id != id) {
 			const auto iter = std::find_if(surfaces.begin(), surfaces.end(), [&](const auto& surface) { return surface->id == id; });
@@ -247,7 +247,7 @@ namespace Rendering {
 		rendering->shouldCreateMeshes = true;
 	}
 
-	void RenderingSystem::CreatePipelines(CTX_ARG, EntityRegistry& registry) {
+	void RenderingSystem::CreatePipelines(EntityRegistry& registry) {
 		//The library of shader modules that will stay loaded as long as we need to continue creating pipelines
 		VulkanPipelineCreationHelper helper{logical.device};
 
@@ -255,7 +255,7 @@ namespace Rendering {
 		for (const auto id : materials) {
 			MaterialComponent& material = materials.Get<MaterialComponent>(id);
 			if (!material.resources) {
-				VulkanPipelineResources const resources = CreatePipeline(CTX, material, id, helper);
+				VulkanPipelineResources const resources = CreatePipeline(material, id, helper);
 				if (resources) material.resources = resources;
 				else resources.Destroy(logical.device);
 			}
@@ -283,14 +283,14 @@ namespace Rendering {
 		stalePipelineResources.clear();
 	}
 
-	void RenderingSystem::CreateMeshes(CTX_ARG, EntityRegistry& registry) {
+	void RenderingSystem::CreateMeshes(EntityRegistry& registry) {
 		VulkanMeshCreationHelper helper{logical.device, logical.allocator, logical.queues.graphics, commandPool};
 
 		auto const meshes = registry.GetView<MeshComponent>();
 		for (const auto id : meshes) {
 			MeshComponent& mesh = meshes.Get<MeshComponent>(id);
 			if (!mesh.resources) {
-				VulkanMeshResources const resources = CreateMesh(CTX, mesh, id, commandPool, helper);
+				VulkanMeshResources const resources = CreateMesh(mesh, id, commandPool, helper);
 				if (resources) mesh.resources = resources;
 				else resources.Destroy(logical.allocator);
 			}
@@ -314,7 +314,7 @@ namespace Rendering {
 		return physicalDevice.HasRequiredQueues() && physicalDevice.HasRequiredExtensions(extensionNames) && physicalDevice.HasSwapchainSupport();
 	}
 
-	VulkanPipelineResources RenderingSystem::CreatePipeline(CTX_ARG, MaterialComponent const& material, EntityID id, VulkanPipelineCreationHelper& helper) {
+	VulkanPipelineResources RenderingSystem::CreatePipeline(MaterialComponent const& material, EntityID id, VulkanPipelineCreationHelper& helper) {
 		VulkanPipelineResources resources;
 
 		//Create the descriptor set layout
@@ -344,8 +344,8 @@ namespace Rendering {
 			}
 		}
 
-		VkShaderModule const vertShaderModule = helper.GetModule(CTX, material.vertex);
-		VkShaderModule const fragShaderModule = helper.GetModule(CTX, material.fragment);
+		VkShaderModule const vertShaderModule = helper.GetModule(material.vertex);
+		VkShaderModule const fragShaderModule = helper.GetModule(material.fragment);
 		if (!vertShaderModule || !fragShaderModule) return resources;
 
 		VkPipelineShaderStageCreateInfo vertShaderStageCI{};
@@ -472,7 +472,7 @@ namespace Rendering {
 		return resources;
 	}
 
-	VulkanMeshResources RenderingSystem::CreateMesh(CTX_ARG, MeshComponent const& mesh, EntityID id, VkCommandPool pool, VulkanMeshCreationHelper& helper) {
+	VulkanMeshResources RenderingSystem::CreateMesh(MeshComponent const& mesh, EntityID id, VkCommandPool pool, VulkanMeshCreationHelper& helper) {
 		VulkanMeshResources resources;
 
 		//Calculate byte size values for the input mesh

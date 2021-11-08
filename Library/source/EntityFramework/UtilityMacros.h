@@ -4,13 +4,13 @@
 
 #define STARTUP_SYSTEM(Category, SystemName, ...)\
 LOG(Category, Info, "Startup "#SystemName);\
-if (!SystemName.Startup(CTX, ##__VA_ARGS__)) {\
+if (!SystemName.Startup(__VA_ARGS__)) {\
 	LOG(Category, Error, "Failed to startup " #SystemName);\
 	return false;\
 }
 
 #define SHUTDOWN_SYSTEM(Category, SystemName, ...)\
 LOG(Category, Info, "Shutdown "#SystemName);\
-if (!SystemName.Shutdown(CTX, ##__VA_ARGS__)) {\
+if (!SystemName.Shutdown(__VA_ARGS__)) {\
 	LOG(Category, Error, "Failed to shutdown " #SystemName);\
 }

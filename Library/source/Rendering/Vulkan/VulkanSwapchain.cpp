@@ -27,14 +27,14 @@ namespace Rendering {
 			return VK_PRESENT_MODE_FIFO_KHR;
 		}
 
-		void SetupProperties(CTX_ARG, VulkanSwapchain& result, glm::vec2 const& extent, VkSurfaceKHR const& surface, VulkanPhysicalDevice const& physical) {
+		void SetupProperties(VulkanSwapchain& result, glm::vec2 const& extent, VkSurfaceKHR const& surface, VulkanPhysicalDevice const& physical) {
 			result.surfaceFormat = ChooseSwapSurfaceFormat(physical.presentation.surfaceFormats);
 			result.presentMode = ChooseSwapPresentMode(physical.presentation.presentModes);
 			result.extent = physical.GetSwapExtent(surface, extent);
 			result.preTransform = physical.GetPreTransform(surface);
 		}
 
-		bool CreateSwapchain(CTX_ARG, VulkanSwapchain& result, VkSwapchainKHR const& previous, VkSurfaceKHR const& surface, VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical) {
+		bool CreateSwapchain(VulkanSwapchain& result, VkSwapchainKHR const& previous, VkSurfaceKHR const& surface, VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical) {
 			uint32_t const imageCountMinimum = GetImageCountMinimum(physical.presentation.capabilities);
 
 			VkSwapchainCreateInfoKHR swapchainCI = {};
@@ -78,7 +78,7 @@ namespace Rendering {
 			return vkCreateSwapchainKHR(logical.device, &swapchainCI, nullptr, &result.swapchain) == VK_SUCCESS;
 		}
 
-		bool CreateImageViews(CTX_ARG, VulkanSwapchain& result, VulkanLogicalDevice const& logical) {
+		bool CreateImageViews(VulkanSwapchain& result, VulkanLogicalDevice const& logical) {
 			SCOPED_TEMPORARIES();
 
 			//Get the raw images from the swapchain
@@ -124,15 +124,15 @@ namespace Rendering {
 		}
 	}
 
-	bool VulkanSwapchain::Create(CTX_ARG, glm::u32vec2 const& extent, VkSurfaceKHR const& surface, VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical) {
+	bool VulkanSwapchain::Create(glm::u32vec2 const& extent, VkSurfaceKHR const& surface, VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical) {
 		using namespace VulkanSwapchainUtilities;
 		SCOPED_TEMPORARIES();
 
 		vkDeviceWaitIdle(logical.device);
 
-		SetupProperties(CTX, *this, extent, surface, physical);
+		SetupProperties(*this, extent, surface, physical);
 
-		if (!CreateSwapchain(CTX, *this, nullptr, surface, physical, logical) || !CreateImageViews(CTX, *this, logical)) {
+		if (!CreateSwapchain(*this, nullptr, surface, physical, logical) || !CreateImageViews(*this, logical)) {
 			LOG(Vulkan, Error, "Failed to create swapchain");
 			return false;
 		}
@@ -140,13 +140,13 @@ namespace Rendering {
 		return true;
 	}
 
-	bool VulkanSwapchain::Recreate(CTX_ARG, glm::u32vec2 const& extent, VkSurfaceKHR const& surface, VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical) {
+	bool VulkanSwapchain::Recreate(glm::u32vec2 const& extent, VkSurfaceKHR const& surface, VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical) {
 		using namespace VulkanSwapchainUtilities;
 		SCOPED_TEMPORARIES();
 
 		vkDeviceWaitIdle(logical.device);
 
-		SetupProperties(CTX, *this, extent, surface, physical);
+		SetupProperties(*this, extent, surface, physical);
 
 		//Store the previous swapchain, and destroy the previous image views
 		VkSwapchainKHR previous = swapchain;
@@ -156,7 +156,7 @@ namespace Rendering {
 		}
 		views.clear();
 
-		const bool bSuccess = CreateSwapchain(CTX, *this, previous, surface, physical, logical) && CreateImageViews(CTX, *this, logical);
+		const bool bSuccess = CreateSwapchain(*this, previous, surface, physical, logical) && CreateImageViews(*this, logical);
 
 		//Clean up the previous swapchain regardless of whether the creation of the new one is a success.
 		if (previous) vkDestroySwapchainKHR(logical.device, previous, nullptr);

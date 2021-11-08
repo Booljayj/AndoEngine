@@ -1,6 +1,5 @@
 #pragma once
 #include "Engine/ArrayView.h"
-#include "Engine/Context.h"
 #include "Engine/STL.h"
 #include "Engine/Temporary.h"
 #include "Geometry/GLM.h"
@@ -38,9 +37,9 @@ namespace Rendering {
 		} queues;
 
 		/** Get the information for a device that will be used with a surface */
-		static VulkanPhysicalDevice Get(CTX_ARG, VkPhysicalDevice const& device, VkSurfaceKHR const& surface);
+		static VulkanPhysicalDevice Get(VkPhysicalDevice const& device, VkSurfaceKHR const& surface);
 
-		static t_vector<char const*> GetExtensionNames(CTX_ARG);
+		static t_vector<char const*> GetExtensionNames();
 
 		VulkanVersion GetVulkanVersion() const { return VulkanVersion{properties.apiVersion}; }
 		VulkanVersion GetDriverVersion() const { return VulkanVersion{properties.driverVersion}; }

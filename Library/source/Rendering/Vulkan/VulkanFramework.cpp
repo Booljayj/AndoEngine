@@ -3,7 +3,7 @@
 #include "Engine/StringBuilding.h"
 
 namespace Rendering {
-	bool VulkanFramework::Create(CTX_ARG, HAL::Window window) {
+	bool VulkanFramework::Create(HAL::Window window) {
 		SCOPED_TEMPORARIES();
 
 #ifdef VULKAN_DEBUG
@@ -15,16 +15,16 @@ namespace Rendering {
 		{
 #ifdef VULKAN_DEBUG
 			//Check for validation layer support
-			t_vector<char const*> const enabledLayerNames = GetValidationLayerNames(CTX);
-			if (!CanEnableValidationLayers(CTX, enabledLayerNames)) {
+			t_vector<char const*> const enabledLayerNames = GetValidationLayerNames();
+			if (!CanEnableValidationLayers(enabledLayerNames)) {
 				LOG(Vulkan, Error, "Cannot enable required validation layers");
 				return false;
 			}
 #endif
 
 			//Check for extension support
-			t_vector<char const*> const enabledExtensionNames = GetExtensionsNames(CTX, window);
-			if (!CanEnableExtensions(CTX, enabledExtensionNames)) {
+			t_vector<char const*> const enabledExtensionNames = GetExtensionsNames(window);
+			if (!CanEnableExtensions(enabledExtensionNames)) {
 				LOG(Vulkan, Error, "Cannot enable required instance extensions");
 				return false;
 			}
@@ -177,11 +177,11 @@ namespace Rendering {
 		return messengerCI;
 	}
 
-	t_vector<char const*> VulkanFramework::GetValidationLayerNames(CTX_ARG) {
+	t_vector<char const*> VulkanFramework::GetValidationLayerNames() {
 		return t_vector<char const*>{ "VK_LAYER_KHRONOS_validation" };
 	}
 
-	bool VulkanFramework::CanEnableValidationLayers(CTX_ARG, TArrayView<char const*> const& enabledLayerNames) {
+	bool VulkanFramework::CanEnableValidationLayers(TArrayView<char const*> const& enabledLayerNames) {
 		SCOPED_TEMPORARIES();
 
 		uint32_t availableLayerCount;
@@ -204,7 +204,7 @@ namespace Rendering {
 	}
 #endif
 
-	t_vector<char const*> VulkanFramework::GetExtensionsNames(CTX_ARG, HAL::Window window) {
+	t_vector<char const*> VulkanFramework::GetExtensionsNames(HAL::Window window) {
 		//Standard extensions which the application requires
 		constexpr char const* standardExtensions[] = {
 #ifdef VULKAN_DEBUG
@@ -233,7 +233,7 @@ namespace Rendering {
 		return extensions;
 	}
 
-	bool VulkanFramework::CanEnableExtensions(CTX_ARG, TArrayView<char const*> const& enabledExtensionNames) {
+	bool VulkanFramework::CanEnableExtensions(TArrayView<char const*> const& enabledExtensionNames) {
 		SCOPED_TEMPORARIES();
 
 		uint32_t availableExtensionCount;

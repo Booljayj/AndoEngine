@@ -1,4 +1,4 @@
-#include "Engine/Context.h"
+#pragma once
 #include "Engine/Hash.h"
 #include "Rendering/Vulkan/Vulkan.h"
 #include "Rendering/Vulkan/VulkanLogicalDevice.h"
@@ -12,7 +12,7 @@ namespace Rendering {
 		~VulkanPipelineCreationHelper();
 
 		/** Get an already-loaded module, or load a new one */
-		VkShaderModule GetModule(CTX_ARG, std::string_view name);
+		VkShaderModule GetModule(std::string_view name);
 
 	private:
 		struct Entry {

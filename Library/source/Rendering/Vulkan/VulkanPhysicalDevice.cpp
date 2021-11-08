@@ -2,7 +2,7 @@
 #include "Engine/Utility.h"
 
 namespace Rendering {
-	VulkanPhysicalDevice VulkanPhysicalDevice::Get(CTX_ARG, VkPhysicalDevice const& device, VkSurfaceKHR const& surface) {
+	VulkanPhysicalDevice VulkanPhysicalDevice::Get(VkPhysicalDevice const& device, VkSurfaceKHR const& surface) {
 		SCOPED_TEMPORARIES();
 
 		VulkanPhysicalDevice Result;
@@ -61,7 +61,7 @@ namespace Rendering {
 		return Result;
 	}
 
-	t_vector<char const*> VulkanPhysicalDevice::GetExtensionNames(CTX_ARG) {
+	t_vector<char const*> VulkanPhysicalDevice::GetExtensionNames() {
 		t_vector<char const*> result = {
 			VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 			VK_KHR_MAINTENANCE3_EXTENSION_NAME,

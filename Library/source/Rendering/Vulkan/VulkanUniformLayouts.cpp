@@ -3,7 +3,7 @@
 #include "Rendering/Vulkan/VulkanUniformLayouts.h"
 
 namespace Rendering {
-	bool VulkanUniformLayouts::Create(CTX_ARG, VulkanLogicalDevice const& logical) {
+	bool VulkanUniformLayouts::Create(VulkanLogicalDevice const& logical) {
 		//Create the uniform layout for global uniforms
 		{
 			std::array<VkDescriptorSetLayoutBinding, 1> bindings;

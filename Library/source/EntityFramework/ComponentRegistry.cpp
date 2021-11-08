@@ -1,6 +1,6 @@
 #include "EntityFramework/ComponentRegistry.h"
 
-t_vector<Reflection::TypeInfo const*> ComponentRegistry::GetTypes(CTX_ARG) {
+t_vector<Reflection::TypeInfo const*> ComponentRegistry::GetTypes() {
 	t_vector<Reflection::TypeInfo const*> result;
 	result.reserve(registry.size());
 	for (const auto& entry : registry) {
@@ -15,7 +15,7 @@ IComponent const* ComponentRegistry::Find(Reflection::TypeInfo const* type) cons
 	else return nullptr;
 }
 
-t_vector<std::tuple<Reflection::TypeInfo const*, void*>> ComponentRegistry::GetComponents(CTX_ARG, const EntityHandle& handle) const {
+t_vector<std::tuple<Reflection::TypeInfo const*, void*>> ComponentRegistry::GetComponents(const EntityHandle& handle) const {
 	t_vector<std::tuple<Reflection::TypeInfo const*, void*>> result;
 	for (const auto& entry : registry) {
 		if (entry.second->Has(handle)) {

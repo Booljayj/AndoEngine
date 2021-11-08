@@ -1,4 +1,4 @@
-#include "Engine/Context.h"
+#pragma once
 #include "Engine/Logging/LogCategory.h"
 #include "Engine/STL.h"
 #include "Profiling/ProfileCategory.h"
@@ -17,7 +17,7 @@ namespace Profiling {
 		 * Begin a new profiling session with the provided name. Results will be output to a file including the session name.
 		 * Multiple sessions are not allowed, starting a new session will end the previous one.
 		 */
-		bool BeginSession(CTX_ARG, std::string_view name);
+		bool BeginSession(std::string_view name);
 		/** End the current profiling session, if any. */
 		void EndSession();
 
@@ -46,7 +46,7 @@ namespace Profiling {
 
 			static uint32_t GetThreadID();
 
-			Session(CTX_ARG, std::string_view inName);
+			Session(std::string_view inName);
 			~Session();
 
 			bool IsValid() const;

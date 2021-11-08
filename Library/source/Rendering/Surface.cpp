@@ -6,7 +6,7 @@
 #include "Rendering/Uniforms.h"
 
 namespace Rendering {
-	Surface::Surface(CTX_ARG, RenderingSystem const& inOwner, HAL::Window inWindow)
+	Surface::Surface(RenderingSystem const& inOwner, HAL::Window inWindow)
 	: id(inWindow.id)
 	, window(inWindow)
 	, owner(inOwner)
@@ -27,8 +27,8 @@ namespace Rendering {
 #endif
 	}
 
-	VulkanPhysicalDevice Surface::GetPhysicalDevice(CTX_ARG, VkPhysicalDevice device) {
-		return VulkanPhysicalDevice::Get(CTX, device, surface);
+	VulkanPhysicalDevice Surface::GetPhysicalDevice(VkPhysicalDevice device) {
+		return VulkanPhysicalDevice::Get(device, surface);
 	}
 
 	bool Surface::IsPhysicalDeviceUsable(VulkanPhysicalDevice const& physical) const {
@@ -44,28 +44,28 @@ namespace Rendering {
 		return physical.presentation.surfaceFormats[0];
 	}
 
-	bool Surface::CreateSwapchain(CTX_ARG, VulkanPhysicalDevice const& physical, VkSurfaceFormatKHR surfaceFormat, VulkanRenderPasses const& passes) {
+	bool Surface::CreateSwapchain(VulkanPhysicalDevice const& physical, VkSurfaceFormatKHR surfaceFormat, VulkanRenderPasses const& passes) {
 		imageSize = physical.GetSwapExtent(surface, imageSize);
 
-		if (!swapchain.Create(CTX, imageSize, surface, *owner.selectedPhysical, owner.logical)) return false;
-		if (!organizer.Create(CTX, *owner.selectedPhysical, owner.logical, owner.uniformLayouts, EBuffering::Double, swapchain.views.size(), 1)) return false;
+		if (!swapchain.Create(imageSize, surface, *owner.selectedPhysical, owner.logical)) return false;
+		if (!organizer.Create(*owner.selectedPhysical, owner.logical, owner.uniformLayouts, EBuffering::Double, swapchain.views.size(), 1)) return false;
 
 		SurfaceRenderPass::AttachmentImageViews sharedImageViews;
-		if (!passes.surface.CreateFramebuffers(CTX, owner.logical, sharedImageViews, swapchain.views, imageSize, framebuffers.surface)) return false;
+		if (!passes.surface.CreateFramebuffers(owner.logical, sharedImageViews, swapchain.views, imageSize, framebuffers.surface)) return false;
 
 		return true;
 	}
 
-	bool Surface::RecreateSwapchain(CTX_ARG, VulkanPhysicalDevice const& physical, VkSurfaceFormatKHR surfaceFormat, VulkanRenderPasses const& passes) {
+	bool Surface::RecreateSwapchain(VulkanPhysicalDevice const& physical, VkSurfaceFormatKHR surfaceFormat, VulkanRenderPasses const& passes) {
 		passes.surface.DestroyFramebuffers(owner.logical, framebuffers.surface);
 
 		imageSize = physical.GetSwapExtent(surface, imageSize);
 
-		if (!swapchain.Recreate(CTX, imageSize, surface, *owner.selectedPhysical, owner.logical)) return false;
-		if (!organizer.Create(CTX, *owner.selectedPhysical, owner.logical, owner.uniformLayouts, EBuffering::Double, swapchain.views.size(), 1)) return false;
+		if (!swapchain.Recreate(imageSize, surface, *owner.selectedPhysical, owner.logical)) return false;
+		if (!organizer.Create(*owner.selectedPhysical, owner.logical, owner.uniformLayouts, EBuffering::Double, swapchain.views.size(), 1)) return false;
 
 		SurfaceRenderPass::AttachmentImageViews sharedImageViews;
-		if (!passes.surface.CreateFramebuffers(CTX, owner.logical, sharedImageViews, swapchain.views, imageSize, framebuffers.surface)) return false;
+		if (!passes.surface.CreateFramebuffers(owner.logical, sharedImageViews, swapchain.views, imageSize, framebuffers.surface)) return false;
 
 		return true;
 	}
@@ -78,7 +78,7 @@ namespace Rendering {
 		if (surface) vkDestroySurfaceKHR(framework.instance, surface, nullptr);
 	}
 
-	bool Surface::Render(CTX_ARG, VulkanLogicalDevice const& logical, VulkanRenderPasses const& passes, EntityRegistry& registry) {
+	bool Surface::Render(VulkanLogicalDevice const& logical, VulkanRenderPasses const& passes, EntityRegistry& registry) {
 		//@todo This would ideally be done with some acceleration structure that contains a mapping between the pipelines and all of
 		//      the geometry that should be drawn with that pipeline, to avoid binding the same pipeline more than once and to strip
 		//      out culled geometry.
@@ -87,7 +87,7 @@ namespace Rendering {
 		auto const meshes = registry.GetView<MeshComponent const>();
 
 		//Prepare the frame for rendering, which may need to wait for resources
-		EPreparationResult const result = organizer.Prepare(CTX, logical, swapchain, renderables.size());
+		EPreparationResult const result = organizer.Prepare(logical, swapchain, renderables.size());
 		if (result == EPreparationResult::Retry) {
 			if (++retryCount >= maxRetryCount) {
 				LOGF(Rendering, Error, "Too many subsequent frames (%i) have failed to render.", maxRetryCount);
@@ -165,16 +165,16 @@ namespace Rendering {
 		};
 
 		//Record rendering commands for this frame
-		if (!organizer.Record(CTX, recorder)) return false;
+		if (!organizer.Record(recorder)) return false;
 
 		//Submit the rendering commands for this frame
-		if (!organizer.Submit(CTX, logical, swapchain)) return false;
+		if (!organizer.Submit(logical, swapchain)) return false;
 
 		retryCount = 0;
 		return true;
 	}
 
-	void Surface::WaitForCompletion(CTX_ARG, VulkanLogicalDevice const& logical) {
-		organizer.WaitForCompletion(CTX, logical);
+	void Surface::WaitForCompletion(VulkanLogicalDevice const& logical) {
+		organizer.WaitForCompletion(logical);
 	}
 }

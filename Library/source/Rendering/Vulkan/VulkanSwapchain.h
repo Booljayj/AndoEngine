@@ -1,5 +1,4 @@
 #pragma once
-#include "Engine/Context.h"
 #include "Geometry/GLM.h"
 #include "Rendering/Vulkan/Vulkan.h"
 #include "Rendering/Vulkan/VulkanFramework.h"
@@ -24,8 +23,8 @@ namespace Rendering {
 
 		inline operator bool() const { return swapchain && views.size() > 0 && std::find(views.begin(), views.end(), VkImageView{nullptr}) == views.end(); }
 
-		bool Create(CTX_ARG, glm::u32vec2 const& extent, VkSurfaceKHR const& surface, VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical);
-		bool Recreate(CTX_ARG, glm::u32vec2 const& extent, VkSurfaceKHR const& surface, VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical);
+		bool Create(glm::u32vec2 const& extent, VkSurfaceKHR const& surface, VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical);
+		bool Recreate(glm::u32vec2 const& extent, VkSurfaceKHR const& surface, VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical);
 
 		void Destroy(VulkanLogicalDevice const& logical);
 	};

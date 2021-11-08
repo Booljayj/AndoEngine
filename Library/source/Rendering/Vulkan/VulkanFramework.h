@@ -1,6 +1,5 @@
 #pragma once
 #include "Engine/ArrayView.h"
-#include "Engine/Context.h"
 #include "Engine/STL.h"
 #include "Engine/Temporary.h"
 #include "HAL/WindowingSystem.h"
@@ -19,7 +18,7 @@ namespace Rendering {
 
 		inline operator bool() const { return instance; }
 
-		bool Create(CTX_ARG, HAL::Window window);
+		bool Create(HAL::Window window);
 		void Destroy();
 
 		template<typename Signature>
@@ -39,11 +38,11 @@ namespace Rendering {
 		/** Get the creation info struct for the debug messenger */
 		static VkDebugUtilsMessengerCreateInfoEXT GetDebugUtilsMessengerCreateInfo();
 
-		static t_vector<char const*> GetValidationLayerNames(CTX_ARG);
-		static bool CanEnableValidationLayers(CTX_ARG, TArrayView<char const*> const& enabledLayerNames);
+		static t_vector<char const*> GetValidationLayerNames();
+		static bool CanEnableValidationLayers(TArrayView<char const*> const& enabledLayerNames);
 #endif
 
-		static t_vector<char const*> GetExtensionsNames(CTX_ARG, HAL::Window window);
-		static bool CanEnableExtensions(CTX_ARG, TArrayView<char const*> const& enabledExtensionNames);
+		static t_vector<char const*> GetExtensionsNames(HAL::Window window);
+		static bool CanEnableExtensions(TArrayView<char const*> const& enabledExtensionNames);
 	};
 }

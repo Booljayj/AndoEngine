@@ -1,3 +1,4 @@
+#pragma once
 #include "EntityFramework/EntityRegistry.h"
 
 namespace Rendering {

@@ -23,7 +23,7 @@ namespace Rendering {
 		return *this;
 	}
 
-	VulkanLogicalDevice VulkanLogicalDevice::Create(CTX_ARG, VulkanFramework framework, VulkanPhysicalDevice const& physical, VkPhysicalDeviceFeatures const& enabledFeatures, TArrayView<char const*> const& enabledExtensionNames) {
+	VulkanLogicalDevice VulkanLogicalDevice::Create(VulkanFramework framework, VulkanPhysicalDevice const& physical, VkPhysicalDeviceFeatures const& enabledFeatures, TArrayView<char const*> const& enabledExtensionNames) {
 		SCOPED_TEMPORARIES();
 
 		VulkanLogicalDevice result;

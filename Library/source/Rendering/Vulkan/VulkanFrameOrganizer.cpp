@@ -2,7 +2,7 @@
 #include "Rendering/Uniforms.h"
 
 namespace Rendering {
-	bool VulkanFrameOrganizer::Create(CTX_ARG, VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical, VulkanUniformLayouts const& uniformLayouts, EBuffering buffering, size_t numImages, size_t numThreads) {
+	bool VulkanFrameOrganizer::Create(VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical, VulkanUniformLayouts const& uniformLayouts, EBuffering buffering, size_t numImages, size_t numThreads) {
 		size_t const numFrames = static_cast<size_t>(buffering) + 1;
 		assert(numFrames > 0 && numFrames < 4);
 
@@ -174,7 +174,7 @@ namespace Rendering {
 		currentResourceIndex = 0;
 	}
 
-	EPreparationResult VulkanFrameOrganizer::Prepare(CTX_ARG, VulkanLogicalDevice const& logical, VulkanSwapchain const& swapchain, size_t numObjects) {
+	EPreparationResult VulkanFrameOrganizer::Prepare(VulkanLogicalDevice const& logical, VulkanSwapchain const& swapchain, size_t numObjects) {
 		constexpr uint64_t waitTime = 5'000'000'000;
 
 		FrameResources& frame = resources[currentResourceIndex];
@@ -224,7 +224,7 @@ namespace Rendering {
 		return EPreparationResult::Success;
 	}
 
-	bool VulkanFrameOrganizer::Submit(CTX_ARG, VulkanLogicalDevice const& logical, VulkanSwapchain const& swapchain) {
+	bool VulkanFrameOrganizer::Submit(VulkanLogicalDevice const& logical, VulkanSwapchain const& swapchain) {
 		FrameResources const& frame = resources[currentResourceIndex];
 
 		vmaFlushAllocation(logical.allocator, frame.uniforms.global.ubo.allocation, 0, VK_WHOLE_SIZE);
@@ -287,7 +287,7 @@ namespace Rendering {
 		return true;
 	}
 
-	void VulkanFrameOrganizer::WaitForCompletion(CTX_ARG, VulkanLogicalDevice const& logical) {
+	void VulkanFrameOrganizer::WaitForCompletion(VulkanLogicalDevice const& logical) {
 		size_t const numFences = resources.size();
 		t_vector<VkFence> fences{ numFences };
 		for (size_t index = 0; index < resources.size(); ++index) {

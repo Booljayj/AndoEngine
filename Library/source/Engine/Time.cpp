@@ -1,5 +1,4 @@
 #include "Engine/Time.h"
-#include "Engine/Context.h"
 
 TimeController_FixedUpdateVariableRendering::TimeController_FixedUpdateVariableRendering(float inTargetFPS, float inMinFPS) {
 	time.unscaledDeltaSeconds = 1.0f/inTargetFPS;

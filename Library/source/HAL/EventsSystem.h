@@ -1,5 +1,4 @@
 #pragma once
-#include "Engine/Context.h"
 #include "Engine/STL.h"
 #include "HAL/SDL2.h"
 
@@ -16,8 +15,8 @@ namespace HAL {
 		std::vector<EventUnion> frameEvents;
 
 	public:
-		bool Startup(CTX_ARG);
-		bool Shutdown(CTX_ARG);
+		bool Startup();
+		bool Shutdown();
 
 		void PollEvents(bool& requestShutdown);
 	};

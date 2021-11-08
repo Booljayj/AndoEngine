@@ -1,5 +1,4 @@
 #pragma once
-#include "Engine/Context.h"
 #include "Engine/STL.h"
 #include "HAL/SDL2.h"
 
@@ -21,8 +20,8 @@ namespace HAL {
 
 	struct WindowingSystem {
 	public:
-		bool Startup(CTX_ARG);
-		bool Shutdown(CTX_ARG);
+		bool Startup();
+		bool Shutdown();
 
 		inline Window GetPrimaryWindow() const { return primaryWindow; }
 
@@ -30,9 +29,9 @@ namespace HAL {
 		Window FindWindow(uint32_t id) const;
 		//@todo Add parameters to this method to control how the window should be created
 		/** Create a new window, returning its id */
-		Window CreateWindow(CTX_ARG);
+		Window CreateWindow();
 		/** Destroy a window using its id */
-		void DestroyWindow(CTX_ARG, uint32_t id);
+		void DestroyWindow(uint32_t id);
 
 	protected:
 		Window primaryWindow;

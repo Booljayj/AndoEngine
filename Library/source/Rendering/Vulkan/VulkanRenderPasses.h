@@ -53,10 +53,10 @@ namespace Rendering {
 
 		static void DestroyFramebuffers(VulkanLogicalDevice const& logical, Framebuffers& framebuffers);
 
-		bool Create(CTX_ARG, VulkanLogicalDevice const& logical, VkFormat format);
+		bool Create(VulkanLogicalDevice const& logical, VkFormat format);
 		void Destroy(VulkanLogicalDevice const& logical);
 
-		bool CreateFramebuffers(CTX_ARG, VulkanLogicalDevice const& logical, AttachmentImageViews const& sharedImageViews, TArrayView<VkImageView> colorImageViews, glm::u32vec2 const& size, Framebuffers& framebuffers) const;
+		bool CreateFramebuffers(VulkanLogicalDevice const& logical, AttachmentImageViews const& sharedImageViews, TArrayView<VkImageView> colorImageViews, glm::u32vec2 const& size, Framebuffers& framebuffers) const;
 	};
 
 	// struct PostProcessRenderPass {
@@ -78,8 +78,8 @@ namespace Rendering {
 	// 	VkRenderPass pass;
 	// 	VkClearValue clearValues[EAttachments::MAX];
 	//
-	// 	bool Create(CTX_ARG, VulkanLogicalDevice const& logical, VkFormat format);
-	// 	void Destroy(CTX_ARG, VulkanLogicalDevice const& logical);
+	// 	bool Create(VulkanLogicalDevice const& logical, VkFormat format);
+	// 	void Destroy(VulkanLogicalDevice const& logical);
 	// };
 
 	/** Render passes */
@@ -87,7 +87,7 @@ namespace Rendering {
 		SurfaceRenderPass surface;
 		//PostProcessRenderPass postProcess;
 
-		bool Create(CTX_ARG, VulkanLogicalDevice const& logical, VkFormat format);
+		bool Create(VulkanLogicalDevice const& logical, VkFormat format);
 		void Destroy(VulkanLogicalDevice const& logical);
 	};
 

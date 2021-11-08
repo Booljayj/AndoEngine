@@ -1,5 +1,4 @@
 #include "Engine/Time.h"
-#include "Engine/Context.h"
 #include "Engine/LogCommands.h"
 #include "Engine/Logging/TerminalLoggerModule.h"
 #include "Engine/Logging/FileLoggerModule.h"
@@ -28,7 +27,7 @@ struct Application {
 	Rendering::RenderingSystem rendering;
 
 	// Primary system procedures
-	bool Startup(CTX_ARG) {
+	bool Startup() {
 		PROFILE_FUNCTION(Main);
 		SCOPED_TEMPORARIES();
 		LOG(Main, Info, "Starting up all systems...");
@@ -40,7 +39,7 @@ struct Application {
 		return true;
 	}
 
-	void Shutdown(CTX_ARG) {
+	void Shutdown() {
 		PROFILE_FUNCTION(Main);
 		SCOPED_TEMPORARIES();
 		LOG(Main, Info, "Shutting down all systems...");
@@ -51,7 +50,7 @@ struct Application {
 		SHUTDOWN_SYSTEM(Main, framework);
 	}
 
-	void MainLoop(CTX_ARG) {
+	void MainLoop() {
 		TimeController_FixedUpdateVariableRendering timeController{60.0f, 10.0f};
 
 		bool shutdownRequested = false;
@@ -73,7 +72,7 @@ struct Application {
 			if (!shutdownRequested) {
 				//Render. Anything inside this loop runs with a variable interval. Alpha will indicate the progress from the previous to the current main update.
 				//const float alpha = timeController.Alpha();
-				shutdownRequested |= !rendering.Render(CTX, registry);
+				shutdownRequested |= !rendering.Render(registry);
 			}
 		}
 	}
@@ -84,7 +83,6 @@ int32_t main(int32_t argc, char const* argv[]) {
 	HeapBuffer buffer{ 20'000 };
 	AssignThreadTemporaryBuffer(buffer);
 
-	Context CTX;
 	Logger::Get().CreateModule<TerminalLoggerModule>();
 
 	LOG(Main, Info, "Hello, World! This is AndoEngine.");
@@ -92,7 +90,7 @@ int32_t main(int32_t argc, char const* argv[]) {
 
 	Application application;
 
-	if (application.Startup(CTX)) {
+	if (application.Startup()) {
 		using namespace Rendering;
 
 		EntityHandle testMaterialEntity = application.registry.Create();
@@ -115,9 +113,9 @@ int32_t main(int32_t argc, char const* argv[]) {
 		renderer.material = testMaterialEntity.ID();
 		renderer.mesh = testMeshEntity.ID();
 
-		application.MainLoop(CTX);
+		application.MainLoop();
 	}
-	application.Shutdown(CTX);
+	application.Shutdown();
 
 	LOGF(Main, Info, "Main Thread HeapBuffer:{ Capacity: %i, Current: %i, Peak: %i }", buffer.GetCapacity(), buffer.GetUsed(), buffer.GetPeakUsage());
 	return 0;

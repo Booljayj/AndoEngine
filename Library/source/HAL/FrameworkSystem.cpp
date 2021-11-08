@@ -3,7 +3,7 @@
 #include "HAL/SDL2.h"
 
 namespace HAL {
-	bool FrameworkSystem::Startup(CTX_ARG) {
+	bool FrameworkSystem::Startup() {
 #if SDL_ENABLED
 		if (SDL_Init(SDL_INIT_VIDEO) == 0) {
 			return true;
@@ -16,7 +16,7 @@ namespace HAL {
 #endif
 	}
 
-	bool FrameworkSystem::Shutdown(CTX_ARG) {
+	bool FrameworkSystem::Shutdown() {
 #if SDL_ENABLED
 		SDL_Quit();
 #endif

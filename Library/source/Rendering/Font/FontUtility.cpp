@@ -1,5 +1,4 @@
 #include "Rendering/Font/FontUtility.h"
-#include "Engine/Context.h"
 #include "Geometry/Contour.h"
 #include "Geometry/Curve.h"
 
@@ -81,7 +80,7 @@ namespace Rendering {
 		return true;
 	}
 
-	t_vector<::std::tuple<uint32_t, uint32_t, glm::vec2>> DumpKerningValues(CTX_ARG, FT_Face face, char32_t codePoint) {
+	t_vector<::std::tuple<uint32_t, uint32_t, glm::vec2>> DumpKerningValues(FT_Face face, char32_t codePoint) {
 		t_vector<::std::tuple<uint32_t, uint32_t, glm::vec2>> kerningValues;
 		kerningValues.reserve(128);
 		if (FT_HAS_KERNING(face)) {

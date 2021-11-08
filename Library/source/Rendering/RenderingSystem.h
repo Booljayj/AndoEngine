@@ -1,5 +1,4 @@
 #pragma once
-#include "Engine/Context.h"
 #include "Engine/Logging/Logger.h"
 #include "Engine/STL.h"
 #include "EntityFramework/EntityRegistry.h"
@@ -70,25 +69,25 @@ namespace Rendering {
 
 		RenderingSystem() = default;
 
-		bool Startup(CTX_ARG, HAL::WindowingSystem& windowing, EntityRegistry& registry);
-		bool Shutdown(CTX_ARG, EntityRegistry& registry);
+		bool Startup(HAL::WindowingSystem& windowing, EntityRegistry& registry);
+		bool Shutdown(EntityRegistry& registry);
 
-		bool Render(CTX_ARG, EntityRegistry& registry);
-		void RebuildResources(CTX_ARG, EntityRegistry& registry);
+		bool Render(EntityRegistry& registry);
+		void RebuildResources(EntityRegistry& registry);
 
 		inline uint32_t NumPhysicalDevices() const { return availablePhysicalDevices.size(); }
 		inline const Rendering::VulkanPhysicalDevice* GetPhysicalDevice(uint32_t Index) const {
 			if (Index < NumPhysicalDevices()) return &availablePhysicalDevices[Index];
 			else return nullptr;
 		}
-		bool SelectPhysicalDevice(CTX_ARG, uint32_t Index);
+		bool SelectPhysicalDevice(uint32_t Index);
 
 		/** Find a surface using its id */
 		Surface* FindSurface(uint32_t id) const;
 		/** Create a new surface bound to the given window */
-		Surface* CreateSurface(CTX_ARG, HAL::Window window);
+		Surface* CreateSurface(HAL::Window window);
 		/** Destroy a surface using its id */
-		void DestroySurface(CTX_ARG, uint32_t id);
+		void DestroySurface(uint32_t id);
 
 	protected:
 		/** Contains callbacks related to material component operations */
@@ -109,7 +108,7 @@ namespace Rendering {
 		std::vector<VulkanMeshResources> staleMeshResources;
 
 		/** Create or destroy all pipeline resources */
-		void CreatePipelines(CTX_ARG, EntityRegistry& registry);
+		void CreatePipelines(EntityRegistry& registry);
 		void DestroyPipelines(EntityRegistry& registry);
 		/** Mark the pipeline resources on the material as stale */
 		void MarkPipelineStale(MaterialComponent& material);
@@ -117,7 +116,7 @@ namespace Rendering {
 		void DestroyStalePipelines();
 
 		/** Create or destroy all mesh resources */
-		void CreateMeshes(CTX_ARG, EntityRegistry& registry);
+		void CreateMeshes(EntityRegistry& registry);
 		/** Mark the mesh resources on a mesh component as stale */
 		void MarkMeshStale(MeshComponent& mesh);
 		/** Destroy any stale pipeline resources */
@@ -128,8 +127,8 @@ namespace Rendering {
 		bool IsUsablePhysicalDevice(const Rendering::VulkanPhysicalDevice& physicalDevice, TArrayView<char const*> const& extensionNames);
 
 		/** Create the pipeline resources for a material */
-		VulkanPipelineResources CreatePipeline(CTX_ARG, MaterialComponent const& material, EntityID id, VulkanPipelineCreationHelper& helper);
+		VulkanPipelineResources CreatePipeline(MaterialComponent const& material, EntityID id, VulkanPipelineCreationHelper& helper);
 		/** Create the mesh resources for a mesh component */
-		VulkanMeshResources CreateMesh(CTX_ARG, MeshComponent const& mesh, EntityID id, VkCommandPool pool, VulkanMeshCreationHelper& helper);
+		VulkanMeshResources CreateMesh(MeshComponent const& mesh, EntityID id, VkCommandPool pool, VulkanMeshCreationHelper& helper);
 	};
 }
