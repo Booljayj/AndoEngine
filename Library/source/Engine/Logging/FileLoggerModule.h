@@ -1,3 +1,4 @@
+#pragma once
 #include "Engine/Logging/Logger.h"
 #include "Engine/STL.h"
 
