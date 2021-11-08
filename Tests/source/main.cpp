@@ -30,7 +30,7 @@ struct Application {
 	// Primary system procedures
 	bool Startup(CTX_ARG) {
 		PROFILE_FUNCTION(Main);
-		TEMP_ALLOCATOR_MARK();
+		SCOPED_TEMPORARIES();
 		LOG(Main, Info, "Starting up all systems...");
 
 		STARTUP_SYSTEM(Main, framework);
@@ -42,7 +42,7 @@ struct Application {
 
 	void Shutdown(CTX_ARG) {
 		PROFILE_FUNCTION(Main);
-		TEMP_ALLOCATOR_MARK();
+		SCOPED_TEMPORARIES();
 		LOG(Main, Info, "Shutting down all systems...");
 
 		SHUTDOWN_SYSTEM(Main, rendering, registry);
@@ -57,7 +57,7 @@ struct Application {
 		bool shutdownRequested = false;
 		while (!shutdownRequested) {
 			PROFILE_DURATION("MainLoop", Main);
-			TEMP_ALLOCATOR_MARK();
+			SCOPED_TEMPORARIES();
 
 			timeController.NextFrame();
 
@@ -82,7 +82,7 @@ struct Application {
 int32_t main(int32_t argc, char const* argv[]) {
 	//Create the heap buffer for the main thread
 	HeapBuffer buffer{ 20'000 };
-	threadHeapBuffer = &buffer;
+	AssignThreadTemporaryBuffer(buffer);
 
 	Context CTX;
 	Logger::Get().CreateModule<TerminalLoggerModule>();

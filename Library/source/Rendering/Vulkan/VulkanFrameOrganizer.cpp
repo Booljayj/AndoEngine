@@ -289,12 +289,12 @@ namespace Rendering {
 
 	void VulkanFrameOrganizer::WaitForCompletion(CTX_ARG, VulkanLogicalDevice const& logical) {
 		size_t const numFences = resources.size();
-		VkFence* fences = threadHeapBuffer->Request<VkFence>(numFences);
+		t_vector<VkFence> fences{ numFences };
 		for (size_t index = 0; index < resources.size(); ++index) {
 			fences[index] = resources[index].fence;
 		}
 
-		vkWaitForFences(logical.device, numFences, fences, VK_TRUE, std::numeric_limits<uint64_t>::max());
+		vkWaitForFences(logical.device, numFences, fences.data(), VK_TRUE, std::numeric_limits<uint64_t>::max());
 		vkDeviceWaitIdle(logical.device);
 	}
 }

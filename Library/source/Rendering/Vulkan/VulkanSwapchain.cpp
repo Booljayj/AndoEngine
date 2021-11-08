@@ -1,6 +1,6 @@
 #include "Rendering/Vulkan/VulkanSwapchain.h"
-#include "Engine/LinearContainers.h"
 #include "Engine/LogCommands.h"
+#include "Engine/Temporary.h"
 
 namespace Rendering {
 	namespace VulkanSwapchainUtilities {
@@ -79,13 +79,13 @@ namespace Rendering {
 		}
 
 		bool CreateImageViews(CTX_ARG, VulkanSwapchain& result, VulkanLogicalDevice const& logical) {
-			TEMP_ALLOCATOR_MARK();
+			SCOPED_TEMPORARIES();
 
 			//Get the raw images from the swapchain
 			uint32_t numImages = 0;
 			vkGetSwapchainImagesKHR(logical.device, result.swapchain, &numImages, nullptr);
-			VkImage* images = threadHeapBuffer->Request<VkImage>(numImages);
-			vkGetSwapchainImagesKHR(logical.device, result.swapchain, &numImages, images);
+			t_vector<VkImage> images{ numImages };
+			vkGetSwapchainImagesKHR(logical.device, result.swapchain, &numImages, images.data());
 
 			if (numImages == 0) {
 				LOG(Vulkan, Error, "Swapchain has no images to retrieve");
@@ -126,7 +126,7 @@ namespace Rendering {
 
 	bool VulkanSwapchain::Create(CTX_ARG, glm::u32vec2 const& extent, VkSurfaceKHR const& surface, VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical) {
 		using namespace VulkanSwapchainUtilities;
-		TEMP_ALLOCATOR_MARK();
+		SCOPED_TEMPORARIES();
 
 		vkDeviceWaitIdle(logical.device);
 
@@ -142,7 +142,7 @@ namespace Rendering {
 
 	bool VulkanSwapchain::Recreate(CTX_ARG, glm::u32vec2 const& extent, VkSurfaceKHR const& surface, VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical) {
 		using namespace VulkanSwapchainUtilities;
-		TEMP_ALLOCATOR_MARK();
+		SCOPED_TEMPORARIES();
 
 		vkDeviceWaitIdle(logical.device);
 

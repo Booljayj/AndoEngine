@@ -1,7 +1,7 @@
 #pragma once
 #include "Engine/Logging/LogCategory.h"
-#include "Engine/Context.h"
-#include "Engine/LinearStrings.h"
+#include "Engine/Logging/Logger.h"
+#include "Engine/Temporary.h"
 #include "Engine/Utility.h"
 
 #ifndef MINIMUM_LOG_VERBOSITY
@@ -24,7 +24,7 @@ namespace LoggingInternal {
 	template<ELogVerbosity Verbosity, typename... ArgTypes>
 	inline typename std::enable_if<(Verbosity >= MINIMUM_LOG_VERBOSITY)>::type
 	LogFormattedHelper(LogCategory const& category, char const* location, char const* message, ArgTypes&&... args) {
-		Logger::Get().Output(category, Verbosity, location, l_printf(message, std::forward<ArgTypes>(args)...));
+		Logger::Get().Output(category, Verbosity, location, t_printf(message, std::forward<ArgTypes>(args)...));
 	}
 	template<ELogVerbosity Verbosity, typename... ArgTypes>
 	inline typename std::enable_if<(Verbosity < MINIMUM_LOG_VERBOSITY)>::type

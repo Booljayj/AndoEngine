@@ -1,5 +1,5 @@
-#include "Engine/LinearStrings.h"
 #include "Engine/LogCommands.h"
+#include "Engine/Temporary.h"
 #include "Rendering/Vulkan/VulkanResourcesHelpers.h"
 
 namespace Rendering {
@@ -25,9 +25,9 @@ namespace Rendering {
 		Entry& newEntry = entries[entries.size() - 1];
 		newEntry.hash = nameHash;
 
-		TEMP_ALLOCATOR_MARK();
+		SCOPED_TEMPORARIES();
 
-		std::string_view const filename = l_printf("content/shaders/compiled/%s.spv", name.data());
+		std::string_view const filename = t_printf("content/shaders/compiled/%s.spv", name.data());
 		std::ifstream file(filename.data(), std::ios::ate | std::ios::binary);
 
 		if (!file.is_open()) {
@@ -36,16 +36,17 @@ namespace Rendering {
 		}
 
 		size_t const bufferSize = static_cast<size_t>(file.tellg());
-		char* const buffer = static_cast<char*>(threadHeapBuffer->Request(bufferSize, sizeof(char), alignof(uint32_t)));
+		t_vector<char> buffer;
+		buffer.resize(bufferSize);
 
 		file.seekg(0);
-		file.read(buffer, bufferSize);
+		file.read(buffer.data(), bufferSize);
 		file.close();
 
 		VkShaderModuleCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 		createInfo.codeSize = bufferSize;
-		createInfo.pCode = reinterpret_cast<const uint32_t*>(buffer);
+		createInfo.pCode = reinterpret_cast<const uint32_t*>(buffer.data());
 
 		VkShaderModule module = nullptr;
 		if (vkCreateShaderModule(device, &createInfo, nullptr, &module) != VK_SUCCESS) {

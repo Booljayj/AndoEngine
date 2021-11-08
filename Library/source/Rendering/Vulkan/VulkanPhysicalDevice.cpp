@@ -3,7 +3,7 @@
 
 namespace Rendering {
 	VulkanPhysicalDevice VulkanPhysicalDevice::Get(CTX_ARG, VkPhysicalDevice const& device, VkSurfaceKHR const& surface) {
-		TEMP_ALLOCATOR_MARK();
+		SCOPED_TEMPORARIES();
 
 		VulkanPhysicalDevice Result;
 		Result.device = device;
@@ -13,8 +13,8 @@ namespace Rendering {
 		{
 			uint32_t extensionCount = 0;
 			vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
-			VkExtensionProperties* extensions = threadHeapBuffer->Request<VkExtensionProperties>(extensionCount);
-			vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, extensions);
+			t_vector<VkExtensionProperties> extensions{ extensionCount };
+			vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, extensions.data());
 
 			Result.supportedExtensions.reserve(extensionCount);
 			for (uint32_t index = 0; index < extensionCount; ++index) {
@@ -37,8 +37,8 @@ namespace Rendering {
 		{
 			uint32_t queueFamilyCount = 0;
 			vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
-			VkQueueFamilyProperties* queueFamilies = threadHeapBuffer->Request<VkQueueFamilyProperties>(queueFamilyCount);
-			vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies);
+			t_vector<VkQueueFamilyProperties> queueFamilies{ queueFamilyCount };
+			vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
 
 			for (uint32_t queueIndex = 0; queueIndex < queueFamilyCount; ++queueIndex) {
 				const VkQueueFamilyProperties& queueFamily = queueFamilies[queueIndex];
@@ -61,9 +61,8 @@ namespace Rendering {
 		return Result;
 	}
 
-	l_vector<char const*> VulkanPhysicalDevice::GetExtensionNames(CTX_ARG) {
-		l_vector<char const*> result;
-		result = {
+	t_vector<char const*> VulkanPhysicalDevice::GetExtensionNames(CTX_ARG) {
+		t_vector<char const*> result = {
 			VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 			VK_KHR_MAINTENANCE3_EXTENSION_NAME,
 		};

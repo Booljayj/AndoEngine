@@ -87,12 +87,12 @@ TimeStamp::TimeStamp(std::chrono::system_clock::time_point const& timepoint) noe
 void TimeStamp::Write(std::ostream& stream) const {
 	char output[20] = "00:00:00 00-00-0000";
 
-	Utility::WriteReversedValue(second, 2, output);
-	Utility::WriteReversedValue(minute, 2, output + 3);
-	Utility::WriteReversedValue(hour, 2, output + 6);
-	Utility::WriteReversedValue(day + 1, 2, output + 9);
-	Utility::WriteReversedValue(month + 1, 2, output + 12);
-	Utility::WriteReversedValue(year, 4, output + 15);
+	Utility::WriteReversedValue(second, output, 2);
+	Utility::WriteReversedValue(minute, output + 3, 2);
+	Utility::WriteReversedValue(hour, output + 6, 2);
+	Utility::WriteReversedValue(day + 1, output + 9, 2);
+	Utility::WriteReversedValue(month + 1, output + 12, 2);
+	Utility::WriteReversedValue(year, output + 15, 4);
 
 	std::reverse(output, output + sizeof(output)-1);
 	stream.write(output, sizeof(output)-1);
@@ -101,13 +101,13 @@ void TimeStamp::Write(std::ostream& stream) const {
 void TimeStamp::WritePrecise(std::ostream& stream) const {
 	char output[24] = "000.00:00:00 00-00-0000";
 
-	Utility::WriteReversedValue(millisecond, 3, output);
-	Utility::WriteReversedValue(second, 2, output + 4);
-	Utility::WriteReversedValue(minute, 2, output + 7);
-	Utility::WriteReversedValue(hour, 2, output + 10);
-	Utility::WriteReversedValue(day + 1, 2, output + 13);
-	Utility::WriteReversedValue(month + 1, 2, output + 16);
-	Utility::WriteReversedValue(year, 4, output + 19);
+	Utility::WriteReversedValue(millisecond, output, 3);
+	Utility::WriteReversedValue(second, output + 4, 2);
+	Utility::WriteReversedValue(minute, output + 7, 2);
+	Utility::WriteReversedValue(hour, output + 10, 2);
+	Utility::WriteReversedValue(day + 1, output + 13, 2);
+	Utility::WriteReversedValue(month + 1, output + 16, 2);
+	Utility::WriteReversedValue(year, output + 19, 4);
 
 	std::reverse(output, output + sizeof(output)-1);
 	stream.write(output, sizeof(output)-1);

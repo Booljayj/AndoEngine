@@ -1,6 +1,6 @@
 #include "Rendering/Vulkan/VulkanLogicalDevice.h"
-#include "Engine/LinearContainers.h"
 #include "Engine/LogCommands.h"
+#include "Engine/Temporary.h"
 
 namespace Rendering {
 	VulkanLogicalDevice::VulkanLogicalDevice(VulkanLogicalDevice&& other) {
@@ -24,20 +24,20 @@ namespace Rendering {
 	}
 
 	VulkanLogicalDevice VulkanLogicalDevice::Create(CTX_ARG, VulkanFramework framework, VulkanPhysicalDevice const& physical, VkPhysicalDeviceFeatures const& enabledFeatures, TArrayView<char const*> const& enabledExtensionNames) {
-		TEMP_ALLOCATOR_MARK();
+		SCOPED_TEMPORARIES();
 
 		VulkanLogicalDevice result;
 
-		l_unordered_set<uint32_t> uniqueQueueFamilies{ 2 };
+		t_unordered_set<uint32_t> uniqueQueueFamilies{ 2 };
 		uniqueQueueFamilies.insert(physical.queues.graphics.value().index);
 		uniqueQueueFamilies.insert(physical.queues.present.value().index);
 
-		l_vector<uint32_t> const queueCreateInfoIndices{ uniqueQueueFamilies.begin(), uniqueQueueFamilies.end() };
+		t_vector<uint32_t> const queueCreateInfoIndices{ uniqueQueueFamilies.begin(), uniqueQueueFamilies.end() };
 		uint32_t const queueCICount = queueCreateInfoIndices.size();
 
 		float queuePriority = 1.0f;
 
-		VkDeviceQueueCreateInfo* const queueCIs = threadHeapBuffer->Request<VkDeviceQueueCreateInfo>(queueCICount);
+		t_vector<VkDeviceQueueCreateInfo> queueCIs{ queueCICount };
 		for (uint32_t queueFamilyIndex = 0; queueFamilyIndex < queueCICount; ++queueFamilyIndex) {
 			VkDeviceQueueCreateInfo& queueCI = queueCIs[queueFamilyIndex];
 			queueCI = {};
@@ -50,8 +50,8 @@ namespace Rendering {
 		VkDeviceCreateInfo deviceCI = {};
 		deviceCI.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 		//Queues
-		deviceCI.queueCreateInfoCount = queueCICount;
-		deviceCI.pQueueCreateInfos = queueCIs;
+		deviceCI.queueCreateInfoCount = queueCIs.size();
+		deviceCI.pQueueCreateInfos = queueCIs.data();
 		//Features
 		deviceCI.pEnabledFeatures = &enabledFeatures;
 		//Extensions

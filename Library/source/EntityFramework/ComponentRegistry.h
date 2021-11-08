@@ -1,5 +1,5 @@
 #include "Engine/Context.h"
-#include "Engine/LinearContainers.h"
+#include "Engine/Temporary.h"
 #include "EntityFramework/EntityHandle.h"
 #include "Reflection/TypeInfo.h"
 #include "Reflection/TypeResolver.h"
@@ -42,11 +42,11 @@ public:
 	}
 
 	/** Get all component types that have been registered */
-	l_vector<Reflection::TypeInfo const*> GetTypes(CTX_ARG);
+	t_vector<Reflection::TypeInfo const*> GetTypes(CTX_ARG);
 
 	/** Find a registered component with the given type */
 	IComponent const* Find(Reflection::TypeInfo const* type) const;
 
 	/** Get information about all the registered components on an entity. Returns the TypeInfo and a pointer to each component. */
-	l_vector<std::tuple<Reflection::TypeInfo const*, void*>> GetComponents(CTX_ARG, const EntityHandle& handle) const;
+	t_vector<std::tuple<Reflection::TypeInfo const*, void*>> GetComponents(CTX_ARG, const EntityHandle& handle) const;
 };

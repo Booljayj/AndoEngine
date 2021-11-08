@@ -23,12 +23,12 @@ namespace Rendering {
 
 		// Collect physical devices and select default one
 		{
-			l_vector<char const*> const extensionNames = VulkanPhysicalDevice::GetExtensionNames(CTX);
+			t_vector<char const*> const extensionNames = VulkanPhysicalDevice::GetExtensionNames(CTX);
 
 			uint32_t deviceCount = 0;
 			vkEnumeratePhysicalDevices(framework.instance, &deviceCount, nullptr);
-			VkPhysicalDevice* devices = threadHeapBuffer->Request<VkPhysicalDevice>(deviceCount);
-			vkEnumeratePhysicalDevices(framework.instance, &deviceCount, devices);
+			t_vector<VkPhysicalDevice> devices{ deviceCount };
+			vkEnumeratePhysicalDevices(framework.instance, &deviceCount, devices.data());
 
 			for (int32_t deviceIndex = 0; deviceIndex < deviceCount; ++deviceIndex) {
 				const VulkanPhysicalDevice physicalDevice = primarySurface->GetPhysicalDevice(CTX, devices[deviceIndex]);

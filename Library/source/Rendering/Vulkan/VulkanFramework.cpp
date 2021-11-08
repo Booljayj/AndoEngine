@@ -1,9 +1,10 @@
 #include "Rendering/Vulkan/VulkanFramework.h"
 #include "Engine/LogCommands.h"
+#include "Engine/StringBuilding.h"
 
 namespace Rendering {
 	bool VulkanFramework::Create(CTX_ARG, HAL::Window window) {
-		TEMP_ALLOCATOR_MARK();
+		SCOPED_TEMPORARIES();
 
 #ifdef VULKAN_DEBUG
 		//Information to create a debug messenger, used in several locations within this function.
@@ -14,7 +15,7 @@ namespace Rendering {
 		{
 #ifdef VULKAN_DEBUG
 			//Check for validation layer support
-			l_vector<char const*> const enabledLayerNames = GetValidationLayerNames(CTX);
+			t_vector<char const*> const enabledLayerNames = GetValidationLayerNames(CTX);
 			if (!CanEnableValidationLayers(CTX, enabledLayerNames)) {
 				LOG(Vulkan, Error, "Cannot enable required validation layers");
 				return false;
@@ -22,7 +23,7 @@ namespace Rendering {
 #endif
 
 			//Check for extension support
-			l_vector<char const*> const enabledExtensionNames = GetExtensionsNames(CTX, window);
+			t_vector<char const*> const enabledExtensionNames = GetExtensionsNames(CTX, window);
 			if (!CanEnableExtensions(CTX, enabledExtensionNames)) {
 				LOG(Vulkan, Error, "Cannot enable required instance extensions");
 				return false;
@@ -98,7 +99,7 @@ namespace Rendering {
 
 #ifdef VULKAN_DEBUG
 	VKAPI_ATTR VkBool32 VKAPI_CALL VulkanFramework::VulkanDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
-		TEMP_ALLOCATOR_MARK();
+		SCOPED_TEMPORARIES();
 
 		//Create a prefix based on the message type flags
 		std::string_view prefix;
@@ -113,7 +114,7 @@ namespace Rendering {
 		}
 
 		//Create a string that provides additional contextual information
-		StringBuilder contextBuilder;
+		TemporaryStringBuilder contextBuilder;
 		//Add a list of object names referenced by this message. The first object is already part of the message.
 		if (pCallbackData->objectCount > 1) {
 			contextBuilder << "; Objects: "sv;
@@ -176,17 +177,17 @@ namespace Rendering {
 		return messengerCI;
 	}
 
-	l_vector<char const*> VulkanFramework::GetValidationLayerNames(CTX_ARG) {
-		return l_vector<char const*>{ "VK_LAYER_KHRONOS_validation" };
+	t_vector<char const*> VulkanFramework::GetValidationLayerNames(CTX_ARG) {
+		return t_vector<char const*>{ "VK_LAYER_KHRONOS_validation" };
 	}
 
 	bool VulkanFramework::CanEnableValidationLayers(CTX_ARG, TArrayView<char const*> const& enabledLayerNames) {
-		TEMP_ALLOCATOR_MARK();
+		SCOPED_TEMPORARIES();
 
 		uint32_t availableLayerCount;
 		vkEnumerateInstanceLayerProperties(&availableLayerCount, nullptr);
-		VkLayerProperties* availableLayers = threadHeapBuffer->Request<VkLayerProperties>(availableLayerCount);
-		vkEnumerateInstanceLayerProperties(&availableLayerCount, availableLayers);
+		t_vector<VkLayerProperties> availableLayers{ availableLayerCount };
+		vkEnumerateInstanceLayerProperties(&availableLayerCount, availableLayers.data());
 
 		for (char const* enabledLayerName : enabledLayerNames) {
 			bool layerFound = false;
@@ -203,7 +204,7 @@ namespace Rendering {
 	}
 #endif
 
-	l_vector<char const*> VulkanFramework::GetExtensionsNames(CTX_ARG, HAL::Window window) {
+	t_vector<char const*> VulkanFramework::GetExtensionsNames(CTX_ARG, HAL::Window window) {
 		//Standard extensions which the application requires
 		constexpr char const* standardExtensions[] = {
 #ifdef VULKAN_DEBUG
@@ -215,31 +216,30 @@ namespace Rendering {
 
 		//Extensions required by the HAL
 		uint32_t numHALExtensions = 0;
-		char const** halExtensions = nullptr;
 #if SDL_ENABLED
 		//Extensions needed by SDL
 		SDL_Vulkan_GetInstanceExtensions(window.handle, &numHALExtensions, nullptr);
-		halExtensions = threadHeapBuffer->Request<char const*>(numHALExtensions);
-		SDL_Vulkan_GetInstanceExtensions(window.handle, &numHALExtensions, halExtensions);
+		t_vector<char const*> halExtensions{ numHALExtensions };
+		SDL_Vulkan_GetInstanceExtensions(window.handle, &numHALExtensions, halExtensions.data());
 #endif
 
 		//Create the full list of extensions that will be provided to the API
-		l_vector<char const*> extensions;
+		t_vector<char const*> extensions;
 		extensions.reserve(numStandardExtensions + numHALExtensions);
 
 		extensions.insert(extensions.end(), standardExtensions, standardExtensions + numStandardExtensions);
-		extensions.insert(extensions.end(), halExtensions, halExtensions + numHALExtensions);
+		extensions.insert(extensions.end(), halExtensions.begin(), halExtensions.end());
 
 		return extensions;
 	}
 
 	bool VulkanFramework::CanEnableExtensions(CTX_ARG, TArrayView<char const*> const& enabledExtensionNames) {
-		TEMP_ALLOCATOR_MARK();
+		SCOPED_TEMPORARIES();
 
 		uint32_t availableExtensionCount;
 		vkEnumerateInstanceExtensionProperties(nullptr, &availableExtensionCount, nullptr);
-		VkExtensionProperties* availableExtensions = threadHeapBuffer->Request<VkExtensionProperties>(availableExtensionCount);
-		vkEnumerateInstanceExtensionProperties(nullptr, &availableExtensionCount, availableExtensions);
+		t_vector<VkExtensionProperties> availableExtensions{ availableExtensionCount };
+		vkEnumerateInstanceExtensionProperties(nullptr, &availableExtensionCount, availableExtensions.data());
 
 		for (char const* enabledExtensionName : enabledExtensionNames) {
 			bool extensionFound = false;
