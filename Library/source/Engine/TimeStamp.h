@@ -40,7 +40,7 @@ public:
 
 	// Bit layout for a timestamp is as follows:
 	//  7        6        5        4        3        2        1        0
-	//  xxxxxxxx-xxxxxxpp-pppppppp-ssssssmm-mmmmhhhh-hDDDDDMM-MMYYYYYY-YYYYYYYY
+	//  ........-......pp-pppppppp-ssssssmm-mmmmhhhh-hDDDDDMM-MMYYYYYY-YYYYYYYY
 	//  |63            |49         |39   |33    |27   |22  |17  |13           |0
 
 	/** [0-9999] the gregorian calendar year */
