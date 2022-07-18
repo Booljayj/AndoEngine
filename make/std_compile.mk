@@ -58,7 +58,7 @@ RM := rm -rf
 MKDIR := mkdir -p
 
 # flags (appended to existing defined flags)
-CXXFLAGS := $(CXXFLAGS) -std=gnu++17 -g -Wall -Wno-nullability-completeness -fsanitize=address -c -I./$(DIR_SOURCE) -I./$(DIR_GENERATED)
+CXXFLAGS := $(CXXFLAGS) -std=gnu++2a -g -Wall -Wno-nullability-completeness -fsanitize=address -c -I./$(DIR_SOURCE) -I./$(DIR_GENERATED)
 DEPENDENCY_FLAGS := -MMD -MP
 LDFLAGS := $(LDFLAGS) -fsanitize=address
 ARFLAGS := -static
@@ -128,7 +128,7 @@ endif
 # precompiled header
 $(PCH): $(PCH_SOURCE) | directories
 	$(info > Precompiling header $(basename $<)...)
-	@$(CXX) $(CXXFLAGS) $< -o $@
+	@$(CXX) $(CXXFLAGS) -x c++-header $< -o $@
 
 # normal source files
 $(DIR_BUILD)/%.o: $(DIR_SOURCE)/%.cpp $(PCH) | directories

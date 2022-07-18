@@ -26,8 +26,8 @@
                 "/Library/Frameworks"
             ],
             "compilerPath": "/usr/bin/clang",
-            "cStandard": "c11",
-            "cppStandard": "c++17"
+            "cStandard": "c17",
+            "cppStandard": "c++20"
         },
         {
             "name": "Linux",
@@ -50,7 +50,9 @@
                 ],
                 "limitSymbolsToIncludedHeaders": true,
                 "databaseFilename": ""
-            }
+            },
+            "cStandard": "c17",
+            "cppStandard": "c++20"
         },
         {
             "name": "Win32",
@@ -74,7 +76,9 @@
                 ],
                 "limitSymbolsToIncludedHeaders": true,
                 "databaseFilename": ""
-            }
+            },
+            "cStandard": "c17",
+            "cppStandard": "c++20"
         }
     ],
     "version": 4
