@@ -14,7 +14,7 @@ struct EntityView {};
 template<typename... IncludedTypes, typename... ExcludedTypes>
 struct EntityView<TTypeList<IncludedTypes...>, TTypeList<ExcludedTypes...>> {
 private:
-	using ViewType = entt::basic_view<entt::entity, entt::exclude_t<ExcludedTypes...>, IncludedTypes...>;
+	using ViewType = entt::basic_view<entt::entity, entt::get_t<IncludedTypes...>, entt::exclude_t<ExcludedTypes...>>;
 	using IteratorType = typename ViewType::iterator;
 	ViewType view;
 
