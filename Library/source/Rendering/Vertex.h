@@ -31,8 +31,17 @@ namespace Rendering {
 		glm::vec3 position; Color color;
 		uint32_t normal; uint32_t uv0; uint32_t uv1; uint32_t uv2;
 
+		enum class VariableIndices : uint8_t {
+			Position, Color,
+			Normal, UV0, UV1, UV2
+		};
+		using VariableTypes = std::tuple<
+			decltype(position), decltype(color),
+			decltype(normal), decltype(uv0), decltype(uv1), decltype(uv2)
+		>;
+
 		static VkVertexInputBindingDescription GetBindingDescription();
-		static std::array<VkVertexInputAttributeDescription, 6> GetAttributeDescriptions();
+		static std::array<VkVertexInputAttributeDescription, std::tuple_size_v<VariableTypes>> GetAttributeDescriptions();
 
 		Vertex_Simple()
 		: position(0,0,0), color(0,0,0,255)
@@ -51,8 +60,19 @@ namespace Rendering {
 		uint32_t normal; uint32_t tangent; uint32_t bitangent; uint32_t userData;
 		uint32_t uv0; uint32_t uv1; uint32_t uv2; uint32_t uv3;
 
+		enum class VariableIndices : uint8_t {
+			Position, Color,
+			Normal, Tangent, Bitangent, UserData,
+			UV0, UV1, UV2, UV3,
+		};
+		using VariableTypes = std::tuple<
+			decltype(position), decltype(color),
+			decltype(normal), decltype(tangent), decltype(bitangent), decltype(userData),
+			decltype(uv0), decltype(uv1), decltype(uv2), decltype(uv3)
+		>;
+
 		static VkVertexInputBindingDescription GetBindingDescription();
-		static std::array<VkVertexInputAttributeDescription, 10> GetAttributeDescriptions();
+		static std::array<VkVertexInputAttributeDescription, std::tuple_size_v<VariableTypes>> GetAttributeDescriptions();
 
 		Vertex_Complex()
 		: position(0,0,0), color(0,0,0,255)

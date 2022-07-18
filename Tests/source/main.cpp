@@ -13,6 +13,7 @@
 #include "Rendering/MaterialComponent.h"
 #include "Rendering/MeshComponent.h"
 #include "Rendering/MeshRendererComponent.h"
+#include "Rendering/StaticMeshResource.h"
 
 DEFINE_LOG_CATEGORY(Main, Debug);
 DEFINE_PROFILE_CATEGORY(Main);
@@ -24,7 +25,14 @@ struct Application {
 	HAL::EventsSystem events;
 	HAL::WindowingSystem windowing;
 
+	Resources::DummyResourceManifest manifest;
+
 	Rendering::RenderingSystem rendering;
+	Rendering::StaticMeshResourceDatabase staticMeshResourceDatabase;
+
+	Application()
+		: staticMeshResourceDatabase(manifest)
+	{}
 
 	// Primary system procedures
 	bool Startup() {
@@ -92,6 +100,21 @@ int32_t main(int32_t argc, char const* argv[]) {
 
 	if (application.Startup()) {
 		using namespace Rendering;
+
+		const Resources::Handle<StaticMeshResource> plane = application.staticMeshResourceDatabase.Create(0);
+		plane->vertices = FormattedVertices{
+			std::in_place_type_t<std::vector<Vertex_Simple>>{},
+			{
+				Vertex_Simple{{-0.5f, -0.5f, 0.0f}, {255, 0, 0, 255}, {0,0,1}, {0,0}},
+				Vertex_Simple{{0.5f, -0.5f, 0.0f}, {0, 255, 0, 255}, {0,0,1}, {0,0}},
+				Vertex_Simple{{0.5f, 0.5f, 0.0f}, {0, 0, 255, 255}, {0,0,1}, {0,0}},
+				Vertex_Simple{{-0.5f, 0.5f, 0.0f}, {255, 255, 255, 255}, {0,0,1}, {0,0}},
+			}
+		};
+		plane->indices = FormattedIndices{
+			std::in_place_type_t<std::vector<uint16_t>>{},
+			std::initializer_list<uint16_t>{0, 1, 2, 2, 3, 0}
+		};
 
 		EntityHandle testMaterialEntity = application.registry.Create();
 		MaterialComponent& material = testMaterialEntity.Add<MaterialComponent>();

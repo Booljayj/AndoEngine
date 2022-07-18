@@ -65,3 +65,41 @@ using namespace std::string_view_literals;
 #include <numeric>
 #include <typeinfo>
 #include <utility>
+
+//Third-party and upcoming
+#include "ThirdParty/uuid.h"
+
+//Custom extensions
+namespace stdext {
+	class shared_recursive_mutex : public std::shared_mutex {
+	public:
+		inline void lock(void) {
+			std::thread::id this_id = std::this_thread::get_id();
+			if (owner == this_id) {
+				// recursive locking
+				count++;
+			} else {
+				// normal locking
+				shared_mutex::lock();
+				owner = this_id;
+				count = 1;
+			}
+		}
+
+		inline void unlock(void) {
+			if(count > 1) {
+				// recursive unlocking
+				count--;
+			} else {
+				// normal unlocking
+				owner = std::thread::id();
+				count = 0;
+				shared_mutex::unlock();
+			}
+		}
+
+	private:
+		std::atomic<std::thread::id> owner;
+		uint32_t count;
+	};
+}
