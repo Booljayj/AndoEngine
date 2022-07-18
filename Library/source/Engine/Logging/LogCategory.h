@@ -26,4 +26,11 @@ extern LogCategory Log ## Name
 #define DEFINE_LOG_CATEGORY(Name, InitialVerbosity)\
 LogCategory Log ## Name{ "[" #Name "]", ELogVerbosity::InitialVerbosity }
 
+#define DECLARE_LOG_CATEGORY_MEMBER(Name)\
+static LogCategory Log ## Name
+
+#define DEFINE_LOG_CATEGORY_MEMBER(Class, Name, InitialVerbosity)\
+LogCategory Class::Log ## Name{ "[" #Name "]", ELogVerbosity::InitialVerbosity }
+
+/** A standard log category that can be used for temporary output */
 DECLARE_LOG_CATEGORY(Temp);
