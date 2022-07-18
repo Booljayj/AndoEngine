@@ -4,23 +4,21 @@
 
 #define L_SET_TYPE_RESOLVER(SetTemplate, DescriptionString)\
 template<typename ValueType>\
-struct TypeResolver_Implementation<SetTemplate<ValueType>> {\
+struct TypeResolver<SetTemplate<ValueType>> {\
 	static TSetTypeInfo<SetTemplate<ValueType>, ValueType> const typeInfo;\
-	static TypeInfo const* Get() { return &typeInfo; }\
+	static SetTypeInfo const* Get() { return &typeInfo; }\
 	static constexpr Hash128 GetID() { return Hash128{ #SetTemplate } + TypeResolver<ValueType>::GetID(); }\
 };\
 template<typename ValueType>\
-TSetTypeInfo<SetTemplate<ValueType>, ValueType> const TypeResolver_Implementation<SetTemplate<ValueType>>::typeInfo = TSetTypeInfo<SetTemplate<ValueType>, ValueType>{}\
+TSetTypeInfo<SetTemplate<ValueType>, ValueType> const TypeResolver<SetTemplate<ValueType>>::typeInfo = TSetTypeInfo<SetTemplate<ValueType>, ValueType>{}\
 	.Description(DescriptionString)
 
 namespace Reflection {
-	namespace Internal {
-		//============================================================
-		// Standard set type specializations
+	//============================================================
+	// Standard set type specializations
 
-		L_SET_TYPE_RESOLVER(std::set, "ordered set");
-		L_SET_TYPE_RESOLVER(std::unordered_set, "unordered set");
-	}
+	L_SET_TYPE_RESOLVER(std::set, "ordered set");
+	L_SET_TYPE_RESOLVER(std::unordered_set, "unordered set");
 }
 
 #undef L_SET_TYPE_RESOLVER

@@ -7,7 +7,5 @@ namespace Rendering {
 }
 
 namespace Reflection {
-	namespace Internal {
-		DECLARE_RESOLVER(Rendering::Color);
-	}
+	DECLARE_RESOLVER(Rendering::Color);
 }

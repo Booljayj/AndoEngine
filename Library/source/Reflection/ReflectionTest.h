@@ -3,7 +3,7 @@
 #include "Reflection/StructTypeInfo.h"
 
 struct ReflectedType {
-	REFLECTION_MEMBERS(ReflectedType, void);
+	DECLARE_REFLECTION_MEMBERS(ReflectedType, void);
 
 	ReflectedType() = default;
 	ReflectedType(const ReflectedType&) = default;
@@ -16,7 +16,7 @@ struct ReflectedType {
 REFLECT(ReflectedType);
 
 struct SecondReflectedType : public ReflectedType {
-	REFLECTION_MEMBERS(SecondReflectedType, void);
+	DECLARE_REFLECTION_MEMBERS(SecondReflectedType, void);
 
 	std::vector<int32_t> VectorValue;
 };
@@ -24,7 +24,7 @@ REFLECT(SecondReflectedType);
 
 /*
 struct RecursiveType {
-	REFLECTION_MEMBERS( RecursiveType, void );
+	DECLARE_REFLECTION_MEMBERS( RecursiveType, void );
 
 	size_t Data;
 	std::list<std::array<RecursiveType,5>> Nodes;
@@ -32,7 +32,7 @@ struct RecursiveType {
 REFLECT( RecursiveType );
 
 struct SerializedTypeA {
-	REFLECTION_MEMBERS( SerializedTypeA, void );
+	DECLARE_REFLECTION_MEMBERS( SerializedTypeA, void );
 
 	char CharValue = 'a';
 	int8_t ByteValue = 12;
@@ -57,7 +57,7 @@ struct SerializedTypeA {
 REFLECT( SerializedTypeA );
 
 struct SerializedTypeB {
-	REFLECTION_MEMBERS( SerializedTypeB, void );
+	DECLARE_REFLECTION_MEMBERS( SerializedTypeB, void );
 
 	char CharValue = 'b';
 	//int8_t ByteValue = 23;

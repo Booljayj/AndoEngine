@@ -4,11 +4,10 @@
 #include "Reflection/Components/VariableInfo.h"
 #include "Serialization/StructSerializer.h"
 
-Reflection::TStructTypeInfo<ReflectedType> const ReflectedType::typeInfo_ = Reflection::TStructTypeInfo<ReflectedType>{}
+DEFINE_DECLARE_REFLECTION_MEMBERS(ReflectedType)
 	.Description("Reflection test type");
 
-
-Reflection::TStructTypeInfo<SecondReflectedType> const SecondReflectedType::typeInfo_ = Reflection::TStructTypeInfo<SecondReflectedType>{}
+DEFINE_DECLARE_REFLECTION_MEMBERS(SecondReflectedType)
 	.Description("Reflection test type")
 	.BaseType<ReflectedType>();
 
@@ -42,7 +41,7 @@ REFLECTED_STRUCT_BEGIN( ReflectedType )
 	REFLECT_MEMBER_VARIABLE( BooleanValue, "A boolean value" );
 	DEFINE_MEMBER_VARIABLE_FIELDS( &IntegerValue, &BooleanValue );
 REFLECTED_STRUCT_END()
-DEFINE_REFLECTION_MEMBERS( ReflectedType, "A simple struct to test reflection" );
+DEFINE_DECLARE_REFLECTION_MEMBERS( ReflectedType, "A simple struct to test reflection" );
 */
 
 /*

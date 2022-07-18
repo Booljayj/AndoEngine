@@ -134,27 +134,25 @@ namespace Reflection {
 			CreateMatrixVariableInfo<glm::mat4x4>(3, name_column3)
 		});
 
-	namespace Internal {
-		DEFINE_RESOLVER(glm::vec2, vec2);
-		DEFINE_RESOLVER(glm::vec3, vec3);
-		DEFINE_RESOLVER(glm::vec4, vec4);
+	DEFINE_RESOLVER(glm::vec2, vec2);
+	DEFINE_RESOLVER(glm::vec3, vec3);
+	DEFINE_RESOLVER(glm::vec4, vec4);
 
-		DEFINE_RESOLVER(glm::u32vec2, u32vec2);
-		DEFINE_RESOLVER(glm::u32vec3, u32vec3);
+	DEFINE_RESOLVER(glm::u32vec2, u32vec2);
+	DEFINE_RESOLVER(glm::u32vec3, u32vec3);
 
-		DEFINE_RESOLVER(glm::i32vec2, i32vec2);
-		DEFINE_RESOLVER(glm::i32vec3, i32vec3);
+	DEFINE_RESOLVER(glm::i32vec2, i32vec2);
+	DEFINE_RESOLVER(glm::i32vec3, i32vec3);
 
-		DEFINE_RESOLVER(glm::mat2x2, mat2x2);
-		DEFINE_RESOLVER(glm::mat2x3, mat2x3);
-		DEFINE_RESOLVER(glm::mat2x4, mat2x4);
+	DEFINE_RESOLVER(glm::mat2x2, mat2x2);
+	DEFINE_RESOLVER(glm::mat2x3, mat2x3);
+	DEFINE_RESOLVER(glm::mat2x4, mat2x4);
 
-		DEFINE_RESOLVER(glm::mat3x2, mat3x2);
-		DEFINE_RESOLVER(glm::mat3x3, mat3x3);
-		DEFINE_RESOLVER(glm::mat3x4, mat3x4);
+	DEFINE_RESOLVER(glm::mat3x2, mat3x2);
+	DEFINE_RESOLVER(glm::mat3x3, mat3x3);
+	DEFINE_RESOLVER(glm::mat3x4, mat3x4);
 
-		DEFINE_RESOLVER(glm::mat4x2, mat4x2);
-		DEFINE_RESOLVER(glm::mat4x3, mat4x3);
-		DEFINE_RESOLVER(glm::mat4x4, mat4x4);
-	}
+	DEFINE_RESOLVER(glm::mat4x2, mat4x2);
+	DEFINE_RESOLVER(glm::mat4x3, mat4x3);
+	DEFINE_RESOLVER(glm::mat4x4, mat4x4);
 }

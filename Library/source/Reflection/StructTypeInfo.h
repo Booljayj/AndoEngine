@@ -6,19 +6,23 @@
 #include "Reflection/Components/VariableInfo.h"
 
 /** Define members of the struct used for reflection. The second argument must be either the primary baseType class of this type or void */
-#define REFLECTION_MEMBERS(StructType_, BaseType_)\
+#define DECLARE_REFLECTION_MEMBERS(StructType_, BaseType_)\
 using BaseType = BaseType_;\
-static Reflection::TStructTypeInfo<StructType_> const typeInfo_
+virtual ~StructType_() = default;\
+virtual ::Reflection::StructTypeInfo const& GetTypeInfo() const { return typeInfo_; }\
+static ::Reflection::StructTypeInfo const& TypeInfo() { return typeInfo_; }\
+static ::Reflection::TStructTypeInfo<StructType_> const typeInfo_
 
-/** Expose a struct to the reflection system. Must be used after the struct is declared. Struct must include the REFLECTION_MEMBERS macro. */
+#define DEFINE_DECLARE_REFLECTION_MEMBERS(StructType_)\
+::Reflection::TStructTypeInfo<StructType_> const StructType_::typeInfo_ = ::Reflection::TStructTypeInfo<StructType_>{}
+
+/** Expose a struct to the reflection system. Must be used after the struct is declared. Struct must include the DECLARE_REFLECTION_MEMBERS macro. */
 #define REFLECT(StructType_)\
 namespace Reflection {\
-	namespace Internal {\
-		template<> struct TypeResolver_Implementation<StructType_> {\
-			static TypeInfo const* Get() { return &StructType_::typeInfo_; }\
-			static constexpr Hash128 GetID() { return Hash128{ #StructType_ }; }\
-		};\
-	}\
+	template<> struct TypeResolver<StructType_> {\
+		static StructTypeInfo const* Get() { return &StructType_::typeInfo_; }\
+		static constexpr Hash128 GetID() { return Hash128{ #StructType_ }; }\
+	};\
 }
 
 namespace Reflection {

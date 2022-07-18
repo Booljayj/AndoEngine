@@ -34,3 +34,19 @@ template<typename T, typename U>
 inline T& CastAlignedUnion(U& storage) { return *std::launder(reinterpret_cast<T*>(&storage)); }
 template<typename T, typename U>
 inline T const& CastAlignedUnion(U const& storage) { return *std::launder(reinterpret_cast<T const*>(&storage)); }
+
+template<typename T, typename EqualTo = T>
+struct HasOperatorEquals
+{
+private:
+    template<typename U, typename V>
+    static auto equal(U*) -> decltype(std::declval<U>() == std::declval<V>());
+    template<typename, typename>
+    static auto equal(...) -> std::false_type;
+
+public:
+	static constexpr bool Value = std::is_same<bool, decltype(equal<T, EqualTo>(0))>::value;
+};
+
+template<class T, class EqualTo = T>
+inline constexpr bool HasOperatorEquals_V = HasOperatorEquals<T, EqualTo>::Value;

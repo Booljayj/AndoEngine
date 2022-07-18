@@ -12,27 +12,25 @@
 #include "Reflection/TypeResolver.h"
 
 namespace Reflection {
-	namespace Internal {
-		DECLARE_RESOLVER(glm::vec2);
-		DECLARE_RESOLVER(glm::vec3);
-		DECLARE_RESOLVER(glm::vec4);
+	DECLARE_RESOLVER(glm::vec2);
+	DECLARE_RESOLVER(glm::vec3);
+	DECLARE_RESOLVER(glm::vec4);
 
-		DECLARE_RESOLVER(glm::u32vec2);
-		DECLARE_RESOLVER(glm::u32vec3);
+	DECLARE_RESOLVER(glm::u32vec2);
+	DECLARE_RESOLVER(glm::u32vec3);
 
-		DECLARE_RESOLVER(glm::i32vec2);
-		DECLARE_RESOLVER(glm::i32vec3);
+	DECLARE_RESOLVER(glm::i32vec2);
+	DECLARE_RESOLVER(glm::i32vec3);
 
-		DECLARE_RESOLVER(glm::mat2x2);
-		DECLARE_RESOLVER(glm::mat2x3);
-		DECLARE_RESOLVER(glm::mat2x4);
+	DECLARE_RESOLVER(glm::mat2x2);
+	DECLARE_RESOLVER(glm::mat2x3);
+	DECLARE_RESOLVER(glm::mat2x4);
 
-		DECLARE_RESOLVER(glm::mat3x2);
-		DECLARE_RESOLVER(glm::mat3x3);
-		DECLARE_RESOLVER(glm::mat3x4);
+	DECLARE_RESOLVER(glm::mat3x2);
+	DECLARE_RESOLVER(glm::mat3x3);
+	DECLARE_RESOLVER(glm::mat3x4);
 
-		DECLARE_RESOLVER(glm::mat4x2);
-		DECLARE_RESOLVER(glm::mat4x3);
-		DECLARE_RESOLVER(glm::mat4x4);
-	}
+	DECLARE_RESOLVER(glm::mat4x2);
+	DECLARE_RESOLVER(glm::mat4x3);
+	DECLARE_RESOLVER(glm::mat4x4);
 }

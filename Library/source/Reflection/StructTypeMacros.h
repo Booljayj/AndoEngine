@@ -42,10 +42,10 @@ constexpr size_t ScopeName ## TypeName ## FieldsCount_REFLECTION = sizeof(ScopeN
 #define DEFINE_STATIC_VARIABLE_FIELDS(...) constexpr auto StaticVariableFields_REFLECTION = CreateSortedArray<Reflection::VariableInfo const*>(__VA_ARGS__)
 #define DEFINE_MEMBER_VARIABLE_FIELDS(...) constexpr auto MemberVariableFields_REFLECTION = CreateSortedArray<Reflection::VariableInfo const*>(__VA_ARGS__)
 
-#define DEFINE_REFLECTION_MEMBERS(StructType, Desc)\
-Reflection::TStructTypeInfo<StructType> const StructType::typeInfo_{\
-	Desc, Reflection::FTypeFlags::None, nullptr,\
-	static_cast<void const*>( &StructType ## _REFLECTION::Default_REFLECTION ),\
-	Reflection::Fields{ StructType ## _REFLECTION::StaticConstantFields_REFLECTION, StructType ## _REFLECTION::StaticVariableFields_REFLECTION },\
-	Reflection::Fields{ StructType ## _REFLECTION::MemberConstantFields_REFLECTION, StructType ## _REFLECTION::MemberVariableFields_REFLECTION }\
-}
+// #define DEFINE_DECLARE_REFLECTION_MEMBERS(StructType, Desc)\
+// Reflection::TStructTypeInfo<StructType> const StructType::typeInfo_{\
+// 	Desc, Reflection::FTypeFlags::None, nullptr,\
+// 	static_cast<void const*>( &StructType ## _REFLECTION::Default_REFLECTION ),\
+// 	Reflection::Fields{ StructType ## _REFLECTION::StaticConstantFields_REFLECTION, StructType ## _REFLECTION::StaticVariableFields_REFLECTION },\
+// 	Reflection::Fields{ StructType ## _REFLECTION::MemberConstantFields_REFLECTION, StructType ## _REFLECTION::MemberVariableFields_REFLECTION }\
+// }

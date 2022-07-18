@@ -12,7 +12,5 @@ namespace Reflection {
 			VariableInfo{ &Rendering::Color::a, "a"sv, nullptr, FVariableFlags::None }
 		});
 
-	namespace Internal {
-		TypeInfo const* TypeResolver_Implementation<Rendering::Color>::Get() { return &info_Color; }
-	}
+	TypeInfo const* TypeResolver<Rendering::Color>::Get() { return &info_Color; }
 }
