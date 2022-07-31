@@ -1,6 +1,5 @@
+#include "Engine/Reflection.h"
 #include "Serialization/ArraySerializer.h"
-#include "Reflection/ArrayTypeInfo.h"
-#include "Reflection/Components/VariableInfo.h"
 #include "Serialization/ByteUtility.h"
 #include "Serialization/SerializationUtility.h"
 

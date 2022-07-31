@@ -1,7 +1,6 @@
 #include "Serialization/SerializationUtility.h"
+#include "Engine/Reflection.h"
 #include "Serialization/ByteUtility.h"
-#include "Reflection/TypeInfo.h"
-#include "Reflection/Components/VariableInfo.h"
 
 namespace Serialization {
 	ScopedDataBlockWrite::ScopedDataBlockWrite(std::ostream& stream)

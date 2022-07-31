@@ -1,8 +1,7 @@
 #pragma once
 #include "Engine/Temporary.h"
+#include "Engine/Reflection.h"
 #include "EntityFramework/EntityHandle.h"
-#include "Reflection/TypeInfo.h"
-#include "Reflection/TypeResolver.h"
 
 /** A generic interface for manipulating a specific component type on any entity */
 struct IComponent {
@@ -36,7 +35,7 @@ public:
 	template<typename Type>
 	ComponentRegistry& Register() {
 		registry.insert(
-			EntryType{ Reflection::TypeResolver<Type>::Get(), std::make_unique<const Component<Type>>() }
+			EntryType{ Reflect<Type>::Get(), std::make_unique<const Component<Type>>() }
 		);
 		return *this;
 	}

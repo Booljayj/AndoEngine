@@ -1,6 +1,7 @@
 #pragma once
 #include "Engine/Flags.h"
 #include "Engine/Logging/LogCategory.h"
+#include "Engine/Reflection.h"
 #include "Engine/STL.h"
 
 namespace Resources {
@@ -8,6 +9,7 @@ namespace Resources {
 
 	/** An identifier for a resource, which is globally unique and does not change over the lifetime of that resource */
 	struct Identifier {
+		DECLARE_ALIAS_REFLECTION_MEMBERS(Identifier);
 	public:
 		using ValueType = uint64_t;
 
@@ -36,3 +38,5 @@ namespace Resources {
 	};
 	using FResourceFlags = TFlags<EResourceFlags>;
 }
+
+DECLARE_REFLECT(Resources::Identifier, Alias);

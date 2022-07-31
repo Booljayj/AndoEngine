@@ -1,14 +1,15 @@
 #pragma once
 #include "Engine/LogCommands.h"
 #include "Engine/ManagedObject.h"
+#include "Engine/Reflection.h"
 #include "Engine/STL.h"
-#include "Reflection/StructTypeInfo.h"
-#include "Reflection/TypeResolver.h"
 #include "Resources/ResourceTypes.h"
 
 namespace Resources {
 	/** Base class for an object that can be shared between many entities and scenes, and is tracked by resource counting */
 	struct Resource : public ManagedObject {
+		DECLARE_STRUCT_REFLECTION_MEMBERS(Resource, void);
+
 		/** The unique identifier for this resource */
 		Identifier id;
 		/** The flags that currently apply to this resource */
@@ -16,11 +17,11 @@ namespace Resources {
 		/** The human-readable name of this resource */
 		std::string name;
 
-		DECLARE_REFLECTION_MEMBERS(Resource, void);
+		virtual ~Resource() = default;
 	};
 
 	template<typename ResourceType>
 	using Handle = ManagedObject::Handle<ResourceType>;
 }
 
-REFLECT(Resources::Resource);
+DECLARE_REFLECT(Resources::Resource, Struct);

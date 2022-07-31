@@ -1,7 +1,8 @@
 #include "Rendering/StaticMeshResource.h"
 
+DEFINE_STRUCT_REFLECTION_MEMBERS(Rendering, StaticMeshResource);
+
 namespace Rendering {
-	DEFINE_DECLARE_REFLECTION_MEMBERS(StaticMeshResource);
 
 	bool StaticMeshResourceDatabase::Startup(const RenderingSystem& inRendering) {
 		rendering = &inRendering;

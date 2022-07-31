@@ -1,8 +1,8 @@
 #pragma once
+#include "Engine/Reflection.h"
 #include "Engine/STL.h"
 #include "EntityFramework/EntityTypes.h"
 #include "EntityFramework/EnTT.h"
-#include "Reflection/TypeInfo.h"
 
 /**
  * A handle to an Entity.

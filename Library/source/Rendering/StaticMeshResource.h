@@ -1,7 +1,6 @@
 #pragma once
+#include "Engine/Reflection.h"
 #include "Engine/STL.h"
-#include "Reflection/StructTypeInfo.h"
-#include "Reflection/TypeResolver.h"
 #include "Rendering/RenderingSystem.h"
 #include "Rendering/Vertex.h"
 #include "Rendering/Vulkan/VulkanResources.h"
@@ -20,7 +19,7 @@ namespace Rendering {
 	>;
 
 	struct StaticMeshResource : public Resources::Resource {
-		DECLARE_REFLECTION_MEMBERS(StaticMeshResource, Resources::Resource);
+		DECLARE_STRUCT_REFLECTION_MEMBERS(StaticMeshResource, Resources::Resource);
 
 		FormattedVertices vertices;
 		FormattedIndices indices;
@@ -46,4 +45,4 @@ namespace Rendering {
 	};
 }
 
-REFLECT(Rendering::StaticMeshResource);
+DECLARE_REFLECT(Rendering::StaticMeshResource, Struct);

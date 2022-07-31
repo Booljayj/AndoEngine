@@ -1,6 +1,5 @@
 #include "Serialization/StructSerializer.h"
-#include "Reflection/StructTypeInfo.h"
-#include "Reflection/Components/VariableInfo.h"
+#include "Engine/Reflection.h"
 #include "Serialization/ByteUtility.h"
 #include "Serialization/SerializationUtility.h"
 
@@ -75,12 +74,10 @@ namespace Serialization {
 		Hash32 id;
 		ReadLE(&id.hash, stream);
 
-		const auto match = [=](const auto& variable) { return variable.id == id; };
-
 		//Walk up the chain of base classes, searching for a variable with the correct name hash.
 		StructTypeInfo const* currentStructType = &structType;
 		while (currentStructType) {
-			if (VariableInfo const* foundVariable = currentStructType->variables.Find(match)) {
+			if (VariableInfo const* foundVariable = currentStructType->FindVariable(id)) {
 				return foundVariable;
 			}
 			currentStructType = currentStructType->baseType;

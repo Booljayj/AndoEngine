@@ -1,5 +1,8 @@
 #include "Resources/Resource.h"
 
-namespace Resources {
-	DEFINE_DECLARE_REFLECTION_MEMBERS(Resource);
-}
+DEFINE_STRUCT_REFLECTION_MEMBERS(Resources, Resource)
+	.Description("An object which can be shared among several other objects")
+	.Variables({
+		REFLECT_MVAR(Resources::Resource, id, ""),
+		REFLECT_MVAR(Resources::Resource, name, "")
+	});

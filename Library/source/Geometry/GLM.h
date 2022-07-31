@@ -8,29 +8,29 @@
 #include <glm/gtc/packing.hpp>
 #include <glm/gtx/exterior_product.hpp>
 #include <glm/matrix.hpp>
-#include "Engine/Utility.h"
-#include "Reflection/TypeResolver.h"
+#include "Engine/Reflection.h"
 
-namespace Reflection {
-	DECLARE_RESOLVER(glm::vec2);
-	DECLARE_RESOLVER(glm::vec3);
-	DECLARE_RESOLVER(glm::vec4);
+DECLARE_REFLECT(glm::vec2, Struct);
+DECLARE_REFLECT(glm::vec3, Struct);
+DECLARE_REFLECT(glm::vec4, Struct);
 
-	DECLARE_RESOLVER(glm::u32vec2);
-	DECLARE_RESOLVER(glm::u32vec3);
+DECLARE_REFLECT(glm::u32vec2, Struct);
+DECLARE_REFLECT(glm::u32vec3, Struct);
 
-	DECLARE_RESOLVER(glm::i32vec2);
-	DECLARE_RESOLVER(glm::i32vec3);
+DECLARE_REFLECT(glm::i32vec2, Struct);
+DECLARE_REFLECT(glm::i32vec3, Struct);
 
-	DECLARE_RESOLVER(glm::mat2x2);
-	DECLARE_RESOLVER(glm::mat2x3);
-	DECLARE_RESOLVER(glm::mat2x4);
+DECLARE_REFLECT(glm::u8vec3, Struct);
+DECLARE_REFLECT(glm::u8vec4, Struct);
 
-	DECLARE_RESOLVER(glm::mat3x2);
-	DECLARE_RESOLVER(glm::mat3x3);
-	DECLARE_RESOLVER(glm::mat3x4);
+DECLARE_REFLECT(glm::mat2x2, Struct);
+DECLARE_REFLECT(glm::mat2x3, Struct);
+DECLARE_REFLECT(glm::mat2x4, Struct);
 
-	DECLARE_RESOLVER(glm::mat4x2);
-	DECLARE_RESOLVER(glm::mat4x3);
-	DECLARE_RESOLVER(glm::mat4x4);
-}
+DECLARE_REFLECT(glm::mat3x2, Struct);
+DECLARE_REFLECT(glm::mat3x3, Struct);
+DECLARE_REFLECT(glm::mat3x4, Struct);
+
+DECLARE_REFLECT(glm::mat4x2, Struct);
+DECLARE_REFLECT(glm::mat4x3, Struct);
+DECLARE_REFLECT(glm::mat4x4, Struct);

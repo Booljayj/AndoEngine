@@ -1,7 +1,6 @@
 #pragma once
+#include "Engine/Reflection.h"
 #include "Engine/STL.h"
-#include "Reflection/StructTypeInfo.h"
-#include "Reflection/TypeResolver.h"
 #include "Resources/Manifest.h"
 #include "Resources/Resource.h"
 #include "Resources/ResourceTypes.h"
@@ -41,7 +40,7 @@ namespace Resources {
 
 		virtual Handle<Resource> Create(Identifier id, Reflection::StructTypeInfo const& type) override {
 			//Ensure the resource we are trying to create is a type that this database expects to manage
-			if (!type.DerivesFrom(Reflection::TypeResolver<BaseResourceType>::Get())) {
+			if (!type.DerivesFrom(ReflectStruct<BaseResourceType>::Get())) {
 				LOGF(Resources, Error, "Cannot create new resource with id %s. The desired type does not derive from %s", id);
 				return nullptr;
 			}
@@ -64,7 +63,7 @@ namespace Resources {
 			ids.emplace_back(id);
 
 			//Create the memory in the array for the resource, then construct the value. This allows constructors to access their own entry if necessary.
-			Resource* resource = static_cast<Resource*>(resources.emplace_back(static_cast<Resource*>(aligned_alloc(type.def.alignment, type.def.size))));
+			Resource* resource = static_cast<Resource*>(resources.emplace_back(static_cast<Resource*>(aligned_alloc(type.memory.alignment, type.memory.size))));
 			type.Construct(resource);
 			static_cast<Implementation*>(this)->PostCreate(*static_cast<BaseResourceType*>(resource));
 
@@ -102,19 +101,19 @@ namespace Resources {
 		template<typename ResourceType = BaseResourceType>
 		Handle<ResourceType> Create(Identifier id) {
 			static_assert(std::is_base_of_v<BaseResourceType, ResourceType>, "ResourceType must inherit from BaseResourceType");
-			return Cast<ResourceType>(Create(id, *Reflection::TypeResolver<ResourceType>::Get()));
+			return Cast<ResourceType>(Create(id, *Reflect<ResourceType>::Get()));
 		}
 
 		template<typename ResourceType = BaseResourceType>
 		Handle<ResourceType> Load(Identifier id) {
 			static_assert(std::is_base_of_v<BaseResourceType, ResourceType>, "ResourceType must inherit from BaseResourceType");
-			return Cast<ResourceType>(Load(id, *Reflection::TypeResolver<ResourceType>::Get()));
+			return Cast<ResourceType>(Load(id, *Reflect<ResourceType>::Get()));
 		}
 
 		template<typename ResourceType = BaseResourceType>
 		Handle<ResourceType> Find(Identifier id) {
 			static_assert(std::is_base_of_v<BaseResourceType, ResourceType>, "ResourceType must inherit from BaseResourceType");
-			return Cast<ResourceType>(Find(id, *Reflection::TypeResolver<ResourceType>::Get()));
+			return Cast<ResourceType>(Find(id, *Reflect<ResourceType>::Get()));
 		}
 
 	protected:

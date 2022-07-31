@@ -1,4 +1,5 @@
 #pragma once
+#include <boost/endian/conversion.hpp>
 #include "Engine/STL.h"
 
 //Utility to convert a symbol to a string
@@ -7,6 +8,25 @@
 #define STRINGIFY_MACRO(x) STRINGIFY(x)
 
 namespace Utility {
+	/** Load a value from a char array. Char array is assumed to be in little-endian order, and must be large enought to contain the value */
+	template<typename T>
+	constexpr inline T Load(char const* data, size_t offset = 0) {
+		static_assert(std::is_integral_v<T>, "Load must only be used with integral types");
+		T value = 0;
+		if constexpr (boost::endian::order::native == boost::endian::order::little) {
+			for (size_t index = 0; index < sizeof(T); ++index) {
+				T const byte = static_cast<T>(*(data + offset + index));
+				value |= (byte << (index * 8));
+			}
+		} else {
+			for (size_t index = 0; index < sizeof(T); ++index) {
+				T const byte = static_cast<T>(*(data + offset + index));
+				value |= (byte << ((sizeof(T) - index - 1) * 8));
+			}
+		}
+		return value;
+	}
+
 	/** Write a value to a buffer in reverse order. Return the number of digits written. */
 	uint8_t WriteReversedValue(uint64_t value, char* buffer, size_t size);
 	/** Write a signed value to a buffer in reverse order. Return the number of digits written. */

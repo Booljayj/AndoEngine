@@ -19,7 +19,7 @@ namespace Math {
 
 	//Circular shift right
 	template<typename T>
-	constexpr inline T RotateRight(const T x, uint32_t n) noexcept  {
+	constexpr inline T RotateRight(const T x, uint32_t n) noexcept {
 		static_assert(std::is_integral<T>::value, "Cannot rotate non-integral type");
 		static_assert(!std::is_signed<T>::value, "Cannot rotate signed type");
 
