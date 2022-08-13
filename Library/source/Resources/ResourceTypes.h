@@ -2,7 +2,7 @@
 #include "Engine/Flags.h"
 #include "Engine/Logging/LogCategory.h"
 #include "Engine/Reflection.h"
-#include "Engine/STL.h"
+#include "Engine/StandardTypes.h"
 
 namespace Resources {
 	DECLARE_LOG_CATEGORY(Resources);

@@ -2,7 +2,7 @@
 #include "Engine/LogCommands.h"
 #include "Engine/ManagedObject.h"
 #include "Engine/Reflection.h"
-#include "Engine/STL.h"
+#include "Engine/StandardTypes.h"
 #include "Resources/ResourceTypes.h"
 
 namespace Resources {

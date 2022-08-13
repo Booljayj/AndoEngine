@@ -1,5 +1,5 @@
 #pragma once
-#include "Engine/STL.h"
+#include "Engine/StandardTypes.h"
 
 namespace VariantUtility {
 	/** Instantiate the template with each type in the variant, then call the ForEachMethod with the result of the template "Get" method and the index of the type */

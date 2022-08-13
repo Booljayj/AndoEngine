@@ -1,6 +1,5 @@
 #pragma once
-#include "Engine/STL.h"
-#include "Geometry/GLM.h"
+#include "Engine/StandardTypes.h"
 
 namespace Geometry {
 	/** Represents a bounding box that corresponds to some screen region */

@@ -1,5 +1,8 @@
 #pragma once
 
+//============================================================
+// STL types
+
 //Basics
 #include <cassert>
 #include <type_traits>
@@ -103,3 +106,16 @@ namespace stdext {
 		uint32_t count;
 	};
 }
+
+//============================================================
+// GLM types
+
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include <glm/common.hpp>
+#include <glm/glm.hpp>
+#include <glm/geometric.hpp>
+#include <glm/gtc/packing.hpp>
+#include <glm/gtx/exterior_product.hpp>
+#include <glm/matrix.hpp>

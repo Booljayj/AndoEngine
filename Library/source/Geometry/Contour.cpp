@@ -1,7 +1,7 @@
-#include "Geometry/Equations.h"
 #include "Geometry/Contour.h"
+#include "Engine/StandardTypes.h"
+#include "Geometry/Equations.h"
 #include "Geometry/Curve.h"
-#include "Geometry/GLM.h"
 
 namespace Geometry {
 	Rect Contour::Bounds() const {

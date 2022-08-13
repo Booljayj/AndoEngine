@@ -1,5 +1,5 @@
 #pragma once
-#include "Geometry/GLM.h"
+#include "Engine/StandardTypes.h"
 #include "HAL/WindowingSystem.h"
 #include "Rendering/Vulkan/Vulkan.h"
 #include "Rendering/Vulkan/VulkanFrameOrganizer.h"

@@ -1,6 +1,5 @@
 #pragma once
-#include "Engine/STL.h"
-#include "Geometry/GLM.h"
+#include "Engine/StandardTypes.h"
 #include "Rendering/Color.h"
 #include "Rendering/Vulkan/Vulkan.h"
 

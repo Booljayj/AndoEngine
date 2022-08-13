@@ -1,7 +1,7 @@
 #include "Engine/Logging/TerminalLoggerModule.h"
 #include "Engine/Logging/LogOutputData.h"
 #include "Engine/Logging/LogUtility.h"
-#include "Engine/STL.h"
+#include "Engine/StandardTypes.h"
 #include "Engine/TerminalColors.h"
 
 void TerminalLoggerModule::ProcessMessage(LogOutputData const& outputData) {

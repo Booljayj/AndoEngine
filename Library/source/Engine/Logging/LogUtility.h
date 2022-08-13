@@ -1,6 +1,6 @@
 #pragma once
 #include "Engine/Logging/Logger.h"
-#include "Engine/STL.h"
+#include "Engine/StandardTypes.h"
 
 namespace LogUtility {
 	/** Gets an identifier to show in a message for a log verbosity */

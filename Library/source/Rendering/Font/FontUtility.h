@@ -1,7 +1,6 @@
 #pragma once
-#include "Engine/STL.h"
+#include "Engine/StandardTypes.h"
 #include "Engine/Temporary.h"
-#include "Geometry/GLM.h"
 #include "Geometry/Shape.h"
 #include "Rendering/Font/FreeType.h"
 

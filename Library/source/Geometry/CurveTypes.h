@@ -1,8 +1,7 @@
 #pragma once
-#include "Engine/STL.h"
+#include "Engine/StandardTypes.h"
 #include "Geometry/Rect.h"
 #include "Geometry/ColorChannel.h"
-#include "Geometry/GLM.h"
 #include "Geometry/SignedDistance.h"
 
 namespace Geometry {

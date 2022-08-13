@@ -1,4 +1,5 @@
-#include "Geometry/GLM.h"
+#include "Engine/Reflection/StructTypeInfo.h"
+#include "Engine/Reflection/PrimitiveTypeInfo.h"
 
 namespace Reflection {
 	const std::string_view name_x = "x"sv;

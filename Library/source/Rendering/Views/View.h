@@ -1,8 +1,7 @@
 #pragma once
-#include "Engine/STL.h"
+#include "Engine/StandardTypes.h"
 #include "EntityFramework/EntityRegistry.h"
 #include "EntityFramework/EntityTypes.h"
-#include "Geometry/GLM.h"
 #include "Geometry/ScreenRect.h"
 #include "Rendering/MaterialComponent.h"
 #include "Rendering/Vulkan/VulkanFrameOrganizer.h"

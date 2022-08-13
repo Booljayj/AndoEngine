@@ -1,7 +1,6 @@
 #pragma once
-#include "Engine/STL.h"
+#include "Engine/StandardTypes.h"
 #include "Geometry/CurveTypes.h"
-#include "Geometry/GLM.h"
 
 namespace Geometry {
 	/* A polymorphic line segment */

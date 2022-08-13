@@ -1,6 +1,6 @@
 #pragma once
 #include "Engine/Logging/Logger.h"
-#include "Engine/STL.h"
+#include "Engine/StandardTypes.h"
 
 /** Writes output to a file */
 struct FileLoggerModule : public LoggerModule {

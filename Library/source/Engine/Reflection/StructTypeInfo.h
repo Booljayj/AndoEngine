@@ -1,5 +1,6 @@
 #pragma once
 #include "Engine/Reflection/Components/VariableInfo.h"
+#include "Engine/Reflection/ReflectionMacros.h"
 #include "Engine/Reflection/TypeInfo.h"
 
 namespace Reflection {
@@ -61,3 +62,31 @@ namespace Reflection {
 }
 
 TYPEINFO_REFLECT(Struct);
+
+//============================================================
+// Standard struct reflection
+
+REFLECT(glm::vec2, Struct);
+REFLECT(glm::vec3, Struct);
+REFLECT(glm::vec4, Struct);
+
+REFLECT(glm::u32vec2, Struct);
+REFLECT(glm::u32vec3, Struct);
+
+REFLECT(glm::i32vec2, Struct);
+REFLECT(glm::i32vec3, Struct);
+
+REFLECT(glm::u8vec3, Struct);
+REFLECT(glm::u8vec4, Struct);
+
+REFLECT(glm::mat2x2, Struct);
+REFLECT(glm::mat2x3, Struct);
+REFLECT(glm::mat2x4, Struct);
+
+REFLECT(glm::mat3x2, Struct);
+REFLECT(glm::mat3x3, Struct);
+REFLECT(glm::mat3x4, Struct);
+
+REFLECT(glm::mat4x2, Struct);
+REFLECT(glm::mat4x3, Struct);
+REFLECT(glm::mat4x4, Struct);
