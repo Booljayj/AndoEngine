@@ -4,4 +4,4 @@ namespace Resources {
 	DEFINE_LOG_CATEGORY(Resources, Info);
 }
 
-DEFINE_ALIAS_REFLECTION_MEMBERS(Resources, Identifier);
+DEFINE_REFLECT_ALIAS(Resources, Identifier);

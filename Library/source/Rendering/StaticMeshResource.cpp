@@ -1,6 +1,6 @@
 #include "Rendering/StaticMeshResource.h"
 
-DEFINE_STRUCT_REFLECTION_MEMBERS(Rendering, StaticMeshResource);
+DEFINE_REFLECT_STRUCT(Rendering, StaticMeshResource);
 
 namespace Rendering {
 

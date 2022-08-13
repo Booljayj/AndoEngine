@@ -3,7 +3,7 @@
 #include "Engine/Reflection.h"
 
 struct ReflectedType {
-	DECLARE_STRUCT_REFLECTION_MEMBERS(ReflectedType, void);
+	REFLECT_STRUCT(ReflectedType, void);
 
 	ReflectedType() = default;
 	ReflectedType(const ReflectedType&) = default;
@@ -13,21 +13,22 @@ struct ReflectedType {
 	bool operator!=(const ReflectedType& Other) const { return !this->operator==(Other); };
 
 	int32_t IntegerValue = 1234;
+private:
 	bool BooleanValue = true;
 };
-DECLARE_REFLECT(ReflectedType, Struct);
+REFLECT(ReflectedType, Struct);
 
 struct SecondReflectedType : public ReflectedType {
-	DECLARE_STRUCT_REFLECTION_MEMBERS(SecondReflectedType, void);
+	REFLECT_STRUCT(SecondReflectedType, ReflectedType);
 	virtual ~SecondReflectedType() = default;
 
 	std::vector<int32_t> VectorValue;
 };
-DECLARE_REFLECT(SecondReflectedType, Struct);
+REFLECT(SecondReflectedType, Struct);
 
 /*
 struct RecursiveType {
-	DECLARE_STRUCT_REFLECTION_MEMBERS( RecursiveType, void );
+	REFLECT_STRUCT( RecursiveType, void );
 
 	size_t Data;
 	std::list<std::array<RecursiveType,5>> Nodes;
@@ -35,7 +36,7 @@ struct RecursiveType {
 REFLECT( RecursiveType );
 
 struct SerializedTypeA {
-	DECLARE_STRUCT_REFLECTION_MEMBERS( SerializedTypeA, void );
+	REFLECT_STRUCT( SerializedTypeA, void );
 
 	char CharValue = 'a';
 	int8_t ByteValue = 12;
@@ -60,7 +61,7 @@ struct SerializedTypeA {
 REFLECT( SerializedTypeA );
 
 struct SerializedTypeB {
-	DECLARE_STRUCT_REFLECTION_MEMBERS( SerializedTypeB, void );
+	REFLECT_STRUCT( SerializedTypeB, void );
 
 	char CharValue = 'b';
 	//int8_t ByteValue = 23;

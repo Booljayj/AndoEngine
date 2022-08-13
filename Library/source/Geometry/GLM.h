@@ -10,27 +10,27 @@
 #include <glm/matrix.hpp>
 #include "Engine/Reflection.h"
 
-DECLARE_REFLECT(glm::vec2, Struct);
-DECLARE_REFLECT(glm::vec3, Struct);
-DECLARE_REFLECT(glm::vec4, Struct);
+REFLECT(glm::vec2, Struct);
+REFLECT(glm::vec3, Struct);
+REFLECT(glm::vec4, Struct);
 
-DECLARE_REFLECT(glm::u32vec2, Struct);
-DECLARE_REFLECT(glm::u32vec3, Struct);
+REFLECT(glm::u32vec2, Struct);
+REFLECT(glm::u32vec3, Struct);
 
-DECLARE_REFLECT(glm::i32vec2, Struct);
-DECLARE_REFLECT(glm::i32vec3, Struct);
+REFLECT(glm::i32vec2, Struct);
+REFLECT(glm::i32vec3, Struct);
 
-DECLARE_REFLECT(glm::u8vec3, Struct);
-DECLARE_REFLECT(glm::u8vec4, Struct);
+REFLECT(glm::u8vec3, Struct);
+REFLECT(glm::u8vec4, Struct);
 
-DECLARE_REFLECT(glm::mat2x2, Struct);
-DECLARE_REFLECT(glm::mat2x3, Struct);
-DECLARE_REFLECT(glm::mat2x4, Struct);
+REFLECT(glm::mat2x2, Struct);
+REFLECT(glm::mat2x3, Struct);
+REFLECT(glm::mat2x4, Struct);
 
-DECLARE_REFLECT(glm::mat3x2, Struct);
-DECLARE_REFLECT(glm::mat3x3, Struct);
-DECLARE_REFLECT(glm::mat3x4, Struct);
+REFLECT(glm::mat3x2, Struct);
+REFLECT(glm::mat3x3, Struct);
+REFLECT(glm::mat3x4, Struct);
 
-DECLARE_REFLECT(glm::mat4x2, Struct);
-DECLARE_REFLECT(glm::mat4x3, Struct);
-DECLARE_REFLECT(glm::mat4x4, Struct);
+REFLECT(glm::mat4x2, Struct);
+REFLECT(glm::mat4x3, Struct);
+REFLECT(glm::mat4x4, Struct);

@@ -19,7 +19,7 @@ namespace Rendering {
 	>;
 
 	struct StaticMeshResource : public Resources::Resource {
-		DECLARE_STRUCT_REFLECTION_MEMBERS(StaticMeshResource, Resources::Resource);
+		REFLECT_STRUCT(StaticMeshResource, Resources::Resource);
 
 		FormattedVertices vertices;
 		FormattedIndices indices;
@@ -45,4 +45,4 @@ namespace Rendering {
 	};
 }
 
-DECLARE_REFLECT(Rendering::StaticMeshResource, Struct);
+REFLECT(Rendering::StaticMeshResource, Struct);

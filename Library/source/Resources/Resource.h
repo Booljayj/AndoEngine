@@ -8,7 +8,7 @@
 namespace Resources {
 	/** Base class for an object that can be shared between many entities and scenes, and is tracked by resource counting */
 	struct Resource : public ManagedObject {
-		DECLARE_STRUCT_REFLECTION_MEMBERS(Resource, void);
+		REFLECT_STRUCT(Resource, void);
 
 		/** The unique identifier for this resource */
 		Identifier id;
@@ -24,4 +24,4 @@ namespace Resources {
 	using Handle = ManagedObject::Handle<ResourceType>;
 }
 
-DECLARE_REFLECT(Resources::Resource, Struct);
+REFLECT(Resources::Resource, Struct);

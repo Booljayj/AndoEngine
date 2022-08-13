@@ -9,8 +9,8 @@ namespace Resources {
 
 	/** An identifier for a resource, which is globally unique and does not change over the lifetime of that resource */
 	struct Identifier {
-		DECLARE_ALIAS_REFLECTION_MEMBERS(Identifier);
-	public:
+		REFLECT_ALIAS(Identifier);
+
 		using ValueType = uint64_t;
 
 		/** Generate a new random identifier */
@@ -39,4 +39,4 @@ namespace Resources {
 	using FResourceFlags = TFlags<EResourceFlags>;
 }
 
-DECLARE_REFLECT(Resources::Identifier, Alias);
+REFLECT(Resources::Identifier, Alias);

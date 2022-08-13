@@ -1,20 +1,23 @@
 #include "Engine/Reflection/ReflectionTest.h"
 #include "Engine/Reflection.h"
 
-ReflectedType defaults_ReflectedType;
-DEFINE_STRUCT_REFLECTION_MEMBERS(,ReflectedType)
-	.Description("Reflection test type")
+using namespace Reflection;
+
+ReflectedType const defaults_ReflectedType;
+DEFINE_REFLECT_STRUCT(,ReflectedType)
+	.Description("Reflection test type"sv)
 	.Defaults(&defaults_ReflectedType)
 	.Variables({
-		REFLECT_MVAR(ReflectedType, IntegerValue, ""),
-		REFLECT_MVAR(ReflectedType, BooleanValue, "")
+		{ &ReflectedType::IntegerValue, "IntegerValue"sv, ""sv, FVariableFlags::None },
+		{ &ReflectedType::BooleanValue, "BooleanValue"sv, ""sv, FVariableFlags::None },
 	});
 
-DEFINE_STRUCT_REFLECTION_MEMBERS(,SecondReflectedType)
-	.Description("Reflection test type")
-	.BaseType<ReflectedType>()
+SecondReflectedType const defaults_SecondReflectedType;
+DEFINE_REFLECT_STRUCT(,SecondReflectedType)
+	.Description("Reflection test type"sv)
+	.Defaults(&defaults_SecondReflectedType)
 	.Variables({
-		REFLECT_MVAR(SecondReflectedType, VectorValue, "")
+		{ &SecondReflectedType::VectorValue, "VectorValue"sv, ""sv, FVariableFlags::None }
 	});
 
 /*
@@ -47,7 +50,7 @@ REFLECTED_STRUCT_BEGIN( ReflectedType )
 	REFLECT_MEMBER_VARIABLE( BooleanValue, "A boolean value" );
 	DEFINE_MEMBER_VARIABLE_FIELDS( &IntegerValue, &BooleanValue );
 REFLECTED_STRUCT_END()
-DEFINE_DECLARE_STRUCT_REFLECTION_MEMBERS( ReflectedType, "A simple struct to test reflection" );
+DEFINE_REFLECT_STRUCT( ReflectedType, "A simple struct to test reflection" );
 */
 
 /*
