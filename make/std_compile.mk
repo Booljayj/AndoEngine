@@ -110,7 +110,7 @@ directories:
 .PHONY: clean
 clean:
 	$(info > Cleaning compilation files...)
-	@$(RM) $(TARGET) $(DIR_BUILD)/*
+	@$(RM) $(TARGET) $(DIR_BUILD)/* $(PCH)
 
 # main target
 ifdef IS_LIBRARY
