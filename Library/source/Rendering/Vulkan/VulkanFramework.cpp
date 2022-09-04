@@ -1,5 +1,5 @@
 #include "Rendering/Vulkan/VulkanFramework.h"
-#include "Engine/LogCommands.h"
+#include "Engine/Logging.h"
 #include "Engine/StringBuilding.h"
 
 namespace Rendering {

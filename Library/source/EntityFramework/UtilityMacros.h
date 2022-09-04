@@ -1,5 +1,5 @@
 #pragma once
-#include "Engine/LogCommands.h"
+#include "Engine/Logging.h"
 //General macro utilities for entity-related functions
 
 #define STARTUP_SYSTEM(Category, SystemName, ...)\

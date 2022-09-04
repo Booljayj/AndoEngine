@@ -1,30 +1,11 @@
 #include "Engine/TimeStamp.h"
 #include "Engine/Utility.h"
 
-TimeStamp TimeStamp::Now() noexcept {
-	return TimeStamp{ std::chrono::system_clock::now() };
+CalendarTimeStamp CalendarTimeStamp::Now() {
+	return CalendarTimeStamp{ std::chrono::system_clock::now() };
 }
 
-TimeStamp::TimeStamp() noexcept
-: value(0)
-{}
-
-TimeStamp::TimeStamp(uint64_t inValue) noexcept
-: value(inValue)
-{}
-
-TimeStamp::TimeStamp(std::chrono::system_clock::time_point const& timepoint) noexcept
-: TimeStamp()
-{
-	//This algorithm was created by Howard Hinnant.
-	//Documented here: http://howardhinnant.github.io/date_algorithms.html
-	//Implemented by the original author here: https://howardhinnant.github.io/date/date.html
-
-	using days_t = std::chrono::duration<int64_t, std::ratio_multiply<std::chrono::hours::period, std::ratio<24>>>;
-
-	auto const nowUTC = timepoint.time_since_epoch();
-	auto const todayUTC = std::chrono::duration_cast<days_t>(nowUTC);
-
+CalendarTimeStamp::CalendarTimeStamp(DaysType const& daysSinceEpochStart) noexcept {
 	// The shift of days to move the epoch from 1970-01-01 to 0000-03-01
 	constexpr int64_t EpochShift = 719468;
 	// The number of days in an era, a 400-year period where dates will repeat
@@ -42,7 +23,7 @@ TimeStamp::TimeStamp(std::chrono::system_clock::time_point const& timepoint) noe
 	//Many of these calculations have to handle leap days. For clarity:
 	//- Leap days occur every 4 years, unless the year is divisible by 100, unless the year is also divisible by 400.
 
-	int64_t const daysSinceEpoch = todayUTC.count() + EpochShift;
+	int64_t const daysSinceEpoch = daysSinceEpochStart.count() + EpochShift;
 	//Calculate the era, a 400-year period also known as the Leap Cycle, where dates will repeat exactly.
 	int64_t const era = (daysSinceEpoch >= 0 ? daysSinceEpoch : daysSinceEpoch - (DaysPerEra - 1)) / DaysPerEra;
 	//Calculate the number of days since the start of the era
@@ -64,13 +45,25 @@ TimeStamp::TimeStamp(std::chrono::system_clock::time_point const& timepoint) noe
 	//Clamp the year down to the range we care about for TimeStamps
 	//@todo std::clamp is not available until C++17. Replace this when that is available.
 	year = static_cast<uint16_t>(std::max<int64_t>(0, std::min<int64_t>(9999, highPrecisionYear))); //[0-9999]
+}
 
-	static constexpr uint32_t MillisecondsPerMinute = 1000 * 60;
-	static constexpr uint32_t MillisecondsPerHour = MillisecondsPerMinute * 60;
+CalendarTimeStamp::CalendarTimeStamp(TimePointType const& timepoint) noexcept
+: CalendarTimeStamp(GetDaysFromTimePoint(timepoint))
+{}
 
-	//Calculate the duration since this day started in milliseconds
-	auto const duration = nowUTC - todayUTC;
-	uint32_t ms = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::milliseconds>(duration).count());
+CalendarTimeStamp::DaysType CalendarTimeStamp::GetDaysFromTimePoint(TimePointType const& timepoint) {
+	return std::chrono::duration_cast<DaysType>(timepoint.time_since_epoch());
+}
+
+ClockTimeStamp ClockTimeStamp::Now() {
+	return ClockTimeStamp{ std::chrono::system_clock::now() };
+}
+
+ClockTimeStamp::ClockTimeStamp(MillisecondsType const& millisecondsSinceDayStart) noexcept {
+	constexpr uint32_t MillisecondsPerMinute = 1000 * 60;
+	constexpr uint32_t MillisecondsPerHour = MillisecondsPerMinute * 60;
+
+	uint32_t ms = static_cast<uint32_t>(millisecondsSinceDayStart.count());
 
 	hour = ms / MillisecondsPerHour; //[0-23]
 	ms %= MillisecondsPerHour;
@@ -84,36 +77,67 @@ TimeStamp::TimeStamp(std::chrono::system_clock::time_point const& timepoint) noe
 	millisecond = ms; //[0-999]
 }
 
-void TimeStamp::Write(std::ostream& stream) const {
-	char output[20] = "00:00:00 00-00-0000";
+ClockTimeStamp::ClockTimeStamp(TimePointType const& timepoint) noexcept
+: ClockTimeStamp(GetMillisecondsFromTimePoint(timepoint))
+{}
 
-	Utility::WriteReversedValue(second, output, 2);
-	Utility::WriteReversedValue(minute, output + 3, 2);
-	Utility::WriteReversedValue(hour, output + 6, 2);
-	Utility::WriteReversedValue(day + 1, output + 9, 2);
-	Utility::WriteReversedValue(month + 1, output + 12, 2);
-	Utility::WriteReversedValue(year, output + 15, 4);
-
-	std::reverse(output, output + sizeof(output)-1);
-	stream.write(output, sizeof(output)-1);
+ClockTimeStamp::MillisecondsType ClockTimeStamp::GetMillisecondsFromTimePoint(TimePointType const& timepoint) {
+	auto const nowUTC = timepoint.time_since_epoch();
+	auto const todayUTC = std::chrono::duration_cast<CalendarTimeStamp::DaysType>(nowUTC);
+	auto const duration = nowUTC - todayUTC;
+	return std::chrono::duration_cast<std::chrono::milliseconds>(duration);
 }
 
-void TimeStamp::WritePrecise(std::ostream& stream) const {
-	char output[24] = "000.00:00:00 00-00-0000";
+TimeStamp TimeStamp::Now() {
+	return TimeStamp{ std::chrono::system_clock::now() };
+}
 
-	Utility::WriteReversedValue(millisecond, output, 3);
-	Utility::WriteReversedValue(second, output + 4, 2);
-	Utility::WriteReversedValue(minute, output + 7, 2);
-	Utility::WriteReversedValue(hour, output + 10, 2);
-	Utility::WriteReversedValue(day + 1, output + 13, 2);
-	Utility::WriteReversedValue(month + 1, output + 16, 2);
-	Utility::WriteReversedValue(year, output + 19, 4);
+TimeStamp::TimeStamp(TimePointType const& timepoint) {
+	auto const nowUTC = timepoint.time_since_epoch();
+	auto const daysSinceEpochStart = std::chrono::duration_cast<CalendarTimeStamp::DaysType>(nowUTC);
+	auto const millisecondsSinceDayStart = std::chrono::duration_cast<std::chrono::milliseconds>(nowUTC - daysSinceEpochStart);
+
+	calendar = CalendarTimeStamp{ daysSinceEpochStart };
+	clock = ClockTimeStamp{ millisecondsSinceDayStart };
+}
+
+std::ostream& operator<<(std::ostream& stream, CalendarTimeStamp const& calendar) {
+	char output[11] = "00-00-0000";
+
+	Utility::WriteReversedValue(calendar.day + 1, output, 2);
+	Utility::WriteReversedValue(calendar.month + 1, output + 3, 2);
+	Utility::WriteReversedValue(calendar.year, output + 6, 4);
 
 	std::reverse(output, output + sizeof(output)-1);
 	stream.write(output, sizeof(output)-1);
+	return stream;
+}
+
+std::ostream& operator<<(std::ostream& stream, ClockTimeStamp const& clock) {
+	char output[13] = "000.00:00:00";
+
+	Utility::WriteReversedValue(clock.millisecond, output, 3);
+	Utility::WriteReversedValue(clock.second, output + 4, 2);
+	Utility::WriteReversedValue(clock.minute, output + 7, 2);
+	Utility::WriteReversedValue(clock.hour, output + 10, 2);
+
+	std::reverse(output, output + sizeof(output)-1);
+	stream.write(output, sizeof(output)-1);
+	return stream;
 }
 
 std::ostream& operator<<(std::ostream& stream, TimeStamp const& timestamp) {
-	timestamp.WritePrecise(stream);
+	char output[24] = "000.00:00:00 00-00-0000";
+
+	Utility::WriteReversedValue(timestamp.clock.millisecond, output, 3);
+	Utility::WriteReversedValue(timestamp.clock.second, output + 4, 2);
+	Utility::WriteReversedValue(timestamp.clock.minute, output + 7, 2);
+	Utility::WriteReversedValue(timestamp.clock.hour, output + 10, 2);
+	Utility::WriteReversedValue(timestamp.calendar.day + 1, output + 13, 2);
+	Utility::WriteReversedValue(timestamp.calendar.month + 1, output + 16, 2);
+	Utility::WriteReversedValue(timestamp.calendar.year, output + 19, 4);
+
+	std::reverse(output, output + sizeof(output)-1);
+	stream.write(output, sizeof(output)-1);
 	return stream;
 }

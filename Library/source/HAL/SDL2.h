@@ -9,7 +9,7 @@
 
 #if SDL_ENABLED
 #include <SDL2/SDL.h>
-#include "Engine/Logging/LogCategory.h"
+#include "Engine/Logging.h"
 
 DECLARE_LOG_CATEGORY(SDL);
 #endif

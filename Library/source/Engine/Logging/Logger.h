@@ -1,38 +1,32 @@
 #pragma once
+#include "Engine/Logging/LogOutput.h"
 #include "Engine/Logging/LogVerbosity.h"
 #include "Engine/StandardTypes.h"
 
 struct LogCategory;
-struct LogOutputData;
+struct LogOutputDevice;
 
-/** A thread-safe module created within a Logger that is responsible for processing output messages. */
-struct LoggerModule {
-public:
-	virtual ~LoggerModule() {}
-	/** Process a message given to a logger. Thread safe. */
-	virtual void ProcessMessage(LogOutputData const& outputData) = 0;
-};
-
-/** An object which delegates program output to various modules, which handle displaying and storing that output */
+/** Delegates log output to various devices, which handle displaying and/or storing that output */
 struct Logger {
 	/** Get the static logger instance */
 	static Logger& Get() { return instance; }
 
 	/** Output a message through this logger. Mainly used through logging macros. */
-	void Output(LogCategory const& category, ELogVerbosity verbosity, std::string_view location, std::string_view message);
+	void Output(LogCategory const& category, ELogVerbosity verbosity, SourceLocation location, std::string_view message);
+	void Output(LogCategory const& category, ELogVerbosity verbosity, std::string_view message);
 
-	/** Add a new module which will handle output */
+	/** Add a new device which will handle output */
 	template<typename ModuleType, typename... ArgTypes>
-	size_t CreateModule(ArgTypes... args) {
+	size_t CreateDevice(ArgTypes... args) {
 		std::scoped_lock const lock{ mutex };
 
 		size_t newID = currentID++;
-		modules.push_back(make_tuple(newID, std::make_unique<ModuleType>(std::forward(args)...)));
+		devices.push_back(make_tuple(newID, std::make_unique<ModuleType>(std::forward(args)...)));
 		return newID;
 	}
 
-	/** Destroy a previously created module from this logger */
-	void DestroyModule(size_t id);
+	/** Destroy a previously created device from this logger */
+	void DestroyDevice(size_t id);
 
 private:
 	Logger() = default;
@@ -40,6 +34,6 @@ private:
 	static Logger instance;
 
 	std::mutex mutex;
-	std::vector<std::tuple<size_t, std::unique_ptr<LoggerModule>>> modules;
+	std::vector<std::tuple<size_t, std::unique_ptr<LogOutputDevice>>> devices;
 	size_t currentID = 0;
 };

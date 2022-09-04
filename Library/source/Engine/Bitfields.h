@@ -14,8 +14,13 @@ struct TBitfieldMember {
 	static_assert(NumBits < (sizeof(StorageType)*8), "Cannot fill an entire bitfield with one member");
 	static_assert((Offset+NumBits) <= (sizeof(StorageType)*8), "Member exceeds bitfield boundaries");
 
+	TBitfieldMember() = default;
+
 	operator StorageType() const { return (memberValue >> Offset) & Maximum; }
 	TBitfieldMember& operator=(StorageType V) { memberValue = (memberValue & ~Mask) | ((V & Maximum) << Offset); return *this; }
+
+	StorageType Get() const { return (StorageType)(*this); }
+
 private:
-	StorageType memberValue = 0;
+	StorageType memberValue;
 };

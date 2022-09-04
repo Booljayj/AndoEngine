@@ -1,4 +1,4 @@
-#include "Engine/LogCommands.h"
+#include "Engine/Logging.h"
 #include "Rendering/Uniforms.h"
 #include "Rendering/Vulkan/VulkanUniformLayouts.h"
 

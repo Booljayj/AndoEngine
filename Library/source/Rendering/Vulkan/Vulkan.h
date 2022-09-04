@@ -1,7 +1,7 @@
 #pragma once
 #include <vulkan/vulkan.h>
 #include <SDL2/SDL_vulkan.h>
-#include "Engine/Logging/LogCategory.h"
+#include "Engine/Logging.h"
 #include "Engine/StandardTypes.h"
 #include "ThirdParty/vk_mem_alloc.h"
 

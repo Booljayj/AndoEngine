@@ -1,5 +1,5 @@
 #pragma once
-#include "Engine/LogCommands.h"
+#include "Engine/Logging.h"
 #include "Rendering/Vulkan/Vulkan.h"
 #include "Rendering/Vulkan/VulkanLogicalDevice.h"
 #include "Rendering/Vulkan/VulkanPhysicalDevice.h"

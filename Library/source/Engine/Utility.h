@@ -30,7 +30,7 @@ namespace Utility {
 	/** Write a value to a buffer in reverse order. Return the number of digits written. */
 	uint8_t WriteReversedValue(uint64_t value, char* buffer, size_t size);
 	/** Write a signed value to a buffer in reverse order. Return the number of digits written. */
-	uint8_t WriteReversedValue(int64_t value, char* buffer, size_t size);
+	uint8_t WriteReversedValueSigned(int64_t value, char* buffer, size_t size);
 
 	/** Returns the maximum number of characters required to write an integer value with the given type to a string */
 	template<typename T>

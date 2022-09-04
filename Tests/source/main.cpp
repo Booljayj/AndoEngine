@@ -1,8 +1,6 @@
 #include "PCH.h"
 #include "Engine/Time.h"
-#include "Engine/LogCommands.h"
-#include "Engine/Logging/TerminalLoggerModule.h"
-#include "Engine/Logging/FileLoggerModule.h"
+#include "Engine/Logging.h"
 #include "EntityFramework/EntityRegistry.h"
 #include "EntityFramework/UtilityMacros.h"
 #include "HAL/FrameworkSystem.h"
@@ -16,7 +14,7 @@
 #include "Rendering/MeshRendererComponent.h"
 #include "Rendering/StaticMeshResource.h"
 
-DEFINE_LOG_CATEGORY(Main, Debug);
+LOG_CATEGORY(Main, Debug);
 DEFINE_PROFILE_CATEGORY(Main);
 
 struct Application {
@@ -92,7 +90,7 @@ int32_t main(int32_t argc, char const* argv[]) {
 	HeapBuffer buffer{ 20'000 };
 	AssignThreadTemporaryBuffer(buffer);
 
-	Logger::Get().CreateModule<TerminalLoggerModule>();
+	Logger::Get().CreateDevice<TerminalOutputDevice>();
 
 	LOG(Main, Info, "Hello, World! This is AndoEngine.");
 	LOG(Main, Debug, "Compiled with " __VERSION__ " on " __DATE__);

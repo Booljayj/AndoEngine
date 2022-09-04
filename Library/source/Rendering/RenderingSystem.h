@@ -1,5 +1,5 @@
 #pragma once
-#include "Engine/Logging/Logger.h"
+#include "Engine/Logging.h"
 #include "Engine/StandardTypes.h"
 #include "EntityFramework/EntityRegistry.h"
 #include "Rendering/Surface.h"

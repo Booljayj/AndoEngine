@@ -1,5 +1,5 @@
 #include "Rendering/Vulkan/VulkanRenderPasses.h"
-#include "Engine/LogCommands.h"
+#include "Engine/Logging.h"
 
 namespace Rendering {
 	SurfaceRenderPass::ScopedRecord::ScopedRecord(VkCommandBuffer commands, SurfaceRenderPass const& surface, Framebuffer framebuffer, Geometry::ScreenRect const& rect)

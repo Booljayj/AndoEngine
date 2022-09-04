@@ -1,5 +1,5 @@
 #pragma once
-#include "Engine/Logging/LogCategory.h"
+#include "Engine/Logging.h"
 #include "Engine/TypeTraits.h"
 #include "EntityFramework/EntityHandle.h"
 #include "EntityFramework/EntityTypes.h"

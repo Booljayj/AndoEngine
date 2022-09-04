@@ -17,7 +17,7 @@ namespace Utility {
 		return 0;
 	}
 
-	uint8_t WriteReversedValue(int64_t value, char* buffer, size_t size) {
+	uint8_t WriteReversedValueSigned(int64_t value, char* buffer, size_t size) {
 		uint8_t const digits = WriteReversedValue(static_cast<uint64_t>(value), buffer, size);
 		if (digits < size && value < 0) {
 			*(buffer + digits) = '-'; //Write the negative sign

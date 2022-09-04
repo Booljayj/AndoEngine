@@ -1,5 +1,5 @@
 #include "Rendering/Vulkan/VulkanLogicalDevice.h"
-#include "Engine/LogCommands.h"
+#include "Engine/Logging.h"
 #include "Engine/Temporary.h"
 
 namespace Rendering {

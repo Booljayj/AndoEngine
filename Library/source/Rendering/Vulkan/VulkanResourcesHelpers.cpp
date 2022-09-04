@@ -1,4 +1,4 @@
-#include "Engine/LogCommands.h"
+#include "Engine/Logging.h"
 #include "Engine/Temporary.h"
 #include "Rendering/Vulkan/VulkanResourcesHelpers.h"
 

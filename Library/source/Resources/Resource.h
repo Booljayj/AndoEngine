@@ -1,5 +1,4 @@
 #pragma once
-#include "Engine/LogCommands.h"
 #include "Engine/ManagedObject.h"
 #include "Engine/Reflection.h"
 #include "Engine/StandardTypes.h"

@@ -1,5 +1,5 @@
 #include "HAL/FrameworkSystem.h"
-#include "Engine/LogCommands.h"
+#include "Engine/Logging.h"
 #include "HAL/SDL2.h"
 
 namespace HAL {

@@ -1,5 +1,5 @@
 #include "HAL/WindowingSystem.h"
-#include "Engine/LogCommands.h"
+#include "Engine/Logging.h"
 
 namespace HAL {
 	bool WindowingSystem::Startup() {

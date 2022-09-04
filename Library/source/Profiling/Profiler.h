@@ -1,5 +1,5 @@
 #pragma once
-#include "Engine/Logging/LogCategory.h"
+#include "Engine/Logging.h"
 #include "Engine/StandardTypes.h"
 #include "Profiling/ProfileCategory.h"
 #include "Profiling/ProfileTypes.h"

@@ -1,6 +1,6 @@
 #pragma once
 #include "Engine/Flags.h"
-#include "Engine/Logging/LogCategory.h"
+#include "Engine/Logging.h"
 #include "Engine/Reflection.h"
 #include "Engine/StandardTypes.h"
 

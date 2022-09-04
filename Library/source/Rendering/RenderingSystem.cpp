@@ -1,5 +1,4 @@
 #include "Rendering/RenderingSystem.h"
-#include "Engine/LogCommands.h"
 #include "Engine/StandardTypes.h"
 #include "Engine/Utility.h"
 #include "HAL/WindowingSystem.h"
@@ -9,7 +8,7 @@
 #include "Rendering/Vulkan/VulkanRenderPasses.h"
 #include "Rendering/Uniforms.h"
 
-DEFINE_LOG_CATEGORY(Rendering, Warning);
+DEFINE_LOG_CATEGORY(Rendering, Info);
 
 namespace Rendering {
 	bool RenderingSystem::Startup(HAL::WindowingSystem& windowing, EntityRegistry& registry) {
