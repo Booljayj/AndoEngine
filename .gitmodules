@@ -1,0 +1,3 @@
+[submodule "Library/modules/Optick"]
+	path = Library/modules/Optick
+	url = https://github.com/bombomby/optick.git
