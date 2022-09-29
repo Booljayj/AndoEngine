@@ -21,8 +21,8 @@ namespace Reflection {
 	struct VariableInfo {
 	public:
 		union StorageType {
-			VariablePointerStorage variable;
-			FunctionPointerStorage function;
+			alignas(PointerTraits::VariablePointerAlign) std::byte variable[PointerTraits::VariablePointerSize];
+			alignas(PointerTraits::FunctionPointerAlign) std::byte function[PointerTraits::FunctionPointerSize];
 		};
 
 		using ImmutableVariableGetterFunc = void const*(*)(StorageType const&, void const*);
@@ -62,9 +62,9 @@ namespace Reflection {
 		: id(inName), type(Reflect<std::decay_t<ValueType>>::Get()), name(inName), description(inDescription), flags(inFlags + EVariableFlags::Static)
 		{
 			using PointerType = decltype(pointer);
-			CastAlignedUnion<PointerType>(storage.variable) = pointer;
-			immutableGetter = [](StorageType const& storage, void const* instance) -> void const* { return CastAlignedUnion<PointerType>(storage.variable); };
-			mutableGetter = [](StorageType const& storage, void* instance) -> void* { return CastAlignedUnion<PointerType>(storage.variable); };
+			CastUntypedStorage<PointerType>(storage.variable) = pointer;
+			immutableGetter = [](StorageType const& storage, void const* instance) -> void const* { return CastUntypedStorage<PointerType>(storage.variable); };
+			mutableGetter = [](StorageType const& storage, void* instance) -> void* { return CastUntypedStorage<PointerType>(storage.variable); };
 		}
 		/** Construct variable info for a const static variable */
 		template<typename ValueType>
@@ -72,8 +72,8 @@ namespace Reflection {
 		: id(inName), type(Reflect<std::decay_t<ValueType>>::Get()), name(inName), description(inDescription), flags(inFlags + EVariableFlags::Const + EVariableFlags::Static)
 		{
 			using PointerType = decltype(pointer);
-			CastAlignedUnion<PointerType>(storage.variable) = pointer;
-			immutableGetter = [](StorageType const& storage, void const* instance) -> void const* { return CastAlignedUnion<PointerType>(storage.variable); };
+			CastUntypedStorage<PointerType>(storage.variable) = pointer;
+			immutableGetter = [](StorageType const& storage, void const* instance) -> void const* { return CastUntypedStorage<PointerType>(storage.variable); };
 			mutableGetter = [](StorageType const& storage, void* instance) -> void* { return nullptr; };
 		}
 
@@ -83,13 +83,13 @@ namespace Reflection {
 		: id(inName), type(Reflect<std::decay_t<ValueType>>::Get()), name(inName), description(inDescription), flags(inFlags)
 		{
 			using PointerType = decltype(pointer);
-			CastAlignedUnion<PointerType>(static_cast<VariablePointerStorage&>(storage.variable)) = pointer;
+			CastUntypedStorage<PointerType>(static_cast<VariablePointerStorage&>(storage.variable)) = pointer;
 			immutableGetter = [](StorageType const& storage, void const* instance) -> void const* {
-				PointerType pointer = CastAlignedUnion<PointerType>(storage.variable);
+				PointerType pointer = CastUntypedStorage<PointerType>(storage.variable);
 				return &(static_cast<ClassType const*>(instance)->*pointer);
 			};
 			mutableGetter = [](StorageType const& storage, void* instance) -> void* {
-				PointerType pointer = CastAlignedUnion<PointerType>(storage.variable);
+				PointerType pointer = CastUntypedStorage<PointerType>(storage.variable);
 				return &(static_cast<ClassType*>(instance)->*pointer);
 			};
 		}
@@ -99,9 +99,9 @@ namespace Reflection {
 		: id(inName), type(Reflect<std::decay_t<ValueType>>::Get()), name(inName), description(inDescription), flags(inFlags + EVariableFlags::Const)
 		{
 			using PointerType = decltype(pointer);
-			CastAlignedUnion<PointerType>(storage.variable) = pointer;
+			CastUntypedStorage<PointerType>(storage.variable) = pointer;
 			immutableGetter = [](StorageType const& storage, void const* instance) -> void const* {
-				PointerType pointer = CastAlignedUnion<PointerType>(storage.variable);
+				PointerType pointer = CastUntypedStorage<PointerType>(storage.variable);
 				return &(static_cast<ClassType const*>(instance)->*pointer);
 			};
 			mutableGetter = [](StorageType const& storage, void* instance) -> void* { return nullptr; };
@@ -112,14 +112,14 @@ namespace Reflection {
 		constexpr VariableInfo(TTypeList<ClassType, ReturnType>, size_t index, std::string_view inName, std::string_view inDescription, FVariableFlags inFlags)
 		: id(inName, static_cast<uint32_t>(index)), type(Reflect<std::decay_t<ReturnType>>::Get()), name(inName), description(inDescription), flags(inFlags)
 		{
-			CastAlignedUnion<size_t>(storage.variable) = index;
+			CastUntypedStorage<size_t>(storage.variable) = index;
 			immutableGetter = [](StorageType const& storage, void const* instance) -> void const* {
-				const size_t index = CastAlignedUnion<size_t>(storage.variable);
+				const size_t index = CastUntypedStorage<size_t>(storage.variable);
 				ClassType const& object = *(static_cast<ClassType const*>(instance));
 				return &(object[index]);
 			};
 			mutableGetter = [](StorageType const& storage, void* instance) -> void* {
-				const size_t index = CastAlignedUnion<size_t>(storage.variable);
+				const size_t index = CastUntypedStorage<size_t>(storage.variable);
 				ClassType& object = *(static_cast<ClassType*>(instance));
 				return &(object[index]);
 			};

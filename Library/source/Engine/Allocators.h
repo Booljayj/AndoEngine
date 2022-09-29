@@ -18,7 +18,7 @@ public:
 	size_t max_size() const { return N; }
 
 private:
-	std::aligned_storage_t<sizeof(T), alignof(T)> storage[N];
+	alignas(T) std::byte storage[sizeof(T) * N];
 };
 
 /** Allocator which holds space for a number of elements on the stack. If allocations exceed this space, default allocation is used. */
@@ -42,7 +42,7 @@ public:
 	}
 
 private:
-	std::aligned_storage_t<sizeof(T), alignof(T)> storage[N];
+	alignas(T) std::byte storage[sizeof(T) * N];
 };
 
 /** Allocator that sequentially requests memory from a buffer. If allocations exceed the buffer, default allocation is used. */

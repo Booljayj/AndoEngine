@@ -12,28 +12,35 @@ constexpr TTypeList<Types...> list;
 template<typename... Types>
 constexpr size_t SumTypeSizes() { return (sizeof(Types) + ...); }
 
-namespace PointerTypes {
-	using StaticVariable = void*;
-	using StaticFunction = void(*)();
+namespace PointerTraits {
+	namespace Internal {
+		using StaticVariable = void*;
+		using StaticFunction = void(*)();
 
-	//DummyStruct does not exist. It is never defined. We declare it here so that we can use it to define
-	//the size of pointers to various kinds of members on each compiler/platform. Because the type is never
-	//defined, the compiler is forced to use the worst-case-scenario size, which is the largest.
-	struct DummyStruct;
-	using MemberVariable = void* DummyStruct::*;
-	using MemberFunction = void(DummyStruct::*)();
+		//DummyStruct does not exist. It is never defined. We declare it here so that we can use it to define
+		//the size of pointers to various kinds of members on each compiler/platform. Because the type is never
+		//defined, the compiler is forced to use a worst-case-scenario size, which is the largest.
+		struct DummyStruct;
+		using MemberVariable = void* DummyStruct::*;
+		using MemberFunction = void(DummyStruct::*)();
+	}
+
+	/** The maximum size of any possible variable pointer */
+	constexpr size_t VariablePointerSize = std::max(sizeof(PointerTraits::Internal::StaticVariable), sizeof(PointerTraits::Internal::MemberVariable));
+	/** The maximum alignment of any possible variable pointer */
+	constexpr size_t VariablePointerAlign = std::max(alignof(PointerTraits::Internal::StaticVariable), alignof(PointerTraits::Internal::MemberVariable));
+
+	/** The maximum size of any possible function pointer */
+	constexpr size_t FunctionPointerSize = std::max(sizeof(PointerTraits::Internal::StaticFunction), sizeof(PointerTraits::Internal::MemberFunction));
+	/** The maximum alignment of any possible function pointer */
+	constexpr size_t FunctionPointerAlign = std::max(alignof(PointerTraits::Internal::StaticFunction), alignof(PointerTraits::Internal::MemberFunction));
 }
-
-/** An untyped storage buffer large enough to contain any kind of variable pointer */
-using VariablePointerStorage = std::aligned_union_t<0, PointerTypes::StaticVariable, PointerTypes::MemberVariable>;
-/** An untyped storage buffer large enough to contain any kind of function pointer */
-using FunctionPointerStorage = std::aligned_union_t<0, PointerTypes::StaticFunction, PointerTypes::MemberFunction>;
 
 /** Cast an aligned storage buffer to a specific type contained in the buffer */
 template<typename T, typename U>
-inline T& CastAlignedUnion(U& storage) { return *std::launder(reinterpret_cast<T*>(&storage)); }
+inline T& CastUntypedStorage(U& storage) { return *std::launder(reinterpret_cast<T*>(&storage)); }
 template<typename T, typename U>
-inline T const& CastAlignedUnion(U const& storage) { return *std::launder(reinterpret_cast<T const*>(&storage)); }
+inline T const& CastUntypedStorage(U const& storage) { return *std::launder(reinterpret_cast<T const*>(&storage)); }
 
 template<typename T, typename EqualTo = T>
 struct HasOperatorEquals

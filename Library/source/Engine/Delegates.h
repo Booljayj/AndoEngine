@@ -1,5 +1,6 @@
 #pragma once
 #include "Engine/StandardTypes.h"
+#include "Engine/TypeTraits.h"
 
 //Delegates wrap a callable together with an optional context object. When executed, the callable
 //and context object are used together to invoke the specified behavior. Based on "The Impossibly
@@ -29,14 +30,6 @@
 
 struct DelegateBase {
 protected:
-	//DummyClassMethod should be the worst-case-scenario for the size of a method pointer. Because the class is only
-	//forward declared, the compiler cannot make any assumptions about the inheritance structure, and must use a
-	//method pointer implementation that can handle the most complex case (typ virtual inheritance). Note: on some
-	//compilers, aligned_storage will round up its size to the next aligned value. This means storage is a little
-	//larger than strictly necessary, but that extra space can still be used for lambdas.
-	class DummyClass;
-	using DummyClassMethod = void(DummyClass::*)();
-
 	/** The type used for the delegate's context object, if one exists */
 	union DelegateContext {
 		void* rawPointer;
@@ -51,7 +44,7 @@ protected:
 	/** The type used to store the actual callable object wrapped by this delegate. */
 	union DelegateStorage {
 		void* external;
-		std::aligned_storage<sizeof(DummyClassMethod), alignof(void*)>::type internal;
+		alignas(PointerTraits::FunctionPointerAlign) std::byte internal[PointerTraits::FunctionPointerSize];
 
 		//Types are managed by the semantics objects, so this union is left uninitialized
 		DelegateStorage() {}
