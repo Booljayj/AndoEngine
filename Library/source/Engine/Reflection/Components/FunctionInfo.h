@@ -14,12 +14,12 @@ namespace Reflection {
 
 	struct TypeInfo;
 
-	enum class FFunctionFlags : uint8_t {
-		None = 0,
-		Static = 1 << 0,
-		Const = 1 << 1,
-		Hidden = 1 << 2,
+	enum class EFunctionFlags : uint8_t {
+		Static,
+		Const,
+		Hidden,
 	};
+	using FFunctionFlags = TFlags<EFunctionFlags>;
 
 	struct ArgumentView : TArrayView<ArgumentInfo const*> {
 		ArgumentInfo const* Find(Hash32 id) const {
@@ -43,7 +43,7 @@ namespace Reflection {
 		uint16_t NameHash = 0;
 		FFunctionFlags Flags = FFunctionFlags::None();
 
-		virtual TArrayView<char> CreateArguments(CTX_ARG) const = 0;
+		virtual TArrayView<char> CreateArguments() const = 0;
 		virtual bool Invoke(void* ret, TArrayView<char> args) = 0;
 	};
 

@@ -7,10 +7,9 @@ namespace Reflection {
 	struct TypeInfo;
 
 	enum class EArgumentFlags : uint8_t {
-		None = 0,
-		Optional = 1 << 0,
-		Const = 1 << 1,
-		Reference = 1 << 2,
+		Optional,
+		Const,
+		Reference,
 	};
 	using FArgumentFlags = TFlags<EArgumentFlags>;
 
