@@ -14,8 +14,6 @@ public:
 	using EnumType = EnumType_;
 	using UnderlyingType = typename std::underlying_type<EnumType>::type;
 
-	static const TFlags None;
-
 	constexpr inline TFlags() = default;
 	constexpr inline TFlags(const TFlags& other) : flags(other.flags) {}
 	constexpr inline TFlags(UnderlyingType inFlags) : flags(inFlags) {}
@@ -27,6 +25,8 @@ public:
 		const UnderlyingType flags = (... | (1 << (UnderlyingType)inFlags));
 		return TFlags{ flags };
 	}
+
+	static constexpr inline TFlags None() { return TFlags{}; }
 
 	constexpr inline bool operator==(TFlags other) const noexcept { return flags == other.flags; }
 	constexpr inline bool operator!=(TFlags other) const noexcept { return flags != other.flags; }
@@ -63,9 +63,6 @@ public:
 protected:
 	UnderlyingType flags = 0;
 };
-
-template<typename EnumType_>
-const TFlags<EnumType_> TFlags<EnumType_>::None;
 
 #define TFLAGS_METHODS(DerivedType)\
 	using TFlags<DerivedType::EnumType>::TFlags;\

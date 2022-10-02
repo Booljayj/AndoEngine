@@ -16,10 +16,10 @@ namespace Serialization {
 		StructTypeInfo const* currentStructType = structType;
 		while (currentStructType) {
 			for (VariableInfo const& variable : currentStructType->variables) {
-				if (ShouldSerializeVariable(variable) && ShouldSerializeType(*variable.type)) {
+				if (ShouldWriteVariable(variable)) {
 					//Get a pointer to the value we want to serialize, and a pointer to the default version of that value
-					void const* dataValuePointer = variable.GetValuePointer(data);
-					void const* defaultValuePointer = variable.GetValuePointer(structType->defaults);
+					void const* dataValuePointer = variable.GetImmutable(data);
+					void const* defaultValuePointer = variable.GetImmutable(structType->defaults);
 
 					//Compare the variable to the default. If the value is the same as the default, then we don't need to write anything
 					if (!variable.type->Equal(dataValuePointer, defaultValuePointer)) {
@@ -47,8 +47,8 @@ namespace Serialization {
 			if (!stream.good()) return false; //Make sure the read was successful
 
 			//If the struct has a variable with this ID, and it can be serialized, attempt to deserialize it.
-			if (variable && ShouldSerializeVariable(*variable) && ShouldSerializeType(*variable->type)) {
-				void* dataValuePointer = variable->GetValuePointer(data);
+			if (variable && ShouldReadVariable(*variable)) {
+				void* dataValuePointer = variable->GetMutable(data);
 				bool const success = DeserializeTypeBinary(*variable->type, dataValuePointer, stream);
 				if (!success) return false; //@todo Report an error just for this variable instead of returning false
 
@@ -60,9 +60,17 @@ namespace Serialization {
 		return stream.good();
 	}
 
+	bool StructSerializer::ShouldWriteVariable(Reflection::VariableInfo const& variable) {
+		return !variable.flags.Has(EVariableFlags::Deprecated) && ShouldSerializeVariable(variable);
+	}
+
+	bool StructSerializer::ShouldReadVariable(Reflection::VariableInfo const& variable) {
+		return ShouldSerializeVariable(variable);
+	}
+
 	bool StructSerializer::ShouldSerializeVariable(VariableInfo const& variable) {
-		constexpr auto excludedFlags = FVariableFlags::Make(EVariableFlags::Const, EVariableFlags::NonSerialized);
-		return variable.flags.HasAll(excludedFlags);
+		constexpr auto excluded = FVariableFlags::Make(EVariableFlags::Const, EVariableFlags::NonSerialized);
+		return !variable.flags.HasAny(excluded) && ShouldSerializeType(*variable.type);
 	}
 
 	void StructSerializer::WriteVariableIdentifier(VariableInfo const& variable, std::ostream& stream) {

@@ -1,9 +1,8 @@
 #pragma once
 #include "Engine/ArrayView.h"
-#include "Engine/Context.h"
 #include "Engine/StandardTypes.h"
-#include "Reflection/Components/ArgumentInfo.h"
-#include "Reflection/TypeResolver.h"
+#include "Engine/Reflection/Components/ArgumentInfo.h"
+#include "Engine/Reflection/TypeInfo.h"
 
 namespace Reflection {
 	//@todo Experimental. The main reason to have this is for function invocation, and that seems to be a hacky,
@@ -42,7 +41,7 @@ namespace Reflection {
 		size_t argumentsSize;
 
 		uint16_t NameHash = 0;
-		FFunctionFlags Flags = FFunctionFlags::None;
+		FFunctionFlags Flags = FFunctionFlags::None();
 
 		virtual TArrayView<char> CreateArguments(CTX_ARG) const = 0;
 		virtual bool Invoke(void* ret, TArrayView<char> args) = 0;

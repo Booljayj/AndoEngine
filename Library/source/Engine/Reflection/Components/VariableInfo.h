@@ -10,29 +10,21 @@ namespace Reflection {
 
 	/** flags to describe aspects of a particular variable */
 	enum class EVariableFlags : uint32_t {
+		/** The variable cannot be modified */
 		Const,
+		/** The variable is global, and does not belong to a specific instance. May be accessed with a null instance pointer. */
 		Static,
+		/** The variable should not be shown when displaying variables to a user */
 		Hidden,
+		/** The variable should not be serialized when serializing the containing struct */
 		NonSerialized,
+		/** The variable is deprecated. Existing values will be loaded during serialization, but new values will not be saved. Using the variable should produce a warning. */
+		Deprecated,
 	};
 	using FVariableFlags = TFlags<EVariableFlags>;
 
 	/** Info that describes a variable value */
 	struct VariableInfo {
-	public:
-		union StorageType {
-			alignas(PointerTraits::VariablePointerAlign) std::byte variable[PointerTraits::VariablePointerSize];
-			alignas(PointerTraits::FunctionPointerAlign) std::byte function[PointerTraits::FunctionPointerSize];
-		};
-
-		using ImmutableVariableGetterFunc = void const*(*)(StorageType const&, void const*);
-		using MutableVariableGetterFunc = void*(*)(StorageType const&, void*);
-
-	private:
-		StorageType storage;
-		ImmutableVariableGetterFunc immutableGetter;
-		MutableVariableGetterFunc mutableGetter;
-
 	public:
 		Hash32 id;
 		TypeInfo const* type = nullptr;
@@ -40,68 +32,55 @@ namespace Reflection {
 		std::string_view description;
 		FVariableFlags flags;
 
-		constexpr VariableInfo() = default;
-		constexpr VariableInfo(VariableInfo const&) = default;
-
-		constexpr VariableInfo& operator=(VariableInfo const& other) {
-			storage = other.storage;
-			immutableGetter = other.immutableGetter;
-			mutableGetter = other.mutableGetter;
-
-			id = other.id;
-			type = other.type;
-			name = other.name;
-			description = other.description;
-			flags = other.flags;
-			return *this;
-		}
+		VariableInfo() = default;
+		VariableInfo(VariableInfo const&) = default;
 
 		/** Construct variable info for a static variable */
 		template<typename ValueType>
-		constexpr VariableInfo(ValueType* pointer, std::string_view inName, std::string_view inDescription, FVariableFlags inFlags)
+		VariableInfo(ValueType* pointer, std::string_view inName, std::string_view inDescription, FVariableFlags inFlags)
 		: id(inName), type(Reflect<std::decay_t<ValueType>>::Get()), name(inName), description(inDescription), flags(inFlags + EVariableFlags::Static)
 		{
 			using PointerType = decltype(pointer);
-			CastUntypedStorage<PointerType>(storage.variable) = pointer;
-			immutableGetter = [](StorageType const& storage, void const* instance) -> void const* { return CastUntypedStorage<PointerType>(storage.variable); };
-			mutableGetter = [](StorageType const& storage, void* instance) -> void* { return CastUntypedStorage<PointerType>(storage.variable); };
+			CastUntypedStorage<PointerType>(storage) = pointer;
+			immutableGetter = [](StorageType const& storage, void const* instance) -> void const* { return CastUntypedStorage<PointerType>(storage); };
+			mutableGetter = [](StorageType const& storage, void* instance) -> void* { return CastUntypedStorage<PointerType>(storage); };
 		}
 		/** Construct variable info for a const static variable */
 		template<typename ValueType>
-		constexpr VariableInfo(const ValueType* pointer, std::string_view inName, std::string_view inDescription, FVariableFlags inFlags)
+		VariableInfo(const ValueType* pointer, std::string_view inName, std::string_view inDescription, FVariableFlags inFlags)
 		: id(inName), type(Reflect<std::decay_t<ValueType>>::Get()), name(inName), description(inDescription), flags(inFlags + EVariableFlags::Const + EVariableFlags::Static)
 		{
 			using PointerType = decltype(pointer);
-			CastUntypedStorage<PointerType>(storage.variable) = pointer;
-			immutableGetter = [](StorageType const& storage, void const* instance) -> void const* { return CastUntypedStorage<PointerType>(storage.variable); };
+			CastUntypedStorage<PointerType>(storage) = pointer;
+			immutableGetter = [](StorageType const& storage, void const* instance) -> void const* { return CastUntypedStorage<PointerType>(storage); };
 			mutableGetter = [](StorageType const& storage, void* instance) -> void* { return nullptr; };
 		}
 
 		/** Construct variable info for a member variable */
 		template<typename ClassType, typename ValueType>
-		constexpr VariableInfo(ValueType ClassType::* pointer, std::string_view inName, std::string_view inDescription, FVariableFlags inFlags)
+		VariableInfo(ValueType ClassType::* pointer, std::string_view inName, std::string_view inDescription, FVariableFlags inFlags)
 		: id(inName), type(Reflect<std::decay_t<ValueType>>::Get()), name(inName), description(inDescription), flags(inFlags)
 		{
 			using PointerType = decltype(pointer);
-			CastUntypedStorage<PointerType>(static_cast<VariablePointerStorage&>(storage.variable)) = pointer;
+			CastUntypedStorage<PointerType>(storage) = pointer;
 			immutableGetter = [](StorageType const& storage, void const* instance) -> void const* {
-				PointerType pointer = CastUntypedStorage<PointerType>(storage.variable);
+				PointerType pointer = CastUntypedStorage<PointerType>(storage);
 				return &(static_cast<ClassType const*>(instance)->*pointer);
 			};
 			mutableGetter = [](StorageType const& storage, void* instance) -> void* {
-				PointerType pointer = CastUntypedStorage<PointerType>(storage.variable);
+				PointerType pointer = CastUntypedStorage<PointerType>(storage);
 				return &(static_cast<ClassType*>(instance)->*pointer);
 			};
 		}
 		/** Construct variable info for a const member variable */
 		template<typename ClassType, typename ValueType>
-		constexpr VariableInfo(const ValueType ClassType::* pointer, std::string_view inName, std::string_view inDescription, FVariableFlags inFlags)
+		VariableInfo(const ValueType ClassType::* pointer, std::string_view inName, std::string_view inDescription, FVariableFlags inFlags)
 		: id(inName), type(Reflect<std::decay_t<ValueType>>::Get()), name(inName), description(inDescription), flags(inFlags + EVariableFlags::Const)
 		{
 			using PointerType = decltype(pointer);
-			CastUntypedStorage<PointerType>(storage.variable) = pointer;
+			CastUntypedStorage<PointerType>(storage) = pointer;
 			immutableGetter = [](StorageType const& storage, void const* instance) -> void const* {
-				PointerType pointer = CastUntypedStorage<PointerType>(storage.variable);
+				PointerType pointer = CastUntypedStorage<PointerType>(storage);
 				return &(static_cast<ClassType const*>(instance)->*pointer);
 			};
 			mutableGetter = [](StorageType const& storage, void* instance) -> void* { return nullptr; };
@@ -109,24 +88,35 @@ namespace Reflection {
 
 		/** Construct variable info for a variable that is accessed using an indexing operator at a specific index */
 		template<typename ClassType, typename ReturnType>
-		constexpr VariableInfo(TTypeList<ClassType, ReturnType>, size_t index, std::string_view inName, std::string_view inDescription, FVariableFlags inFlags)
+		VariableInfo(TTypeList<ClassType, ReturnType>, size_t index, std::string_view inName, std::string_view inDescription, FVariableFlags inFlags)
 		: id(inName, static_cast<uint32_t>(index)), type(Reflect<std::decay_t<ReturnType>>::Get()), name(inName), description(inDescription), flags(inFlags)
 		{
-			CastUntypedStorage<size_t>(storage.variable) = index;
+			CastUntypedStorage<size_t>(storage) = index;
 			immutableGetter = [](StorageType const& storage, void const* instance) -> void const* {
-				const size_t index = CastUntypedStorage<size_t>(storage.variable);
+				const size_t index = CastUntypedStorage<size_t>(storage);
 				ClassType const& object = *(static_cast<ClassType const*>(instance));
 				return &(object[index]);
 			};
 			mutableGetter = [](StorageType const& storage, void* instance) -> void* {
-				const size_t index = CastUntypedStorage<size_t>(storage.variable);
+				const size_t index = CastUntypedStorage<size_t>(storage);
 				ClassType& object = *(static_cast<ClassType*>(instance));
 				return &(object[index]);
 			};
 		}
 
-		/** Get a pointer to this variable on a particular instance (instance is ignored for static variables) */
-		void const* GetValuePointer(void const* instance) const { return immutableGetter(storage, instance); }
-		void* GetValuePointer(void* instance) const { return mutableGetter(storage, instance); }
+		inline void const* GetImmutable(void const* instance) const { return immutableGetter(storage, instance); }
+		inline void* GetMutable(void* instance) const { return mutableGetter(storage, instance); }
+
+	private:
+		static constexpr size_t StorageSize = std::max(sizeof(size_t), PointerTraits::VariablePointerSize);
+		static constexpr size_t StorageAlign = std::max(alignof(size_t), PointerTraits::VariablePointerAlign);
+		using StorageType = std::byte[StorageSize];
+
+		using ImmutableVariableGetterFunc = void const*(*)(StorageType const&, void const*);
+		using MutableVariableGetterFunc = void*(*)(StorageType const&, void*);
+
+		alignas(StorageAlign) StorageType storage;
+		ImmutableVariableGetterFunc immutableGetter = nullptr;
+		MutableVariableGetterFunc mutableGetter = nullptr;
 	};
 }

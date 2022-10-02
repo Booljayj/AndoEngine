@@ -8,8 +8,8 @@ DEFINE_REFLECT_STRUCT(,ReflectedType)
 	.Description("Reflection test type"sv)
 	.Defaults(&defaults_ReflectedType)
 	.Variables({
-		{ &ReflectedType::IntegerValue, "IntegerValue"sv, ""sv, FVariableFlags::None },
-		{ &ReflectedType::BooleanValue, "BooleanValue"sv, ""sv, FVariableFlags::None },
+		{ &ReflectedType::IntegerValue, "IntegerValue"sv, ""sv, FVariableFlags::None() },
+		{ &ReflectedType::BooleanValue, "BooleanValue"sv, ""sv, FVariableFlags::None() },
 	});
 
 SecondReflectedType const defaults_SecondReflectedType;
@@ -17,7 +17,7 @@ DEFINE_REFLECT_STRUCT(,SecondReflectedType)
 	.Description("Reflection test type"sv)
 	.Defaults(&defaults_SecondReflectedType)
 	.Variables({
-		{ &SecondReflectedType::VectorValue, "VectorValue"sv, ""sv, FVariableFlags::None }
+		{ &SecondReflectedType::VectorValue, "VectorValue"sv, ""sv, FVariableFlags::None() }
 	});
 
 /*

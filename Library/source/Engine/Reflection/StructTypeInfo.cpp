@@ -17,8 +17,8 @@ namespace Reflection {
 		auto const info = TStructTypeInfo<Type>{ "glm::vec2"sv }
 			.Description("2D vector"sv)
 			.Variables({
-				{ &Type::x, name_x, desc_x, FVariableFlags::None },
-				{ &Type::y, name_y, desc_y, FVariableFlags::None },
+				{ &Type::x, name_x, desc_x, FVariableFlags::None() },
+				{ &Type::y, name_y, desc_y, FVariableFlags::None() },
 			});
 	}
 	namespace vec3 {
@@ -26,9 +26,9 @@ namespace Reflection {
 		auto const info = TStructTypeInfo<Type>{ "glm::vec3"sv }
 			.Description("3D vector"sv)
 			.Variables({
-				{ &Type::x, name_x, desc_x, FVariableFlags::None },
-				{ &Type::y, name_y, desc_y, FVariableFlags::None },
-				{ &Type::z, name_z, desc_z, FVariableFlags::None },
+				{ &Type::x, name_x, desc_x, FVariableFlags::None() },
+				{ &Type::y, name_y, desc_y, FVariableFlags::None() },
+				{ &Type::z, name_z, desc_z, FVariableFlags::None() },
 			});
 	}
 	namespace vec4 {
@@ -36,10 +36,10 @@ namespace Reflection {
 		auto const info = TStructTypeInfo<Type>{ "glm::vec4"sv }
 			.Description("4D vector"sv)
 			.Variables({
-				{ &Type::x, name_x, desc_x, FVariableFlags::None },
-				{ &Type::y, name_y, desc_y, FVariableFlags::None },
-				{ &Type::z, name_z, desc_z, FVariableFlags::None },
-				{ &Type::z, name_w, desc_w, FVariableFlags::None },
+				{ &Type::x, name_x, desc_x, FVariableFlags::None() },
+				{ &Type::y, name_y, desc_y, FVariableFlags::None() },
+				{ &Type::z, name_z, desc_z, FVariableFlags::None() },
+				{ &Type::z, name_w, desc_w, FVariableFlags::None() },
 			});
 	}
 
@@ -48,8 +48,8 @@ namespace Reflection {
 		auto const info = TStructTypeInfo<Type>{ "glm::u32vec2"sv }
 			.Description("2D unsigned integer vector"sv)
 			.Variables({
-				{ &Type::x, name_x, desc_x, FVariableFlags::None },
-				{ &Type::y, name_y, desc_y, FVariableFlags::None },
+				{ &Type::x, name_x, desc_x, FVariableFlags::None() },
+				{ &Type::y, name_y, desc_y, FVariableFlags::None() },
 			});
 	}
 	namespace u32vec3 {
@@ -57,9 +57,9 @@ namespace Reflection {
 		auto const info = TStructTypeInfo<Type>{ "glm::u32vec3"sv }
 			.Description("3D unsigned integer vector"sv)
 			.Variables({
-				{ &Type::x, name_x, desc_x, FVariableFlags::None },
-				{ &Type::y, name_y, desc_y, FVariableFlags::None },
-				{ &Type::z, name_z, desc_z, FVariableFlags::None },
+				{ &Type::x, name_x, desc_x, FVariableFlags::None() },
+				{ &Type::y, name_y, desc_y, FVariableFlags::None() },
+				{ &Type::z, name_z, desc_z, FVariableFlags::None() },
 			});
 	}
 
@@ -68,8 +68,8 @@ namespace Reflection {
 		auto const info = TStructTypeInfo<Type>{ "glm::i32vec2"sv }
 			.Description("2D signed integer vector"sv)
 			.Variables({
-				{ &Type::x, name_x, desc_x, FVariableFlags::None },
-				{ &Type::y, name_y, desc_y, FVariableFlags::None },
+				{ &Type::x, name_x, desc_x, FVariableFlags::None() },
+				{ &Type::y, name_y, desc_y, FVariableFlags::None() },
 			});
 	}
 	namespace i32vec3 {
@@ -77,9 +77,9 @@ namespace Reflection {
 		auto const info = TStructTypeInfo<Type>{ "glm::i32vec3"sv }
 			.Description("3D signed integer vector"sv)
 			.Variables({
-				{ &Type::x, name_x, desc_x, FVariableFlags::None },
-				{ &Type::y, name_y, desc_y, FVariableFlags::None },
-				{ &Type::z, name_z, desc_z, FVariableFlags::None },
+				{ &Type::x, name_x, desc_x, FVariableFlags::None() },
+				{ &Type::y, name_y, desc_y, FVariableFlags::None() },
+				{ &Type::z, name_z, desc_z, FVariableFlags::None() },
 			});
 	}
 
@@ -88,9 +88,9 @@ namespace Reflection {
 		auto const info = TStructTypeInfo<Type>{ "glm::u8vec3"sv }
 			.Description("3D byte vector"sv)
 			.Variables({
-				{ &Type::x, name_x, desc_x, FVariableFlags::None },
-				{ &Type::y, name_y, desc_y, FVariableFlags::None },
-				{ &Type::z, name_z, desc_z, FVariableFlags::None },
+				{ &Type::x, name_x, desc_x, FVariableFlags::None() },
+				{ &Type::y, name_y, desc_y, FVariableFlags::None() },
+				{ &Type::z, name_z, desc_z, FVariableFlags::None() },
 			});
 	}
 	namespace u8vec4 {
@@ -98,10 +98,10 @@ namespace Reflection {
 		auto const info = TStructTypeInfo<Type>{ "glm::u8vec4"sv }
 			.Description("4D byte vector"sv)
 			.Variables({
-				{ &Type::x, name_x, desc_x, FVariableFlags::None },
-				{ &Type::y, name_y, desc_y, FVariableFlags::None },
-				{ &Type::z, name_z, desc_z, FVariableFlags::None },
-				{ &Type::z, name_w, desc_w, FVariableFlags::None },
+				{ &Type::x, name_x, desc_x, FVariableFlags::None() },
+				{ &Type::y, name_y, desc_y, FVariableFlags::None() },
+				{ &Type::z, name_z, desc_z, FVariableFlags::None() },
+				{ &Type::z, name_w, desc_w, FVariableFlags::None() },
 			});
 	}
 
@@ -121,8 +121,8 @@ namespace Reflection {
 		auto const info = TStructTypeInfo<Type>{ "glm::mat2x2"sv }
 			.Description("2x2 matrix"sv)
 			.Variables({
-				{ list<Type, ColType>, 0, name_column0, desc_column0, FVariableFlags::None },
-				{ list<Type, ColType>, 1, name_column1, desc_column1, FVariableFlags::None },
+				{ list<Type, ColType>, 0, name_column0, desc_column0, FVariableFlags::None() },
+				{ list<Type, ColType>, 1, name_column1, desc_column1, FVariableFlags::None() },
 			});
 	}
 	namespace mat2x3 {
@@ -131,8 +131,8 @@ namespace Reflection {
 		auto const info = TStructTypeInfo<Type>{ "glm::mat2x3"sv }
 			.Description("2x3 matrix"sv)
 			.Variables({
-				{ list<Type, ColType>, 0, name_column0, desc_column0, FVariableFlags::None },
-				{ list<Type, ColType>, 1, name_column1, desc_column1, FVariableFlags::None },
+				{ list<Type, ColType>, 0, name_column0, desc_column0, FVariableFlags::None() },
+				{ list<Type, ColType>, 1, name_column1, desc_column1, FVariableFlags::None() },
 			});
 	}
 	namespace mat2x4 {
@@ -141,8 +141,8 @@ namespace Reflection {
 		auto const info = TStructTypeInfo<Type>{ "glm::mat2x4"sv }
 			.Description("2x4 matrix"sv)
 			.Variables({
-				{ list<Type, ColType>, 0, name_column0, desc_column0, FVariableFlags::None },
-				{ list<Type, ColType>, 1, name_column1, desc_column1, FVariableFlags::None },
+				{ list<Type, ColType>, 0, name_column0, desc_column0, FVariableFlags::None() },
+				{ list<Type, ColType>, 1, name_column1, desc_column1, FVariableFlags::None() },
 			});
 	}
 
@@ -152,9 +152,9 @@ namespace Reflection {
 		auto const info = TStructTypeInfo<Type>{ "glm::mat3x2"sv }
 			.Description("3x2 matrix"sv)
 			.Variables({
-				{ list<Type, ColType>, 0, name_column0, desc_column0, FVariableFlags::None },
-				{ list<Type, ColType>, 1, name_column1, desc_column1, FVariableFlags::None },
-				{ list<Type, ColType>, 2, name_column2, desc_column2, FVariableFlags::None },
+				{ list<Type, ColType>, 0, name_column0, desc_column0, FVariableFlags::None() },
+				{ list<Type, ColType>, 1, name_column1, desc_column1, FVariableFlags::None() },
+				{ list<Type, ColType>, 2, name_column2, desc_column2, FVariableFlags::None() },
 			});
 	}
 	namespace mat3x3 {
@@ -163,9 +163,9 @@ namespace Reflection {
 		auto const info = TStructTypeInfo<Type>{ "glm::mat3x3"sv }
 			.Description("3x3 matrix"sv)
 			.Variables({
-				{ list<Type, ColType>, 0, name_column0, desc_column0, FVariableFlags::None },
-				{ list<Type, ColType>, 1, name_column1, desc_column1, FVariableFlags::None },
-				{ list<Type, ColType>, 2, name_column2, desc_column2, FVariableFlags::None },
+				{ list<Type, ColType>, 0, name_column0, desc_column0, FVariableFlags::None() },
+				{ list<Type, ColType>, 1, name_column1, desc_column1, FVariableFlags::None() },
+				{ list<Type, ColType>, 2, name_column2, desc_column2, FVariableFlags::None() },
 			});
 	}
 	namespace mat3x4 {
@@ -174,9 +174,9 @@ namespace Reflection {
 		auto const info = TStructTypeInfo<Type>{ "glm::mat3x4"sv }
 			.Description("3x4 matrix"sv)
 			.Variables({
-				{ list<Type, ColType>, 0, name_column0, desc_column0, FVariableFlags::None },
-				{ list<Type, ColType>, 1, name_column1, desc_column1, FVariableFlags::None },
-				{ list<Type, ColType>, 2, name_column2, desc_column2, FVariableFlags::None },
+				{ list<Type, ColType>, 0, name_column0, desc_column0, FVariableFlags::None() },
+				{ list<Type, ColType>, 1, name_column1, desc_column1, FVariableFlags::None() },
+				{ list<Type, ColType>, 2, name_column2, desc_column2, FVariableFlags::None() },
 			});
 	}
 
@@ -186,10 +186,10 @@ namespace Reflection {
 		auto const info = TStructTypeInfo<Type>{ "glm::mat4x2"sv }
 			.Description("4x2 matrix"sv)
 			.Variables({
-				{ list<Type, ColType>, 0, name_column0, desc_column0, FVariableFlags::None },
-				{ list<Type, ColType>, 1, name_column1, desc_column1, FVariableFlags::None },
-				{ list<Type, ColType>, 2, name_column2, desc_column2, FVariableFlags::None },
-				{ list<Type, ColType>, 3, name_column3, desc_column3, FVariableFlags::None },
+				{ list<Type, ColType>, 0, name_column0, desc_column0, FVariableFlags::None() },
+				{ list<Type, ColType>, 1, name_column1, desc_column1, FVariableFlags::None() },
+				{ list<Type, ColType>, 2, name_column2, desc_column2, FVariableFlags::None() },
+				{ list<Type, ColType>, 3, name_column3, desc_column3, FVariableFlags::None() },
 			});
 	}
 	namespace mat4x3 {
@@ -198,10 +198,10 @@ namespace Reflection {
 		auto const info = TStructTypeInfo<Type>{ "glm::mat4x3"sv }
 			.Description("4x3 matrix"sv)
 			.Variables({
-				{ list<Type, ColType>, 0, name_column0, desc_column0, FVariableFlags::None },
-				{ list<Type, ColType>, 1, name_column1, desc_column1, FVariableFlags::None },
-				{ list<Type, ColType>, 2, name_column2, desc_column2, FVariableFlags::None },
-				{ list<Type, ColType>, 3, name_column3, desc_column3, FVariableFlags::None },
+				{ list<Type, ColType>, 0, name_column0, desc_column0, FVariableFlags::None() },
+				{ list<Type, ColType>, 1, name_column1, desc_column1, FVariableFlags::None() },
+				{ list<Type, ColType>, 2, name_column2, desc_column2, FVariableFlags::None() },
+				{ list<Type, ColType>, 3, name_column3, desc_column3, FVariableFlags::None() },
 			});
 	}
 	namespace mat4x4 {
@@ -210,10 +210,10 @@ namespace Reflection {
 		auto const info = TStructTypeInfo<Type>{ "glm::mat4x4"sv }
 			.Description("4x4 matrix"sv)
 			.Variables({
-				{ list<Type, ColType>, 0, name_column0, desc_column0, FVariableFlags::None },
-				{ list<Type, ColType>, 1, name_column1, desc_column1, FVariableFlags::None },
-				{ list<Type, ColType>, 2, name_column2, desc_column2, FVariableFlags::None },
-				{ list<Type, ColType>, 3, name_column3, desc_column3, FVariableFlags::None },
+				{ list<Type, ColType>, 0, name_column0, desc_column0, FVariableFlags::None() },
+				{ list<Type, ColType>, 1, name_column1, desc_column1, FVariableFlags::None() },
+				{ list<Type, ColType>, 2, name_column2, desc_column2, FVariableFlags::None() },
+				{ list<Type, ColType>, 3, name_column3, desc_column3, FVariableFlags::None() },
 			});
 	}
 }
