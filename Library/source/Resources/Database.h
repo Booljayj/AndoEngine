@@ -7,7 +7,7 @@
 
 namespace Resources {
 	/** Databases keep track of a collection of resources, and have utility methods to create, load, and find them. */
-	struct Database {
+	struct Database : public ManagedObject::Handle<Resource>::Factory {
 	public:
 		/** Creates a new resource in the database. Thread-safe. */
 		virtual Handle<Resource> Create(Identifier id, Reflection::StructTypeInfo const& type) = 0;
@@ -62,12 +62,13 @@ namespace Resources {
 
 			ids.emplace_back(id);
 
-			//Create the memory in the array for the resource, then construct the value. This allows constructors to access their own entry if necessary.
-			Resource* resource = static_cast<Resource*>(resources.emplace_back(static_cast<Resource*>(aligned_alloc(type.memory.alignment, type.memory.size))));
+			//Create the memory in the array for the resource, store it, then construct the value. This allows constructors to access their own entry if necessary.
+			Resource* resource = static_cast<Resource*>(aligned_alloc(type.memory.alignment, type.memory.size));
+			resources.emplace_back(resource);
 			type.Construct(resource);
 			static_cast<Implementation*>(this)->PostCreate(*static_cast<BaseResourceType*>(resource));
 
-			return Handle<Resource>::Create(*resource);
+			return CreateHandle(*resource);
 		}
 
 		//@todo Implement loading behavior
@@ -79,7 +80,7 @@ namespace Resources {
 			if (iter != ids.end()) {
 				Resource* resource = resources[iter - ids.begin()];
 				if (resource->GetTypeInfo().DerivesFrom(&type)) {
-					return Handle<Resource>::Create(*resource);
+					return CreateHandle(*resource);
 				}
 			}
 			return nullptr;
