@@ -14,6 +14,7 @@ namespace Reflection {
 			CASE_ENUM(Map, MAP_);
 			CASE_ENUM(Set, SET_);
 			CASE_ENUM(Poly, POLY);
+			CASE_ENUM(Reference, REFR);
 			CASE_ENUM(Tuple, TUPL);
 			CASE_ENUM(Variant, VARI);
 		}

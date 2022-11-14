@@ -42,7 +42,7 @@ public:
 		using MutableObjectType = std::remove_const_t<ObjectType>;
 		using HandleBase::operator bool;
 
-		/** A factory which is allowed to create handles from a raw object reference */
+		/** A factory which is allowed to create handles from a raw object reference. It is assumed to be the instance managing the raw object references. */
 		struct Factory {
 		protected:
 			/** Create a new handle from a raw object reference. Must only be called in a thread-safe context. */

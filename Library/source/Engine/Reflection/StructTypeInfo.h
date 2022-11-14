@@ -4,6 +4,8 @@
 #include "Engine/Reflection/TypeInfo.h"
 
 namespace Reflection {
+	struct IStructRoot;
+
 	/** Info for a struct type, which contains various fields and supports inheritance */
 	struct StructTypeInfo : public TypeInfo {
 		using TypeInfo::TypeInfo;
@@ -16,14 +18,23 @@ namespace Reflection {
 		/** The variables that are contained in this type */
 		std::vector<VariableInfo> variables;
 
-		virtual ~StructTypeInfo() = default;
-
-		/** Returns true if the chain of baseType types includes the provided type */
-		bool DerivesFrom(TypeInfo const* other) const {
-			if (this == other) return true;
-			else if (baseType) return baseType->DerivesFrom(other);
+		/** Returns true if base and derived are both structs, and if derived derives from base */
+		static bool IsDerivedFrom(TypeInfo const& base, TypeInfo const& derived) {
+			StructTypeInfo const* baseStruct = base.As<StructTypeInfo>();
+			StructTypeInfo const* derivedStruct = derived.As<StructTypeInfo>();
+			if (baseStruct && derivedStruct && IsDerivedFrom(*baseStruct, *derivedStruct)) return true;
 			else return false;
 		}
+		/** Returns true if derived derives from base */
+		static bool IsDerivedFrom(StructTypeInfo const& base, StructTypeInfo const& derived) {
+			//Walk up the chain of parents until we encounter base or nullptr
+			for (StructTypeInfo const* parent = &derived; parent; parent = parent->baseType) {
+				if (parent == &base) return true;
+			}
+			return false;
+		}
+
+		virtual ~StructTypeInfo() = default;
 
 		/** Finds a variable with the given id */
 		VariableInfo const* FindVariable(Hash32 id) const {
@@ -31,7 +42,12 @@ namespace Reflection {
 			if (iter != variables.end()) return &(*iter);
 			return nullptr;
 		}
+
+		/** Returns the known specific type of an instance deriving from this type, to our best determination. */
+		virtual StructTypeInfo const* GetDerivedTypeInfo(void const* instance) const = 0;
 	};
+
+	HAS_METHOD_TRAIT(GetTypeInfo, StructTypeInfo const&());
 
 	//============================================================
 	// Templates
@@ -42,10 +58,16 @@ namespace Reflection {
 		using StructTypeInfo::baseType;
 		using StructTypeInfo::defaults;
 		using StructTypeInfo::variables;
+		using ImplementedTypeInfo<StructType_, StructTypeInfo>::Cast;
 
 		TStructTypeInfo(std::string_view inName)
 		: ImplementedTypeInfo<StructType_, StructTypeInfo>(Reflect<StructType>::ID, inName)
 		{}
+
+		virtual StructTypeInfo const* GetDerivedTypeInfo(void const* instance) const final {
+			if constexpr (Has_GetTypeInfo_V<StructType>) return &Cast(instance).GetTypeInfo();
+			else return this;
+		}
 
 		TYPEINFO_BUILDER_METHODS(StructType)
 

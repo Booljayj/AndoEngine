@@ -57,3 +57,16 @@ public:
 
 template<class T, class EqualTo = T>
 inline constexpr bool HasOperatorEquals_V = HasOperatorEquals<T, EqualTo>::Value;
+
+/** Create a trait which can determine whether a class has a method with a given name and signature */
+#define HAS_METHOD_TRAIT(MethodName, MethodSignature)\
+template<typename, typename T> struct Has_ ## MethodName {};\
+template<typename C, typename Ret, typename... Args> struct Has_ ## MethodName<C, Ret(Args...)> {\
+private:\
+template<typename T> static constexpr auto check(T*) -> typename std::is_same<decltype(std::declval<T>().MethodName(std::declval<Args>()...)), Ret>::type;\
+template<typename> static constexpr std::false_type check(...); \
+typedef decltype(check<C>(nullptr)) type;\
+public:\
+static constexpr bool Value = type::value;\
+};\
+template<class T> inline constexpr bool Has_ ## MethodName ## _V = Has_GetTypeInfo<T, MethodSignature>::Value

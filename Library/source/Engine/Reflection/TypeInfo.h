@@ -20,6 +20,7 @@ namespace Reflection {
 		Set,
 		//Heterogeneous collection types
 		Poly,
+		Reference,
 		Tuple,
 		Variant,
 	};
@@ -117,6 +118,12 @@ namespace Reflection {
 
 		TypeInfo() = delete;
 		virtual ~TypeInfo();
+
+		/** Allocate uninitialized memory large enough to hold an instance of this type, and return a unique pointer to that memory */
+		std::unique_ptr<void> Allocate() const {
+			//@todo This is a stub for now, fill it out with the actual implementation later
+			return std::unique_ptr<uint8_t>{};
+		}
 
 		/** Return the fully-qualified name of this type, including template parameters */
 		virtual std::string GetName() const { return std::string{ name }; }

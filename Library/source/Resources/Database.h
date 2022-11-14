@@ -40,7 +40,7 @@ namespace Resources {
 
 		virtual Handle<Resource> Create(Identifier id, Reflection::StructTypeInfo const& type) override {
 			//Ensure the resource we are trying to create is a type that this database expects to manage
-			if (!type.DerivesFrom(ReflectStruct<BaseResourceType>::Get())) {
+			if (!Reflection::StructTypeInfo::IsDerivedFrom(*ReflectStruct<BaseResourceType>::Get(), type)) {
 				LOGF(Resources, Error, "Cannot create new resource with id %s. The desired type does not derive from %s", id);
 				return nullptr;
 			}
@@ -79,7 +79,7 @@ namespace Resources {
 			auto const iter = std::find(ids.begin(), ids.end(), id);
 			if (iter != ids.end()) {
 				Resource* resource = resources[iter - ids.begin()];
-				if (resource->GetTypeInfo().DerivesFrom(&type)) {
+				if (Reflection::StructTypeInfo::IsDerivedFrom(type, resource->GetTypeInfo())) {
 					return CreateHandle(*resource);
 				}
 			}
@@ -91,7 +91,7 @@ namespace Resources {
 			auto const iter = std::find(ids.begin(), ids.end(), id);
 			if (iter != ids.end()) {
 				Resource* resource = resources[iter - ids.begin()];
-				if (resource->GetTypeInfo().DerivesFrom(&type)) {
+				if (Reflection::StructTypeInfo::IsDerivedFrom(type, resource->GetTypeInfo())) {
 					return true;
 				}
 			}

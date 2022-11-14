@@ -1,18 +1,18 @@
-*/gen/
 */documentation/
 .vscode/ipch
 
 # Build files
-*/obj/
 *.o
 *.d
 *.a
 *.out
+*.so
+*.exe
 
 # Generated files
 *.pch
-*.*.h
-*.*.cpp
+*.gen.h
+*.gen.cpp
 *.spv
 
 #### OS generated Files
