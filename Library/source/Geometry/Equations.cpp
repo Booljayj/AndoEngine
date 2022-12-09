@@ -39,8 +39,8 @@ namespace Geometry {
 			a /= 3.0f;
 			q = -2.0f * sqrt(q);
 			x[0] = q * cos(t/3.0f) - a;
-			x[1] = q * cos((t+2.0f*M_PI)/3.0f )-a;
-			x[2] = q * cos((t-2.0f*M_PI)/3.0f )-a;
+			x[1] = q * cos((t+2.0f*std::numbers::pi_v<float>)/3.0f )-a;
+			x[2] = q * cos((t-2.0f*std::numbers::pi_v<float>)/3.0f )-a;
 			return 3;
 		} else {
 			float ap = -pow(fabs(r) + sqrt(r2-q3), 1.0f/3.0f);

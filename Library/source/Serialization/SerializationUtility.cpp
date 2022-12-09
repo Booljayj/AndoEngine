@@ -15,7 +15,7 @@ namespace Serialization {
 	ScopedDataBlockWrite::~ScopedDataBlockWrite() {
 		//Compute the size of the data that was written after the size marker.
 		std::streampos const writeEndPosition = streamPtr->tellp();
-		BlockSizeType const blockSize = writeEndPosition - writeStartPosition - sizeof(BlockSizeType);
+		BlockSizeType const blockSize = static_cast<uint32_t>(writeEndPosition - writeStartPosition - sizeof(BlockSizeType));
 		//Write the size to the space we reserved earlier
 		streamPtr->seekp(writeStartPosition);
 		WriteLE(&blockSize, *streamPtr);

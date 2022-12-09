@@ -14,7 +14,7 @@ namespace Math {
 		static_assert((NumBits & Mask) == 0, "Integral type has a non power-of-two size, cannot rotate" );
 
 		n &= Mask;
-		return (x << n) | (x >> (-n & Mask));
+		return (x << n) | (x >> (-static_cast<int64_t>(n) & Mask));
 	}
 
 	//Circular shift right
@@ -28,6 +28,6 @@ namespace Math {
 		static_assert((NumBits & Mask) == 0, "Integral type has a non power-of-two size, cannot rotate" );
 
 		n &= Mask;
-		return (x >> n) | (x << (-n & Mask));
+		return (x >> n) | (x << (-static_cast<int64_t>(n) & Mask));
 	}
 }

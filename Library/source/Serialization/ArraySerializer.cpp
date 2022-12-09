@@ -8,10 +8,13 @@ namespace Serialization {
 		Reflection::ArrayTypeInfo const* const arrayType = type.As<Reflection::ArrayTypeInfo>();
 		if (!arrayType) return false;
 
+		size_t const rawArraySize = arrayType->GetCount(data);
+		if (rawArraySize > std::numeric_limits<uint32_t>::max()) return false;
+
 		ScopedDataBlockWrite const scopedWrite{stream};
 
 		//Write the size of the array to the stream (handles cases where array size changes)
-		uint32_t const arraySize = arrayType->GetCount(data);
+		uint32_t const arraySize = static_cast<uint32_t>(rawArraySize);
 		WriteLE(&arraySize, stream);
 
 		//Get an array of pointers to all the elements

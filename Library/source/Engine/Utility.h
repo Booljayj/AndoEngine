@@ -7,6 +7,17 @@
 //Utility to convert an expanded macro to a string
 #define STRINGIFY_MACRO(x) STRINGIFY(x)
 
+/** Expands to a human-readable description of the compiler used when compiling */
+#if defined(_MSC_VER)
+#define COMPILER_VERSION "Microsoft C/C++ Compiler v" STRINGIFY_MACRO(_MSC_VER)
+#elif defined(__clang__)
+#define COMPILER_VERSION __VERSION__
+#elif defined(__GNUC__)
+#define COMPILER_VERSION __VERSION__
+#else
+#define COMPILER_VERSION "Unknown Compiler"
+#endif
+
 namespace Utility {
 	/** Load a value from a char array. Char array is assumed to be in little-endian order, and must be large enought to contain the value */
 	template<typename T>

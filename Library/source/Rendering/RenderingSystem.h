@@ -41,7 +41,7 @@ namespace Rendering {
 		/** The current selected physical device */
 		VulkanPhysicalDevice const* selectedPhysical = nullptr;
 		/** The index of the currently selected physical device */
-		uint32_t selectedPhysicalIndex = std::numeric_limits<uint32_t>::max();
+		size_t selectedPhysicalIndex = std::numeric_limits<size_t>::max();
 
 		/** The logical device for the currently selected physical device */
 		VulkanLogicalDevice logical;
@@ -75,12 +75,12 @@ namespace Rendering {
 		bool Render(EntityRegistry& registry);
 		void RebuildResources(EntityRegistry& registry);
 
-		inline uint32_t NumPhysicalDevices() const { return availablePhysicalDevices.size(); }
-		inline const Rendering::VulkanPhysicalDevice* GetPhysicalDevice(uint32_t Index) const {
+		inline size_t NumPhysicalDevices() const { return availablePhysicalDevices.size(); }
+		inline const Rendering::VulkanPhysicalDevice* GetPhysicalDevice(size_t Index) const {
 			if (Index < NumPhysicalDevices()) return &availablePhysicalDevices[Index];
 			else return nullptr;
 		}
-		bool SelectPhysicalDevice(uint32_t Index);
+		bool SelectPhysicalDevice(size_t Index);
 
 		/** Find a surface using its id */
 		Surface* FindSurface(uint32_t id) const;

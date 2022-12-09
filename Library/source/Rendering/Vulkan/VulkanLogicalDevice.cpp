@@ -33,7 +33,7 @@ namespace Rendering {
 		uniqueQueueFamilies.insert(physical.queues.present.value().index);
 
 		t_vector<uint32_t> const queueCreateInfoIndices{ uniqueQueueFamilies.begin(), uniqueQueueFamilies.end() };
-		uint32_t const queueCICount = queueCreateInfoIndices.size();
+		size_t const queueCICount = queueCreateInfoIndices.size();
 
 		float queuePriority = 1.0f;
 
@@ -50,12 +50,12 @@ namespace Rendering {
 		VkDeviceCreateInfo deviceCI = {};
 		deviceCI.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 		//Queues
-		deviceCI.queueCreateInfoCount = queueCIs.size();
+		deviceCI.queueCreateInfoCount = static_cast<uint32_t>(queueCIs.size());
 		deviceCI.pQueueCreateInfos = queueCIs.data();
 		//Features
 		deviceCI.pEnabledFeatures = &enabledFeatures;
 		//Extensions
-		deviceCI.enabledExtensionCount = enabledExtensionNames.size();
+		deviceCI.enabledExtensionCount = static_cast<uint32_t>(enabledExtensionNames.size());
 		deviceCI.ppEnabledExtensionNames = enabledExtensionNames.begin();
 
 		assert(!result.device);

@@ -118,102 +118,111 @@ namespace Reflection {
 	namespace mat2x2 {
 		using Type = glm::mat2x2;
 		using ColType = Type::col_type;
+		using IndexType = Type::length_type;
 		auto const info = TStructTypeInfo<Type>{ "glm::mat2x2"sv }
 			.Description("2x2 matrix"sv)
 			.Variables({
-				{ list<Type, ColType>, 0, name_column0, desc_column0, FVariableFlags::None() },
-				{ list<Type, ColType>, 1, name_column1, desc_column1, FVariableFlags::None() },
+				{ list<Type, ColType, IndexType>, 0, name_column0, desc_column0, FVariableFlags::None() },
+				{ list<Type, ColType, IndexType>, 1, name_column1, desc_column1, FVariableFlags::None() },
 			});
 	}
 	namespace mat2x3 {
 		using Type = glm::mat2x3;
 		using ColType = Type::col_type;
+		using IndexType = Type::length_type;
 		auto const info = TStructTypeInfo<Type>{ "glm::mat2x3"sv }
 			.Description("2x3 matrix"sv)
 			.Variables({
-				{ list<Type, ColType>, 0, name_column0, desc_column0, FVariableFlags::None() },
-				{ list<Type, ColType>, 1, name_column1, desc_column1, FVariableFlags::None() },
+				{ list<Type, ColType, IndexType>, 0, name_column0, desc_column0, FVariableFlags::None() },
+				{ list<Type, ColType, IndexType>, 1, name_column1, desc_column1, FVariableFlags::None() },
 			});
 	}
 	namespace mat2x4 {
 		using Type = glm::mat2x4;
 		using ColType = Type::col_type;
+		using IndexType = Type::length_type;
 		auto const info = TStructTypeInfo<Type>{ "glm::mat2x4"sv }
 			.Description("2x4 matrix"sv)
 			.Variables({
-				{ list<Type, ColType>, 0, name_column0, desc_column0, FVariableFlags::None() },
-				{ list<Type, ColType>, 1, name_column1, desc_column1, FVariableFlags::None() },
+				{ list<Type, ColType, IndexType>, 0, name_column0, desc_column0, FVariableFlags::None() },
+				{ list<Type, ColType, IndexType>, 1, name_column1, desc_column1, FVariableFlags::None() },
 			});
 	}
 
 	namespace mat3x2 {
 		using Type = glm::mat3x2;
 		using ColType = Type::col_type;
+		using IndexType = Type::length_type;
 		auto const info = TStructTypeInfo<Type>{ "glm::mat3x2"sv }
 			.Description("3x2 matrix"sv)
 			.Variables({
-				{ list<Type, ColType>, 0, name_column0, desc_column0, FVariableFlags::None() },
-				{ list<Type, ColType>, 1, name_column1, desc_column1, FVariableFlags::None() },
-				{ list<Type, ColType>, 2, name_column2, desc_column2, FVariableFlags::None() },
+				{ list<Type, ColType, IndexType>, 0, name_column0, desc_column0, FVariableFlags::None() },
+				{ list<Type, ColType, IndexType>, 1, name_column1, desc_column1, FVariableFlags::None() },
+				{ list<Type, ColType, IndexType>, 2, name_column2, desc_column2, FVariableFlags::None() },
 			});
 	}
 	namespace mat3x3 {
 		using Type = glm::mat3x3;
 		using ColType = Type::col_type;
+		using IndexType = Type::length_type;
 		auto const info = TStructTypeInfo<Type>{ "glm::mat3x3"sv }
 			.Description("3x3 matrix"sv)
 			.Variables({
-				{ list<Type, ColType>, 0, name_column0, desc_column0, FVariableFlags::None() },
-				{ list<Type, ColType>, 1, name_column1, desc_column1, FVariableFlags::None() },
-				{ list<Type, ColType>, 2, name_column2, desc_column2, FVariableFlags::None() },
+				{ list<Type, ColType, IndexType>, 0, name_column0, desc_column0, FVariableFlags::None() },
+				{ list<Type, ColType, IndexType>, 1, name_column1, desc_column1, FVariableFlags::None() },
+				{ list<Type, ColType, IndexType>, 2, name_column2, desc_column2, FVariableFlags::None() },
 			});
 	}
 	namespace mat3x4 {
 		using Type = glm::mat3x4;
 		using ColType = Type::col_type;
+		using IndexType = Type::length_type;
 		auto const info = TStructTypeInfo<Type>{ "glm::mat3x4"sv }
 			.Description("3x4 matrix"sv)
 			.Variables({
-				{ list<Type, ColType>, 0, name_column0, desc_column0, FVariableFlags::None() },
-				{ list<Type, ColType>, 1, name_column1, desc_column1, FVariableFlags::None() },
-				{ list<Type, ColType>, 2, name_column2, desc_column2, FVariableFlags::None() },
+				{ list<Type, ColType, IndexType>, 0, name_column0, desc_column0, FVariableFlags::None() },
+				{ list<Type, ColType, IndexType>, 1, name_column1, desc_column1, FVariableFlags::None() },
+				{ list<Type, ColType, IndexType>, 2, name_column2, desc_column2, FVariableFlags::None() },
 			});
 	}
 
 	namespace mat4x2 {
 		using Type = glm::mat4x2;
 		using ColType = Type::col_type;
+		using IndexType = Type::length_type;
 		auto const info = TStructTypeInfo<Type>{ "glm::mat4x2"sv }
 			.Description("4x2 matrix"sv)
 			.Variables({
-				{ list<Type, ColType>, 0, name_column0, desc_column0, FVariableFlags::None() },
-				{ list<Type, ColType>, 1, name_column1, desc_column1, FVariableFlags::None() },
-				{ list<Type, ColType>, 2, name_column2, desc_column2, FVariableFlags::None() },
-				{ list<Type, ColType>, 3, name_column3, desc_column3, FVariableFlags::None() },
+				{ list<Type, ColType, IndexType>, 0, name_column0, desc_column0, FVariableFlags::None() },
+				{ list<Type, ColType, IndexType>, 1, name_column1, desc_column1, FVariableFlags::None() },
+				{ list<Type, ColType, IndexType>, 2, name_column2, desc_column2, FVariableFlags::None() },
+				{ list<Type, ColType, IndexType>, 3, name_column3, desc_column3, FVariableFlags::None() },
 			});
 	}
 	namespace mat4x3 {
 		using Type = glm::mat4x3;
 		using ColType = Type::col_type;
+		using IndexType = Type::length_type;
 		auto const info = TStructTypeInfo<Type>{ "glm::mat4x3"sv }
 			.Description("4x3 matrix"sv)
 			.Variables({
-				{ list<Type, ColType>, 0, name_column0, desc_column0, FVariableFlags::None() },
-				{ list<Type, ColType>, 1, name_column1, desc_column1, FVariableFlags::None() },
-				{ list<Type, ColType>, 2, name_column2, desc_column2, FVariableFlags::None() },
-				{ list<Type, ColType>, 3, name_column3, desc_column3, FVariableFlags::None() },
+				{ list<Type, ColType, IndexType>, 0, name_column0, desc_column0, FVariableFlags::None() },
+				{ list<Type, ColType, IndexType>, 1, name_column1, desc_column1, FVariableFlags::None() },
+				{ list<Type, ColType, IndexType>, 2, name_column2, desc_column2, FVariableFlags::None() },
+				{ list<Type, ColType, IndexType>, 3, name_column3, desc_column3, FVariableFlags::None() },
 			});
 	}
 	namespace mat4x4 {
 		using Type = glm::mat4x4;
 		using ColType = Type::col_type;
+		using IndexType = Type::length_type;
 		auto const info = TStructTypeInfo<Type>{ "glm::mat4x4"sv }
 			.Description("4x4 matrix"sv)
 			.Variables({
-				{ list<Type, ColType>, 0, name_column0, desc_column0, FVariableFlags::None() },
-				{ list<Type, ColType>, 1, name_column1, desc_column1, FVariableFlags::None() },
-				{ list<Type, ColType>, 2, name_column2, desc_column2, FVariableFlags::None() },
-				{ list<Type, ColType>, 3, name_column3, desc_column3, FVariableFlags::None() },
+				{ list<Type, ColType, IndexType>, 0, name_column0, desc_column0, FVariableFlags::None() },
+				{ list<Type, ColType, IndexType>, 1, name_column1, desc_column1, FVariableFlags::None() },
+				{ list<Type, ColType, IndexType>, 2, name_column2, desc_column2, FVariableFlags::None() },
+				{ list<Type, ColType, IndexType>, 3, name_column3, desc_column3, FVariableFlags::None() },
 			});
 	}
 }

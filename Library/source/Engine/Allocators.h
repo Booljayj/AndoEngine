@@ -46,29 +46,41 @@ private:
 };
 
 /** Allocator that sequentially requests memory from a buffer. If allocations exceed the buffer, default allocation is used. */
-template<typename T>
+template<typename T, typename FallbackAllocatorType = std::allocator<T>>
 struct TLinearBufferAllocator {
 public:
+	template<typename U, typename OtherAlloc> friend struct TLinearBufferAllocator;
+
 	using value_type = T;
 	using propagate_on_container_move_assignment = std::true_type;
 
 	TLinearBufferAllocator(Buffer& inBuffer) : buffer(&inBuffer) {}
 
 	TLinearBufferAllocator(TLinearBufferAllocator const&) = default;
+	template<class U> TLinearBufferAllocator(const TLinearBufferAllocator<U, typename std::allocator_traits<FallbackAllocatorType>::template rebind_alloc<U>>& other) noexcept : buffer(other.buffer), fallback(other.fallback) {}
 	~TLinearBufferAllocator() = default;
 
-	T* allocate(size_t count, void const* hint = nullptr) {
+	template<class U> bool operator==(const TLinearBufferAllocator<U>& other) const noexcept { return buffer == other.buffer; }
+	template<class U> bool operator!=(const TLinearBufferAllocator<U>& other) const noexcept { return !this->operator==(other); }
+
+	T* allocate(size_t count) {
 		if (T* bufferRequest = buffer->Request<T>(count)) return bufferRequest;
-		else return std::allocator<T>{}.allocate(count, hint);
+		else return fallback.allocate(count);
 	}
 
-	void deallocate(T* pointer, size_t count) {
-		//Only deallocate memory if it does not lie within the buffer. This means we used the standard allocator to create it.
-		if (!buffer->Contains(pointer)) std::allocator<T>{}.deallocate(pointer, count);
+	void deallocate(T* const pointer, size_t count) {
+		//Only deallocate memory if it does not lie within the buffer. This means we used the fallback allocator to create it.
+		if (!buffer->Contains(pointer)) fallback.deallocate(pointer, count);
 	}
 
 	size_t max_size() const { return buffer->GetCapacity(); }
 
+	template<typename U>
+	struct rebind {
+		using other = TLinearBufferAllocator<U, typename std::allocator_traits<FallbackAllocatorType>::template rebind_alloc<U>>;
+	};
+
 private:
 	Buffer* buffer;
+	FallbackAllocatorType fallback;
 };

@@ -48,7 +48,7 @@ namespace Rendering {
 			instanceCI.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 			instanceCI.pApplicationInfo = &appInfo;
 			//Extensions
-			instanceCI.enabledExtensionCount = enabledExtensionNames.size();
+			instanceCI.enabledExtensionCount = static_cast<uint32_t>(enabledExtensionNames.size());
 			instanceCI.ppEnabledExtensionNames = enabledExtensionNames.data();
 #ifdef VULKAN_DEBUG
 			//Validation layers

@@ -77,7 +77,7 @@ namespace Profiling {
 		if (session) session->WriteObjectSnapshotEvent(name, category, address, snapshot, time);
 	}
 
-	uint32_t Profiler::Session::GetThreadID() {
+	size_t Profiler::Session::GetThreadID() {
 		return std::hash<std::thread::id>{}(std::this_thread::get_id());
 	}
 
@@ -94,7 +94,7 @@ namespace Profiling {
 
 		if (file.is_open()) {
 			//Write the file header
-			const uint32_t threadID = GetThreadID();
+			const size_t threadID = GetThreadID();
 			file
 				<< "[{\"ph\":\"I\",\"cat\":\"Default\",\"pid\":0,\"name\":\""sv << name
 				<< " start\",\"tid\":"sv << threadID
@@ -129,7 +129,7 @@ namespace Profiling {
 	}
 
 	void Profiler::Session::WriteInstantEvent(std::string_view name, const ProfileCategory& category, TimePointType time) {
-		const uint32_t threadID = GetThreadID();
+		const size_t threadID = GetThreadID();
 		const uint64_t timeMicroseconds = (time - beginTimePoint).count();
 		file
 			<< ",{\"ph\":\"I\",\"pid\":0,\"name\":\""sv << name
@@ -142,7 +142,7 @@ namespace Profiling {
 	}
 
 	void Profiler::Session::WriteDurationEvent(std::string_view name, const ProfileCategory& category, TimePointType time, DurationType duration) {
-		const uint32_t threadID = GetThreadID();
+		const size_t threadID = GetThreadID();
 		const uint64_t timeMicroseconds = (time - beginTimePoint).count();
 		const uint64_t durationMicroseconds = duration.count();
 		file
@@ -157,7 +157,7 @@ namespace Profiling {
 	}
 
 	void Profiler::Session::WriteCounterEvent(std::string_view name, const ProfileCategory& category, TimePointType time, uint64_t value) {
-		const uint32_t threadID = GetThreadID();
+		const size_t threadID = GetThreadID();
 		const uint64_t timeMicroseconds = (time - beginTimePoint).count();
 		file
 			<< ",{\"ph\":\"C\",\"pid\":0,\"name\":\""sv << name

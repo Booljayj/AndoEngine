@@ -87,18 +87,18 @@ namespace Reflection {
 		}
 
 		/** Construct variable info for a variable that is accessed using an indexing operator at a specific index */
-		template<typename ClassType, typename ReturnType>
-		VariableInfo(TTypeList<ClassType, ReturnType>, size_t index, std::string_view inName, std::string_view inDescription, FVariableFlags inFlags)
+		template<typename ClassType, typename ReturnType, typename IndexType>
+		VariableInfo(TTypeList<ClassType, ReturnType, IndexType>, size_t index, std::string_view inName, std::string_view inDescription, FVariableFlags inFlags)
 		: id(inName, static_cast<uint32_t>(index)), type(Reflect<std::decay_t<ReturnType>>::Get()), name(inName), description(inDescription), flags(inFlags)
 		{
-			CastUntypedStorage<size_t>(storage) = index;
+			CastUntypedStorage<IndexType>(storage) = static_cast<IndexType>(index);
 			immutableGetter = [](StorageType const& storage, void const* instance) -> void const* {
-				const size_t index = CastUntypedStorage<size_t>(storage);
+				const IndexType index = CastUntypedStorage<IndexType>(storage);
 				ClassType const& object = *(static_cast<ClassType const*>(instance));
 				return &(object[index]);
 			};
 			mutableGetter = [](StorageType const& storage, void* instance) -> void* {
-				const size_t index = CastUntypedStorage<size_t>(storage);
+				const IndexType index = CastUntypedStorage<IndexType>(storage);
 				ClassType& object = *(static_cast<ClassType*>(instance));
 				return &(object[index]);
 			};

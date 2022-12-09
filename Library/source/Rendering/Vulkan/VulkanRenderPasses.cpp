@@ -12,7 +12,7 @@ namespace Rendering {
 		renderPassBI.renderArea.offset = VkOffset2D{ rect.offset.x, rect.offset.y };
 		renderPassBI.renderArea.extent = VkExtent2D{ rect.extent.x, rect.extent.y };
 
-		renderPassBI.clearValueCount = std::size(surface.clearValues);
+		renderPassBI.clearValueCount = static_cast<uint32_t>(std::size(surface.clearValues));
 		renderPassBI.pClearValues = surface.clearValues;
 
 		vkCmdBeginRenderPass(commands, &renderPassBI, VK_SUBPASS_CONTENTS_INLINE);
@@ -68,7 +68,7 @@ namespace Rendering {
 			}
 
 			subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-			subpass.colorAttachmentCount = references.size();
+			subpass.colorAttachmentCount = static_cast<uint32_t>(references.size());
 			subpass.pColorAttachments = references.data();
 		}
 
@@ -88,11 +88,11 @@ namespace Rendering {
 		//Information to create the full render pass, with all relevant attachments and subpasses.
 		VkRenderPassCreateInfo passCI{};
 		passCI.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		passCI.attachmentCount = descriptions.size();
+		passCI.attachmentCount = static_cast<uint32_t>(descriptions.size());
 		passCI.pAttachments = descriptions.data();
-		passCI.subpassCount = subpasses.size();
+		passCI.subpassCount = static_cast<uint32_t>(subpasses.size());
 		passCI.pSubpasses = subpasses.data();
-		passCI.dependencyCount = dependencies.size();
+		passCI.dependencyCount = static_cast<uint32_t>(dependencies.size());
 		passCI.pDependencies = dependencies.data();
 
 		assert(!pass);
@@ -122,7 +122,7 @@ namespace Rendering {
 			VkFramebufferCreateInfo framebufferCI{};
 			framebufferCI.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 			framebufferCI.renderPass = pass;
-			framebufferCI.attachmentCount = std::size(attachments);
+			framebufferCI.attachmentCount = static_cast<uint32_t>(std::size(attachments));
 			framebufferCI.pAttachments = attachments;
 			framebufferCI.width = size.x;
 			framebufferCI.height = size.y;

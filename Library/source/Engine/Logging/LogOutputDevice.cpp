@@ -4,11 +4,28 @@
 #include "Engine/StandardTypes.h"
 #include "Engine/TerminalColors.h"
 
+#if defined(_MSC_VER)
+#include "Windows.h"
+#endif
+
 TerminalOutputDevice::TerminalOutputDevice() {
+#if defined(_MSC_VER)
+	string << "Starting Log at " << TimeStamp::Now() << std::endl;
+	::OutputDebugStringA(string.str().c_str());
+	string.str(std::string{});
+	string.clear();
+#else
 	std::cout << "Starting Log at " << TimeStamp::Now() << std::endl;
+#endif
 }
 
 void TerminalOutputDevice::ProcessOutput(LogOutput const& output) {
+#if defined(_MSC_VER)
+	string << output << std::endl;
+	::OutputDebugStringA(string.str().c_str());
+	string.str(std::string{});
+	string.clear();
+#else
 	switch (output.verbosity) {
 		case ELogVerbosity::Debug:
 		std::cout << LogUtility::GetTerminalColor(ELogVerbosity::Debug) << output << TERM_NoColor << std::endl;
@@ -29,6 +46,7 @@ void TerminalOutputDevice::ProcessOutput(LogOutput const& output) {
 		default:
 		break;
 	}
+#endif
 }
 
 StreamOutputDevice::StreamOutputDevice(std::ostream& inStream)

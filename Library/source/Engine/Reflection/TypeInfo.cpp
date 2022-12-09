@@ -7,6 +7,10 @@ namespace Reflection {
 		return globalCollection;
 	}
 
+	void TypeUniquePointerDeleter::operator()(void* pointer) {
+		std::free(pointer);
+	}
+
 	std::deque<TypeInfo const*> const& TypeInfo::GetGlobalTypeInfoCollection() {
 		return GetMutableGlobalTypeInfoCollection();
 	}
@@ -37,5 +41,10 @@ namespace Reflection {
 			std::iter_swap(iter, TypeInfoCollection.end() - 1);
 			TypeInfoCollection.pop_back();
 		}
+	}
+
+	TypeUniquePointer TypeInfo::Allocate() const {
+		void* pointer = std::malloc(memory.size);
+		return TypeUniquePointer{ static_cast<std::byte*>(pointer) };
 	}
 }

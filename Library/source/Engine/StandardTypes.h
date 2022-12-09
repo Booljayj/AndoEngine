@@ -65,6 +65,7 @@ using namespace std::string_view_literals;
 #include <initializer_list>
 #include <iterator>
 #include <limits>
+#include <numbers>
 #include <numeric>
 #include <typeinfo>
 #include <utility>
@@ -111,11 +112,13 @@ namespace stdext {
 // GLM types
 
 #define GLM_FORCE_RADIANS
+#define GLM_FORCE_ALIGNED_GENTYPES
 #define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/common.hpp>
 #include <glm/glm.hpp>
 #include <glm/geometric.hpp>
 #include <glm/gtc/packing.hpp>
+#include <glm/gtc/type_aligned.hpp>
 #include <glm/gtx/exterior_product.hpp>
 #include <glm/matrix.hpp>

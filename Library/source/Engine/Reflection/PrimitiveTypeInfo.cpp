@@ -41,7 +41,7 @@ L_DEFINE_REFLECT_PRIMITIVE(int32_t, "signed 32-bit integer");
 L_DEFINE_REFLECT_PRIMITIVE(uint32_t, "unsigned 32-bit integer");
 L_DEFINE_REFLECT_PRIMITIVE(int64_t, "signed 64-bit integer");
 L_DEFINE_REFLECT_PRIMITIVE(uint64_t, "unsigned 64-bit integer");
-L_DEFINE_REFLECT_PRIMITIVE(size_t, "size integer");
+//L_DEFINE_REFLECT_PRIMITIVE(size_t, "size integer");
 
 L_DEFINE_REFLECT_PRIMITIVE(char, "single-byte");
 L_DEFINE_REFLECT_PRIMITIVE(char8_t, "8-bit character");

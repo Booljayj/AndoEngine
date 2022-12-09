@@ -18,6 +18,7 @@ namespace Rendering {
 
 	std::array<VkVertexInputAttributeDescription, std::tuple_size_v<Vertex_Simple::VariableTypes>> Vertex_Simple::GetAttributeDescriptions() {
 		using ThisClass = Vertex_Simple;
+		constexpr size_t sizes = TupleElementSizes<VariableTypes>::Sum();
 		L_VERIFY_PACKING(ThisClass, VariableTypes);
 
 		return {

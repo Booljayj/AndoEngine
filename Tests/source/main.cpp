@@ -3,8 +3,9 @@
 #include "Engine/Logging.h"
 #include "EntityFramework/EntityRegistry.h"
 #include "EntityFramework/UtilityMacros.h"
-#include "HAL/FrameworkSystem.h"
 #include "HAL/EventsSystem.h"
+#include "HAL/FrameworkSystem.h"
+#include "HAL/SDL2.h"
 #include "HAL/WindowingSystem.h"
 #include "Rendering/RenderingSystem.h"
 #include "Profiling/ProfilerMacros.h"
@@ -85,7 +86,7 @@ struct Application {
 	}
 };
 
-int32_t main(int32_t argc, char const* argv[]) {
+int main(int argc, char** argv) {
 	//Create the heap buffer for the main thread
 	HeapBuffer buffer{ 20'000 };
 	AssignThreadTemporaryBuffer(buffer);
@@ -93,7 +94,7 @@ int32_t main(int32_t argc, char const* argv[]) {
 	Logger::Get().CreateDevice<TerminalOutputDevice>();
 
 	LOG(Main, Info, "Hello, World! This is AndoEngine.");
-	LOG(Main, Debug, "Compiled with " __VERSION__ " on " __DATE__);
+	LOG(Main, Debug, "Compiled with " COMPILER_VERSION " on " __DATE__);
 
 	Application application;
 

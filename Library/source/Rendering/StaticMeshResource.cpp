@@ -11,7 +11,7 @@ namespace Rendering {
 
 	bool StaticMeshResourceDatabase::Shutdown() {
 		std::unique_lock lock{ mutex };
-		for (Resources::Resource* resource : resources) Destroy(*resource);
+		for (const auto& resource : resources) Destroy(*reinterpret_cast<Resources::Resource*>(resource.get()));
 		ids.clear();
 		resources.clear();
 		return true;

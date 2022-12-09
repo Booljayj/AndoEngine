@@ -15,6 +15,9 @@ struct TerminalOutputDevice : public LogOutputDevice {
 public:
 	TerminalOutputDevice();
 	virtual void ProcessOutput(LogOutput const& output) override;
+
+private:
+	std::ostringstream string;
 };
 
 /** Writes output to an arbitrary stream */

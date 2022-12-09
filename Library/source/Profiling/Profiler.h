@@ -44,7 +44,7 @@ namespace Profiling {
 			std::ofstream file;
 			uint16_t flushCounter;
 
-			static uint32_t GetThreadID();
+			static size_t GetThreadID();
 
 			Session(std::string_view inName);
 			~Session();

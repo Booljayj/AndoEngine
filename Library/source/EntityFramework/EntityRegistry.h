@@ -14,7 +14,10 @@ struct EntityView {};
 template<typename... IncludedTypes, typename... ExcludedTypes>
 struct EntityView<TTypeList<IncludedTypes...>, TTypeList<ExcludedTypes...>> {
 private:
-	using ViewType = entt::basic_view<entt::entity, entt::get_t<IncludedTypes...>, entt::exclude_t<ExcludedTypes...>>;
+	using ViewType = entt::basic_view<
+		entt::get_t<entt::registry::storage_for_type<IncludedTypes>...>,
+		entt::exclude_t<entt::registry::storage_for_type<ExcludedTypes>...>
+	>;
 	using IteratorType = typename ViewType::iterator;
 	ViewType view;
 
@@ -47,7 +50,11 @@ struct EntityGroup {};
 template<typename... OwnedTypes, typename... IncludedTypes, typename... ExcludedTypes>
 struct EntityGroup<TTypeList<OwnedTypes...>, TTypeList<IncludedTypes...>, TTypeList<ExcludedTypes...>> {
 private:
-	using GroupType = entt::basic_group<entt::entity, entt::exclude_t<ExcludedTypes...>, entt::get_t<IncludedTypes...>, OwnedTypes...>;
+	using GroupType = entt::basic_group<
+		entt::owned_t<entt::registry::storage_for_type<OwnedTypes>...>,
+		entt::get_t<entt::registry::storage_for_type<IncludedTypes>...>,
+		entt::exclude_t<entt::registry::storage_for_type<ExcludedTypes>...>
+	>;
 	using IteratorType = typename GroupType::iterator;
 	GroupType group;
 
@@ -81,19 +88,19 @@ public:
 	: registry(inRegistry)
 	{}
 
-	template<void(&func)(entt::registry&, entt::entity)>
-	ComponentCallbackBinder& Create() {
-		registry.on_construct<Type>().template connect<&func>();
+	template<void(*func)(entt::registry&, entt::entity)>
+	ComponentCallbackBinder<Type>& Create() {
+		registry.on_construct<Type>().template connect<func>();
 		return *this;
 	}
-	template<void(&func)(entt::registry&, entt::entity)>
-	ComponentCallbackBinder& Destroy() {
-		registry.on_destroy<Type>().template connect<&func>();
+	template<void(*func)(entt::registry&, entt::entity)>
+	ComponentCallbackBinder<Type>& Destroy() {
+		registry.on_destroy<Type>().template connect<func>();
 		return *this;
 	}
-	template<void(&func)(entt::registry&, entt::entity)>
-	ComponentCallbackBinder& Modify() {
-		registry.on_update<Type>().template connect<&func>();
+	template<void(*func)(entt::registry&, entt::entity)>
+	ComponentCallbackBinder<Type>& Modify() {
+		registry.on_update<Type>().template connect<func>();
 		return *this;
 	}
 
@@ -158,7 +165,7 @@ public:
 
 	/** Bind a context object to this registry. It can be retrieved from the registry later. */
 	template<typename Type>
-	void Bind(Type* object) { registry.set<Type*>(object); }
+	void Bind(Type* object) { registry.ctx().emplace<Type*>(object); }
 
 private:
 	entt::registry registry;

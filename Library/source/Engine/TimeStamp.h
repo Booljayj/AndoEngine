@@ -37,7 +37,7 @@ public:
 	static CalendarTimeStamp Now();
 
 	CalendarTimeStamp() = default;
-	CalendarTimeStamp(uint64_t inValue) noexcept : value(inValue) {}
+	CalendarTimeStamp(StorageType inValue) noexcept : value(inValue) {}
 	CalendarTimeStamp(DaysType const& daysSinceEpochStart) noexcept;
 	CalendarTimeStamp(TimePointType const& timepoint) noexcept;
 
@@ -88,7 +88,7 @@ public:
 	static ClockTimeStamp Now();
 
 	ClockTimeStamp() = default;
-	ClockTimeStamp(uint64_t inValue) noexcept : value(inValue) {}
+	ClockTimeStamp(StorageType inValue) noexcept : value(inValue) {}
 	ClockTimeStamp(MillisecondsType const& millisecondsSinceDayStart) noexcept;
 	ClockTimeStamp(TimePointType const& timepoint) noexcept;
 

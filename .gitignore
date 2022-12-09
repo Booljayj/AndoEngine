@@ -1,5 +1,7 @@
 */documentation/
 .vscode/ipch
+out/*
+.vs/*
 
 # Build files
 *.o
@@ -8,6 +10,10 @@
 *.out
 *.so
 *.exe
+*.lib
+*.dll
+*.ilk
+*.pdb
 
 # Generated files
 *.pch
@@ -15,7 +21,7 @@
 *.gen.cpp
 *.spv
 
-#### OS generated Files
+# OS generated Files
 .DS_Store
 .DS_Store?
 ._*

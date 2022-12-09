@@ -28,7 +28,7 @@ namespace Rendering {
 			t_vector<VkPhysicalDevice> devices{ deviceCount };
 			vkEnumeratePhysicalDevices(framework.instance, &deviceCount, devices.data());
 
-			for (int32_t deviceIndex = 0; deviceIndex < deviceCount; ++deviceIndex) {
+			for (uint32_t deviceIndex = 0; deviceIndex < deviceCount; ++deviceIndex) {
 				const VulkanPhysicalDevice physicalDevice = primarySurface->GetPhysicalDevice(devices[deviceIndex]);
 				if (IsUsablePhysicalDevice(physicalDevice, extensionNames)) {
 					availablePhysicalDevices.push_back(physicalDevice);
@@ -58,7 +58,7 @@ namespace Rendering {
 			poolInfo.flags = 0; // Optional
 
 			if (vkCreateCommandPool(logical.device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
-				LOGF(Vulkan, Error, "Failed to create command pool for frame %i", index);
+				LOG(Vulkan, Error, "Failed to create command pool for rendering system");
 				return false;
 			}
 		}
@@ -70,13 +70,13 @@ namespace Rendering {
 		registry.Bind(this);
 		//Add the callbacks for rendering-related components.
 		registry.Callbacks<MaterialComponent>()
-			.Create<MaterialComponentOperations::OnCreate>()
-			.Destroy<MaterialComponentOperations::OnDestroy>()
-			.Modify<MaterialComponentOperations::OnModify>();
+			.Create<&MaterialComponentOperations::OnCreate>()
+			.Destroy<&MaterialComponentOperations::OnDestroy>()
+			.Modify<&MaterialComponentOperations::OnModify>();
 		registry.Callbacks<MeshComponent>()
-			.Create<MeshComponentOperations::OnCreate>()
-			.Destroy<MeshComponentOperations::OnDestroy>()
-			.Modify<MaterialComponentOperations::OnModify>();
+			.Create<&MeshComponentOperations::OnCreate>()
+			.Destroy<&MeshComponentOperations::OnDestroy>()
+			.Modify<&MaterialComponentOperations::OnModify>();
 
 		//@todo Create a group for renderable entities, once we have more than one component to include in the group (i.e. renderer and transform).
 
@@ -153,7 +153,7 @@ namespace Rendering {
 		}
 	}
 
-	bool RenderingSystem::SelectPhysicalDevice(uint32_t index) {
+	bool RenderingSystem::SelectPhysicalDevice(size_t index) {
 		if (index != selectedPhysicalIndex) {
 			if (VulkanPhysicalDevice const* newPhysical = GetPhysicalDevice(index)) {
 				TArrayView<char const*> const extensions = VulkanPhysicalDevice::GetExtensionNames();
@@ -210,36 +210,36 @@ namespace Rendering {
 	}
 
 	void RenderingSystem::MaterialComponentOperations::OnCreate(entt::registry& registry, entt::entity entity) {
-		RenderingSystem* rendering = registry.ctx<RenderingSystem*>();
+		RenderingSystem* rendering = registry.ctx().get<RenderingSystem*>();
 		rendering->shouldCreatePipelines = true;
 	}
 
 	void RenderingSystem::MaterialComponentOperations::OnDestroy(entt::registry& registry, entt::entity entity) {
-		RenderingSystem* rendering = registry.ctx<RenderingSystem*>();
+		RenderingSystem* rendering = registry.ctx().get<RenderingSystem*>();
 		MaterialComponent& material = registry.get<MaterialComponent>(entity);
 		rendering->MarkPipelineStale(material);
 	}
 
 	void RenderingSystem::MaterialComponentOperations::OnModify(entt::registry& registry, entt::entity entity) {
-		RenderingSystem* rendering = registry.ctx<RenderingSystem*>();
+		RenderingSystem* rendering = registry.ctx().get<RenderingSystem*>();
 		MaterialComponent& material = registry.get<MaterialComponent>(entity);
 		rendering->MarkPipelineStale(material);
 		rendering->shouldCreatePipelines = true;
 	}
 
 	void RenderingSystem::MeshComponentOperations::OnCreate(entt::registry& registry, entt::entity entity) {
-		RenderingSystem* rendering = registry.ctx<RenderingSystem*>();
+		RenderingSystem* rendering = registry.ctx().get<RenderingSystem*>();
 		rendering->shouldCreateMeshes = true;
 	}
 
 	void RenderingSystem::MeshComponentOperations::OnDestroy(entt::registry& registry, entt::entity entity) {
-		RenderingSystem* rendering = registry.ctx<RenderingSystem*>();
+		RenderingSystem* rendering = registry.ctx().get<RenderingSystem*>();
 		MeshComponent& mesh = registry.get<MeshComponent>(entity);
 		rendering->MarkMeshStale(mesh);
 	}
 
 	void RenderingSystem::MeshComponentOperations::OnModify(entt::registry& registry, entt::entity entity) {
-		RenderingSystem* rendering = registry.ctx<RenderingSystem*>();
+		RenderingSystem* rendering = registry.ctx().get<RenderingSystem*>();
 		MeshComponent& mesh = registry.get<MeshComponent>(entity);
 		rendering->MarkMeshStale(mesh);
 		rendering->shouldCreateMeshes = true;
@@ -331,7 +331,7 @@ namespace Rendering {
 
 			VkPipelineLayoutCreateInfo layoutCI{};
 			layoutCI.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-			layoutCI.setLayoutCount = std::size(setLayouts);
+			layoutCI.setLayoutCount = static_cast<uint32_t>(std::size(setLayouts));
 			layoutCI.pSetLayouts = setLayouts;
 			layoutCI.pushConstantRangeCount = 0; // Optional
 			layoutCI.pPushConstantRanges = nullptr; // Optional
@@ -552,8 +552,8 @@ namespace Rendering {
 		//Record the size and offset information. This is the primary way we'll know that the resources are valid
 		resources.offset.vertex = 0;
 		resources.offset.index = vertexBytes;
-		resources.size.vertices = mesh.vertices.size();
-		resources.size.indices = mesh.indices.size();
+		resources.size.vertices = static_cast<uint32_t>(mesh.vertices.size());
+		resources.size.indices = static_cast<uint32_t>(mesh.indices.size());
 		return resources;
 	}
 }

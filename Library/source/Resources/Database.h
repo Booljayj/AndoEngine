@@ -63,8 +63,9 @@ namespace Resources {
 			ids.emplace_back(id);
 
 			//Create the memory in the array for the resource, store it, then construct the value. This allows constructors to access their own entry if necessary.
-			Resource* resource = static_cast<Resource*>(aligned_alloc(type.memory.alignment, type.memory.size));
-			resources.emplace_back(resource);
+			Reflection::TypeUniquePointer& pointer = resources.emplace_back(type.Allocate());
+			Resource* resource = reinterpret_cast<Resource*>(pointer.get());
+
 			type.Construct(resource);
 			static_cast<Implementation*>(this)->PostCreate(*static_cast<BaseResourceType*>(resource));
 
@@ -78,7 +79,7 @@ namespace Resources {
 			std::shared_lock lock{ mutex };
 			auto const iter = std::find(ids.begin(), ids.end(), id);
 			if (iter != ids.end()) {
-				Resource* resource = resources[iter - ids.begin()];
+				Resource* resource = reinterpret_cast<Resource*>(resources[iter - ids.begin()].get());
 				if (Reflection::StructTypeInfo::IsDerivedFrom(type, resource->GetTypeInfo())) {
 					return CreateHandle(*resource);
 				}
@@ -90,7 +91,7 @@ namespace Resources {
 			std::shared_lock lock{ mutex };
 			auto const iter = std::find(ids.begin(), ids.end(), id);
 			if (iter != ids.end()) {
-				Resource* resource = resources[iter - ids.begin()];
+				Resource* resource = reinterpret_cast<Resource*>(resources[iter - ids.begin()].get());
 				if (Reflection::StructTypeInfo::IsDerivedFrom(type, resource->GetTypeInfo())) {
 					return true;
 				}
@@ -119,6 +120,6 @@ namespace Resources {
 
 	protected:
 		/** Pointers to resources that are currently in this database */
-		std::deque<Resource*> resources;
+		std::deque<Reflection::TypeUniquePointer> resources;
 	};
 }

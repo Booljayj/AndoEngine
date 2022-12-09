@@ -26,11 +26,19 @@ inline void AssignThreadTemporaryBuffer(Buffer& buffer) {
 
 /** Allocator used for temporary allocations */
 template<typename T>
-struct TTemporaryAllocator : public TLinearBufferAllocator<T> {
+struct TTemporaryAllocator : public TLinearBufferAllocator<T, std::allocator<T>> {
 public:
 	TTemporaryAllocator()
-	: TLinearBufferAllocator<T>(*threadTemporaryBuffer)
+		: TLinearBufferAllocator<T, std::allocator<T>>(*threadTemporaryBuffer)
 	{}
+
+	TTemporaryAllocator(TTemporaryAllocator const&) = default;
+	template<typename U> TTemporaryAllocator(TTemporaryAllocator<U> const& other) : TLinearBufferAllocator<T>(other) {}
+
+	template<typename U>
+	struct rebind {
+		using other = TTemporaryAllocator<U>;
+	};
 };
 
 //============================================================

@@ -87,6 +87,14 @@ namespace Reflection {
 		return reinterpret_cast<uintptr_t>(static_cast<void const*>(&unique));
 	}
 
+	/** Deleter which deletes the memory allocated for an arbitrary type instance */
+	struct TypeUniquePointerDeleter {
+		void operator()(void* pointer);
+	};
+
+	/** A pointer to an arbitrary type instance created through the reflection system */
+	using TypeUniquePointer = std::unique_ptr<std::byte[], TypeUniquePointerDeleter>;
+
 	/** Provides a set of runtime information about a type */
 	struct TypeInfo {
 	public:
@@ -120,10 +128,7 @@ namespace Reflection {
 		virtual ~TypeInfo();
 
 		/** Allocate uninitialized memory large enough to hold an instance of this type, and return a unique pointer to that memory */
-		std::unique_ptr<void> Allocate() const {
-			//@todo This is a stub for now, fill it out with the actual implementation later
-			return std::unique_ptr<uint8_t>{};
-		}
+		TypeUniquePointer Allocate() const;
 
 		/** Return the fully-qualified name of this type, including template parameters */
 		virtual std::string GetName() const { return std::string{ name }; }

@@ -4,6 +4,7 @@ namespace Reflection {
 	#define CASE_ENUM(Value, Display) case ETypeClassification::Value: return #Display;
 	std::string_view GetClassificationIdentifier(ETypeClassification classification) {
 		switch (classification) {
+			default:
 			CASE_ENUM(Unknown, XXXX);
 			CASE_ENUM(Primitive, PRIM);
 			CASE_ENUM(Struct, STRU);

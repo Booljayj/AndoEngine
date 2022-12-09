@@ -3,7 +3,7 @@
 
 namespace Rendering {
 	bool VulkanFrameOrganizer::Create(VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical, VulkanUniformLayouts const& uniformLayouts, EBuffering buffering, size_t numImages, size_t numThreads) {
-		size_t const numFrames = static_cast<size_t>(buffering) + 1;
+		uint32_t const numFrames = static_cast<size_t>(buffering) + 1;
 		assert(numFrames > 0 && numFrames < 4);
 
 		//Create the descriptor pool
@@ -24,7 +24,7 @@ namespace Rendering {
 
 			VkDescriptorPoolCreateInfo descriptorPoolCI{};
 			descriptorPoolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-			descriptorPoolCI.poolSizeCount = poolSizes.size();
+			descriptorPoolCI.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
 			descriptorPoolCI.pPoolSizes = poolSizes.data();
 			descriptorPoolCI.maxSets = 2 * numFrames;
 
@@ -246,7 +246,7 @@ namespace Rendering {
 		VkSemaphore const waitSemaphores[] = { frame.semaphores.imageAvailable };
 		VkPipelineStageFlags const waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 		static_assert(std::size(waitSemaphores) == std::size(waitStages), "Number of semaphores must equal number of stages");
-		submitInfo.waitSemaphoreCount = std::size(waitSemaphores);
+		submitInfo.waitSemaphoreCount = static_cast<uint32_t>(std::size(waitSemaphores));
 		submitInfo.pWaitSemaphores = waitSemaphores;
 		submitInfo.pWaitDstStageMask = waitStages;
 
@@ -254,7 +254,7 @@ namespace Rendering {
 		submitInfo.pCommandBuffers = &frame.commands;
 
 		VkSemaphore const signalSemaphores[] = { frame.semaphores.renderFinished };
-		submitInfo.signalSemaphoreCount = std::size(signalSemaphores);
+		submitInfo.signalSemaphoreCount = static_cast<uint32_t>(std::size(signalSemaphores));
 		submitInfo.pSignalSemaphores = signalSemaphores;
 
 		//Submit the actual command buffer
@@ -271,7 +271,7 @@ namespace Rendering {
 		presentInfo.pWaitSemaphores = signalSemaphores;
 
 		VkSwapchainKHR const swapChains[] = { swapchain.swapchain };
-		presentInfo.swapchainCount = std::size(swapChains);
+		presentInfo.swapchainCount = static_cast<uint32_t>(std::size(swapChains));
 		presentInfo.pSwapchains = swapChains;
 		presentInfo.pImageIndices = &currentImageIndex;
 
@@ -294,7 +294,7 @@ namespace Rendering {
 			fences[index] = resources[index].fence;
 		}
 
-		vkWaitForFences(logical.device, numFences, fences.data(), VK_TRUE, std::numeric_limits<uint64_t>::max());
+		vkWaitForFences(logical.device, static_cast<uint32_t>(numFences), fences.data(), VK_TRUE, std::numeric_limits<uint64_t>::max());
 		vkDeviceWaitIdle(logical.device);
 	}
 }

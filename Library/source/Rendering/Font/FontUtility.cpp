@@ -80,13 +80,14 @@ namespace Rendering {
 		return true;
 	}
 
-	t_vector<::std::tuple<uint32_t, uint32_t, glm::vec2>> DumpKerningValues(FT_Face face, char32_t codePoint) {
-		t_vector<::std::tuple<uint32_t, uint32_t, glm::vec2>> kerningValues;
+	t_vector<std::tuple<uint32_t, uint32_t, glm::vec2>> DumpKerningValues(FT_Face face, char32_t codePoint) {
+		t_vector<std::tuple<uint32_t, uint32_t, glm::vec2>> kerningValues;
 		kerningValues.reserve(128);
 		if (FT_HAS_KERNING(face)) {
-			int32_t const firstGlyphIndex = FT_Get_Char_Index(face, codePoint);
+			uint32_t const firstGlyphIndex = FT_Get_Char_Index(face, codePoint);
+			uint32_t const numGlyphs = static_cast<uint32_t>(face->num_glyphs);
 			FT_Vector kerning;
-			for (size_t secondGlyphIndex = 0; secondGlyphIndex < face->num_glyphs; ++secondGlyphIndex) {
+			for (uint32_t secondGlyphIndex = 0; secondGlyphIndex < numGlyphs; ++secondGlyphIndex) {
 				FT_Error const error = FT_Get_Kerning(face, firstGlyphIndex, secondGlyphIndex, FT_Kerning_Mode_::FT_KERNING_UNSCALED, &kerning);
 				if (error || (kerning.x == 0 && kerning.y == 0)) continue;
 				kerningValues.push_back(std::make_tuple(firstGlyphIndex, secondGlyphIndex, glm::vec2{kerning.x, kerning.y}));
@@ -94,5 +95,4 @@ namespace Rendering {
 		}
 		return kerningValues;
 	}
-
 }

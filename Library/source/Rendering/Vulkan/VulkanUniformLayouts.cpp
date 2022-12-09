@@ -11,7 +11,7 @@ namespace Rendering {
 
 			VkDescriptorSetLayoutCreateInfo layoutCI{};
 			layoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-			layoutCI.bindingCount = bindings.size();
+			layoutCI.bindingCount = static_cast<uint32_t>(bindings.size());
 			layoutCI.pBindings = bindings.data();
 
 			assert(!global);
@@ -27,7 +27,7 @@ namespace Rendering {
 
 			VkDescriptorSetLayoutCreateInfo layoutCI{};
 			layoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-			layoutCI.bindingCount = bindings.size();
+			layoutCI.bindingCount = static_cast<uint32_t>(bindings.size());
 			layoutCI.pBindings = bindings.data();
 
 			assert(!object);

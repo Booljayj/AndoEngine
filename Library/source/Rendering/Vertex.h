@@ -18,16 +18,16 @@ namespace Rendering {
 	/** Pack and unpack normalized vectors using a 32-bit unsigned integer */
 	inline uint32_t PackNormal(glm::vec3 vector) {
 		//Pack using the 2_10_10_10 format, 10-bit precision on x, y, and z with an unused 2-bit w component.
-		uint32_t const x = std::roundf(std::clamp(vector.x, -1.0f, 1.0f) * 1023.0f);
-		uint32_t const y = std::roundf(std::clamp(vector.y, -1.0f, 1.0f) * 1023.0f);
-		uint32_t const z = std::roundf(std::clamp(vector.z, -1.0f, 1.0f) * 1023.0f);
+		uint32_t const x = static_cast<uint32_t>(std::lroundf(std::clamp(vector.x, -1.0f, 1.0f) * 1023.0f));
+		uint32_t const y = static_cast<uint32_t>(std::lroundf(std::clamp(vector.y, -1.0f, 1.0f) * 1023.0f));
+		uint32_t const z = static_cast<uint32_t>(std::lroundf(std::clamp(vector.z, -1.0f, 1.0f) * 1023.0f));
 		return (z << 20) | (y << 10) | x;
 	}
 	inline uint32_t PackNormal(float x, float y, float z) { return PackNormal({x,y,z}); }
 
 	/** A simple 3D vertex */
 	struct Vertex_Simple {
-		glm::vec3 position; Color color;
+		glm::packed_vec3 position; Color color;
 		uint32_t normal; uint32_t uv0; uint32_t uv1; uint32_t uv2;
 
 		enum class VariableIndices : uint8_t {
@@ -55,7 +55,7 @@ namespace Rendering {
 
 	/** A complex 3d vertex, with tangent space vectors */
 	struct Vertex_Complex {
-		glm::vec3 position; Color color;
+		glm::packed_vec3 position; Color color;
 		uint32_t normal; uint32_t tangent; uint32_t bitangent; uint32_t userData;
 		uint32_t uv0; uint32_t uv1; uint32_t uv2; uint32_t uv3;
 

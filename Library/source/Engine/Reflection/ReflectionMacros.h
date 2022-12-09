@@ -27,7 +27,7 @@ virtual ::Reflection::StructTypeInfo const& GetTypeInfo() const { return info_ #
 /** Define members of a struct used for reflection */
 #define DEFINE_REFLECT_STRUCT(Namespace, StructType)\
 DEFINE_REFLECT(Namespace::StructType, Struct, Namespace::StructType::info_ ## StructType)\
-auto const Namespace::StructType::info_ ## StructType = ::Reflection::TStructTypeInfo<Namespace::StructType>{ std::string_view{ STRINGIFY(Namespace::StructType) } }\
+::Reflection::TStructTypeInfo<Namespace::StructType> const Namespace::StructType::info_ ## StructType = ::Reflection::TStructTypeInfo<Namespace::StructType>{ std::string_view{ STRINGIFY(Namespace::StructType) } }\
 	.BaseType<Namespace::StructType::BaseType>()
 
 //============================================================
@@ -41,4 +41,4 @@ static ::Reflection::TAliasTypeInfo<ThisType> const info_ ## AliasType
 /** Define members of an alias used for reflection */
 #define DEFINE_REFLECT_ALIAS(Namespace, AliasType)\
 DEFINE_REFLECT(Namespace::AliasType, Alias, Namespace::AliasType::info_ ## AliasType)\
-auto const Namespace::AliasType::info_ ## AliasType = ::Reflection::TAliasTypeInfo<Namespace::AliasType>{ std::string_view{ STRINGIFY(Namespace::AliasType) } }
+::Reflection::TAliasTypeInfo<Namespace::AliasType> const Namespace::AliasType::info_ ## AliasType = ::Reflection::TAliasTypeInfo<Namespace::AliasType>{ std::string_view{ STRINGIFY(Namespace::AliasType) } }

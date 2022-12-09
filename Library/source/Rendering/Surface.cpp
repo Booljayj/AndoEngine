@@ -132,7 +132,7 @@ namespace Rendering {
 				auto const* material = materials.Find<MaterialComponent const>(renderer.material);
 				auto const* mesh = meshes.Find<MeshComponent const>(renderer.mesh);
 				if (material && material->resources && mesh && mesh->resources) {
-					uint32_t const objectUniformsOffset = sizeof(ObjectUniforms) * objectIndex;
+					uint32_t const objectUniformsOffset = static_cast<uint32_t>(sizeof(ObjectUniforms) * objectIndex);
 
 					//Write to the part of the object uniform buffer designated for this object
 					ObjectUniforms object;
@@ -148,7 +148,7 @@ namespace Rendering {
 						//materialInstance->resources.set,
 						frame.uniforms.object.set,
 					};
-					vkCmdBindDescriptorSets(frame.commands, VK_PIPELINE_BIND_POINT_GRAPHICS, material->resources.pipelineLayout, 0, std::size(sets), sets, 1, &objectUniformsOffset);
+					vkCmdBindDescriptorSets(frame.commands, VK_PIPELINE_BIND_POINT_GRAPHICS, material->resources.pipelineLayout, 0, static_cast<uint32_t>(std::size(sets)), sets, 1, &objectUniformsOffset);
 
 					//Bind the vetex and index buffers for the mesh
 					VkBuffer const vertexBuffers[] = { mesh->resources.buffer };

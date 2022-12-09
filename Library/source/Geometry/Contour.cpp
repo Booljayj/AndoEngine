@@ -55,7 +55,7 @@ namespace Geometry {
 				previous = current;
 			}
 		}
-		return glm::sign(total);
+		return static_cast<int8_t>(glm::sign(total));
 	}
 
 	void ContourUtility::SplitContourIntoThirds(Contour& curve) {
