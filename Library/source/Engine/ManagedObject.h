@@ -17,11 +17,12 @@ private:
 		ManagedObject* object = nullptr;
 
 		HandleBase() = default;
-		HandleBase(HandleBase const& other) : object(other.object) {
-			if (object) object->refCount.fetch_add(1);
-		}
-		HandleBase(HandleBase&& other) : object(other.object) {
+		HandleBase(HandleBase const& other) : HandleBase(other.object) {}
+		HandleBase(HandleBase&& other) noexcept : object(other.object) {
 			other.object = nullptr;
+		}
+		HandleBase(ManagedObject* inObject) : object(inObject) {
+			if (object) object->refCount.fetch_add(1);
 		}
 		HandleBase(ManagedObject& inObject) : object(&inObject) {
 			object->refCount.fetch_add(1);
@@ -42,6 +43,9 @@ public:
 		using MutableObjectType = std::remove_const_t<ObjectType>;
 		using HandleBase::operator bool;
 
+		template<typename OtherObjectType>
+		friend struct Handle;
+
 		/** A factory which is allowed to create handles from a raw object reference. It is assumed to be the instance managing the raw object references. */
 		struct Factory {
 		protected:
@@ -52,22 +56,28 @@ public:
 		};
 
 		static_assert(!std::is_pointer_v<ObjectType>, "Handles cannot hold an object which is a pointer");
-		static_assert(std::is_base_of_v<ManagedObject, ObjectType>, "Handle template parameter must derive from ManagedObject");
+		//static_assert(std::is_base_of_v<ManagedObject, ObjectType>, "Handle template parameter must derive from ManagedObject");
 		template<typename A, typename B> friend Handle<A> Cast(Handle<B> const&);
 		template<typename A, typename B> friend Handle<A> Cast(Handle<B>&&);
 
 		Handle() noexcept = default;
 		Handle(std::nullptr_t) noexcept : HandleBase() {}
 
-		template<typename OtherObjectType>
-		Handle(Handle<OtherObjectType> const& other) noexcept : HandleBase(other) {}
-		template<typename OtherObjectType>
-		Handle(Handle<OtherObjectType>&& other) noexcept : HandleBase(std::move(other)) {}
+		Handle(Handle const& other) noexcept : HandleBase(other.object) {}
+		Handle(Handle&& other) noexcept { std::swap(object, other.object); }
+
+		Handle& operator=(Handle const& other) { Handle(other).Swap(*this); return *this; }
+		Handle& operator=(Handle&& other) { Handle(std::move(other)).Swap(*this); return *this; }
 
 		template<typename OtherObjectType>
-		Handle& operator=(Handle<OtherObjectType> const& other) { Handle(other).Swap(*this); }
+		Handle(Handle<OtherObjectType> const& other) noexcept : HandleBase(other.object) {}
 		template<typename OtherObjectType>
-		Handle& operator=(Handle<OtherObjectType>&& other) { Handle(std::move(other)).Swap(*this); }
+		Handle(Handle<OtherObjectType>&& other) noexcept { std::swap(object, other.object); }
+
+		template<typename OtherObjectType>
+		Handle& operator=(Handle<OtherObjectType> const& other) { HandleBase(other.object).Swap(*this); return *this; }
+		template<typename OtherObjectType>
+		Handle& operator=(Handle<OtherObjectType>&& other) { std::swap(object, other.object); return *this; }
 
 		inline ObjectType* operator->() const { return static_cast<ObjectType*>(object); }
 		inline ObjectType& operator*() const { return *static_cast<ObjectType*>(object); }

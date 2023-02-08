@@ -15,6 +15,18 @@ namespace Rendering {
 		VkPipelineLayout pipelineLayout = nullptr;
 		VkPipeline pipeline = nullptr;
 
+		VulkanPipelineResources() {}
+		VulkanPipelineResources(VulkanPipelineResources&& other) { *this = std::move(other); }
+		VulkanPipelineResources& operator=(VulkanPipelineResources&& other) {
+			descriptorSetLayout = other.descriptorSetLayout;
+			pipelineLayout = other.pipelineLayout;
+			pipeline = other.pipeline;
+			other.descriptorSetLayout = nullptr;
+			other.pipelineLayout = nullptr;
+			other.pipeline = nullptr;
+			return *this;
+		}
+
 		inline operator bool() const { return pipeline && pipelineLayout; }
 
 		inline void Destroy(VkDevice device) const {

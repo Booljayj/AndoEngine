@@ -62,6 +62,7 @@ using namespace std::string_view_literals;
 #include <cstdarg>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
 #include <initializer_list>
 #include <iterator>
 #include <limits>

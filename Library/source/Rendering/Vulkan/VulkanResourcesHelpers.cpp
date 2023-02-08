@@ -1,5 +1,6 @@
 #include "Engine/Logging.h"
 #include "Engine/Temporary.h"
+#include "Rendering/Shaders.h"
 #include "Rendering/Vulkan/VulkanResourcesHelpers.h"
 
 namespace Rendering {
@@ -13,49 +14,33 @@ namespace Rendering {
 		}
 	}
 
-	VkShaderModule VulkanPipelineCreationHelper::GetModule(std::string_view name) {
-		Hash32 const nameHash = Hash32{name};
+	VkShaderModule VulkanPipelineCreationHelper::GetModule(Resources::Handle<Shader> shader) {
+		Resources::Identifier const id = shader->id;
 
 		//Try to find an existing loaded shader entry
-		auto const iter = std::find_if(entries.begin(), entries.end(), [=](auto const& entry) { return entry.hash == nameHash; });
+		auto const iter = std::find_if(entries.begin(), entries.end(), [=](auto const& entry) { return entry.id == id; });
 		if (iter != entries.end()) return iter->module;
 
-		//Create a new loaded shader entry and return that
-		entries.push_back(Entry{});
-		Entry& newEntry = entries[entries.size() - 1];
-		newEntry.hash = nameHash;
+		//No existing entry was found, so make a new one. Even if we fail to actually create this shader, this entry should always be returned
+		auto& newEntry = entries.emplace_back();
+		newEntry.id = id;
 
-		SCOPED_TEMPORARIES();
+		if (shader->bytecode.size() > 0) {
+			VkShaderModuleCreateInfo createInfo{};
+			createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+			createInfo.codeSize = shader->bytecode.size() * sizeof(decltype(shader->bytecode)::value_type);
+			createInfo.pCode = shader->bytecode.data();
 
-		std::string_view const filename = t_printf("content/shaders/compiled/%s.spv", name.data());
-		std::ifstream file(filename.data(), std::ios::ate | std::ios::binary);
+			VkShaderModule module = nullptr;
+			if (vkCreateShaderModule(device, &createInfo, nullptr, &module) != VK_SUCCESS) {
+				LOGF(Vulkan, Error, "Failed to create shader module for shader %i", shader->id.ToValue());
+				return nullptr;
+			}
 
-		if (!file.is_open()) {
-			LOGF(Vulkan, Error, "Failed to open file %s for shader %s", filename.data(), name.data());
-			return nullptr;
+			newEntry.module = module;
+			return module;
 		}
-
-		size_t const bufferSize = static_cast<size_t>(file.tellg());
-		t_vector<char> buffer;
-		buffer.resize(bufferSize);
-
-		file.seekg(0);
-		file.read(buffer.data(), bufferSize);
-		file.close();
-
-		VkShaderModuleCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-		createInfo.codeSize = bufferSize;
-		createInfo.pCode = reinterpret_cast<const uint32_t*>(buffer.data());
-
-		VkShaderModule module = nullptr;
-		if (vkCreateShaderModule(device, &createInfo, nullptr, &module) != VK_SUCCESS) {
-			LOGF(Vulkan, Error, "Failed to create shader module for shader %s", name.data());
-			return nullptr;
-		}
-
-		newEntry.module = module;
-		return module;
+		return nullptr;
 	}
 
 	void VulkanMeshCreationHelper::Submit(VulkanMappedBuffer const& staging, VkCommandBuffer commands) {

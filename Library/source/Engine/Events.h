@@ -16,10 +16,10 @@ private:
 	};
 
 	//Specific byte value used by handles so that they may be identified in debugging utilities.
-	static constexpr char HandleByteValue = 0b10101010;
+	static constexpr char HandleByteValue = 0b00001111;
 
 	std::vector<DelegateInfo> delegateInfos;
-	std::mutex eventMutex;
+	mutable std::mutex eventMutex; //@todo I don't like mutable here, but it seems to be an acceptable design pattern. Investigate ways we can get around this while still keeping the code clean.
 
 public:
 	size_t Count() const {
@@ -43,6 +43,32 @@ public:
 		}
 		return EventHandleType{};
 	}
+
+	/** Create using a free function */
+	EventHandleType Add(void(*function)(ParamTypes...)) { return Add(DelegateType::Create(function)); }
+	/** Create using a free function called with a raw context object */
+	template<typename ObjectType>
+	EventHandleType Add(ObjectType* instance, void(*function)(ObjectType*, ParamTypes...)) { return Add(DelegateType::Create(instance, function)); }
+	/** Create using a free function called with a smart context object */
+	template<typename ObjectType>
+	EventHandleType Add(std::weak_ptr<ObjectType>&& instance, void(*function)(ObjectType*, ParamTypes...)) { return Add(DelegateType::Create(std::move(instance), function)); }
+
+	/** Create using a method called on a raw context object */
+	template<typename ObjectType>
+	EventHandleType Add(ObjectType* instance, void(ObjectType::* method)(ParamTypes...)) { return Add(DelegateType::Create(instance, method)); }
+	/** Create using a method called on a smart context object */
+	template<typename ObjectType>
+	EventHandleType Add(std::weak_ptr<ObjectType>&& instance, void(ObjectType::* method)(ParamTypes...)) { return Add(DelegateType::Create(std::move(instance), method)); }
+
+	/** Create using a lambda */
+	template<typename LambdaType>
+	EventHandleType Add(LambdaType&& lambda) { return Add(DelegateType::Create(std::move(lambda))); }
+	/** Create using a lambda called with a raw context object */
+	template<typename ObjectType, typename LambdaType>
+	EventHandleType Add(ObjectType* instance, LambdaType&& lambda) { return Add(DelegateType::Create(instance, std::move(lambda))); }
+	/** Create using a lambda called with a smart context object */
+	template<typename ObjectType, typename LambdaType>
+	EventHandleType Add(std::weak_ptr<ObjectType>&& instance, LambdaType&& lambda) { return Add(DelegateType::Create(std::move(instance), std::move(lambda))); }
 
 	bool Remove(EventHandleType const& handle) {
 		std::lock_guard<std::mutex> guard(eventMutex);

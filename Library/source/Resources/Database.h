@@ -1,4 +1,5 @@
 #pragma once
+#include "Engine/Events.h"
 #include "Engine/Reflection.h"
 #include "Engine/StandardTypes.h"
 #include "Resources/Manifest.h"
@@ -7,7 +8,7 @@
 
 namespace Resources {
 	/** Databases keep track of a collection of resources, and have utility methods to create, load, and find them. */
-	struct Database : public ManagedObject::Handle<Resource>::Factory {
+	struct Database {
 	public:
 		/** Creates a new resource in the database. Thread-safe. */
 		virtual Handle<Resource> Create(Identifier id, Reflection::StructTypeInfo const& type) = 0;
@@ -31,9 +32,12 @@ namespace Resources {
 
 	/** Implements behavior for storing and tracking a specific type of resource */
 	template<typename BaseResourceType, typename Implementation>
-	struct TSparseDatabase : public Database {
+	struct TSparseDatabase : public Database, public ManagedObject::Handle<BaseResourceType>::Factory {
 	public:
 		static_assert(std::is_base_of_v<Resource, BaseResourceType>, "BaseResourceType must inherit from Resource");
+
+		TEvent<Handle<BaseResourceType> const&> Created;
+		TEvent<Handle<BaseResourceType> const&> Destroyed;
 
 		TSparseDatabase(IManifest const& inManifest) : Database(inManifest) {}
 		~TSparseDatabase() = default;
@@ -64,12 +68,16 @@ namespace Resources {
 
 			//Create the memory in the array for the resource, store it, then construct the value. This allows constructors to access their own entry if necessary.
 			Reflection::TypeUniquePointer& pointer = resources.emplace_back(type.Allocate());
-			Resource* resource = reinterpret_cast<Resource*>(pointer.get());
+			BaseResourceType* resource = reinterpret_cast<BaseResourceType*>(pointer.get());
 
 			type.Construct(resource);
-			static_cast<Implementation*>(this)->PostCreate(*static_cast<BaseResourceType*>(resource));
+			resource->id = id;
+			static_cast<Implementation*>(this)->PostCreate(*resource);
 
-			return CreateHandle(*resource);
+			Handle<BaseResourceType> const handle = CreateHandle(*resource);
+			Created(handle);
+
+			return handle;
 		}
 
 		//@todo Implement loading behavior
@@ -79,7 +87,7 @@ namespace Resources {
 			std::shared_lock lock{ mutex };
 			auto const iter = std::find(ids.begin(), ids.end(), id);
 			if (iter != ids.end()) {
-				Resource* resource = reinterpret_cast<Resource*>(resources[iter - ids.begin()].get());
+				BaseResourceType* resource = reinterpret_cast<BaseResourceType*>(resources[iter - ids.begin()].get());
 				if (Reflection::StructTypeInfo::IsDerivedFrom(type, resource->GetTypeInfo())) {
 					return CreateHandle(*resource);
 				}
@@ -118,8 +126,18 @@ namespace Resources {
 			return Cast<ResourceType>(Find(id, *Reflect<ResourceType>::Get()));
 		}
 
+		/** Destroys any registered state for all resources. The resources will still exist, but they should be ready to be deallocated. */
+		void Destroy() {
+			std::shared_lock lock{ mutex };
+			for (Reflection::TypeUniquePointer& pointer : resources) {
+				Destroyed(CreateHandle(*reinterpret_cast<BaseResourceType*>(pointer.get())));
+			}
+		}
+
 	protected:
 		/** Pointers to resources that are currently in this database */
 		std::deque<Reflection::TypeUniquePointer> resources;
+
+		Resources::Handle<BaseResourceType> CreateHandle(BaseResourceType& resource) { return ManagedObject::Handle<BaseResourceType>::Factory::CreateHandle(resource); }
 	};
 }

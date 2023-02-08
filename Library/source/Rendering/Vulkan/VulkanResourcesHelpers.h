@@ -3,8 +3,11 @@
 #include "Rendering/Vulkan/Vulkan.h"
 #include "Rendering/Vulkan/VulkanLogicalDevice.h"
 #include "Rendering/Vulkan/VulkanResources.h"
+#include "Resources/Resource.h"
 
 namespace Rendering {
+	struct Shader;
+
 	/** A library of loaded shader modules which can be re-used to create pipelines */
 	struct VulkanPipelineCreationHelper {
 	public:
@@ -12,11 +15,11 @@ namespace Rendering {
 		~VulkanPipelineCreationHelper();
 
 		/** Get an already-loaded module, or load a new one */
-		VkShaderModule GetModule(std::string_view name);
+		VkShaderModule GetModule(Resources::Handle<Shader> shader);
 
 	private:
 		struct Entry {
-			Hash32 hash;
+			Resources::Identifier id;
 			VkShaderModule module = nullptr;
 		};
 

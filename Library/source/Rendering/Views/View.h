@@ -3,7 +3,6 @@
 #include "EntityFramework/EntityRegistry.h"
 #include "EntityFramework/EntityTypes.h"
 #include "Geometry/ScreenRect.h"
-#include "Rendering/MaterialComponent.h"
 #include "Rendering/Vulkan/VulkanFrameOrganizer.h"
 #include "Rendering/Vulkan/VulkanLogicalDevice.h"
 #include "Rendering/Vulkan/VulkanResources.h"

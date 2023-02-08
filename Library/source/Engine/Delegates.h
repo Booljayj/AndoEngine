@@ -257,13 +257,13 @@ public:
 		stubFunction = nullptr;
 	}
 
-	TDelegate(TDelegate const& other) {
+	TDelegate(TDelegate const& other) : TDelegate() {
 		semantics->Destruct(*this);
 		semantics = other.semantics;
 		stubFunction = other.stubFunction;
 		semantics->CopyConstruct(*this, other);
 	}
-	TDelegate(TDelegate&& other) {
+	TDelegate(TDelegate&& other) : TDelegate() {
 		semantics->Destruct(*this);
 		semantics = other.semantics;
 		stubFunction = other.stubFunction;

@@ -2,7 +2,7 @@
 #include "Engine/StandardTypes.h"
 #include "Engine/Utility.h"
 #include "HAL/WindowingSystem.h"
-#include "Rendering/MaterialComponent.h"
+#include "Rendering/Materials.h"
 #include "Rendering/MeshComponent.h"
 #include "Rendering/MeshRendererComponent.h"
 #include "Rendering/Vulkan/VulkanRenderPasses.h"
@@ -11,7 +11,7 @@
 DEFINE_LOG_CATEGORY(Rendering, Info);
 
 namespace Rendering {
-	bool RenderingSystem::Startup(HAL::WindowingSystem& windowing, EntityRegistry& registry) {
+	bool RenderingSystem::Startup(HAL::WindowingSystem& windowing, EntityRegistry& registry, MaterialDatabase& materials) {
 		// Vulkan instance
 		if (!framework.Create(windowing.GetPrimaryWindow())) return false;
 
@@ -68,22 +68,21 @@ namespace Rendering {
 
 		//Bind this rendering system as a context object callbacks can refer to it.
 		registry.Bind(this);
-		//Add the callbacks for rendering-related components.
-		registry.Callbacks<MaterialComponent>()
-			.Create<&MaterialComponentOperations::OnCreate>()
-			.Destroy<&MaterialComponentOperations::OnDestroy>()
-			.Modify<&MaterialComponentOperations::OnModify>();
 		registry.Callbacks<MeshComponent>()
 			.Create<&MeshComponentOperations::OnCreate>()
 			.Destroy<&MeshComponentOperations::OnDestroy>()
-			.Modify<&MaterialComponentOperations::OnModify>();
+			.Modify<&MeshComponentOperations::OnModify>();
+
+		//Listen for when rendering-relevant resource types are created or destroyed
+		materials.Created.Add(this, &RenderingSystem::MaterialCreated);
+		materials.Destroyed.Add(this, &RenderingSystem::MaterialDestroyed);
 
 		//@todo Create a group for renderable entities, once we have more than one component to include in the group (i.e. renderer and transform).
 
 		return true;
 	}
 
-	bool RenderingSystem::Shutdown(EntityRegistry& registry) {
+	bool RenderingSystem::Shutdown(EntityRegistry& registry, MaterialDatabase& materials) {
 		availablePhysicalDevices.clear();
 
 		if (logical) {
@@ -92,7 +91,8 @@ namespace Rendering {
 				surface->WaitForCompletion(logical);
 			}
 
-			registry.DestroyComponents<MaterialComponent, MeshComponent>();
+			registry.DestroyComponents<MeshComponent>();
+			materials.Destroy();
 			DestroyStalePipelines();
 			DestroyStaleMeshes();
 
@@ -141,10 +141,9 @@ namespace Rendering {
 			DestroyStaleMeshes();
 		}
 
-		if (shouldCreatePipelines) {
-			shouldCreatePipelines = false;
+		if (dirtyMaterials.size() > 0) {
 			LOG(Rendering, Info, "Creating new pipelines");
-			CreatePipelines(registry);
+			RefreshMaterials();
 		}
 		if (shouldCreateMeshes) {
 			shouldCreateMeshes = false;
@@ -209,22 +208,12 @@ namespace Rendering {
 		}
 	}
 
-	void RenderingSystem::MaterialComponentOperations::OnCreate(entt::registry& registry, entt::entity entity) {
-		RenderingSystem* rendering = registry.ctx().get<RenderingSystem*>();
-		rendering->shouldCreatePipelines = true;
+	void RenderingSystem::MaterialCreated(Resources::Handle<Material> const& material) {
+		MarkMaterialDirty(material);
 	}
 
-	void RenderingSystem::MaterialComponentOperations::OnDestroy(entt::registry& registry, entt::entity entity) {
-		RenderingSystem* rendering = registry.ctx().get<RenderingSystem*>();
-		MaterialComponent& material = registry.get<MaterialComponent>(entity);
-		rendering->MarkPipelineStale(material);
-	}
-
-	void RenderingSystem::MaterialComponentOperations::OnModify(entt::registry& registry, entt::entity entity) {
-		RenderingSystem* rendering = registry.ctx().get<RenderingSystem*>();
-		MaterialComponent& material = registry.get<MaterialComponent>(entity);
-		rendering->MarkPipelineStale(material);
-		rendering->shouldCreatePipelines = true;
+	void RenderingSystem::MaterialDestroyed(Resources::Handle<Material> const& material) {
+		MarkMaterialStale(material);
 	}
 
 	void RenderingSystem::MeshComponentOperations::OnCreate(entt::registry& registry, entt::entity entity) {
@@ -245,33 +234,30 @@ namespace Rendering {
 		rendering->shouldCreateMeshes = true;
 	}
 
-	void RenderingSystem::CreatePipelines(EntityRegistry& registry) {
+	void RenderingSystem::RefreshMaterials() {
 		//The library of shader modules that will stay loaded as long as we need to continue creating pipelines
 		VulkanPipelineCreationHelper helper{logical.device};
 
-		auto const materials = registry.GetView<MaterialComponent>();
-		for (const auto id : materials) {
-			MaterialComponent& material = materials.Get<MaterialComponent>(id);
-			if (!material.resources) {
-				VulkanPipelineResources const resources = CreatePipeline(material, id, helper);
-				if (resources) material.resources = resources;
-				else resources.Destroy(logical.device);
-			}
+		for (const Resources::Handle<Material>& material : dirtyMaterials) {
+			//Existing resources become stale
+			if (material->resources) stalePipelineResources.emplace_back(std::move(material->resources));
+
+			//Create new resources
+			VulkanPipelineResources resources = CreatePipeline(*material, helper);
+			if (resources) material->resources = std::move(resources);
+			else resources.Destroy(logical.device);
 		}
+		dirtyMaterials.clear();
 	}
 
-	void RenderingSystem::DestroyPipelines(EntityRegistry& registry) {
-		auto const materials = registry.GetView<MaterialComponent>();
-		for (const auto id : materials) {
-			MarkPipelineStale(materials.Get<MaterialComponent>(id));
-		}
-		DestroyStalePipelines();
+	void RenderingSystem::MarkMaterialDirty(Resources::Handle<Material> const& material) {
+		//Keep track of the dirty material so we can refresh it during the next render
+		dirtyMaterials.emplace_back(material);
 	}
 
-	void RenderingSystem::MarkPipelineStale(MaterialComponent& material) {
-		stalePipelineResources.emplace_back(material.resources);
-		//stalePipelineResources.push_back(material.resources);
-		material.resources = {};
+	void RenderingSystem::MarkMaterialStale(Resources::Handle<Material> const& material) {
+		//Steal the resources from the material so we can destroy them later when they're no longer being used
+		stalePipelineResources.emplace_back(std::move(material->resources));
 	}
 
 	void RenderingSystem::DestroyStalePipelines() {
@@ -312,7 +298,8 @@ namespace Rendering {
 		return physicalDevice.HasRequiredQueues() && physicalDevice.HasRequiredExtensions(extensionNames) && physicalDevice.HasSwapchainSupport();
 	}
 
-	VulkanPipelineResources RenderingSystem::CreatePipeline(MaterialComponent const& material, EntityID id, VulkanPipelineCreationHelper& helper) {
+#pragma optimize("", off)
+	VulkanPipelineResources RenderingSystem::CreatePipeline(Material const& material, VulkanPipelineCreationHelper& helper) {
 		VulkanPipelineResources resources;
 
 		//Create the descriptor set layout
@@ -337,7 +324,7 @@ namespace Rendering {
 			layoutCI.pPushConstantRanges = nullptr; // Optional
 
 			if (vkCreatePipelineLayout(logical.device, &layoutCI, nullptr, &resources.pipelineLayout) != VK_SUCCESS) {
-				LOGF(Temp, Error, "Failed to create pipeline layout for material %i", id);
+				LOGF(Temp, Error, "Failed to create pipeline layout for material %i", material.id.ToValue());
 				return resources;
 			}
 		}
@@ -464,11 +451,12 @@ namespace Rendering {
 		pipelineCI.basePipelineIndex = -1; // Optional
 
 		if (vkCreateGraphicsPipelines(logical.device, VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &resources.pipeline) != VK_SUCCESS) {
-			LOGF(Temp, Error, "Failed to create pipeline for material %i", id);
+			LOGF(Temp, Error, "Failed to create pipeline for material %i", material.id.ToValue());
 		}
 
 		return resources;
 	}
+#pragma optimize("", on)
 
 	VulkanMeshResources RenderingSystem::CreateMesh(MeshComponent const& mesh, EntityID id, VkCommandPool pool, VulkanMeshCreationHelper& helper) {
 		VulkanMeshResources resources;

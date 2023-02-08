@@ -10,10 +10,13 @@
 #include "Rendering/RenderingSystem.h"
 #include "Profiling/ProfilerMacros.h"
 
-#include "Rendering/MaterialComponent.h"
+#include "Rendering/Materials.h"
 #include "Rendering/MeshComponent.h"
 #include "Rendering/MeshRendererComponent.h"
+#include "Rendering/Shaders.h"
 #include "Rendering/StaticMeshResource.h"
+
+#include "Importers/RenderingImporters.h"
 
 LOG_CATEGORY(Main, Debug);
 DEFINE_PROFILE_CATEGORY(Main);
@@ -28,10 +31,14 @@ struct Application {
 	Resources::DummyResourceManifest manifest;
 
 	Rendering::RenderingSystem rendering;
-	Rendering::StaticMeshResourceDatabase staticMeshResourceDatabase;
+	Rendering::MaterialDatabase materials;
+	Rendering::ShaderDatabase shaders;
+	Rendering::StaticMeshResourceDatabase staticMeshes;
 
 	Application()
-		: staticMeshResourceDatabase(manifest)
+		: materials(manifest)
+		, shaders(manifest)
+		, staticMeshes(manifest)
 	{}
 
 	// Primary system procedures
@@ -43,7 +50,7 @@ struct Application {
 		STARTUP_SYSTEM(Main, framework);
 		STARTUP_SYSTEM(Main, events);
 		STARTUP_SYSTEM(Main, windowing);
-		STARTUP_SYSTEM(Main, rendering, windowing, registry);
+		STARTUP_SYSTEM(Main, rendering, windowing, registry, materials);
 		return true;
 	}
 
@@ -52,7 +59,7 @@ struct Application {
 		SCOPED_TEMPORARIES();
 		LOG(Main, Info, "Shutting down all systems...");
 
-		SHUTDOWN_SYSTEM(Main, rendering, registry);
+		SHUTDOWN_SYSTEM(Main, rendering, registry, materials);
 		SHUTDOWN_SYSTEM(Main, windowing);
 		SHUTDOWN_SYSTEM(Main, events);
 		SHUTDOWN_SYSTEM(Main, framework);
@@ -95,15 +102,60 @@ int main(int argc, char** argv) {
 
 	LOG(Main, Info, "Hello, World! This is AndoEngine.");
 	LOG(Main, Debug, "Compiled with " COMPILER_VERSION " on " __DATE__);
+	LOGF(Main, Debug, "CWD: %s", std::filesystem::current_path().generic_string().data());
 
 	Application application;
 
 	if (application.Startup()) {
 		using namespace Rendering;
+		using namespace Resources;
 
-		const Resources::Handle<StaticMeshResource> plane = application.staticMeshResourceDatabase.Create(0);
+		//Create default built-in vertex and fragment shaders
+		Handle<VertexShader> const vertex = application.shaders.Create<VertexShader>(0);
+		Handle<FragmentShader> const fragment = application.shaders.Create<FragmentShader>(1);
+		{
+			Importers::ShaderImporter shaderImporter;
+			shaderImporter.Import(
+				*vertex,
+				R"(
+#version 450
+#extension GL_ARB_separate_shader_objects : enable
+
+#include "uniforms_standard.incl"
+#include "attributes_simple.vert.incl"
+
+void main() {
+	gl_Position = object.modelViewProjection * vec4(inPosition, 1.0);
+	outFragColor = inColor;
+}
+				)",
+				"default.vert"
+			);
+
+			shaderImporter.Import(
+				*fragment,
+				R"(
+#version 450
+#extension GL_ARB_separate_shader_objects : enable
+
+#include "uniforms_standard.incl"
+#include "fragments_simple.frag.incl"
+
+void main() {
+    outColor = inFragColor;
+}
+				)",
+				"default.frag"
+			);
+		}
+
+		Handle<Material> const material = application.materials.Create(10);
+		material->vertex = vertex;
+		material->fragment = fragment;
+
+		const Handle<StaticMeshResource> plane = application.staticMeshes.Create(100);
 		plane->vertices = FormattedVertices{
-			std::in_place_type_t<std::vector<Vertex_Simple>>{},
+			std::in_place_type<std::vector<Vertex_Simple>>,
 			{
 				Vertex_Simple{{-0.5f, -0.5f, 0.0f}, {255, 0, 0, 255}, {0,0,1}, {0,0}},
 				Vertex_Simple{{0.5f, -0.5f, 0.0f}, {0, 255, 0, 255}, {0,0,1}, {0,0}},
@@ -112,14 +164,9 @@ int main(int argc, char** argv) {
 			}
 		};
 		plane->indices = FormattedIndices{
-			std::in_place_type_t<std::vector<uint16_t>>{},
+			std::in_place_type<std::vector<uint16_t>>,
 			std::initializer_list<uint16_t>{0, 1, 2, 2, 3, 0}
 		};
-
-		EntityHandle testMaterialEntity = application.registry.Create();
-		MaterialComponent& material = testMaterialEntity.Add<MaterialComponent>();
-		material.fragment = "default.frag";
-		material.vertex = "default.vert";
 
 		EntityHandle testMeshEntity = application.registry.Create();
 		MeshComponent& mesh = testMeshEntity.Add<MeshComponent>();
@@ -133,7 +180,7 @@ int main(int argc, char** argv) {
 
 		EntityHandle testMeshRendererEntity = application.registry.Create();
 		MeshRendererComponent& renderer = testMeshRendererEntity.Add<MeshRendererComponent>();
-		renderer.material = testMaterialEntity.ID();
+		renderer.material = material;
 		renderer.mesh = testMeshEntity.ID();
 
 		application.MainLoop();

@@ -18,7 +18,8 @@ namespace HAL {
 	struct WindowingSystem;
 }
 namespace Rendering {
-	struct MaterialComponent;
+	struct Material;
+	struct MaterialDatabase;
 	struct MeshComponent;
 }
 
@@ -69,8 +70,8 @@ namespace Rendering {
 
 		RenderingSystem() = default;
 
-		bool Startup(HAL::WindowingSystem& windowing, EntityRegistry& registry);
-		bool Shutdown(EntityRegistry& registry);
+		bool Startup(HAL::WindowingSystem& windowing, EntityRegistry& registry, MaterialDatabase& materials);
+		bool Shutdown(EntityRegistry& registry, MaterialDatabase& materials);
 
 		bool Render(EntityRegistry& registry);
 		void RebuildResources(EntityRegistry& registry);
@@ -90,12 +91,10 @@ namespace Rendering {
 		void DestroySurface(uint32_t id);
 
 	protected:
-		/** Contains callbacks related to material component operations */
-		struct MaterialComponentOperations {
-			static void OnCreate(entt::registry& registry, entt::entity entity);
-			static void OnDestroy(entt::registry& registry, entt::entity entity);
-			static void OnModify(entt::registry& registry, entt::entity entity);
-		};
+		/** Callbacks for when materials are created or destroyed */
+		void MaterialCreated(Resources::Handle<Material> const& material);
+		void MaterialDestroyed(Resources::Handle<Material> const& material);
+
 		/** Contains callbacks related to mesh component operations */
 		struct MeshComponentOperations {
 			static void OnCreate(entt::registry& registry, entt::entity entity);
@@ -103,15 +102,20 @@ namespace Rendering {
 			static void OnModify(entt::registry& registry, entt::entity entity);
 		};
 
+		/** Dirty resources that need to be rebuilt */
+		std::vector<Resources::Handle<Material>> dirtyMaterials;
+
 		/** Resources that are pending destruction */
 		std::vector<VulkanPipelineResources> stalePipelineResources;
 		std::vector<VulkanMeshResources> staleMeshResources;
 
-		/** Create or destroy all pipeline resources */
-		void CreatePipelines(EntityRegistry& registry);
-		void DestroyPipelines(EntityRegistry& registry);
+		/** Refresh dirty pipelines so they are no longer dirty */
+		void RefreshMaterials();
+
+		/** Mark the pipeline resources on the material as dirty */
+		void MarkMaterialDirty(Resources::Handle<Material> const& material);
 		/** Mark the pipeline resources on the material as stale */
-		void MarkPipelineStale(MaterialComponent& material);
+		void MarkMaterialStale(Resources::Handle<Material> const& material);
 		/** Destroy any stale pipeline resources */
 		void DestroyStalePipelines();
 
@@ -127,7 +131,7 @@ namespace Rendering {
 		bool IsUsablePhysicalDevice(const Rendering::VulkanPhysicalDevice& physicalDevice, TArrayView<char const*> const& extensionNames);
 
 		/** Create the pipeline resources for a material */
-		VulkanPipelineResources CreatePipeline(MaterialComponent const& material, EntityID id, VulkanPipelineCreationHelper& helper);
+		VulkanPipelineResources CreatePipeline(Material const& material, VulkanPipelineCreationHelper& helper);
 		/** Create the mesh resources for a mesh component */
 		VulkanMeshResources CreateMesh(MeshComponent const& mesh, EntityID id, VkCommandPool pool, VulkanMeshCreationHelper& helper);
 	};

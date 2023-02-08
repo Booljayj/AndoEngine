@@ -33,7 +33,7 @@ static LogCategory Log ## Name
 
 /** Define a log category that was previously declared */
 #define DEFINE_LOG_CATEGORY_MEMBER(Class, Name, DefaultMaxVerbosity)\
-Class::LogCategory Log ## Name{ #Name, ELogVerbosity::DefaultMaxVerbosity }
+LogCategory Class::Log ## Name{ #Name, ELogVerbosity::DefaultMaxVerbosity }
 
 /** Create a log category which is accessible only from within a source file */
 #define LOG_CATEGORY(Name, DefaultMaxVerbosity)\

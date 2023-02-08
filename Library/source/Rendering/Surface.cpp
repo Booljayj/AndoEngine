@@ -1,4 +1,4 @@
-#include "Rendering/MaterialComponent.h"
+#include "Rendering/Materials.h"
 #include "Rendering/MeshComponent.h"
 #include "Rendering/MeshRendererComponent.h"
 #include "Rendering/RenderingSystem.h"
@@ -83,7 +83,6 @@ namespace Rendering {
 		//      the geometry that should be drawn with that pipeline, to avoid binding the same pipeline more than once and to strip
 		//      out culled geometry.
 		auto const renderables = registry.GetView<MeshRendererComponent const>();
-		auto const materials = registry.GetView<MaterialComponent const>();
 		auto const meshes = registry.GetView<MeshComponent const>();
 
 		//Prepare the frame for rendering, which may need to wait for resources
@@ -127,11 +126,10 @@ namespace Rendering {
 
 			uint32_t objectIndex = 0;
 			for (const auto id : renderables) {
-				auto& renderer = renderables.Get<MeshRendererComponent const>(id);
+				auto const& renderer = renderables.Get<MeshRendererComponent const>(id);
 
-				auto const* material = materials.Find<MaterialComponent const>(renderer.material);
 				auto const* mesh = meshes.Find<MeshComponent const>(renderer.mesh);
-				if (material && material->resources && mesh && mesh->resources) {
+				if (renderer.material && renderer.material->resources && mesh && mesh->resources) {
 					uint32_t const objectUniformsOffset = static_cast<uint32_t>(sizeof(ObjectUniforms) * objectIndex);
 
 					//Write to the part of the object uniform buffer designated for this object
@@ -140,7 +138,7 @@ namespace Rendering {
 					frame.uniforms.object.ubo.WriteValue(object, objectUniformsOffset);
 
 					//Bind the pipeline that will be used for rendering
-					vkCmdBindPipeline(frame.commands, VK_PIPELINE_BIND_POINT_GRAPHICS, material->resources.pipeline);
+					vkCmdBindPipeline(frame.commands, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer.material->resources.pipeline);
 
 					//Bind the descriptor sets to use for this draw command
 					VkDescriptorSet sets[] = {
@@ -148,7 +146,7 @@ namespace Rendering {
 						//materialInstance->resources.set,
 						frame.uniforms.object.set,
 					};
-					vkCmdBindDescriptorSets(frame.commands, VK_PIPELINE_BIND_POINT_GRAPHICS, material->resources.pipelineLayout, 0, static_cast<uint32_t>(std::size(sets)), sets, 1, &objectUniformsOffset);
+					vkCmdBindDescriptorSets(frame.commands, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer.material->resources.pipelineLayout, 0, static_cast<uint32_t>(std::size(sets)), sets, 1, &objectUniformsOffset);
 
 					//Bind the vetex and index buffers for the mesh
 					VkBuffer const vertexBuffers[] = { mesh->resources.buffer };

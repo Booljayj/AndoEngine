@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.24)
 project(Library)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -15,6 +15,7 @@ set_target_properties(Library
     ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}"
     LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}"
 )
+target_compile_definitions(Library PUBLIC "$<$<CONFIG:DEBUG>:VULKAN_DEBUG>")
 
 #IMGUI module
 add_subdirectory(modules/imgui-docking)
@@ -34,20 +35,21 @@ find_package(Boost REQUIRED)
 target_include_directories(Library PRIVATE ${Boost_INCLUDE_DIR})
 
 #GLM library
-find_package(glm CONFIG REQUIRED)
+find_package(glm REQUIRED)
 target_link_libraries(Library PUBLIC glm::glm)
 
 #EnTT library
-find_package(EnTT CONFIG REQUIRED)
+find_package(EnTT REQUIRED)
 target_link_libraries(Library PUBLIC EnTT::EnTT)
 
 #SDL library
-find_package(SDL2 CONFIG REQUIRED)
+find_package(SDL2 REQUIRED)
 target_link_libraries(Library PUBLIC SDL2::SDL2 PUBLIC SDL2::SDL2main)
 
 #Vulkan library
-find_package(Vulkan REQUIRED)
+find_package(Vulkan REQUIRED shaderc_combined)
 target_link_libraries(Library PUBLIC Vulkan::Vulkan)
+target_link_libraries(Library PUBLIC Vulkan::shaderc_combined)
 
 #FreeType library
 find_package(freetype CONFIG REQUIRED)
