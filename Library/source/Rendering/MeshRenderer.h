@@ -4,9 +4,10 @@
 
 namespace Rendering {
 	struct Material;
+	struct StaticMesh;
 
-	struct MeshRendererComponent {
+	struct MeshRenderer {
 		Resources::Handle<Material> material;
-		EntityID mesh;
+		Resources::Handle<StaticMesh> mesh;
 	};
 }

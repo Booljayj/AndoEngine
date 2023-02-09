@@ -123,6 +123,8 @@ namespace Rendering {
 			uint32_t indices = 0;
 		} size;
 
+		VkIndexType indexType = VK_INDEX_TYPE_MAX_ENUM;
+
 		inline operator bool() const { return buffer && size.vertices > 0 && size.indices > 0; }
 
 		inline void Destroy(VmaAllocator allocator) const {

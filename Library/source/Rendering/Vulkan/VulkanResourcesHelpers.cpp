@@ -1,6 +1,6 @@
 #include "Engine/Logging.h"
 #include "Engine/Temporary.h"
-#include "Rendering/Shaders.h"
+#include "Rendering/Shader.h"
 #include "Rendering/Vulkan/VulkanResourcesHelpers.h"
 
 namespace Rendering {

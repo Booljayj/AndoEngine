@@ -20,7 +20,8 @@ namespace HAL {
 namespace Rendering {
 	struct Material;
 	struct MaterialDatabase;
-	struct MeshComponent;
+	struct StaticMesh;
+	struct StaticMeshDatabase;
 }
 
 DECLARE_LOG_CATEGORY(Rendering);
@@ -65,16 +66,14 @@ namespace Rendering {
 
 		/** Flags for tracking rendering behavior and changes */
 		uint8_t retryCount = 0;
-		bool shouldCreatePipelines = false;
-		bool shouldCreateMeshes = false;
 
 		RenderingSystem() = default;
 
-		bool Startup(HAL::WindowingSystem& windowing, EntityRegistry& registry, MaterialDatabase& materials);
-		bool Shutdown(EntityRegistry& registry, MaterialDatabase& materials);
+		bool Startup(HAL::WindowingSystem& windowing, MaterialDatabase& materials, StaticMeshDatabase& staticMeshes);
+		bool Shutdown(MaterialDatabase& materials, StaticMeshDatabase& staticMeshes);
 
 		bool Render(EntityRegistry& registry);
-		void RebuildResources(EntityRegistry& registry);
+		void RebuildResources();
 
 		inline size_t NumPhysicalDevices() const { return availablePhysicalDevices.size(); }
 		inline const Rendering::VulkanPhysicalDevice* GetPhysicalDevice(size_t Index) const {
@@ -95,21 +94,19 @@ namespace Rendering {
 		void MaterialCreated(Resources::Handle<Material> const& material);
 		void MaterialDestroyed(Resources::Handle<Material> const& material);
 
-		/** Contains callbacks related to mesh component operations */
-		struct MeshComponentOperations {
-			static void OnCreate(entt::registry& registry, entt::entity entity);
-			static void OnDestroy(entt::registry& registry, entt::entity entity);
-			static void OnModify(entt::registry& registry, entt::entity entity);
-		};
+		/** Callbacks for when static meshes are created or destroyed */
+		void StaticMeshCreated(Resources::Handle<StaticMesh> const& mesh);
+		void StaticMeshDestroyed(Resources::Handle<StaticMesh> const& mesh);
 
 		/** Dirty resources that need to be rebuilt */
 		std::vector<Resources::Handle<Material>> dirtyMaterials;
+		std::vector<Resources::Handle<StaticMesh>> dirtyStaticMeshes;
 
 		/** Resources that are pending destruction */
 		std::vector<VulkanPipelineResources> stalePipelineResources;
 		std::vector<VulkanMeshResources> staleMeshResources;
 
-		/** Refresh dirty pipelines so they are no longer dirty */
+		/** Refresh dirty materials so they are no longer dirty */
 		void RefreshMaterials();
 
 		/** Mark the pipeline resources on the material as dirty */
@@ -119,10 +116,13 @@ namespace Rendering {
 		/** Destroy any stale pipeline resources */
 		void DestroyStalePipelines();
 
-		/** Create or destroy all mesh resources */
-		void CreateMeshes(EntityRegistry& registry);
-		/** Mark the mesh resources on a mesh component as stale */
-		void MarkMeshStale(MeshComponent& mesh);
+		/** Refresh dirty meshes so they are no longer dirty */
+		void RefreshStaticMeshes();
+
+		/** Mark the mesh resources on the static mesh as dirty */
+		void MarkStaticMeshDirty(Resources::Handle<StaticMesh> const& mesh);
+		/** Mark the mesh resources on the material as stale */
+		void MarkStaticMeshStale(Resources::Handle<StaticMesh> const& mesh);
 		/** Destroy any stale pipeline resources */
 		void DestroyStaleMeshes();
 
@@ -133,6 +133,6 @@ namespace Rendering {
 		/** Create the pipeline resources for a material */
 		VulkanPipelineResources CreatePipeline(Material const& material, VulkanPipelineCreationHelper& helper);
 		/** Create the mesh resources for a mesh component */
-		VulkanMeshResources CreateMesh(MeshComponent const& mesh, EntityID id, VkCommandPool pool, VulkanMeshCreationHelper& helper);
+		VulkanMeshResources CreateMesh(StaticMesh const& mesh, VkCommandPool pool, VulkanMeshCreationHelper& helper);
 	};
 }

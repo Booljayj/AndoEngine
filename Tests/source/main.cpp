@@ -10,11 +10,10 @@
 #include "Rendering/RenderingSystem.h"
 #include "Profiling/ProfilerMacros.h"
 
-#include "Rendering/Materials.h"
-#include "Rendering/MeshComponent.h"
-#include "Rendering/MeshRendererComponent.h"
-#include "Rendering/Shaders.h"
-#include "Rendering/StaticMeshResource.h"
+#include "Rendering/Material.h"
+#include "Rendering/MeshRenderer.h"
+#include "Rendering/Shader.h"
+#include "Rendering/StaticMesh.h"
 
 #include "Importers/RenderingImporters.h"
 
@@ -33,7 +32,7 @@ struct Application {
 	Rendering::RenderingSystem rendering;
 	Rendering::MaterialDatabase materials;
 	Rendering::ShaderDatabase shaders;
-	Rendering::StaticMeshResourceDatabase staticMeshes;
+	Rendering::StaticMeshDatabase staticMeshes;
 
 	Application()
 		: materials(manifest)
@@ -50,7 +49,7 @@ struct Application {
 		STARTUP_SYSTEM(Main, framework);
 		STARTUP_SYSTEM(Main, events);
 		STARTUP_SYSTEM(Main, windowing);
-		STARTUP_SYSTEM(Main, rendering, windowing, registry, materials);
+		STARTUP_SYSTEM(Main, rendering, windowing, materials, staticMeshes);
 		return true;
 	}
 
@@ -59,7 +58,7 @@ struct Application {
 		SCOPED_TEMPORARIES();
 		LOG(Main, Info, "Shutting down all systems...");
 
-		SHUTDOWN_SYSTEM(Main, rendering, registry, materials);
+		SHUTDOWN_SYSTEM(Main, rendering, materials, staticMeshes);
 		SHUTDOWN_SYSTEM(Main, windowing);
 		SHUTDOWN_SYSTEM(Main, events);
 		SHUTDOWN_SYSTEM(Main, framework);
@@ -149,39 +148,25 @@ void main() {
 			);
 		}
 
-		Handle<Material> const material = application.materials.Create(10);
+		const Handle<Material> const material = application.materials.Create(10);
 		material->vertex = vertex;
 		material->fragment = fragment;
 
-		const Handle<StaticMeshResource> plane = application.staticMeshes.Create(100);
-		plane->vertices = FormattedVertices{
-			std::in_place_type<std::vector<Vertex_Simple>>,
-			{
-				Vertex_Simple{{-0.5f, -0.5f, 0.0f}, {255, 0, 0, 255}, {0,0,1}, {0,0}},
-				Vertex_Simple{{0.5f, -0.5f, 0.0f}, {0, 255, 0, 255}, {0,0,1}, {0,0}},
-				Vertex_Simple{{0.5f, 0.5f, 0.0f}, {0, 0, 255, 255}, {0,0,1}, {0,0}},
-				Vertex_Simple{{-0.5f, 0.5f, 0.0f}, {255, 255, 255, 255}, {0,0,1}, {0,0}},
-			}
+		const Handle<StaticMesh> plane = application.staticMeshes.Create(100);
+		Vertices_Simple& vertices = plane->vertices.emplace<Vertices_Simple>();
+		vertices = {
+			{{-0.5f, -0.5f, 0.0f}, {255, 0, 0, 255}, {0,0,1}, {0,0}},
+			{{0.5f, -0.5f, 0.0f}, {0, 255, 0, 255}, {0,0,1}, {0,0}},
+			{{0.5f, 0.5f, 0.0f}, {0, 0, 255, 255}, {0,0,1}, {0,0}},
+			{{-0.5f, 0.5f, 0.0f}, {255, 255, 255, 255}, {0,0,1}, {0,0}},
 		};
-		plane->indices = FormattedIndices{
-			std::in_place_type<std::vector<uint16_t>>,
-			std::initializer_list<uint16_t>{0, 1, 2, 2, 3, 0}
-		};
-
-		EntityHandle testMeshEntity = application.registry.Create();
-		MeshComponent& mesh = testMeshEntity.Add<MeshComponent>();
-		mesh.vertices = {
-			Vertex_Simple{{-0.5f, -0.5f, 0.0f}, {255, 0, 0, 255}, {0,0,1}, {0,0}},
-			Vertex_Simple{{0.5f, -0.5f, 0.0f}, {0, 255, 0, 255}, {0,0,1}, {0,0}},
-			Vertex_Simple{{0.5f, 0.5f, 0.0f}, {0, 0, 255, 255}, {0,0,1}, {0,0}},
-			Vertex_Simple{{-0.5f, 0.5f, 0.0f}, {255, 255, 255, 255}, {0,0,1}, {0,0}},
-		};
-		mesh.indices = {0, 1, 2, 2, 3, 0};
+		Indices_Short& indices = plane->indices.emplace<Indices_Short>();
+		indices = { 0, 1, 2, 2, 3, 0 };
 
 		EntityHandle testMeshRendererEntity = application.registry.Create();
-		MeshRendererComponent& renderer = testMeshRendererEntity.Add<MeshRendererComponent>();
+		MeshRenderer& renderer = testMeshRendererEntity.Add<MeshRenderer>();
 		renderer.material = material;
-		renderer.mesh = testMeshEntity.ID();
+		renderer.mesh = plane;
 
 		application.MainLoop();
 	}

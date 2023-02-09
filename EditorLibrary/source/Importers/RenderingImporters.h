@@ -1,6 +1,6 @@
 #pragma once
 #include "Importers/Importer.h"
-#include "Rendering/Shaders.h"
+#include "Rendering/Shader.h"
 #include "shaderc/shaderc.hpp"
 
 namespace Importers {

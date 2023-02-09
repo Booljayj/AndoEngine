@@ -2,16 +2,16 @@
 #include "Engine/StandardTypes.h"
 #include "Engine/Utility.h"
 #include "HAL/WindowingSystem.h"
-#include "Rendering/Materials.h"
-#include "Rendering/MeshComponent.h"
-#include "Rendering/MeshRendererComponent.h"
+#include "Rendering/Material.h"
+#include "Rendering/MeshRenderer.h"
+#include "Rendering/StaticMesh.h"
 #include "Rendering/Vulkan/VulkanRenderPasses.h"
 #include "Rendering/Uniforms.h"
 
 DEFINE_LOG_CATEGORY(Rendering, Info);
 
 namespace Rendering {
-	bool RenderingSystem::Startup(HAL::WindowingSystem& windowing, EntityRegistry& registry, MaterialDatabase& materials) {
+	bool RenderingSystem::Startup(HAL::WindowingSystem& windowing, MaterialDatabase& materials, StaticMeshDatabase& staticMeshes) {
 		// Vulkan instance
 		if (!framework.Create(windowing.GetPrimaryWindow())) return false;
 
@@ -66,23 +66,18 @@ namespace Rendering {
 		//Create the swapchain on the primary surface
 		primarySurface->CreateSwapchain(*selectedPhysical, primarySurfaceFormat, passes);
 
-		//Bind this rendering system as a context object callbacks can refer to it.
-		registry.Bind(this);
-		registry.Callbacks<MeshComponent>()
-			.Create<&MeshComponentOperations::OnCreate>()
-			.Destroy<&MeshComponentOperations::OnDestroy>()
-			.Modify<&MeshComponentOperations::OnModify>();
-
 		//Listen for when rendering-relevant resource types are created or destroyed
 		materials.Created.Add(this, &RenderingSystem::MaterialCreated);
 		materials.Destroyed.Add(this, &RenderingSystem::MaterialDestroyed);
+		staticMeshes.Created.Add(this, &RenderingSystem::StaticMeshCreated);
+		staticMeshes.Destroyed.Add(this, &RenderingSystem::StaticMeshDestroyed);
 
 		//@todo Create a group for renderable entities, once we have more than one component to include in the group (i.e. renderer and transform).
 
 		return true;
 	}
 
-	bool RenderingSystem::Shutdown(EntityRegistry& registry, MaterialDatabase& materials) {
+	bool RenderingSystem::Shutdown(MaterialDatabase& materials, StaticMeshDatabase& staticMeshes) {
 		availablePhysicalDevices.clear();
 
 		if (logical) {
@@ -91,8 +86,8 @@ namespace Rendering {
 				surface->WaitForCompletion(logical);
 			}
 
-			registry.DestroyComponents<MeshComponent>();
 			materials.Destroy();
+			staticMeshes.Destroy();
 			DestroyStalePipelines();
 			DestroyStaleMeshes();
 
@@ -120,7 +115,7 @@ namespace Rendering {
 		}
 
 		//Rebuild any resources, creating new ones and destroying stale ones
-		RebuildResources(registry);
+		RebuildResources();
 
 		bool success = true;
 		for (auto const& surface : surfaces) {
@@ -130,7 +125,7 @@ namespace Rendering {
 		return success;
 	}
 
-	void RenderingSystem::RebuildResources(EntityRegistry& registry) {
+	void RenderingSystem::RebuildResources() {
 		const bool hasStaleResources = stalePipelineResources.size() > 0 || staleMeshResources.size() > 0;
 		if (hasStaleResources) {
 			LOG(Rendering, Info, "Destroying stale resources");
@@ -145,10 +140,9 @@ namespace Rendering {
 			LOG(Rendering, Info, "Creating new pipelines");
 			RefreshMaterials();
 		}
-		if (shouldCreateMeshes) {
-			shouldCreateMeshes = false;
+		if (dirtyStaticMeshes.size() > 0) {
 			LOG(Rendering, Info, "Creating new meshes");
-			CreateMeshes(registry);
+			RefreshStaticMeshes();
 		}
 	}
 
@@ -216,29 +210,19 @@ namespace Rendering {
 		MarkMaterialStale(material);
 	}
 
-	void RenderingSystem::MeshComponentOperations::OnCreate(entt::registry& registry, entt::entity entity) {
-		RenderingSystem* rendering = registry.ctx().get<RenderingSystem*>();
-		rendering->shouldCreateMeshes = true;
+	void RenderingSystem::StaticMeshCreated(Resources::Handle<StaticMesh> const& mesh) {
+		MarkStaticMeshDirty(mesh);
 	}
 
-	void RenderingSystem::MeshComponentOperations::OnDestroy(entt::registry& registry, entt::entity entity) {
-		RenderingSystem* rendering = registry.ctx().get<RenderingSystem*>();
-		MeshComponent& mesh = registry.get<MeshComponent>(entity);
-		rendering->MarkMeshStale(mesh);
-	}
-
-	void RenderingSystem::MeshComponentOperations::OnModify(entt::registry& registry, entt::entity entity) {
-		RenderingSystem* rendering = registry.ctx().get<RenderingSystem*>();
-		MeshComponent& mesh = registry.get<MeshComponent>(entity);
-		rendering->MarkMeshStale(mesh);
-		rendering->shouldCreateMeshes = true;
+	void RenderingSystem::StaticMeshDestroyed(Resources::Handle<StaticMesh> const& mesh) {
+		MarkStaticMeshStale(mesh);
 	}
 
 	void RenderingSystem::RefreshMaterials() {
 		//The library of shader modules that will stay loaded as long as we need to continue creating pipelines
 		VulkanPipelineCreationHelper helper{logical.device};
 
-		for (const Resources::Handle<Material>& material : dirtyMaterials) {
+		for (Resources::Handle<Material> const& material : dirtyMaterials) {
 			//Existing resources become stale
 			if (material->resources) stalePipelineResources.emplace_back(std::move(material->resources));
 
@@ -267,24 +251,29 @@ namespace Rendering {
 		stalePipelineResources.clear();
 	}
 
-	void RenderingSystem::CreateMeshes(EntityRegistry& registry) {
+	void RenderingSystem::RefreshStaticMeshes() {
 		VulkanMeshCreationHelper helper{logical.device, logical.allocator, logical.queues.graphics, commandPool};
 
-		auto const meshes = registry.GetView<MeshComponent>();
-		for (const auto id : meshes) {
-			MeshComponent& mesh = meshes.Get<MeshComponent>(id);
-			if (!mesh.resources) {
-				VulkanMeshResources const resources = CreateMesh(mesh, id, commandPool, helper);
-				if (resources) mesh.resources = resources;
-				else resources.Destroy(logical.allocator);
-			}
+		for (const Resources::Handle<StaticMesh>& mesh : dirtyStaticMeshes) {
+			//Existing resources become stale
+			if (mesh->gpuResources) staleMeshResources.emplace_back(std::move(mesh->gpuResources));
+
+			//Create new resources
+			VulkanMeshResources const resources = CreateMesh(*mesh, commandPool, helper);
+			if (resources) mesh->gpuResources = std::move(resources);
+			else resources.Destroy(logical.allocator);
 		}
 		helper.Flush();
+		dirtyStaticMeshes.clear();
 	}
 
-	void RenderingSystem::MarkMeshStale(MeshComponent& mesh) {
-		staleMeshResources.push_back(mesh.resources);
-		mesh.resources = {};
+	void RenderingSystem::MarkStaticMeshDirty(Resources::Handle<StaticMesh> const& mesh) {
+		//Keep track of the dirty material so we can refresh it during the next render
+		dirtyStaticMeshes.emplace_back(mesh);
+	}
+
+	void RenderingSystem::MarkStaticMeshStale(Resources::Handle<StaticMesh> const& mesh) {
+		staleMeshResources.emplace_back(std::move(mesh->gpuResources));
 	}
 
 	void RenderingSystem::DestroyStaleMeshes() {
@@ -298,7 +287,6 @@ namespace Rendering {
 		return physicalDevice.HasRequiredQueues() && physicalDevice.HasRequiredExtensions(extensionNames) && physicalDevice.HasSwapchainSupport();
 	}
 
-#pragma optimize("", off)
 	VulkanPipelineResources RenderingSystem::CreatePipeline(Material const& material, VulkanPipelineCreationHelper& helper) {
 		VulkanPipelineResources resources;
 
@@ -456,14 +444,14 @@ namespace Rendering {
 
 		return resources;
 	}
-#pragma optimize("", on)
 
-	VulkanMeshResources RenderingSystem::CreateMesh(MeshComponent const& mesh, EntityID id, VkCommandPool pool, VulkanMeshCreationHelper& helper) {
+	VulkanMeshResources RenderingSystem::CreateMesh(StaticMesh const& mesh, VkCommandPool pool, VulkanMeshCreationHelper& helper) {
 		VulkanMeshResources resources;
 
 		//Calculate byte size values for the input mesh
-		size_t const vertexBytes = sizeof(decltype(MeshComponent::vertices)::value_type) * mesh.vertices.size();
-		size_t const indexBytes = sizeof(decltype(MeshComponent::indices)::value_type) * mesh.indices.size();
+		const auto BufferSizeVisitor = [](auto const& v) { return v.size() * sizeof(typename std::remove_reference_t<decltype(v)>::value_type); };
+		size_t const vertexBytes = std::visit(BufferSizeVisitor, mesh.vertices);
+		size_t const indexBytes = std::visit(BufferSizeVisitor, mesh.indices);
 		size_t const totalBytes = vertexBytes + indexBytes;
 
 		size_t const vertexOffset = 0;
@@ -479,8 +467,10 @@ namespace Rendering {
 		}
 
 		//Fill the staging buffer with the source data
-		staging.WriteArray<Vertex_Simple>(mesh.vertices, vertexOffset);
-		staging.WriteArray<uint32_t>(mesh.indices, indexOffset);
+		const auto VertexWriteVisitor = [&](auto const& v) { staging.Write(v.data(), v.size() * sizeof(typename std::remove_reference_t<decltype(v)>::value_type), vertexOffset); };
+		std::visit(VertexWriteVisitor, mesh.vertices);
+		const auto IndexWriteVisitor = [&](auto const& v) { staging.Write(v.data(), v.size() * sizeof(typename std::remove_reference_t<decltype(v)>::value_type), indexOffset); };
+		std::visit(IndexWriteVisitor, mesh.indices);
 
 		//Create the target buffer that will contain the uploaded data for the GPU to use
 		constexpr VkBufferUsageFlags targetBufferFlags =
@@ -538,10 +528,18 @@ namespace Rendering {
 		helper.Submit(staging, commands);
 
 		//Record the size and offset information. This is the primary way we'll know that the resources are valid
+		const auto CountVisitor = [](const auto& v) { return static_cast<uint32_t>(v.size()); };
 		resources.offset.vertex = 0;
 		resources.offset.index = vertexBytes;
-		resources.size.vertices = static_cast<uint32_t>(mesh.vertices.size());
-		resources.size.indices = static_cast<uint32_t>(mesh.indices.size());
+		resources.size.vertices = std::visit(CountVisitor, mesh.vertices);
+		resources.size.indices = std::visit(CountVisitor, mesh.indices);
+		
+		struct IndexTypeVisitor {
+			VkIndexType operator()(Indices_Short const&) { return VK_INDEX_TYPE_UINT16; }
+			VkIndexType operator()(Indices_Long const&) { return VK_INDEX_TYPE_UINT32; }
+		};
+		resources.indexType = std::visit(IndexTypeVisitor{}, mesh.indices);
+
 		return resources;
 	}
 }

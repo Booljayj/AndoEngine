@@ -1,7 +1,7 @@
-#include "Rendering/Materials.h"
-#include "Rendering/MeshComponent.h"
-#include "Rendering/MeshRendererComponent.h"
+#include "Rendering/Material.h"
+#include "Rendering/MeshRenderer.h"
 #include "Rendering/RenderingSystem.h"
+#include "Rendering/StaticMesh.h"
 #include "Rendering/Surface.h"
 #include "Rendering/Uniforms.h"
 
@@ -82,8 +82,7 @@ namespace Rendering {
 		//@todo This would ideally be done with some acceleration structure that contains a mapping between the pipelines and all of
 		//      the geometry that should be drawn with that pipeline, to avoid binding the same pipeline more than once and to strip
 		//      out culled geometry.
-		auto const renderables = registry.GetView<MeshRendererComponent const>();
-		auto const meshes = registry.GetView<MeshComponent const>();
+		auto const renderables = registry.GetView<MeshRenderer const>();
 
 		//Prepare the frame for rendering, which may need to wait for resources
 		EPreparationResult const result = organizer.Prepare(logical, swapchain, renderables.size());
@@ -126,10 +125,9 @@ namespace Rendering {
 
 			uint32_t objectIndex = 0;
 			for (const auto id : renderables) {
-				auto const& renderer = renderables.Get<MeshRendererComponent const>(id);
+				auto const& renderer = renderables.Get<MeshRenderer const>(id);
 
-				auto const* mesh = meshes.Find<MeshComponent const>(renderer.mesh);
-				if (renderer.material && renderer.material->resources && mesh && mesh->resources) {
+				if (renderer.material && renderer.material->resources && renderer.mesh && renderer.mesh->gpuResources) {
 					uint32_t const objectUniformsOffset = static_cast<uint32_t>(sizeof(ObjectUniforms) * objectIndex);
 
 					//Write to the part of the object uniform buffer designated for this object
@@ -149,13 +147,14 @@ namespace Rendering {
 					vkCmdBindDescriptorSets(frame.commands, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer.material->resources.pipelineLayout, 0, static_cast<uint32_t>(std::size(sets)), sets, 1, &objectUniformsOffset);
 
 					//Bind the vetex and index buffers for the mesh
-					VkBuffer const vertexBuffers[] = { mesh->resources.buffer };
-					VkDeviceSize const vertexOffsets[] = { mesh->resources.offset.vertex };
+					VulkanMeshResources const& meshRes = renderer.mesh->gpuResources;
+					VkBuffer const vertexBuffers[] = { meshRes.buffer };
+					VkDeviceSize const vertexOffsets[] = { meshRes.offset.vertex };
 					vkCmdBindVertexBuffers(frame.commands, 0, 1, vertexBuffers, vertexOffsets);
-					vkCmdBindIndexBuffer(frame.commands, mesh->resources.buffer, mesh->resources.offset.index, VK_INDEX_TYPE_UINT32);
+					vkCmdBindIndexBuffer(frame.commands, meshRes.buffer, meshRes.offset.index, meshRes.indexType);
 
 					//Submit the command to draw using the vertex and index buffers
-					vkCmdDrawIndexed(frame.commands, mesh->resources.size.indices, 1, 0, 0, 0);
+					vkCmdDrawIndexed(frame.commands, meshRes.size.indices, 1, 0, 0, 0);
 
 					++objectIndex;
 				}
