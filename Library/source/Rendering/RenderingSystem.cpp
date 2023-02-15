@@ -4,6 +4,7 @@
 #include "HAL/WindowingSystem.h"
 #include "Rendering/Material.h"
 #include "Rendering/MeshRenderer.h"
+#include "Rendering/Shader.h"
 #include "Rendering/StaticMesh.h"
 #include "Rendering/Vulkan/VulkanRenderPasses.h"
 #include "Rendering/Uniforms.h"

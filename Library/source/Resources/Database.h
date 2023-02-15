@@ -74,10 +74,10 @@ namespace Resources {
 			resource->id = id;
 			static_cast<Implementation*>(this)->PostCreate(*resource);
 
-			Handle<BaseResourceType> const handle = CreateHandle(*resource);
+			Handle<BaseResourceType> const handle = CreateHandle(*resource, *resource);
 			Created(handle);
 
-			return handle;
+			return Cast<Resource>(std::move(handle));
 		}
 
 		//@todo Implement loading behavior
@@ -89,7 +89,7 @@ namespace Resources {
 			if (iter != ids.end()) {
 				BaseResourceType* resource = reinterpret_cast<BaseResourceType*>(resources[iter - ids.begin()].get());
 				if (Reflection::StructTypeInfo::IsDerivedFrom(type, resource->GetTypeInfo())) {
-					return CreateHandle(*resource);
+					return Cast<Resource>(CreateHandle(*resource, *resource));
 				}
 			}
 			return nullptr;
@@ -130,14 +130,15 @@ namespace Resources {
 		void Destroy() {
 			std::shared_lock lock{ mutex };
 			for (Reflection::TypeUniquePointer& pointer : resources) {
-				Destroyed(CreateHandle(*reinterpret_cast<BaseResourceType*>(pointer.get())));
+				BaseResourceType* resource = reinterpret_cast<BaseResourceType*>(pointer.get());
+				Destroyed(CreateHandle(*resource, *resource));
 			}
 		}
 
 	protected:
+		using ManagedObject::Handle<BaseResourceType>::Factory::CreateHandle;
+
 		/** Pointers to resources that are currently in this database */
 		std::deque<Reflection::TypeUniquePointer> resources;
-
-		Resources::Handle<BaseResourceType> CreateHandle(BaseResourceType& resource) { return ManagedObject::Handle<BaseResourceType>::Factory::CreateHandle(resource); }
 	};
 }

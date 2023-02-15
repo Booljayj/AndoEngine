@@ -148,11 +148,11 @@ void main() {
 			);
 		}
 
-		const Handle<Material> const material = application.materials.Create(10);
+		Handle<Material> const material = application.materials.Create(10);
 		material->vertex = vertex;
 		material->fragment = fragment;
 
-		const Handle<StaticMesh> plane = application.staticMeshes.Create(100);
+		Handle<StaticMesh> const plane = application.staticMeshes.Create(100);
 		Vertices_Simple& vertices = plane->vertices.emplace<Vertices_Simple>();
 		vertices = {
 			{{-0.5f, -0.5f, 0.0f}, {255, 0, 0, 255}, {0,0,1}, {0,0}},

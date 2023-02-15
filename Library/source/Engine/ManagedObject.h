@@ -38,56 +38,87 @@ private:
 public:
 	/** A handle to a managed object. Instances of handles will increase the reference count for the managed object. */
 	template<typename InObjectType>
-	struct Handle : public HandleBase {
+	struct Handle {
 		using ObjectType = InObjectType;
 		using MutableObjectType = std::remove_const_t<ObjectType>;
-		using HandleBase::operator bool;
 
-		template<typename OtherObjectType>
-		friend struct Handle;
+		template<typename A> friend struct Handle;
+		template<typename A, typename B> friend Handle<A> Cast(Handle<B> const&);
+		template<typename A, typename B> friend Handle<A> Cast(Handle<B>&&);
 
 		/** A factory which is allowed to create handles from a raw object reference. It is assumed to be the instance managing the raw object references. */
 		struct Factory {
 		protected:
 			/** Create a new handle from a raw object reference. Must only be called in a thread-safe context. */
-			static Handle<ObjectType> CreateHandle(ObjectType& object) {
-				return Handle<ObjectType>{ object };
+			static Handle<ObjectType> CreateHandle(ObjectType& object, ManagedObject& control) {
+				return Handle<ObjectType>{ object, control };
 			}
 		};
 
-		static_assert(!std::is_pointer_v<ObjectType>, "Handles cannot hold an object which is a pointer");
-		//static_assert(std::is_base_of_v<ManagedObject, ObjectType>, "Handle template parameter must derive from ManagedObject");
-		template<typename A, typename B> friend Handle<A> Cast(Handle<B> const&);
-		template<typename A, typename B> friend Handle<A> Cast(Handle<B>&&);
-
 		Handle() noexcept = default;
-		Handle(std::nullptr_t) noexcept : HandleBase() {}
+		Handle(std::nullptr_t) noexcept : Handle() {}
+		~Handle() { if (control) control->refCount.fetch_sub(1); }
 
-		Handle(Handle const& other) noexcept : HandleBase(other.object) {}
-		Handle(Handle&& other) noexcept { std::swap(object, other.object); }
+		Handle(Handle const& other) noexcept : Handle(other.object, other.control) {}
+		Handle(Handle&& other) noexcept { *this = std::move(other); }
 
 		Handle& operator=(Handle const& other) { Handle(other).Swap(*this); return *this; }
-		Handle& operator=(Handle&& other) { Handle(std::move(other)).Swap(*this); return *this; }
+		Handle& operator=(Handle&& other) {
+			std::swap(object, other.object);
+			std::swap(control, other.control);
+			return *this;
+		}
 
 		template<typename OtherObjectType>
-		Handle(Handle<OtherObjectType> const& other) noexcept : HandleBase(other.object) {}
+		Handle(Handle<OtherObjectType> const& other) noexcept : Handle(static_cast<MutableObjectType*>(other.object), other.control) {
+			static_assert(std::is_base_of_v<ManagedObject, ObjectType>, "Handle template parameter must derive from ManagedObject");
+			static_assert(std::is_base_of_v<ObjectType, OtherObjectType>, "Cannot implicitly cast handle to target type");
+		}
 		template<typename OtherObjectType>
-		Handle(Handle<OtherObjectType>&& other) noexcept { std::swap(object, other.object); }
+		Handle(Handle<OtherObjectType>&& other) noexcept {
+			static_assert(std::is_base_of_v<ManagedObject, ObjectType>, "Handle template parameter must derive from ManagedObject");
+			static_assert(std::is_base_of_v<ObjectType, OtherObjectType>, "Cannot implicitly cast handle to target type");
+			object = static_cast<MutableObjectType*>(other.object);
+			control = other.control;
+			other.object = nullptr;
+			other.control = nullptr;
+		}
 
 		template<typename OtherObjectType>
-		Handle& operator=(Handle<OtherObjectType> const& other) { HandleBase(other.object).Swap(*this); return *this; }
+		Handle& operator=(Handle<OtherObjectType> const& other) {
+			static_assert(std::is_base_of_v<ManagedObject, ObjectType>, "Handle template parameter must derive from ManagedObject");
+			static_assert(std::is_base_of_v<ObjectType, OtherObjectType>, "Cannot implicitly cast handle to target type");
+			Handle(static_cast<MutableObjectType*>(other.object), other.control).Swap(*this);
+			return *this;
+		}
 		template<typename OtherObjectType>
-		Handle& operator=(Handle<OtherObjectType>&& other) { std::swap(object, other.object); return *this; }
+		Handle& operator=(Handle<OtherObjectType>&& other) {
+			static_assert(std::is_base_of_v<ManagedObject, ObjectType>, "Handle template parameter must derive from ManagedObject");
+			static_assert(std::is_base_of_v<ObjectType, OtherObjectType>, "Cannot implicitly cast handle to target type");
+			*this = Handle(static_cast<MutableObjectType*>(other.object), other.control);
+			return *this;
+		}
+
+		inline operator bool() const { return !!control; }
 
 		inline ObjectType* operator->() const { return static_cast<ObjectType*>(object); }
 		inline ObjectType& operator*() const { return *static_cast<ObjectType*>(object); }
 
 		inline ObjectType* Get() const { return static_cast<ObjectType*>(object); }
 		inline void Reset() { Handle().Swap(*this); }
-		inline void Swap(Handle& other) { HandleBase::Swap(other); }
+		inline void Swap(Handle& other) { std::swap(object, other.object); std::swap(control, other.control); }
 
 	private:
-		Handle(MutableObjectType& inObject) noexcept : HandleBase(inObject) {}
+		MutableObjectType* object = nullptr;
+		ManagedObject* control = nullptr;
+
+		Handle(MutableObjectType* inObject, ManagedObject* inControl) noexcept : object(inObject), control(inControl) {
+			if (control) control->refCount.fetch_add(1);
+		}
+
+		Handle(MutableObjectType& inObject, ManagedObject& inControl) noexcept : object(&inObject), control(&inControl) {
+			control->refCount.fetch_add(1);
+		}
 	};
 
 	/** Get the current number of references to this object. Thread-safe. */
@@ -102,15 +133,23 @@ static_assert(std::is_trivially_destructible_v<ManagedObject>, "ManagedObject ba
 /** Create a copy of a handle cast to a different type */
 template<typename OtherObjectType, typename ObjectType>
 ManagedObject::Handle<OtherObjectType> Cast(ManagedObject::Handle<ObjectType> const& handle) {
-	if (handle.object) return ManagedObject::Handle<OtherObjectType>{ *static_cast<OtherObjectType*>(handle.object) };
+	static_assert(std::is_base_of_v<OtherObjectType, ObjectType> || std::is_base_of_v<ObjectType, OtherObjectType>, "Cannot cast handles between unrelated types");
+	using MutableOtherObjectType = ManagedObject::Handle<OtherObjectType>::MutableObjectType;
+
+	if (handle.control) return ManagedObject::Handle<MutableOtherObjectType>{ *static_cast<MutableOtherObjectType*>(handle.object), *handle.control };
 	else return nullptr;
 }
 
 /** Convert a handle to a different type */
 template<typename OtherObjectType, typename ObjectType>
 ManagedObject::Handle<OtherObjectType> Cast(ManagedObject::Handle<ObjectType>&& handle) {
-	ManagedObject::Handle<OtherObjectType> other;
-	other.object = static_cast<OtherObjectType*>(handle.object);
+	static_assert(std::is_base_of_v<OtherObjectType, ObjectType> || std::is_base_of_v<ObjectType, OtherObjectType>, "Cannot cast handles between unrelated types");
+	using MutableOtherObjectType = ManagedObject::Handle<OtherObjectType>::MutableObjectType;
+
+	ManagedObject::Handle<OtherObjectType> newHandle;
+	newHandle.object = static_cast<MutableOtherObjectType*>(handle.object);
+	newHandle.control = handle.control;
 	handle.object = nullptr;
-	return other;
+	handle.control = nullptr;
+	return newHandle;
 }
