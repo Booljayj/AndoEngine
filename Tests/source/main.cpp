@@ -27,18 +27,16 @@ struct Application {
 	HAL::EventsSystem events;
 	HAL::WindowingSystem windowing;
 
-	Resources::DummyResourceManifest manifest;
+	Resources::Database<
+		Rendering::StaticMesh,
+		Rendering::Material,
+		Rendering::VertexShader,
+		Rendering::FragmentShader
+	> database;
 
 	Rendering::RenderingSystem rendering;
-	Rendering::MaterialDatabase materials;
-	Rendering::ShaderDatabase shaders;
-	Rendering::StaticMeshDatabase staticMeshes;
 
-	Application()
-		: materials(manifest)
-		, shaders(manifest)
-		, staticMeshes(manifest)
-	{}
+	Application() = default;
 
 	// Primary system procedures
 	bool Startup() {
@@ -49,7 +47,7 @@ struct Application {
 		STARTUP_SYSTEM(Main, framework);
 		STARTUP_SYSTEM(Main, events);
 		STARTUP_SYSTEM(Main, windowing);
-		STARTUP_SYSTEM(Main, rendering, windowing, materials, staticMeshes);
+		STARTUP_SYSTEM(Main, rendering, windowing, database.GetCache<Rendering::Material>(), database.GetCache<Rendering::StaticMesh>());
 		return true;
 	}
 
@@ -58,7 +56,7 @@ struct Application {
 		SCOPED_TEMPORARIES();
 		LOG(Main, Info, "Shutting down all systems...");
 
-		SHUTDOWN_SYSTEM(Main, rendering, materials, staticMeshes);
+		SHUTDOWN_SYSTEM(Main, rendering, database.GetCache<Rendering::Material>(), database.GetCache<Rendering::StaticMesh>());
 		SHUTDOWN_SYSTEM(Main, windowing);
 		SHUTDOWN_SYSTEM(Main, events);
 		SHUTDOWN_SYSTEM(Main, framework);
@@ -110,8 +108,8 @@ int main(int argc, char** argv) {
 		using namespace Resources;
 
 		//Create default built-in vertex and fragment shaders
-		Handle<VertexShader> const vertex = application.shaders.Create<VertexShader>(0);
-		Handle<FragmentShader> const fragment = application.shaders.Create<FragmentShader>(1);
+		Handle<VertexShader> const vertex = application.database.GetCache<VertexShader>().Create(0);
+		Handle<FragmentShader> const fragment = application.database.GetCache<FragmentShader>().Create(1);
 		{
 			Importers::ShaderImporter shaderImporter;
 			shaderImporter.Import(
@@ -148,11 +146,11 @@ void main() {
 			);
 		}
 
-		Handle<Material> const material = application.materials.Create(10);
+		Handle<Material> const material = application.database.GetCache<Material>().Create(10);
 		material->vertex = vertex;
 		material->fragment = fragment;
 
-		Handle<StaticMesh> const plane = application.staticMeshes.Create(100);
+		Handle<StaticMesh> const plane = application.database.GetCache<StaticMesh>().Create(100);
 		Vertices_Simple& vertices = plane->vertices.emplace<Vertices_Simple>();
 		vertices = {
 			{{-0.5f, -0.5f, 0.0f}, {255, 0, 0, 255}, {0,0,1}, {0,0}},

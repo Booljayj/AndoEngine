@@ -16,6 +16,7 @@ namespace Resources {
 		/** The human-readable name of this resource */
 		std::string name;
 
+		Resource(Identifier inId) : id(inId) {}
 		virtual ~Resource() = default;
 	};
 

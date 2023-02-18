@@ -12,7 +12,7 @@
 DEFINE_LOG_CATEGORY(Rendering, Info);
 
 namespace Rendering {
-	bool RenderingSystem::Startup(HAL::WindowingSystem& windowing, MaterialDatabase& materials, StaticMeshDatabase& staticMeshes) {
+	bool RenderingSystem::Startup(HAL::WindowingSystem& windowing, Resources::Cache<Material>& materials, Resources::Cache<StaticMesh>& staticMeshes) {
 		// Vulkan instance
 		if (!framework.Create(windowing.GetPrimaryWindow())) return false;
 
@@ -78,7 +78,7 @@ namespace Rendering {
 		return true;
 	}
 
-	bool RenderingSystem::Shutdown(MaterialDatabase& materials, StaticMeshDatabase& staticMeshes) {
+	bool RenderingSystem::Shutdown(Resources::Cache<Material>& materials, Resources::Cache<StaticMesh>& staticMeshes) {
 		availablePhysicalDevices.clear();
 
 		if (logical) {

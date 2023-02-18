@@ -13,15 +13,14 @@
 #include "Rendering/Vulkan/VulkanResourcesHelpers.h"
 #include "Rendering/Vulkan/VulkanSwapchain.h"
 #include "Rendering/Vulkan/VulkanUniformLayouts.h"
+#include "Resources/Database.h"
 
 namespace HAL {
 	struct WindowingSystem;
 }
 namespace Rendering {
 	struct Material;
-	struct MaterialDatabase;
 	struct StaticMesh;
-	struct StaticMeshDatabase;
 }
 
 DECLARE_LOG_CATEGORY(Rendering);
@@ -69,8 +68,8 @@ namespace Rendering {
 
 		RenderingSystem() = default;
 
-		bool Startup(HAL::WindowingSystem& windowing, MaterialDatabase& materials, StaticMeshDatabase& staticMeshes);
-		bool Shutdown(MaterialDatabase& materials, StaticMeshDatabase& staticMeshes);
+		bool Startup(HAL::WindowingSystem& windowing, Resources::Cache<Material>& materials, Resources::Cache<StaticMesh>& staticMeshes);
+		bool Shutdown(Resources::Cache<Material>& materials, Resources::Cache<StaticMesh>& staticMeshes);
 
 		bool Render(EntityRegistry& registry);
 		void RebuildResources();

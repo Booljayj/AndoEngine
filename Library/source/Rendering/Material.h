@@ -2,7 +2,6 @@
 #include "Rendering/Vertex.h"
 #include "Rendering/Vulkan/VulkanResources.h"
 #include "Resources/Resource.h"
-#include "Resources/Database.h"
 
 namespace Rendering {
 	struct RenderingSystem;
@@ -20,11 +19,8 @@ namespace Rendering {
 
 		/** Rendering resources for this material */
 		VulkanPipelineResources resources;
-	};
 
-	struct MaterialDatabase : public Resources::TSparseDatabase<Material, MaterialDatabase> {
-		using Resources::TSparseDatabase<Material, MaterialDatabase>::TSparseDatabase;
-		void PostCreate(Material& Resource) {}
+		Material(Resources::Identifier id) : Resources::Resource(id) {}
 	};
 }
 

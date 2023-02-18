@@ -4,7 +4,6 @@
 #include "Rendering/RenderingSystem.h"
 #include "Rendering/Vertex.h"
 #include "Rendering/Vulkan/VulkanResources.h"
-#include "Resources/Database.h"
 #include "Resources/Resource.h"
 
 namespace Rendering {
@@ -22,13 +21,8 @@ namespace Rendering {
 		FormattedVertices vertices;
 		FormattedIndices indices;
 		VulkanMeshResources gpuResources;
-	};
 
-	struct StaticMeshDatabase : public Resources::TSparseDatabase<StaticMesh, StaticMeshDatabase> {
-		friend struct Resources::TSparseDatabase<StaticMesh, StaticMeshDatabase>;
-		using Resources::TSparseDatabase<StaticMesh, StaticMeshDatabase>::TSparseDatabase;
-
-		void PostCreate(StaticMesh& resource) {}
+		StaticMesh(Resources::Identifier id) : Resources::Resource(id) {}
 	};
 }
 

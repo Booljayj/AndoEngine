@@ -1,7 +1,6 @@
 #pragma once
 #include "Engine/StandardTypes.h"
 #include "Engine/Reflection.h"
-#include "Resources/Database.h"
 #include "Resources/Resource.h"
 
 namespace Rendering {
@@ -19,23 +18,21 @@ namespace Rendering {
 
 		std::vector<uint32_t> bytecode;
 
+		Shader(Resources::Identifier id) : Resources::Resource(id) {}
 		virtual EShaderType GetShaderType() const = 0;
 	};
 
 	struct VertexShader : public Shader {
 		REFLECT_STRUCT(VertexShader, Shader);
+		using Shader::Shader;
 
 		virtual EShaderType GetShaderType() const override { return EShaderType::Vertex; }
 	};
 	struct FragmentShader : public Shader {
 		REFLECT_STRUCT(FragmentShader, Shader);
+		using Shader::Shader;
 
 		virtual EShaderType GetShaderType() const override { return EShaderType::Fragment; }
-	};
-
-	struct ShaderDatabase : public Resources::TSparseDatabase<Shader, ShaderDatabase> {
-		using Resources::TSparseDatabase<Shader, ShaderDatabase>::TSparseDatabase;
-		void PostCreate(Shader& Resource) {}
 	};
 }
 

@@ -13,6 +13,16 @@ struct TupleElementSizes<std::tuple<Types...>> {
 };
 
 namespace TupleUtility {
+	/** Finds the index of the element in the tuple. Only finds the first index if the type appears multiple times. */
+	template<typename ElementType, typename TupleType, size_t ElementIndex = 0>
+	inline constexpr size_t Index() {
+		if constexpr (ElementIndex < std::tuple_size_v<TupleType>) {
+			if (std::is_same_v<ElementType, std::tuple_element_t<ElementIndex, TupleType>>) return ElementIndex;
+			else return Index<ElementType, TupleType, ElementIndex + 1>();
+		}
+		return std::tuple_size_v<TupleType>;
+	}
+
 	/** Invoke the visitor with every element in the tuple */
 	template<typename TupleType, typename VisitorType, size_t ElementIndex = 0>
 	inline constexpr void Visit(TupleType& tuple, VisitorType&& visitor) {

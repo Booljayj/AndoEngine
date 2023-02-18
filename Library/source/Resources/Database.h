@@ -2,59 +2,27 @@
 #include "Engine/Events.h"
 #include "Engine/Reflection.h"
 #include "Engine/StandardTypes.h"
-#include "Resources/Manifest.h"
+#include "Engine/TupleUtility.h"
 #include "Resources/Resource.h"
 #include "Resources/ResourceTypes.h"
 
 namespace Resources {
-	/** Databases keep track of a collection of resources, and have utility methods to create, load, and find them. */
-	struct Database {
-	public:
-		/** Creates a new resource in the database. Thread-safe. */
-		virtual Handle<Resource> Create(Identifier id, Reflection::StructTypeInfo const& type) = 0;
-		virtual Handle<Resource> Load(Identifier id, Reflection::StructTypeInfo const& type) = 0;
-		virtual Handle<Resource> Find(Identifier id, Reflection::StructTypeInfo const& type) = 0;
-		virtual bool Contains(Identifier id, Reflection::StructTypeInfo const& type) = 0;
-
-		const IManifest& GetManifest() const { return manifest; }
-
-	protected:
-		/** IDs for all resources in the database, indices are kept in sync with the resources collection */
-		std::deque<Identifier> ids;
-		/** Mutex which controls access to the resources in the database */
-		stdext::shared_recursive_mutex mutex;
-		/** The manifest which determines where known resources can be found */
-		IManifest const& manifest;
-
-		Database(IManifest const& inManifest) : manifest(inManifest) {}
-		~Database() = default;
+	struct ICache
+	{
+		virtual ~ICache() = default;
 	};
 
-	/** Implements behavior for storing and tracking a specific type of resource */
-	template<typename BaseResourceType, typename Implementation>
-	struct TSparseDatabase : public Database, public ManagedObject::Handle<BaseResourceType>::Factory {
+	/** A cache that manages a specific type of resource */
+	template<typename ResourceType>
+	struct Cache : public ICache, public Handle<ResourceType>::Factory {
 	public:
-		static_assert(std::is_base_of_v<Resource, BaseResourceType>, "BaseResourceType must inherit from Resource");
+		static_assert(std::is_base_of_v<Resource, ResourceType>, "Cache can only manage objects that derive from Resource");
 
-		TEvent<Handle<BaseResourceType> const&> Created;
-		TEvent<Handle<BaseResourceType> const&> Destroyed;
+		TEvent<Handle<ResourceType> const&> Created;
+		TEvent<Handle<ResourceType> const&> Destroyed;
 
-		TSparseDatabase(IManifest const& inManifest) : Database(inManifest) {}
-		~TSparseDatabase() = default;
-
-		virtual Handle<Resource> Create(Identifier id, Reflection::StructTypeInfo const& type) override {
-			//Ensure the resource we are trying to create is a type that this database expects to manage
-			if (!Reflection::StructTypeInfo::IsDerivedFrom(*ReflectStruct<BaseResourceType>::Get(), type)) {
-				LOGF(Resources, Error, "Cannot create new resource with id %s. The desired type does not derive from %s", id);
-				return nullptr;
-			}
-
-			//Ensure the id is not already used by a predefined resource
-			if (manifest.GetInfo(id)) {
-				LOGF(Resources, Error, "Cannot create new resource with id %s. There is already a resource using this id.", id);
-				return nullptr;
-			}
-
+		/** Creates a new resource in the cache. Thread-safe. */
+		virtual Handle<ResourceType> Create(Identifier id) {
 			std::unique_lock const lock{ mutex };
 
 			//If we already have a resource with this id, it's an invalid operation to try to create another
@@ -64,81 +32,100 @@ namespace Resources {
 				return nullptr;
 			}
 
+			//Allocate the memory for the resource and associate it with the id. This allows the resource to be queried in the cache during its own constructor.
 			ids.emplace_back(id);
+			ResourceStorage& storage = resources.emplace_back();
 
-			//Create the memory in the array for the resource, store it, then construct the value. This allows constructors to access their own entry if necessary.
-			Reflection::TypeUniquePointer& pointer = resources.emplace_back(type.Allocate());
-			BaseResourceType* resource = reinterpret_cast<BaseResourceType*>(pointer.get());
+			ResourceType* resource = storage.Get();
+			new (resource) ResourceType(id);
 
-			type.Construct(resource);
-			resource->id = id;
-			static_cast<Implementation*>(this)->PostCreate(*resource);
-
-			Handle<BaseResourceType> const handle = CreateHandle(*resource, *resource);
+			Handle<ResourceType> const handle = CreateHandle(*resource, *resource);
 			Created(handle);
 
-			return Cast<Resource>(std::move(handle));
+			return handle;
 		}
 
-		//@todo Implement loading behavior
-		virtual Handle<Resource> Load(Identifier id, Reflection::StructTypeInfo const& type) override { return nullptr; }
+		virtual Handle<ResourceType> Load(Identifier id, TArrayView<std::byte> archive) { return nullptr; }
 
-		virtual Handle<Resource> Find(Identifier id, Reflection::StructTypeInfo const& type) override {
+		virtual Handle<ResourceType> Find(Identifier id) {
 			std::shared_lock lock{ mutex };
 			auto const iter = std::find(ids.begin(), ids.end(), id);
 			if (iter != ids.end()) {
-				BaseResourceType* resource = reinterpret_cast<BaseResourceType*>(resources[iter - ids.begin()].get());
-				if (Reflection::StructTypeInfo::IsDerivedFrom(type, resource->GetTypeInfo())) {
-					return Cast<Resource>(CreateHandle(*resource, *resource));
-				}
+				ResourceType* resource = resources[iter - ids.begin()].Get();
+				return CreateHandle(*resource, *resource);
 			}
 			return nullptr;
 		}
 
-		virtual bool Contains(Identifier id, Reflection::StructTypeInfo const& type) override {
+		virtual bool Contains(Identifier id) {
 			std::shared_lock lock{ mutex };
 			auto const iter = std::find(ids.begin(), ids.end(), id);
-			if (iter != ids.end()) {
-				Resource* resource = reinterpret_cast<Resource*>(resources[iter - ids.begin()].get());
-				if (Reflection::StructTypeInfo::IsDerivedFrom(type, resource->GetTypeInfo())) {
-					return true;
-				}
-			}
-			return false;
-		}
-
-		/** Create a new resource with the given id. The id of the new resource must be unique. */
-		template<typename ResourceType = BaseResourceType>
-		Handle<ResourceType> Create(Identifier id) {
-			static_assert(std::is_base_of_v<BaseResourceType, ResourceType>, "ResourceType must inherit from BaseResourceType");
-			return Cast<ResourceType>(Create(id, *Reflect<ResourceType>::Get()));
-		}
-
-		template<typename ResourceType = BaseResourceType>
-		Handle<ResourceType> Load(Identifier id) {
-			static_assert(std::is_base_of_v<BaseResourceType, ResourceType>, "ResourceType must inherit from BaseResourceType");
-			return Cast<ResourceType>(Load(id, *Reflect<ResourceType>::Get()));
-		}
-
-		template<typename ResourceType = BaseResourceType>
-		Handle<ResourceType> Find(Identifier id) {
-			static_assert(std::is_base_of_v<BaseResourceType, ResourceType>, "ResourceType must inherit from BaseResourceType");
-			return Cast<ResourceType>(Find(id, *Reflect<ResourceType>::Get()));
+			if (iter != ids.end()) return true;
+			else return false;
 		}
 
 		/** Destroys any registered state for all resources. The resources will still exist, but they should be ready to be deallocated. */
 		void Destroy() {
 			std::shared_lock lock{ mutex };
-			for (Reflection::TypeUniquePointer& pointer : resources) {
-				BaseResourceType* resource = reinterpret_cast<BaseResourceType*>(pointer.get());
+			for (ResourceStorage& storage : resources) {
+				ResourceType* resource = storage.Get();
 				Destroyed(CreateHandle(*resource, *resource));
 			}
 		}
 
 	protected:
-		using ManagedObject::Handle<BaseResourceType>::Factory::CreateHandle;
+		struct ResourceStorage {
+			alignas(ResourceType) std::byte bytes[sizeof(ResourceType)];
+			ResourceType* Get() { return reinterpret_cast<ResourceType*>(&bytes); }
+		};
 
-		/** Pointers to resources that are currently in this database */
-		std::deque<Reflection::TypeUniquePointer> resources;
+		using Handle<ResourceType>::Factory::CreateHandle;
+
+		/** Mutex which controls access to the resources in the database */
+		stdext::shared_recursive_mutex mutex;
+		/** IDs for all resources in the database, indices are kept in sync with the resources collection */
+		std::deque<Identifier> ids;
+		/** Resources that are currently in this cache */
+		std::deque<ResourceStorage> resources;
+	};
+
+	/**
+	 * Databases keep track of a collection of resources, and have utility methods to create, load, and find them.
+	 * Some resources are predefined and will alawys have caches with inline accessors. Others are created
+	 * on-demand and accessed in O(1) time.
+	 */
+	template<typename... ResourceTypes>
+	struct Database {
+	public:
+		template<typename ResourceType>
+		Cache<ResourceType>& GetCache() {
+			using Tuple = std::tuple<ResourceTypes...>;
+			constexpr size_t TypeIndex = TupleUtility::Index<ResourceType, Tuple>();
+			if constexpr (TypeIndex < std::tuple_size_v<Tuple>) {
+				return std::get<TypeIndex>(defined_caches);
+
+			} else {
+				using CacheType = Cache<ResourceType>;
+				KeyType key = GetKey<ResourceType>();
+				CacheMap::const_iterator const iter = generic_caches.find(key);
+				if (iter != generic_caches.end()) return static_cast<CacheType*>(iter->second);
+				else return static_cast<CacheType*>(generic_caches.emplace(std::make_pair(key, new CacheType())).first);
+			}
+		}
+
+	protected:
+		using CacheTuple = std::tuple<Cache<ResourceTypes>...>;
+		using KeyType = uint8_t const*;
+		using CacheMap = std::unordered_map<KeyType, ICache*>;
+
+		CacheTuple defined_caches;
+		CacheMap generic_caches;
+
+		/** Generates a runtime unique key for a type */
+		template<typename ResourceType>
+		static KeyType GetKey() {
+			static const uint8_t key = 0b01010101;
+			return &key;
+		}
 	};
 }
