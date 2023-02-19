@@ -17,12 +17,11 @@ namespace Rendering {
 
 	struct StaticMesh : public Resources::Resource {
 		REFLECT_STRUCT(StaticMesh, Resources::Resource);
+		using Resources::Resource::Resource;
 
 		FormattedVertices vertices;
 		FormattedIndices indices;
 		VulkanMeshResources gpuResources;
-
-		StaticMesh(Resources::Identifier id) : Resources::Resource(id) {}
 	};
 }
 

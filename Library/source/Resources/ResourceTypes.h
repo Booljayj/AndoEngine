@@ -13,6 +13,8 @@ namespace Resources {
 
 		using ValueType = uint64_t;
 
+		static const Identifier Invalid;
+
 		/** Generate a new random identifier */
 		inline static Identifier Generate() {
 			return Identifier{ static_cast<ValueType>(std::rand()) << 32 | static_cast<ValueType>(std::rand()) };

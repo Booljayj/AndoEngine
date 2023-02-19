@@ -21,12 +21,6 @@ LOG_CATEGORY(Main, Debug);
 DEFINE_PROFILE_CATEGORY(Main);
 
 struct Application {
-	EntityRegistry registry;
-
-	HAL::FrameworkSystem framework;
-	HAL::EventsSystem events;
-	HAL::WindowingSystem windowing;
-
 	Resources::Database<
 		Rendering::StaticMesh,
 		Rendering::Material,
@@ -34,6 +28,11 @@ struct Application {
 		Rendering::FragmentShader
 	> database;
 
+	EntityRegistry registry;
+
+	HAL::FrameworkSystem framework;
+	HAL::EventsSystem events;
+	HAL::WindowingSystem windowing;
 	Rendering::RenderingSystem rendering;
 
 	Application() = default;

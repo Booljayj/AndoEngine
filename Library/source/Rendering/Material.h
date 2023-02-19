@@ -11,6 +11,7 @@ namespace Rendering {
 	/** Describes a method of rendering geometry, also called a GraphicsPipeline */
 	struct Material : public Resources::Resource {
 		REFLECT_STRUCT(Material, Resources::Resource);
+		using Resources::Resource::Resource;
 
 		/** The vertex shader used to create this material */
 		Resources::Handle<VertexShader> vertex;
@@ -19,8 +20,6 @@ namespace Rendering {
 
 		/** Rendering resources for this material */
 		VulkanPipelineResources resources;
-
-		Material(Resources::Identifier id) : Resources::Resource(id) {}
 	};
 }
 

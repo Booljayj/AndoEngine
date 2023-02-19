@@ -15,10 +15,10 @@ namespace Rendering {
 
 	struct Shader : public Resources::Resource {
 		REFLECT_STRUCT(Shader, Resources::Resource);
+		using Resources::Resource::Resource;
 
 		std::vector<uint32_t> bytecode;
 
-		Shader(Resources::Identifier id) : Resources::Resource(id) {}
 		virtual EShaderType GetShaderType() const = 0;
 	};
 
