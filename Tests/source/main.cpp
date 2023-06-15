@@ -40,7 +40,7 @@ struct Application {
 	// Primary system procedures
 	bool Startup() {
 		PROFILE_FUNCTION(Main);
-		SCOPED_TEMPORARIES();
+		ScopedThreadBufferMark mark;
 		LOG(Main, Info, "Starting up all systems...");
 
 		STARTUP_SYSTEM(Main, framework);
@@ -52,7 +52,7 @@ struct Application {
 
 	void Shutdown() {
 		PROFILE_FUNCTION(Main);
-		SCOPED_TEMPORARIES();
+		ScopedThreadBufferMark mark;
 		LOG(Main, Info, "Shutting down all systems...");
 
 		SHUTDOWN_SYSTEM(Main, rendering, database.GetCache<Rendering::Material>(), database.GetCache<Rendering::StaticMesh>());
@@ -64,10 +64,10 @@ struct Application {
 	void MainLoop() {
 		TimeController_FixedUpdateVariableRendering timeController{60.0f, 10.0f};
 
-		bool shutdownRequested = false;
-		while (!shutdownRequested) {
+		HAL::SystemEvents ev;
+		while (!ev.quit) {
 			PROFILE_DURATION("MainLoop", Main);
-			SCOPED_TEMPORARIES();
+			ScopedThreadBufferMark mark;
 
 			timeController.NextFrame();
 
@@ -75,25 +75,26 @@ struct Application {
 				//Main Update. Anything inside this loop runs with a fixed interval (possibly simulated based on variable rates)
 				//const Time& time = timeController.GetTime();
 
-				events.PollEvents(shutdownRequested);
+				events.PollEvents(ev);
 
 				timeController.FinishUpdate();
 			}
 
-			if (!shutdownRequested) {
+			if (!ev.quit) {
 				//Render. Anything inside this loop runs with a variable interval. Alpha will indicate the progress from the previous to the current main update.
 				//const float alpha = timeController.Alpha();
-				shutdownRequested |= !rendering.Render(registry);
+				ev.quit |= !rendering.Render(registry);
 			}
 		}
 	}
 };
 
 int main(int argc, char** argv) {
-	//Create the heap buffer for the main thread
-	HeapBuffer buffer{ 20'000 };
-	AssignThreadTemporaryBuffer(buffer);
+	using namespace Rendering;
+	using namespace Resources;
 
+	ThreadBuffer buffer{ 20'000 };
+	
 	Logger::Get().CreateDevice<TerminalOutputDevice>();
 
 	LOG(Main, Info, "Hello, World! This is AndoEngine.");
@@ -103,9 +104,6 @@ int main(int argc, char** argv) {
 	Application application;
 
 	if (application.Startup()) {
-		using namespace Rendering;
-		using namespace Resources;
-
 		//Create default built-in vertex and fragment shaders
 		Handle<VertexShader> const vertex = application.database.GetCache<VertexShader>().Create(0);
 		Handle<FragmentShader> const fragment = application.database.GetCache<FragmentShader>().Create(1);
@@ -169,6 +167,7 @@ void main() {
 	}
 	application.Shutdown();
 
-	LOGF(Main, Info, "Main Thread HeapBuffer:{ Capacity: %i, Current: %i, Peak: %i }", buffer.GetCapacity(), buffer.GetUsed(), buffer.GetPeakUsage());
+	buffer.LogDebugStats();
+
 	return 0;
 }

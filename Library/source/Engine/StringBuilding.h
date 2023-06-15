@@ -56,7 +56,6 @@ private:
  */
 struct TemporaryStringBuilder : public StringBuilder {
 public:
-	TemporaryStringBuilder()
-	: StringBuilder(*threadTemporaryBuffer)
+	TemporaryStringBuilder() : StringBuilder(ThreadBuffer::Get())
 	{}
 };

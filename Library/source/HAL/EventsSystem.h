@@ -9,6 +9,11 @@ namespace HAL {
 	using EventUnion = uint8_t;
 #endif
 
+	/** System-wide events received when polling events each frame */
+	struct SystemEvents {
+		bool quit = false;
+	};
+
 	/** Manages input events received from the system each frame */
 	struct EventsSystem {
 	protected:
@@ -18,6 +23,6 @@ namespace HAL {
 		bool Startup();
 		bool Shutdown();
 
-		void PollEvents(bool& requestShutdown);
+		void PollEvents(SystemEvents& system);
 	};
 }

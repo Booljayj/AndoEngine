@@ -8,7 +8,7 @@ namespace HAL {
 
 	bool EventsSystem::Shutdown() { return true; }
 
-	void EventsSystem::PollEvents(bool& requestShutdown) {
+	void EventsSystem::PollEvents(SystemEvents& system) {
 		frameEvents.clear();
 
 #if SDL_ENABLED
@@ -18,7 +18,7 @@ namespace HAL {
 			//ImGui_ImplSDL2_ProcessEvent(&currentEvent);
 			frameEvents.push_back(currentEvent);
 
-			requestShutdown |= (currentEvent.type == SDL_QUIT);
+			system.quit |= (currentEvent.type == SDL_QUIT);
 		}
 #endif
 	}

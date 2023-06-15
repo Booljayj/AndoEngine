@@ -5,10 +5,10 @@
 struct Buffer {
 public:
 	/** A mark which will save a buffer's current cursor position when created, and set the buffer to that position when destroyed. */
-	struct Mark {
+	struct ScopedMark {
 	public:
-		inline Mark(Buffer& inBuffer) : buffer(inBuffer), cursor(inBuffer.GetCursor()) {}
-		inline ~Mark() { Pop(); }
+		inline ScopedMark(Buffer& inBuffer) : buffer(inBuffer), cursor(inBuffer.GetCursor()) {}
+		inline ~ScopedMark() { Pop(); }
 
 		inline void Pop() const { buffer.SetCursor(cursor); }
 
