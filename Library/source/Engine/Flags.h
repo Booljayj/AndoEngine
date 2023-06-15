@@ -65,5 +65,6 @@ protected:
 };
 
 #define TFLAGS_METHODS(DerivedType)\
-	using TFlags<DerivedType::EnumType>::TFlags;\
-	DerivedType(TFlags<DerivedType::EnumType> const& other) : TFlags<DerivedType::EnumType>(other) {}
+	using TFlags<EnumType>::TFlags;\
+	DerivedType(TFlags<EnumType> const& other) : TFlags<EnumType>(other) {}\
+	operator TFlags<EnumType>() const { return TFlags<EnumType>{ flags }; }

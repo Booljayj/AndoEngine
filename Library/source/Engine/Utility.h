@@ -2,9 +2,9 @@
 #include <boost/endian/conversion.hpp>
 #include "Engine/StandardTypes.h"
 
-//Utility to convert a symbol to a string
+/** Utility to convert a symbol to a string */
 #define STRINGIFY(x) #x
-//Utility to convert an expanded macro to a string
+/** Utility to convert an expanded macro to a string */
 #define STRINGIFY_MACRO(x) STRINGIFY(x)
 
 /** Expands to a human-readable description of the compiler used when compiling */
