@@ -4,7 +4,12 @@
 #include "Engine/StandardTypes.h"
 #include "Engine/TypeTraits.h"
 
+#ifndef TARGET_NAME
+#define TARGET_NAME Unknown
+#endif
+
 namespace Reflection {
+	/** Classifications for types. Each classification contains types that share a similar usage or format. */
 	enum class ETypeClassification : uint8_t {
 		Unknown,
 
@@ -40,7 +45,7 @@ namespace Reflection {
 		Trivial,
 		/** This type is abstract */
 		Abstract,
-		/** This type is a template or implementation of a template */
+		/** This type is an implementation of a template */
 		Template,
 
 		/** This type can be serialized to disk (binary or text) */
@@ -48,20 +53,24 @@ namespace Reflection {
 		/** This type can be serialized over the network (fast binary) */
 		NetSerializable,
 	};
-	using FTypeFlags = TFlags<ETypeFlags>;
 
-	/** Create a standard set of flags based on the type, plus the base flags */
-	template<typename Type>
-	constexpr FTypeFlags CreateFlags() {
-		FTypeFlags flags;
-		if constexpr (std::is_default_constructible_v<Type>) flags += ETypeFlags::DefaultConstructable;
-		if constexpr (std::is_copy_constructible_v<Type>) flags += ETypeFlags::CopyConstructable;
-		if constexpr (std::is_copy_assignable_v<Type>) flags += ETypeFlags::CopyAssignable;
-		if constexpr (HasOperatorEquals_V<Type>) flags += ETypeFlags::EqualityComparable;
-		if constexpr (std::is_trivial_v<Type>) flags += ETypeFlags::Trivial;
-		if constexpr (std::is_abstract_v<Type>) flags += ETypeFlags::Abstract;
-		return flags;
-	}
+	/** flags that describe aspects of a particular type */
+	struct FTypeFlags : public TFlags<ETypeFlags> {
+		TFLAGS_METHODS(FTypeFlags);
+
+		/** Create a standard set of flags based on the type, plus the base flags */
+		template<typename Type>
+		constexpr static FTypeFlags Create() {
+			FTypeFlags flags;
+			if constexpr (std::is_default_constructible_v<Type>) flags += ETypeFlags::DefaultConstructable;
+			if constexpr (std::is_copy_constructible_v<Type>) flags += ETypeFlags::CopyConstructable;
+			if constexpr (std::is_copy_assignable_v<Type>) flags += ETypeFlags::CopyAssignable;
+			if constexpr (HasOperatorEquals_V<Type>) flags += ETypeFlags::EqualityComparable;
+			if constexpr (std::is_trivial_v<Type>) flags += ETypeFlags::Trivial;
+			if constexpr (std::is_abstract_v<Type>) flags += ETypeFlags::Abstract;
+			return flags;
+		}
+	};
 
 	/** The memory parameters for a type */
 	struct MemoryParams {
@@ -69,23 +78,13 @@ namespace Reflection {
 		size_t size = 0;
 		/** The alignment of the type in bytes */
 		size_t alignment = 0;
-	};
 
-	template<typename Type>
-	constexpr MemoryParams CreateMemoryParams() {
-		if constexpr (!std::is_void_v<Type>) return MemoryParams{ sizeof(Type), alignof(Type) };
-		else return MemoryParams{ 0, 0 };
+		template<typename Type>
+		constexpr static MemoryParams Create() {
+			if constexpr (!std::is_void_v<Type>) return MemoryParams{ sizeof(Type), alignof(Type) };
+			else return MemoryParams{ 0, 0 };
+		};
 	};
-
-	/** Get an identifier that is unique for each library or executable */
-	template<typename T = void>
-	uintptr_t GetLibrary() {
-		//This template is instantiated in every library or executable where it is used, which will each have a unique instance of this static variable.
-		//We can therefor use the address of this static variable as a unique id for each library.
-		static_assert(std::is_same_v<T, void>, "T must be void");
-		static uint8_t const unique = 0;
-		return reinterpret_cast<uintptr_t>(static_cast<void const*>(&unique));
-	}
 
 	/** Deleter which deletes the memory allocated for an arbitrary type instance */
 	struct TypeUniquePointerDeleter {
@@ -94,6 +93,35 @@ namespace Reflection {
 
 	/** A pointer to an arbitrary type instance created through the reflection system */
 	using TypeUniquePointer = std::unique_ptr<std::byte[], TypeUniquePointerDeleter>;
+
+	/** A library which contains types. Corresponds to a particular DLL or EXE created by the linker. */
+	struct TypeLibrary {
+	public:
+		friend class TypeInfo;
+		using TypeInfoCollectionType = std::deque<TypeInfo const*>;
+		using value_type = TypeInfoCollectionType::value_type;
+
+		/** The name of the libraries, which should correspond to the DLL or EXE name */
+		std::string_view name;
+
+		static inline TypeLibrary const& Local() { return LocalMutable(); }
+
+		TypeInfoCollectionType::const_iterator cbegin() const { return types.cbegin(); }
+		TypeInfoCollectionType::const_iterator cend() const { return types.cend(); }
+
+	private:
+		/** Types that are defined within this library */
+		TypeInfoCollectionType types;
+
+		TypeLibrary(std::string_view inName) : name(inName) {}
+
+		static inline TypeLibrary& LocalMutable() {
+			static TypeLibrary library{ std::string_view{ STRINGIFY(TARGET_NAME) } };
+			return library;
+		}
+
+		static inline void Register(TypeInfo const* type) { LocalMutable().types.push_back(type); }
+	};
 
 	/** Provides a set of runtime information about a type */
 	struct TypeInfo {
@@ -104,8 +132,6 @@ namespace Reflection {
 
 		/** The classification of this TypeInfo, defining what kinds of type information it contains */
 		ETypeClassification classification = ETypeClassification::Primitive;
-		/** The identifier of the library where this type is defined. Different template instances in different libraries will have the same details, but different libraries. */
-		uintptr_t library;
 		/** The identifier for this type. Always unique and stable. */
 		Hash128 id;
 		/** The base name of this type, without template parameters but including scopes */
@@ -118,14 +144,8 @@ namespace Reflection {
 		/** Human-readable description of this type */
 		std::string_view description;
 
-		/** Get the container that includes all TypeInfo objects that exist. */
-		static std::deque<TypeInfo const*> const& GetGlobalTypeInfoCollection();
-
-		/** Find a TypeInfo object using its unique ID */
-		static TypeInfo const* FindTypeByID(Hash128 id, uint64_t library = 0);
-
 		TypeInfo() = delete;
-		virtual ~TypeInfo();
+		virtual ~TypeInfo() = default;
 
 		/** Allocate uninitialized memory large enough to hold an instance of this type, and return a unique pointer to that memory */
 		TypeUniquePointer Allocate() const;
@@ -153,7 +173,12 @@ namespace Reflection {
 		}
 
 	protected:
-		TypeInfo(ETypeClassification inClassification, uint64_t inLibrary, Hash128 inID, std::string_view inName, FTypeFlags inFlags, MemoryParams inMemory);
+		inline TypeInfo(ETypeClassification inClassification, Hash128 inID, std::string_view inName, FTypeFlags inFlags, MemoryParams inMemory)
+			: classification(inClassification), id(inID), name(inName), flags(inFlags), memory(inMemory)
+		{
+			//The library and the contained types will always be loaded together, so we don't need to remove these types from the container when destroying
+			TypeLibrary::Register(this);
+		}
 	};
 
 	/** Implements type-specific operation overrides for a particular TypeInfo instance. */
@@ -163,7 +188,7 @@ namespace Reflection {
 		static constexpr Type& Cast(void* pointer) { return *static_cast<Type*>(pointer); }
 
 		ImplementedTypeInfo(Hash128 inID, std::string_view inName)
-			: TypeInfoType(TypeInfoType::Classification, GetLibrary(), inID, inName, CreateFlags<Type>(), CreateMemoryParams<Type>())
+			: TypeInfoType(TypeInfoType::Classification, inID, inName, FTypeFlags::Create<Type>(), MemoryParams::Create<Type>())
 		{}
 
 		virtual void Destruct(void* instance) const final {

@@ -3,7 +3,7 @@
 /** Special definition for void, which is the only primitive type that cannot hold values. This exists for cases where void is a valid template parameter, and we want to display that */
 namespace Reflection {
 	struct VoidTypeInfo : public PrimitiveTypeInfo {
-		VoidTypeInfo() : PrimitiveTypeInfo(PrimitiveTypeInfo::Classification, GetLibrary(), Hash128{ "void"sv }, "void"sv, FTypeFlags::None(), MemoryParams{ 0, 0 }) {
+		VoidTypeInfo() : PrimitiveTypeInfo(PrimitiveTypeInfo::Classification, "void"_h128, "void"sv, FTypeFlags::None(), MemoryParams{ 0, 0 }) {
 			description = "void type"sv;
 		}
 
