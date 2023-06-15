@@ -24,7 +24,7 @@ namespace Rendering {
 	}
 
 	VulkanLogicalDevice VulkanLogicalDevice::Create(VulkanFramework framework, VulkanPhysicalDevice const& physical, VkPhysicalDeviceFeatures const& enabledFeatures, TArrayView<char const*> const& enabledExtensionNames) {
-		SCOPED_TEMPORARIES();
+		ScopedThreadBufferMark mark;
 
 		VulkanLogicalDevice result;
 

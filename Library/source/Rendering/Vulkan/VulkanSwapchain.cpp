@@ -79,7 +79,7 @@ namespace Rendering {
 		}
 
 		bool CreateImageViews(VulkanSwapchain& result, VulkanLogicalDevice const& logical) {
-			SCOPED_TEMPORARIES();
+			ScopedThreadBufferMark mark;
 
 			//Get the raw images from the swapchain
 			uint32_t numImages = 0;
@@ -126,7 +126,7 @@ namespace Rendering {
 
 	bool VulkanSwapchain::Create(glm::u32vec2 const& extent, VkSurfaceKHR const& surface, VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical) {
 		using namespace VulkanSwapchainUtilities;
-		SCOPED_TEMPORARIES();
+		ScopedThreadBufferMark mark;
 
 		vkDeviceWaitIdle(logical.device);
 
@@ -142,7 +142,7 @@ namespace Rendering {
 
 	bool VulkanSwapchain::Recreate(glm::u32vec2 const& extent, VkSurfaceKHR const& surface, VulkanPhysicalDevice const& physical, VulkanLogicalDevice const& logical) {
 		using namespace VulkanSwapchainUtilities;
-		SCOPED_TEMPORARIES();
+		ScopedThreadBufferMark mark;
 
 		vkDeviceWaitIdle(logical.device);
 

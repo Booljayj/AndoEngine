@@ -4,7 +4,7 @@
 
 namespace Rendering {
 	bool VulkanFramework::Create(HAL::Window window) {
-		SCOPED_TEMPORARIES();
+		ScopedThreadBufferMark mark;
 
 #ifdef VULKAN_DEBUG
 		//Information to create a debug messenger, used in several locations within this function.
@@ -99,7 +99,7 @@ namespace Rendering {
 
 #ifdef VULKAN_DEBUG
 	VKAPI_ATTR VkBool32 VKAPI_CALL VulkanFramework::VulkanDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
-		SCOPED_TEMPORARIES();
+		ScopedThreadBufferMark mark;
 
 		//Create a prefix based on the message type flags
 		std::string_view prefix;
@@ -182,7 +182,7 @@ namespace Rendering {
 	}
 
 	bool VulkanFramework::CanEnableValidationLayers(TArrayView<char const*> const& enabledLayerNames) {
-		SCOPED_TEMPORARIES();
+		ScopedThreadBufferMark mark;
 
 		uint32_t availableLayerCount;
 		vkEnumerateInstanceLayerProperties(&availableLayerCount, nullptr);
@@ -234,7 +234,7 @@ namespace Rendering {
 	}
 
 	bool VulkanFramework::CanEnableExtensions(TArrayView<char const*> const& enabledExtensionNames) {
-		SCOPED_TEMPORARIES();
+		ScopedThreadBufferMark mark;
 
 		uint32_t availableExtensionCount;
 		vkEnumerateInstanceExtensionProperties(nullptr, &availableExtensionCount, nullptr);

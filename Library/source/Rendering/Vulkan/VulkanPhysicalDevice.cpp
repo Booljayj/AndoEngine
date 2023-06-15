@@ -3,7 +3,7 @@
 
 namespace Rendering {
 	VulkanPhysicalDevice VulkanPhysicalDevice::Get(VkPhysicalDevice const& device, VkSurfaceKHR const& surface) {
-		SCOPED_TEMPORARIES();
+		ScopedThreadBufferMark mark;
 
 		VulkanPhysicalDevice Result;
 		Result.device = device;
