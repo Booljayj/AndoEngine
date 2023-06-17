@@ -78,11 +78,11 @@ namespace Rendering {
 		if (surface) vkDestroySurfaceKHR(framework.instance, surface, nullptr);
 	}
 
-	bool Surface::Render(VulkanLogicalDevice const& logical, VulkanRenderPasses const& passes, EntityRegistry& registry) {
+	bool Surface::Render(VulkanLogicalDevice const& logical, VulkanRenderPasses const& passes, entt::registry& registry) {
 		//@todo This would ideally be done with some acceleration structure that contains a mapping between the pipelines and all of
 		//      the geometry that should be drawn with that pipeline, to avoid binding the same pipeline more than once and to strip
 		//      out culled geometry.
-		auto const renderables = registry.GetView<MeshRenderer const>();
+		auto const renderables = registry.view<MeshRenderer const>();
 
 		//Prepare the frame for rendering, which may need to wait for resources
 		EPreparationResult const result = organizer.Prepare(logical, swapchain, renderables.size());
@@ -125,7 +125,7 @@ namespace Rendering {
 
 			uint32_t objectIndex = 0;
 			for (const auto id : renderables) {
-				auto const& renderer = renderables.Get<MeshRenderer const>(id);
+				auto const& renderer = renderables.get<MeshRenderer const>(id);
 
 				if (renderer.material && renderer.material->resources && renderer.mesh && renderer.mesh->gpuResources) {
 					uint32_t const objectUniformsOffset = static_cast<uint32_t>(sizeof(ObjectUniforms) * objectIndex);

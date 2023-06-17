@@ -105,7 +105,7 @@ namespace Rendering {
 		return true;
 	}
 
-	bool RenderingSystem::Render(EntityRegistry& registry) {
+	bool RenderingSystem::Render(entt::registry& registry) {
 		//Recreate swapchains if necessary. This happens periodically if the rendering parameters have changed significantly.
 		for (auto const& surface : surfaces) {
 			if (surface->IsSwapchainDirty()) {

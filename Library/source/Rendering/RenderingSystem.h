@@ -1,7 +1,6 @@
 #pragma once
 #include "Engine/Logging.h"
 #include "Engine/StandardTypes.h"
-#include "EntityFramework/EntityRegistry.h"
 #include "Rendering/Surface.h"
 #include "Rendering/Vulkan/Vulkan.h"
 #include "Rendering/Vulkan/VulkanFrameOrganizer.h"
@@ -14,6 +13,7 @@
 #include "Rendering/Vulkan/VulkanSwapchain.h"
 #include "Rendering/Vulkan/VulkanUniformLayouts.h"
 #include "Resources/Database.h"
+#include "ThirdParty/EnTT.h"
 
 namespace HAL {
 	struct WindowingSystem;
@@ -71,7 +71,7 @@ namespace Rendering {
 		bool Startup(HAL::WindowingSystem& windowing, Resources::Cache<Material>& materials, Resources::Cache<StaticMesh>& staticMeshes);
 		bool Shutdown(Resources::Cache<Material>& materials, Resources::Cache<StaticMesh>& staticMeshes);
 
-		bool Render(EntityRegistry& registry);
+		bool Render(entt::registry& registry);
 		void RebuildResources();
 
 		inline size_t NumPhysicalDevices() const { return availablePhysicalDevices.size(); }

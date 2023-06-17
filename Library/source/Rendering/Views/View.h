@@ -1,13 +1,12 @@
 #pragma once
 #include "Engine/StandardTypes.h"
-#include "EntityFramework/EntityRegistry.h"
-#include "EntityFramework/EntityTypes.h"
 #include "Geometry/ScreenRect.h"
 #include "Rendering/Vulkan/VulkanFrameOrganizer.h"
 #include "Rendering/Vulkan/VulkanLogicalDevice.h"
 #include "Rendering/Vulkan/VulkanResources.h"
 #include "Rendering/Vulkan/VulkanResourcesHelpers.h"
 #include "Rendering/Vulkan/VulkanSwapchain.h"
+#include "ThirdParty/EnTT.h"
 
 namespace Rendering {
 	struct ViewPerspectiveMatrixParams {
@@ -30,9 +29,9 @@ namespace Rendering {
 		virtual ~View() = default;
 
 		/** Prepare to render commands for this view for a single frame */
-		virtual EPreparationResult Prepare(EntityRegistry const& registry, FrameResources& frame) const = 0;
+		virtual EPreparationResult Prepare(entt::registry const& registry, FrameResources& frame) const = 0;
 		/** Record rendering commands for this view for a single frame */
-		virtual void Record(const EntityRegistry& registry, const FrameResources& frame, size_t index) const = 0;
+		virtual void Record(const entt::registry& registry, const FrameResources& frame, size_t index) const = 0;
 
 		/** Create the resources used in this view */
 		virtual bool CreateResources(VulkanLogicalDevice const& logical, VulkanSwapchain const& swapchain) = 0;

@@ -5,6 +5,7 @@
 #include "Rendering/Vulkan/VulkanFrameOrganizer.h"
 #include "Rendering/Vulkan/VulkanRenderPasses.h"
 #include "Rendering/Vulkan/VulkanSwapchain.h"
+#include "ThirdParty/EnTT.h"
 
 namespace Rendering {
 	struct RenderingSystem;
@@ -47,7 +48,7 @@ namespace Rendering {
 		bool RecreateSwapchain(VulkanPhysicalDevice const& physical, VkSurfaceFormatKHR surfaceFormat, VulkanRenderPasses const& passes);
 		void Destroy(VulkanFramework const& framework, VulkanLogicalDevice const& logical);
 
-		bool Render(VulkanLogicalDevice const& logical, VulkanRenderPasses const& passes, EntityRegistry& registry);
+		bool Render(VulkanLogicalDevice const& logical, VulkanRenderPasses const& passes, entt::registry& registry);
 
 		/** Change the size of this surface */
 		void Resize(glm::u32vec2 const& newSize);

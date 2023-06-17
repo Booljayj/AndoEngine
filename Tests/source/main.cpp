@@ -1,8 +1,6 @@
 #include "PCH.h"
 #include "Engine/Time.h"
 #include "Engine/Logging.h"
-#include "EntityFramework/EntityRegistry.h"
-#include "EntityFramework/UtilityMacros.h"
 #include "HAL/EventsSystem.h"
 #include "HAL/FrameworkSystem.h"
 #include "HAL/SDL2.h"
@@ -15,7 +13,17 @@
 #include "Rendering/Shader.h"
 #include "Rendering/StaticMesh.h"
 
+#include "ThirdParty/EnTT.h"
+
 #include "Importers/RenderingImporters.h"
+
+#define STARTUP_SYSTEM(Category, System, ...)\
+LOG(Category, Info, "Startup "#System);\
+if (!System.Startup(__VA_ARGS__)) { LOG(Category, Error, "Failed to startup " #System); return false; }
+
+#define SHUTDOWN_SYSTEM(Category, System, ...)\
+LOG(Category, Info, "Shutdown "#System);\
+if (!System.Shutdown(__VA_ARGS__)) { LOG(Category, Error, "Failed to shutdown " #System); }
 
 LOG_CATEGORY(Main, Debug);
 DEFINE_PROFILE_CATEGORY(Main);
@@ -28,7 +36,7 @@ struct Application {
 		Rendering::FragmentShader
 	> database;
 
-	EntityRegistry registry;
+	entt::registry registry;
 
 	HAL::FrameworkSystem framework;
 	HAL::EventsSystem events;
@@ -158,8 +166,8 @@ void main() {
 		Indices_Short& indices = plane->indices.emplace<Indices_Short>();
 		indices = { 0, 1, 2, 2, 3, 0 };
 
-		EntityHandle testMeshRendererEntity = application.registry.Create();
-		MeshRenderer& renderer = testMeshRendererEntity.Add<MeshRenderer>();
+		entt::entity const testEntity = application.registry.create();
+		MeshRenderer& renderer = application.registry.emplace<MeshRenderer>(testEntity);
 		renderer.material = material;
 		renderer.mesh = plane;
 
