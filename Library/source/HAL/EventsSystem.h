@@ -3,11 +3,7 @@
 #include "HAL/SDL2.h"
 
 namespace HAL {
-#if SDL_ENABLED
 	using EventUnion = SDL_Event;
-#else
-	using EventUnion = uint8_t;
-#endif
 
 	/** System-wide events received when polling events each frame */
 	struct SystemEvents {

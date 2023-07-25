@@ -4,6 +4,7 @@
 #include "Rendering/Vulkan/Vulkan.h"
 #include "Rendering/Vulkan/VulkanFrameOrganizer.h"
 #include "Rendering/Vulkan/VulkanRenderPasses.h"
+#include "HAL/WindowingSystem.h"
 #include "Rendering/Vulkan/VulkanSwapchain.h"
 #include "ThirdParty/EnTT.h"
 
@@ -16,8 +17,6 @@ namespace Rendering {
 		/** The maximum number of consecutive times we can fail to render a frame */
 		static constexpr uint8_t maxRetryCount = 5;
 
-		uint32_t id = std::numeric_limits<uint32_t>::max();
-
 		/** The internal surface tied to this surface */
 		VkSurfaceKHR surface = nullptr;
 		/** The swapchain that is currently being used for images */
@@ -27,14 +26,19 @@ namespace Rendering {
 		/** The framebuffers for rendering on the swapchain */
 		VulkanFramebuffers framebuffers;
 
-		Surface(RenderingSystem const& inOwner, HAL::Window inWindow);
+		Surface(RenderingSystem& inOwner, HAL::Window& inWindow);
+		~Surface();
 
-		inline bool operator==(uint32_t otherID) const { return id == otherID; }
+		inline bool operator==(HAL::Window::IdType otherID) const { return GetID() == otherID; }
 
 		/** Return whether this is a valid surface, which can potentially be used for rendering. It may not be fully set up for rendering yet */
-		inline bool IsValidSurface() const { return surface; }
+		inline bool IsValid() const { return surface; }
+		/** Get the id of the window associated with this surface */
+		inline HAL::Window::IdType GetID() const { return window.id; }
+
 		/** Return whether this is a valid surface that is prepared for rendering */
 		inline bool CanRender() const { return surface && swapchain; }
+		/** Whether the swapchain needs to be recreated before it is used again */
 		inline bool IsSwapchainDirty() const { return shouldRecreateSwapchain; }
 
 		/** Get information about how a physical device can be used with this surface */
@@ -57,11 +61,15 @@ namespace Rendering {
 		void WaitForCompletion(VulkanLogicalDevice const& logical);
 
 	private:
-		HAL::Window window;
-		RenderingSystem const& owner;
+		RenderingSystem& owner;
+		HAL::Window& window;
+		EventHandleType windowDestroyedHandle;
+
 		glm::u32vec2 imageSize;
 
 		uint8_t retryCount : 1;
 		uint8_t shouldRecreateSwapchain : 1;
+
+		void OnWindowDestroyed(HAL::Window::IdType id);
 	};
 }

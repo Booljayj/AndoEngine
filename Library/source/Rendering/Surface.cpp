@@ -6,25 +6,25 @@
 #include "Rendering/Uniforms.h"
 
 namespace Rendering {
-	Surface::Surface(RenderingSystem const& inOwner, HAL::Window inWindow)
-	: id(inWindow.id)
-	, window(inWindow)
+	Surface::Surface(RenderingSystem& inOwner, HAL::Window& inWindow)
+	: window(inWindow)
 	, owner(inOwner)
 	, retryCount(0)
 	, shouldRecreateSwapchain(false)
 	{
 		// Vulkan surface (via SDL)
-		assert(!surface);
-#if SDL_ENABLED
-		if (SDL_Vulkan_CreateSurface(window.handle, owner.framework.instance, &surface) != SDL_TRUE) {
+		if (SDL_Vulkan_CreateSurface(window, owner.framework.instance, &surface) != SDL_TRUE) {
 			LOG(Vulkan, Error, "Failed to create Vulkan window surface");
 		}
 
-		int32_t width = 1;
-		int32_t height = 1;
-		SDL_Vulkan_GetDrawableSize(window.handle, &width, &height);
+		int32_t width = 1, height = 1;
+		SDL_Vulkan_GetDrawableSize(window, &width, &height);
 		imageSize = glm::u32vec2{ static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
-#endif
+	}
+
+	Surface::~Surface() {
+		window.destroyed.Remove(windowDestroyedHandle);
+		windowDestroyedHandle.reset();
 	}
 
 	VulkanPhysicalDevice Surface::GetPhysicalDevice(VkPhysicalDevice device) {

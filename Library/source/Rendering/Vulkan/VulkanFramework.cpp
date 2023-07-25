@@ -3,7 +3,7 @@
 #include "Engine/StringBuilding.h"
 
 namespace Rendering {
-	bool VulkanFramework::Create(HAL::Window window) {
+	bool VulkanFramework::Create(HAL::Window const& window) {
 		ScopedThreadBufferMark mark;
 
 #ifdef VULKAN_DEBUG
@@ -204,7 +204,7 @@ namespace Rendering {
 	}
 #endif
 
-	t_vector<char const*> VulkanFramework::GetExtensionsNames(HAL::Window window) {
+	t_vector<char const*> VulkanFramework::GetExtensionsNames(HAL::Window const& window) {
 		//Standard extensions which the application requires
 		constexpr char const* standardExtensions[] = {
 #ifdef VULKAN_DEBUG
@@ -216,16 +216,14 @@ namespace Rendering {
 
 		//Extensions required by the HAL
 		uint32_t numHALExtensions = 0;
-#if SDL_ENABLED
 		//Extensions needed by SDL
-		SDL_Vulkan_GetInstanceExtensions(window.handle, &numHALExtensions, nullptr);
+		SDL_Vulkan_GetInstanceExtensions(window, &numHALExtensions, nullptr);
 		t_vector<char const*> halExtensions{ numHALExtensions };
-		SDL_Vulkan_GetInstanceExtensions(window.handle, &numHALExtensions, halExtensions.data());
-#endif
+		SDL_Vulkan_GetInstanceExtensions(window, &numHALExtensions, halExtensions.data());
 
 		//Create the full list of extensions that will be provided to the API
 		t_vector<char const*> extensions;
-		extensions.reserve(numStandardExtensions + numHALExtensions);
+		extensions.reserve(numStandardExtensions + halExtensions.size());
 
 		extensions.insert(extensions.end(), standardExtensions, standardExtensions + numStandardExtensions);
 		extensions.insert(extensions.end(), halExtensions.begin(), halExtensions.end());

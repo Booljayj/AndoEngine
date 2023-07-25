@@ -12,66 +12,70 @@ public:
 private:
 	struct DelegateInfo {
 		EventHandleType handle;
-		DelegateType delegate;
+		DelegateType del;
 	};
 
 	//Specific byte value used by handles so that they may be identified in debugging utilities.
 	static constexpr char HandleByteValue = 0b00001111;
 
 	std::vector<DelegateInfo> delegateInfos;
-	mutable std::mutex eventMutex; //@todo I don't like mutable here, but it seems to be an acceptable design pattern. Investigate ways we can get around this while still keeping the code clean.
-
+	mutable stdext::shared_recursive_mutex mutex;
+	
 public:
+	/** Return the number of delegates bound to this event */
 	size_t Count() const {
-		std::lock_guard<std::mutex> guard(eventMutex);
+		std::shared_lock lock(mutex);
 		return delegateInfos.size();
 	}
 
+	/** Add a delegate that will be executed when this event is broadcast */
 	EventHandleType Add(DelegateType const& delegate) {
 		if(delegate.IsBound()) {
-			std::lock_guard<std::mutex> guard(eventMutex);
+			std::unique_lock lock(mutex);
 			delegateInfos.emplace_back(std::make_shared<char>(HandleByteValue), delegate);
 			return delegateInfos.back().handle;
 		}
 		return EventHandleType{};
 	}
+	/** Add a delegate that will be executed when this event is broadcast */
 	EventHandleType Add(DelegateType&& delegate) {
 		if(delegate.IsBound()) {
-			std::lock_guard<std::mutex> guard(eventMutex);
+			std::unique_lock lock(mutex);
 			delegateInfos.emplace_back(std::make_shared<char>(HandleByteValue), std::move(delegate));
 			return delegateInfos.back().handle;
 		}
 		return EventHandleType{};
 	}
 
-	/** Create using a free function */
+	/** Add a free function */
 	EventHandleType Add(void(*function)(ParamTypes...)) { return Add(DelegateType::Create(function)); }
-	/** Create using a free function called with a raw context object */
+	/** Add a free function called with a raw context object */
 	template<typename ObjectType>
 	EventHandleType Add(ObjectType* instance, void(*function)(ObjectType*, ParamTypes...)) { return Add(DelegateType::Create(instance, function)); }
-	/** Create using a free function called with a smart context object */
+	/** Add a free function called with a smart context object */
 	template<typename ObjectType>
-	EventHandleType Add(std::weak_ptr<ObjectType>&& instance, void(*function)(ObjectType*, ParamTypes...)) { return Add(DelegateType::Create(std::move(instance), function)); }
+	EventHandleType Add(std::shared_ptr<ObjectType>&& instance, void(*function)(ObjectType*, ParamTypes...)) { return Add(DelegateType::Create(std::move(instance), function)); }
 
-	/** Create using a method called on a raw context object */
+	/** Add a method called on a raw context object */
 	template<typename ObjectType>
 	EventHandleType Add(ObjectType* instance, void(ObjectType::* method)(ParamTypes...)) { return Add(DelegateType::Create(instance, method)); }
-	/** Create using a method called on a smart context object */
+	/** Add a method called on a smart context object */
 	template<typename ObjectType>
-	EventHandleType Add(std::weak_ptr<ObjectType>&& instance, void(ObjectType::* method)(ParamTypes...)) { return Add(DelegateType::Create(std::move(instance), method)); }
+	EventHandleType Add(std::shared_ptr<ObjectType>&& instance, void(ObjectType::* method)(ParamTypes...)) { return Add(DelegateType::Create(std::move(instance), method)); }
 
-	/** Create using a lambda */
+	/** Add a lambda */
 	template<typename LambdaType>
 	EventHandleType Add(LambdaType&& lambda) { return Add(DelegateType::Create(std::move(lambda))); }
-	/** Create using a lambda called with a raw context object */
+	/** Add a lambda called with a raw context object */
 	template<typename ObjectType, typename LambdaType>
 	EventHandleType Add(ObjectType* instance, LambdaType&& lambda) { return Add(DelegateType::Create(instance, std::move(lambda))); }
-	/** Create using a lambda called with a smart context object */
+	/** Add a lambda called with a smart context object */
 	template<typename ObjectType, typename LambdaType>
-	EventHandleType Add(std::weak_ptr<ObjectType>&& instance, LambdaType&& lambda) { return Add(DelegateType::Create(std::move(instance), std::move(lambda))); }
+	EventHandleType Add(std::shared_ptr<ObjectType>&& instance, LambdaType&& lambda) { return Add(DelegateType::Create(std::move(instance), std::move(lambda))); }
 
+	/** Remove a delegate from this event using the handle returned when adding it */
 	bool Remove(EventHandleType const& handle) {
-		std::lock_guard<std::mutex> guard(eventMutex);
+		std::unique_lock lock(mutex);
 		for(size_t Index = 0; Index < delegateInfos.size(); ++Index) {
 			if(delegateInfos[Index].handle == handle) {
 				std::iter_swap(delegateInfos.begin() + Index, delegateInfos.end() - 1);
@@ -81,15 +85,33 @@ public:
 		}
 		return false;
 	}
+	/** Remove all the delegates added to this event. After this is called they will not be executed when broadcasting the event. */
 	bool RemoveAll() {
-		std::lock_guard<std::mutex> guard(eventMutex);
+		std::unique_lock lock(mutex);
 		delegateInfos.clear();
 	}
 
+	/** Execute all the delegates added to this event */
 	void operator()(ParamTypes... params) const {
-		std::lock_guard<std::mutex> guard(eventMutex);
-		for(size_t Index = 0; Index < delegateInfos.size(); ++Index) {
-			delegateInfos[Index].delegate(params...);
+		Broadcast(std::forward<ParamTypes>(params)...);
+	}
+
+	/** Execute all the delegates added to this event */
+	void Broadcast(ParamTypes... params) const {
+		//Copy the delegates before executing them. This allows the event to be modified while it is being broadcast.
+		std::vector<DelegateType> delegatesCopy;
+		{
+			std::unique_lock lock(mutex);
+
+			delegatesCopy.reserve(delegateInfos.size());
+			for (auto const& info : delegateInfos) {
+				delegatesCopy.emplace_back(info.del);
+			}
+		}
+
+		//Invoke the local copies of each delegate
+		for (size_t Index = 0; Index < delegatesCopy.size(); ++Index) {
+			delegatesCopy[Index](std::forward<ParamTypes>(params)...);
 		}
 	}
 };

@@ -13,12 +13,16 @@ DEFINE_LOG_CATEGORY(Rendering, Info);
 
 namespace Rendering {
 	bool RenderingSystem::Startup(HAL::WindowingSystem& windowing, Resources::Cache<Material>& materials, Resources::Cache<StaticMesh>& staticMeshes) {
+		//The primary window must exist in order to start the rendering system
+		HAL::Window& primaryWindow = windowing.GetPrimaryWindow();
+		
 		// Vulkan instance
-		if (!framework.Create(windowing.GetPrimaryWindow())) return false;
+		if (!framework.Create(primaryWindow)) return false;
 
 		//Create the primary surface for the primary window
-		primarySurface = CreateSurface(windowing.GetPrimaryWindow());
-		if (!primarySurface) return false;
+		if (!CreateSurface(primaryWindow)) return false;
+		
+		Surface& primarySurface = GetPrimarySurface();
 
 		// Collect physical devices and select default one
 		{
@@ -30,7 +34,7 @@ namespace Rendering {
 			vkEnumeratePhysicalDevices(framework.instance, &deviceCount, devices.data());
 
 			for (uint32_t deviceIndex = 0; deviceIndex < deviceCount; ++deviceIndex) {
-				const VulkanPhysicalDevice physicalDevice = primarySurface->GetPhysicalDevice(devices[deviceIndex]);
+				const VulkanPhysicalDevice physicalDevice = primarySurface.GetPhysicalDevice(devices[deviceIndex]);
 				if (IsUsablePhysicalDevice(physicalDevice, extensionNames)) {
 					availablePhysicalDevices.push_back(physicalDevice);
 				}
@@ -65,7 +69,7 @@ namespace Rendering {
 		}
 
 		//Create the swapchain on the primary surface
-		primarySurface->CreateSwapchain(*selectedPhysical, primarySurfaceFormat, passes);
+		primarySurface.CreateSwapchain(*selectedPhysical, primarySurfaceFormat, passes);
 
 		//Listen for when rendering-relevant resource types are created or destroyed
 		materials.Created.Add(this, &RenderingSystem::MaterialCreated);
@@ -95,6 +99,7 @@ namespace Rendering {
 			for (auto const& surface : surfaces) {
 				surface->Destroy(framework, logical);
 			}
+			surfaces.clear();
 
 			uniformLayouts.Destroy(logical);
 			passes.Destroy(logical);
@@ -161,7 +166,7 @@ namespace Rendering {
 
 				selectedPhysical = newPhysical;
 				selectedPhysicalIndex = index;
-				primarySurfaceFormat = primarySurface->GetPreferredSurfaceFormat(*selectedPhysical);
+				primarySurfaceFormat = GetPrimarySurface().GetPreferredSurfaceFormat(*selectedPhysical);
 
 				VulkanVersion const version = selectedPhysical->GetDriverVersion();
 				LOGF(Rendering, Info, "Selected device %s (%i.%i.%i)", selectedPhysical->properties.deviceName, version.major, version.minor, version.patch);
@@ -171,35 +176,31 @@ namespace Rendering {
 		return false;
 	}
 
-	Surface* RenderingSystem::CreateSurface(HAL::Window window) {
+	Surface* RenderingSystem::CreateSurface(HAL::Window& window) {
 		//Check if we already have a surface for this window, and return it if we do
 		if (Surface* existing = FindSurface(window.id)) return existing;
 
 		//Create the new surface and verify that it is functional
 		std::unique_ptr<Surface> surface = std::make_unique<Surface>(*this, window);
-		if (!surface->IsValidSurface()) return nullptr;
+		if (!surface->IsValid()) return nullptr;
 
 		//Add the surface to the collection of surfaces, and return a raw pointer to it
-		surfaces.emplace_back(std::move(surface));
-		return surfaces.back().get();
+		return surfaces.emplace_back(std::move(surface)).get();
 	}
 
 	Surface* RenderingSystem::FindSurface(uint32_t id) const {
-		const auto iter = std::find_if(surfaces.begin(), surfaces.end(), [&](const auto& surface) { return surface->id == id; });
+		const auto iter = std::find_if(surfaces.begin(), surfaces.end(), [&](const auto& surface) { return surface->GetID() == id; });
 		if (iter != surfaces.end()) return iter->get();
 		else return nullptr;
 	}
 
 	void RenderingSystem::DestroySurface(uint32_t id) {
-		//The primary surface cannot be destroyed through this method, only during shutdown
-		if (primarySurface->id != id) {
-			const auto iter = std::find_if(surfaces.begin(), surfaces.end(), [&](const auto& surface) { return surface->id == id; });
-			if (iter != surfaces.end()) {
-				(*iter)->Destroy(framework, logical);
-				surfaces.erase(iter);
-			} else {
-				LOGF(Rendering, Warning, "Unable to destroy surface, no surface found with id %i", id);
-			}
+		const auto iter = std::find_if(surfaces.begin(), surfaces.end(), [=](auto const& surface) { return surface->GetID() == id; });
+		if (iter != surfaces.end() && iter != surfaces.begin()) {
+			(*iter)->Destroy(framework, logical);
+			surfaces.erase(iter);
+		} else {
+			LOGF(Rendering, Warning, "Unable to destroy surface with id %i", id);
 		}
 	}
 

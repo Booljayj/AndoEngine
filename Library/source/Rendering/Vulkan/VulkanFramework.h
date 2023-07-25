@@ -18,7 +18,7 @@ namespace Rendering {
 
 		inline operator bool() const { return instance; }
 
-		bool Create(HAL::Window window);
+		bool Create(HAL::Window const& window);
 		void Destroy();
 
 		template<typename Signature>
@@ -42,7 +42,7 @@ namespace Rendering {
 		static bool CanEnableValidationLayers(TArrayView<char const*> const& enabledLayerNames);
 #endif
 
-		static t_vector<char const*> GetExtensionsNames(HAL::Window window);
+		static t_vector<char const*> GetExtensionsNames(HAL::Window const& window);
 		static bool CanEnableExtensions(TArrayView<char const*> const& enabledExtensionNames);
 	};
 }

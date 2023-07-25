@@ -28,6 +28,8 @@ DECLARE_LOG_CATEGORY(Rendering);
 namespace Rendering {
 	struct RenderingSystem {
 	public:
+		using SurfaceContainer = std::vector<std::unique_ptr<Surface>>;
+
 		/** The maximum number of consecutive times we can fail to render a frame */
 		static constexpr uint8_t maxRetryCount = 5;
 
@@ -47,10 +49,6 @@ namespace Rendering {
 		/** The logical device for the currently selected physical device */
 		VulkanLogicalDevice logical;
 
-		/** The primary rendering surface */
-		Surface* primarySurface = nullptr;
-		/** Surfaces used for rendering */
-		std::vector<std::unique_ptr<Surface>> surfaces;
 		/** The surface format of the primary surface, which is used when rendering to all surfaces */
 		VkSurfaceFormatKHR primarySurfaceFormat = {};
 
@@ -81,12 +79,15 @@ namespace Rendering {
 		}
 		bool SelectPhysicalDevice(size_t Index);
 
-		/** Find a surface using its id */
-		Surface* FindSurface(uint32_t id) const;
+		/** Get the primary window, which is the first window created on startup */
+		inline Surface& GetPrimarySurface() const { return *surfaces[0].get(); }
+
 		/** Create a new surface bound to the given window */
-		Surface* CreateSurface(HAL::Window window);
+		Surface* CreateSurface(HAL::Window& window);
+		/** Find a surface using its id */
+		Surface* FindSurface(HAL::Window::IdType id) const;
 		/** Destroy a surface using its id */
-		void DestroySurface(uint32_t id);
+		void DestroySurface(HAL::Window::IdType id);
 
 	protected:
 		/** Callbacks for when materials are created or destroyed */
@@ -126,6 +127,9 @@ namespace Rendering {
 		void DestroyStaleMeshes();
 
 	private:
+		/** Surfaces used for rendering */
+		SurfaceContainer surfaces;
+
 		/** Returns true if the physical device can actually be used by this rendering system */
 		bool IsUsablePhysicalDevice(const Rendering::VulkanPhysicalDevice& physicalDevice, TArrayView<char const*> const& extensionNames);
 
@@ -133,5 +137,7 @@ namespace Rendering {
 		VulkanPipelineResources CreatePipeline(Material const& material, VulkanPipelineCreationHelper& helper);
 		/** Create the mesh resources for a mesh component */
 		VulkanMeshResources CreateMesh(StaticMesh const& mesh, VkCommandPool pool, VulkanMeshCreationHelper& helper);
+
+		//InitImGUI(VulkanLogicalDevice& logical, VulkanPhysicalDevice& physical, Surface& surface);
 	};
 }

@@ -11,7 +11,6 @@ namespace HAL {
 	void EventsSystem::PollEvents(SystemEvents& system) {
 		frameEvents.clear();
 
-#if SDL_ENABLED
 		SDL_Event currentEvent;
 
 		while (SDL_PollEvent(&currentEvent)) {
@@ -20,6 +19,5 @@ namespace HAL {
 
 			system.quit |= (currentEvent.type == SDL_QUIT);
 		}
-#endif
 	}
 }
