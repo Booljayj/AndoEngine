@@ -19,7 +19,8 @@ namespace Rendering {
 
 		int32_t width = 1, height = 1;
 		SDL_Vulkan_GetDrawableSize(window, &width, &height);
-		imageSize = glm::u32vec2{ static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
+		windowSize = glm::u32vec2{ static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
+		imageSize = windowSize;
 	}
 
 	Surface::~Surface() {
@@ -45,36 +46,40 @@ namespace Rendering {
 	}
 
 	bool Surface::CreateSwapchain(VulkanPhysicalDevice const& physical, VkSurfaceFormatKHR surfaceFormat, VulkanRenderPasses const& passes) {
-		imageSize = physical.GetSwapExtent(surface, imageSize);
+		imageSize = physical.GetSwapExtent(surface, windowSize);
 
-		if (!swapchain.Create(imageSize, surface, *owner.selectedPhysical, owner.logical)) return false;
-		if (!organizer.Create(*owner.selectedPhysical, owner.logical, owner.uniformLayouts, EBuffering::Double, swapchain.views.size(), 1)) return false;
+		swapchain.emplace(owner.logical.device, nullptr, *owner.selectedPhysical, *this);
+		framebuffers.emplace(owner.logical, *swapchain, passes);
 
-		SurfaceRenderPass::AttachmentImageViews sharedImageViews;
-		if (!passes.surface.CreateFramebuffers(owner.logical, sharedImageViews, swapchain.views, imageSize, framebuffers.surface)) return false;
+		if (!organizer.Create(*owner.selectedPhysical, owner.logical, owner.uniformLayouts, EBuffering::Double, swapchain->images.size(), 1)) return false;
 
 		return true;
 	}
 
 	bool Surface::RecreateSwapchain(VulkanPhysicalDevice const& physical, VkSurfaceFormatKHR surfaceFormat, VulkanRenderPasses const& passes) {
-		passes.surface.DestroyFramebuffers(owner.logical, framebuffers.surface);
+		imageSize = physical.GetSwapExtent(surface, windowSize);
 
-		imageSize = physical.GetSwapExtent(surface, imageSize);
+		framebuffers.reset();
 
-		if (!swapchain.Recreate(imageSize, surface, *owner.selectedPhysical, owner.logical)) return false;
-		if (!organizer.Create(*owner.selectedPhysical, owner.logical, owner.uniformLayouts, EBuffering::Double, swapchain.views.size(), 1)) return false;
+		if (swapchain.has_value()) {
+			//The previous swapchain needs to exist long enough to create the new one, so we create a temporary new value before assigning it.
+			auto recreated = std::make_optional<VulkanSwapchain>(owner.logical.device, &swapchain.value(), *owner.selectedPhysical, *this);
+			swapchain.swap(recreated);
+		} else {
+			swapchain.emplace(owner.logical.device, nullptr, *owner.selectedPhysical, *this);
+		}
 
-		SurfaceRenderPass::AttachmentImageViews sharedImageViews;
-		if (!passes.surface.CreateFramebuffers(owner.logical, sharedImageViews, swapchain.views, imageSize, framebuffers.surface)) return false;
+		framebuffers.emplace(owner.logical, *swapchain, passes);
+
+		if (!organizer.Create(*owner.selectedPhysical, owner.logical, owner.uniformLayouts, EBuffering::Double, swapchain->images.size(), 1)) return false;
 
 		return true;
 	}
 
 	void Surface::Destroy(VulkanFramework const& framework, VulkanLogicalDevice const& logical) {
-		SurfaceRenderPass::DestroyFramebuffers(owner.logical, framebuffers.surface);
-
 		if (organizer) organizer.Destroy(logical);
-		if (swapchain) swapchain.Destroy(logical);
+		framebuffers.reset();
+		swapchain.reset();
 		if (surface) vkDestroySurfaceKHR(framework.instance, surface, nullptr);
 	}
 
@@ -85,7 +90,7 @@ namespace Rendering {
 		auto const renderables = registry.view<MeshRenderer const>();
 
 		//Prepare the frame for rendering, which may need to wait for resources
-		EPreparationResult const result = organizer.Prepare(logical, swapchain, renderables.size());
+		EPreparationResult const result = organizer.Prepare(logical, *swapchain, renderables.size());
 		if (result == EPreparationResult::Retry) {
 			if (++retryCount >= maxRetryCount) {
 				LOGF(Rendering, Error, "Too many subsequent frames (%i) have failed to render.", maxRetryCount);
@@ -98,20 +103,20 @@ namespace Rendering {
 		//Lambda to record rendering commands
 		auto const recorder = [&](const FrameResources& frame, size_t index) {
 			//Create a scope for all commands that belong to the surface render pass
-			const SurfaceRenderPass::ScopedRecord scope{ frame.commands, passes.surface, framebuffers.surface[index], Geometry::ScreenRect{ glm::vec2{0.0f}, swapchain.extent } };
+			const SurfaceRenderPass::ScopedRecord scope{ frame.commands, passes.surface, framebuffers->surface[index], Geometry::ScreenRect{ glm::vec2{0.0f}, swapchain->extent } };
 
 			//Set the viewport and scissor that we are currently rendering for.
 			VkViewport viewport{};
 			viewport.x = 0.0f;
 			viewport.y = 0.0f;
-			viewport.width = (float)swapchain.extent.x;
-			viewport.height = (float)swapchain.extent.y;
+			viewport.width = (float)swapchain->extent.x;
+			viewport.height = (float)swapchain->extent.y;
 			viewport.minDepth = 0.0f;
 			viewport.maxDepth = 1.0f;
 
 			VkRect2D scissor{};
 			scissor.offset = {0, 0};
-			scissor.extent = VkExtent2D{ swapchain.extent.x, swapchain.extent.y };
+			scissor.extent = VkExtent2D{ swapchain->extent.x, swapchain->extent.y };
 
 			vkCmdSetViewport(frame.commands, 0, 1, &viewport);
 			vkCmdSetScissor(frame.commands, 0, 1, &scissor);
@@ -165,7 +170,7 @@ namespace Rendering {
 		if (!organizer.Record(recorder)) return false;
 
 		//Submit the rendering commands for this frame
-		if (!organizer.Submit(logical, swapchain)) return false;
+		if (!organizer.Submit(logical, *swapchain)) return false;
 
 		retryCount = 0;
 		return true;

@@ -28,7 +28,7 @@ namespace Rendering {
 
 		VulkanLogicalDevice result;
 
-		t_unordered_set<uint32_t> uniqueQueueFamilies{ 2 };
+		t_unordered_set<uint32_t> uniqueQueueFamilies;
 		uniqueQueueFamilies.insert(physical.queues.graphics.value().index);
 		uniqueQueueFamilies.insert(physical.queues.present.value().index);
 
@@ -37,7 +37,8 @@ namespace Rendering {
 
 		float queuePriority = 1.0f;
 
-		t_vector<VkDeviceQueueCreateInfo> queueCIs{ queueCICount };
+		t_vector<VkDeviceQueueCreateInfo> queueCIs;
+		queueCIs.resize(queueCICount);
 		for (uint32_t queueFamilyIndex = 0; queueFamilyIndex < queueCICount; ++queueFamilyIndex) {
 			VkDeviceQueueCreateInfo& queueCI = queueCIs[queueFamilyIndex];
 			queueCI = {};

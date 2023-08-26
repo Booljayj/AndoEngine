@@ -1,19 +1,101 @@
 #include "Rendering/Vulkan/VulkanRenderPasses.h"
 #include "Engine/Logging.h"
+#include "Engine/Utility.h"
 
 namespace Rendering {
-	SurfaceRenderPass::ScopedRecord::ScopedRecord(VkCommandBuffer commands, SurfaceRenderPass const& surface, Framebuffer framebuffer, Geometry::ScreenRect const& rect)
+	Framebuffer::Framebuffer(Framebuffer&& other) noexcept {
+		std::swap(device, other.device);
+		std::swap(view, other.view);
+		std::swap(framebuffer, other.framebuffer);
+	}
+
+	Framebuffer::~Framebuffer() {
+		if (device) {
+			vkDestroyFramebuffer(device, framebuffer, nullptr);
+			vkDestroyImageView(device, view, nullptr);
+			device = nullptr;
+		}
+	}
+
+	SurfaceRenderPass::FramebufferResources::FramebufferResources(VulkanLogicalDevice const& logical, VulkanSwapchain const& swapchain, SurfaceRenderPass const& pass)
+		: device(logical)
+	{
+		//@todo Create shared image views (i.e. the depth pass image view)
+		
+		framebuffers.reserve(swapchain.images.size());
+		for (VkImage swapchainImage : swapchain.images)
+		{
+			VkImageViewCreateInfo viewCI{};
+			viewCI.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+			viewCI.image = swapchainImage;
+			//Image data settings
+			viewCI.viewType = VK_IMAGE_VIEW_TYPE_2D;
+			viewCI.format = swapchain.surfaceFormat.format;
+			//Component swizzling settings
+			viewCI.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+			viewCI.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+			viewCI.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+			viewCI.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+			//Image usage settings
+			viewCI.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			viewCI.subresourceRange.baseMipLevel = 0;
+			viewCI.subresourceRange.levelCount = 1;
+			viewCI.subresourceRange.baseArrayLayer = 0;
+			viewCI.subresourceRange.layerCount = 1;
+
+			VkImageView imageView = nullptr;
+			if (vkCreateImageView(device, &viewCI, nullptr, &imageView) != VK_SUCCESS || !imageView) {
+				LOGF(Vulkan, Error, "Failed to create image view");
+				throw std::runtime_error{ "Failed to create framebuffer image view" };
+			}
+
+			EnumBackedContainer<VkImageView, EAttachments> attachmentImageViews;
+			attachmentImageViews[EAttachments::Color] = imageView;
+			//attachmentImageViews[EAttachments::Depth] = sharedImageViews[ESharedAttachments::Depth];
+
+			VkFramebufferCreateInfo framebufferCI{};
+			framebufferCI.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+			framebufferCI.renderPass = pass;
+			framebufferCI.attachmentCount = attachmentImageViews.size();
+			framebufferCI.pAttachments = attachmentImageViews.data();
+			framebufferCI.width = swapchain.extent.x;
+			framebufferCI.height = swapchain.extent.y;
+			framebufferCI.layers = 1;
+
+			VkFramebuffer framebuffer = nullptr;
+			if (vkCreateFramebuffer(device, &framebufferCI, nullptr, &framebuffer) != VK_SUCCESS || !framebuffer) {
+				LOGF(Vulkan, Error, "Failed to create frambuffer");
+				vkDestroyImageView(device, imageView, nullptr);
+				throw std::runtime_error{ "Failed to create framebuffer" };
+			}
+
+			framebuffers.emplace_back(device, imageView, framebuffer);
+		}
+	}
+
+	SurfaceRenderPass::FramebufferResources::FramebufferResources(FramebufferResources&& other) noexcept {
+		std::swap(device, other.device);
+		std::swap(sharedImageViews, other.sharedImageViews);
+		std::swap(framebuffers, other.framebuffers);
+	}
+
+	SurfaceRenderPass::FramebufferResources::~FramebufferResources() {
+		//@todo Destroy the shared image views
+		device = nullptr;
+	}
+
+	SurfaceRenderPass::ScopedRecord::ScopedRecord(VkCommandBuffer commands, SurfaceRenderPass const& surface, Framebuffer const& framebuffer, Geometry::ScreenRect const& rect)
 	: cachedCommands(commands)
 	{
 		VkRenderPassBeginInfo renderPassBI{};
 		renderPassBI.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassBI.renderPass = surface.pass;
-		renderPassBI.framebuffer = framebuffer.internal;
+		renderPassBI.renderPass = surface;
+		renderPassBI.framebuffer = framebuffer;
 		renderPassBI.renderArea.offset = VkOffset2D{ rect.offset.x, rect.offset.y };
 		renderPassBI.renderArea.extent = VkExtent2D{ rect.extent.x, rect.extent.y };
-
-		renderPassBI.clearValueCount = static_cast<uint32_t>(std::size(surface.clearValues));
-		renderPassBI.pClearValues = surface.clearValues;
+		
+		renderPassBI.clearValueCount = surface.clearValues.size();
+		renderPassBI.pClearValues = surface.clearValues.data();
 
 		vkCmdBeginRenderPass(commands, &renderPassBI, VK_SUBPASS_CONTENTS_INLINE);
 	}
@@ -22,17 +104,11 @@ namespace Rendering {
 		vkCmdEndRenderPass(cachedCommands);
 	}
 
-	void SurfaceRenderPass::DestroyFramebuffers(VulkanLogicalDevice const& logical, Framebuffers& framebuffers) {
-		for (const Framebuffer& framebuffer : framebuffers) {
-			vkDestroyFramebuffer(logical.device, framebuffer.internal, nullptr);
-		}
-		framebuffers.clear();
-	}
-
-	bool SurfaceRenderPass::Create(VulkanLogicalDevice const& logical, VkFormat format) {
-		//Attachments
-		std::array<VkAttachmentDescription, EAttachments::MAX> descriptions;
-		std::memset(&descriptions, 0, sizeof(descriptions));
+	SurfaceRenderPass::SurfaceRenderPass(VulkanLogicalDevice const& logical, VkFormat format) 
+		: device(logical)
+	{
+		// Attachments
+		EnumBackedContainer<VkAttachmentDescription, EAttachments> descriptions;
 		{
 			VkAttachmentDescription& attachment = descriptions[EAttachments::Color];
 			attachment.format = format;
@@ -44,41 +120,46 @@ namespace Rendering {
 			attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 			attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-			clearValues[EAttachments::Color].color = VkClearColorValue{{0.0f, 0.0f, 0.0f, 1.0f}};
+			clearValues[EAttachments::Color].color = VkClearColorValue{ {0.0f, 0.0f, 0.0f, 1.0f} };
 		}
 
 		//Subpasses
-		std::array<VkSubpassDescription, ESubpasses::MAX> subpasses;
-		std::memset(&subpasses, 0, sizeof(subpasses));
+		enum struct ESubpasses {
+			Opaque,
+			//Transparent,
+			//UserInterface,
+			MAX
+		};
+		EnumBackedContainer<VkSubpassDescription, ESubpasses> subpasses;
+
+		enum struct EOpaqueSubpassReferences {
+			Color,
+			MAX
+		};
+		EnumBackedContainer<VkAttachmentReference, EOpaqueSubpassReferences> opaqueReferences;
 		{
 			VkSubpassDescription& subpass = subpasses[ESubpasses::Opaque];
-
-			//Attachment References
-			struct EReferences { enum : uint8_t {
-				Color,
-				MAX
-			};};
-
-			std::array<VkAttachmentReference, EReferences::MAX> references;
-			std::memset(&references, 0, sizeof(references));
 			{
-				VkAttachmentReference& reference = references[EReferences::Color];
-				reference.attachment = EAttachments::Color;
+				VkAttachmentReference& reference = opaqueReferences[EOpaqueSubpassReferences::Color];
+				reference.attachment = IndexOfEnum(EAttachments::Color);
 				reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 			}
 
 			subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-			subpass.colorAttachmentCount = static_cast<uint32_t>(references.size());
-			subpass.pColorAttachments = references.data();
+			subpass.colorAttachmentCount = opaqueReferences.size();
+			subpass.pColorAttachments = opaqueReferences.data();
 		}
 
 		//Subpass Dependencies
-		std::array<VkSubpassDependency, EDependencies::MAX> dependencies;
-		std::memset(&dependencies, 0, sizeof(dependencies));
+		enum struct EDependencies {
+			ExternalToOpaque,
+			MAX
+		};
+		EnumBackedContainer<VkSubpassDependency, EDependencies> dependencies;
 		{
 			VkSubpassDependency& dependency = dependencies[EDependencies::ExternalToOpaque];
 			dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-			dependency.dstSubpass = ESubpasses::Opaque;
+			dependency.dstSubpass = IndexOfEnum(ESubpasses::Opaque);
 			dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 			dependency.srcAccessMask = 0;
 			dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -88,65 +169,36 @@ namespace Rendering {
 		//Information to create the full render pass, with all relevant attachments and subpasses.
 		VkRenderPassCreateInfo passCI{};
 		passCI.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		passCI.attachmentCount = static_cast<uint32_t>(descriptions.size());
+		passCI.attachmentCount = descriptions.size();
 		passCI.pAttachments = descriptions.data();
-		passCI.subpassCount = static_cast<uint32_t>(subpasses.size());
+		passCI.subpassCount = subpasses.size();
 		passCI.pSubpasses = subpasses.data();
-		passCI.dependencyCount = static_cast<uint32_t>(dependencies.size());
+		passCI.dependencyCount = dependencies.size();
 		passCI.pDependencies = dependencies.data();
 
-		assert(!pass);
-		if (vkCreateRenderPass(logical.device, &passCI, nullptr, &pass) != VK_SUCCESS) {
+		if (vkCreateRenderPass(device, &passCI, nullptr, &pass) != VK_SUCCESS || !pass) {
 			LOG(Vulkan, Error, "Failed to create main render pass");
-			return false;
+			throw std::runtime_error("Failed to create surface render pass");
 		}
-
-		return true;
 	}
 
-	void SurfaceRenderPass::Destroy(VulkanLogicalDevice const& logical) {
-		vkDestroyRenderPass(logical.device, pass, nullptr);
-		pass = nullptr;
+	SurfaceRenderPass::SurfaceRenderPass(SurfaceRenderPass&& other) noexcept {
+		std::swap(device, other.device);
+		std::swap(pass, other.pass);
 	}
 
-	bool SurfaceRenderPass::CreateFramebuffers(VulkanLogicalDevice const& logical, AttachmentImageViews const& sharedImageViews, TArrayView<VkImageView> colorImageViews, glm::u32vec2 const& size, Framebuffers& framebuffers) const {
-		AttachmentImageViews attachments;
-		//Copy the shared images into the attachments
-
-		const size_t numImageViews = colorImageViews.size();
-		framebuffers.resize(numImageViews);
-		for (size_t index = 0; index < numImageViews; ++index) {
-			attachments[EAttachments::Color] = colorImageViews[index];
-
-			//Create the framebuffer
-			VkFramebufferCreateInfo framebufferCI{};
-			framebufferCI.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			framebufferCI.renderPass = pass;
-			framebufferCI.attachmentCount = static_cast<uint32_t>(std::size(attachments));
-			framebufferCI.pAttachments = attachments;
-			framebufferCI.width = size.x;
-			framebufferCI.height = size.y;
-			framebufferCI.layers = 1;
-
-			assert(!framebuffers[index].internal);
-			if (vkCreateFramebuffer(logical.device, &framebufferCI, nullptr, &framebuffers[index].internal) != VK_SUCCESS) {
-				LOGF(Vulkan, Error, "Failed to create frambuffer %i", index);
-				return false;
-			}
+	SurfaceRenderPass::~SurfaceRenderPass() {
+		if (device) {
+			vkDestroyRenderPass(device, pass, nullptr);
+			device = nullptr;
 		}
-		return true;
 	}
 
-	bool VulkanRenderPasses::Create(VulkanLogicalDevice const& logical, VkFormat format) {
-		if (!surface.Create(logical, format)) return false;
-		return true;
-	}
+	VulkanRenderPasses::VulkanRenderPasses(VulkanLogicalDevice const& logical, VkFormat format)
+		: surface(logical, format)
+	{}
 
-	void VulkanRenderPasses::Destroy(VulkanLogicalDevice const& logical) {
-		surface.Destroy(logical);
-	}
-
-	void VulkanFramebuffers::Destroy(VulkanLogicalDevice const& logical) {
-		SurfaceRenderPass::DestroyFramebuffers(logical, surface);
-	}
+	VulkanFramebuffers::VulkanFramebuffers(VulkanLogicalDevice const& logical, VulkanSwapchain const& swapchain, VulkanRenderPasses const& passes)
+		: surface(logical, swapchain, passes.surface)
+	{}
 }

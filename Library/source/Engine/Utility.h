@@ -53,6 +53,9 @@ namespace Utility {
 	}
 }
 
+template<typename T>
+std::underlying_type_t<T> IndexOfEnum(T value) { return static_cast<std::underlying_type_t<T>>(value); }
+
 /** A size value in bytes */
 struct ByteSize {
 	uint64_t size = 0;

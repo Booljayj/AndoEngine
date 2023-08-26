@@ -52,7 +52,7 @@ namespace Rendering {
 		}
 
 		//Create the render passes
-		if (!passes.Create(logical, primarySurfaceFormat.format)) return false;
+		passes.emplace(logical, primarySurfaceFormat.format);
 		if (!uniformLayouts.Create(logical)) return false;
 
 		//Create the command pool
@@ -69,7 +69,7 @@ namespace Rendering {
 		}
 
 		//Create the swapchain on the primary surface
-		primarySurface.CreateSwapchain(*selectedPhysical, primarySurfaceFormat, passes);
+		primarySurface.CreateSwapchain(*selectedPhysical, primarySurfaceFormat, *passes);
 
 		//Listen for when rendering-relevant resource types are created or destroyed
 		materials.Created.Add(this, &RenderingSystem::MaterialCreated);
@@ -102,7 +102,7 @@ namespace Rendering {
 			surfaces.clear();
 
 			uniformLayouts.Destroy(logical);
-			passes.Destroy(logical);
+			passes.reset();
 			vkDestroyCommandPool(logical.device, commandPool, nullptr);
 		}
 		logical.Destroy();
@@ -116,7 +116,7 @@ namespace Rendering {
 			if (surface->IsSwapchainDirty()) {
 				LOG(Rendering, Info, "Recreating swapchain");
 				vkDeviceWaitIdle(logical.device);
-				surface->RecreateSwapchain(*selectedPhysical, primarySurfaceFormat, passes);
+				surface->RecreateSwapchain(*selectedPhysical, primarySurfaceFormat, *passes);
 			}
 		}
 
@@ -125,7 +125,7 @@ namespace Rendering {
 
 		bool success = true;
 		for (auto const& surface : surfaces) {
-			success &= surface->Render(logical, passes, registry);
+			success &= surface->Render(logical, *passes, registry);
 		}
 
 		return success;
@@ -434,7 +434,7 @@ namespace Rendering {
 		pipelineCI.pDynamicState = &dynamicStateCI;
 		//Additional data
 		pipelineCI.layout = resources.pipelineLayout;
-		pipelineCI.renderPass = passes.surface.pass;
+		pipelineCI.renderPass = passes->surface;
 		pipelineCI.subpass = 0;
 		//Parent pipelines, if this pipeline derives from another
 		pipelineCI.basePipelineHandle = VK_NULL_HANDLE; // Optional

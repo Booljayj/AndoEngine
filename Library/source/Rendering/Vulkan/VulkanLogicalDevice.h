@@ -24,6 +24,7 @@ namespace Rendering {
 		VulkanLogicalDevice(VulkanLogicalDevice&& other);
 
 		VulkanLogicalDevice& operator=(VulkanLogicalDevice&& other);
+		inline operator VkDevice() const { return device; }
 		inline operator bool() const { return device && allocator; }
 
 		static VulkanLogicalDevice Create(VulkanFramework framework, VulkanPhysicalDevice const& physical, VkPhysicalDeviceFeatures const& features, TArrayView<char const*> const& extensions);

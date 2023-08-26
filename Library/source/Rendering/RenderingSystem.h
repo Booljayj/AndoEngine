@@ -53,7 +53,7 @@ namespace Rendering {
 		VkSurfaceFormatKHR primarySurfaceFormat = {};
 
 		/** The render passes used for scene rendering */
-		VulkanRenderPasses passes;
+		std::optional<VulkanRenderPasses> passes;
 
 		/** Uniform layouts for standard uniforms */
 		VulkanUniformLayouts uniformLayouts;

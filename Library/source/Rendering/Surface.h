@@ -19,16 +19,19 @@ namespace Rendering {
 
 		/** The internal surface tied to this surface */
 		VkSurfaceKHR surface = nullptr;
+
 		/** The swapchain that is currently being used for images */
-		VulkanSwapchain swapchain;
+		std::optional<VulkanSwapchain> swapchain;
+		/** The framebuffers for rendering on the swapchain */
+		std::optional<VulkanFramebuffers> framebuffers;
+
 		/** The frame organizer that keeps track of resources used each frame */
 		VulkanFrameOrganizer organizer;
-		/** The framebuffers for rendering on the swapchain */
-		VulkanFramebuffers framebuffers;
 
 		Surface(RenderingSystem& inOwner, HAL::Window& inWindow);
 		~Surface();
 
+		operator VkSurfaceKHR() const { return surface; }
 		inline bool operator==(HAL::Window::IdType otherID) const { return GetID() == otherID; }
 
 		/** Return whether this is a valid surface, which can potentially be used for rendering. It may not be fully set up for rendering yet */
@@ -65,6 +68,9 @@ namespace Rendering {
 		HAL::Window& window;
 		EventHandleType windowDestroyedHandle;
 
+		/** The full size of the window that is associated with this surface */
+		glm::u32vec2 windowSize;
+		/** The actual drawable size of swapchain images created for this surface */
 		glm::u32vec2 imageSize;
 
 		uint8_t retryCount : 1;
