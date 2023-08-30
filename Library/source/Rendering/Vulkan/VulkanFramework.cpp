@@ -115,34 +115,39 @@ namespace Rendering {
 
 		//Create a string that provides additional contextual information
 		TemporaryStringBuilder contextBuilder;
+		const auto SafeGetName = [](char const* name){
+			if (name == nullptr) return "UNKNOWN";
+			else return name;
+		};
+
 		//Add a list of object names referenced by this message. The first object is already part of the message.
 		if (pCallbackData->objectCount > 1) {
 			contextBuilder << "; Objects: "sv;
 
-			contextBuilder << pCallbackData->pObjects[1].pObjectName;
+			contextBuilder << SafeGetName(pCallbackData->pObjects[1].pObjectName);
 			for (size_t index = 2; index < pCallbackData->objectCount; ++index) {
 				contextBuilder << ", "sv;
-				contextBuilder << pCallbackData->pObjects[index].pObjectName;
+				contextBuilder << SafeGetName(pCallbackData->pObjects[index].pObjectName);
 			}
 		}
 		//Add a list of queue labels referenced by this message
 		if (pCallbackData->queueLabelCount > 0) {
 			contextBuilder << "; Queues: "sv;
 
-			contextBuilder << pCallbackData->pQueueLabels[0].pLabelName;
+			contextBuilder << SafeGetName(pCallbackData->pQueueLabels[0].pLabelName);
 			for (size_t index = 1; index < pCallbackData->queueLabelCount; ++index) {
 				contextBuilder << ", "sv;
-				contextBuilder << pCallbackData->pQueueLabels[index].pLabelName;
+				contextBuilder << SafeGetName(pCallbackData->pQueueLabels[index].pLabelName);
 			}
 		}
 		//Add a list of command labels referenced by this message
 		if (pCallbackData->cmdBufLabelCount > 0) {
 			contextBuilder << "; Command Buffers: "sv;
 
-			contextBuilder << pCallbackData->pCmdBufLabels[0].pLabelName;
+			contextBuilder << SafeGetName(pCallbackData->pCmdBufLabels[0].pLabelName);
 			for (size_t index = 1; index < pCallbackData->cmdBufLabelCount; ++index) {
 				contextBuilder << ", "sv;
-				contextBuilder << pCallbackData->pCmdBufLabels[index].pLabelName;
+				contextBuilder << SafeGetName(pCallbackData->pCmdBufLabels[index].pLabelName);
 			}
 		}
 

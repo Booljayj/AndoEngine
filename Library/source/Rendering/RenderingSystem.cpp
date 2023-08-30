@@ -86,20 +86,14 @@ namespace Rendering {
 		availablePhysicalDevices.clear();
 
 		if (logical) {
-			//Wait for any in-progress work to finish before we start cleanup
-			for (auto const& surface : surfaces) {
-				surface->WaitForCompletion(logical);
-			}
+			vkDeviceWaitIdle(logical.device);
+
+			surfaces.clear();
 
 			materials.Destroy();
 			staticMeshes.Destroy();
 			DestroyStalePipelines();
 			DestroyStaleMeshes();
-
-			for (auto const& surface : surfaces) {
-				surface->Destroy(framework, logical);
-			}
-			surfaces.clear();
 
 			uniformLayouts.Destroy(logical);
 			passes.reset();
@@ -254,18 +248,15 @@ namespace Rendering {
 	}
 
 	void RenderingSystem::RefreshStaticMeshes() {
-		VulkanMeshCreationHelper helper{logical.device, logical.allocator, logical.queues.graphics, commandPool};
+		VulkanMeshCreationHelper helper{ logical.device, logical.queues.graphics, commandPool};
 
 		for (const Resources::Handle<StaticMesh>& mesh : dirtyStaticMeshes) {
 			//Existing resources become stale
-			if (mesh->gpuResources) staleMeshResources.emplace_back(std::move(mesh->gpuResources));
-
+			if (mesh->gpuResources) staleMeshResources.emplace_back(std::move(*mesh->gpuResources));
 			//Create new resources
-			VulkanMeshResources const resources = CreateMesh(*mesh, commandPool, helper);
-			if (resources) mesh->gpuResources = std::move(resources);
-			else resources.Destroy(logical.allocator);
+			mesh->gpuResources.emplace(CreateMesh(*mesh, commandPool, helper));
 		}
-		helper.Flush();
+
 		dirtyStaticMeshes.clear();
 	}
 
@@ -275,13 +266,11 @@ namespace Rendering {
 	}
 
 	void RenderingSystem::MarkStaticMeshStale(Resources::Handle<StaticMesh> const& mesh) {
-		staleMeshResources.emplace_back(std::move(mesh->gpuResources));
+		staleMeshResources.emplace_back(std::move(*mesh->gpuResources));
 	}
 
 	void RenderingSystem::DestroyStaleMeshes() {
-		for (VulkanMeshResources resources : staleMeshResources) {
-			resources.Destroy(logical.allocator);
-		}
+		staleMeshResources.clear();
 		stalePipelineResources.clear();
 	}
 
@@ -302,8 +291,8 @@ namespace Rendering {
 		{
 			VkDescriptorSetLayout setLayouts[] = {
 				uniformLayouts.global,
-				//resources.descriptors,
 				uniformLayouts.object,
+				//resources.descriptors,
 			};
 
 			VkPipelineLayoutCreateInfo layoutCI{};
@@ -447,9 +436,7 @@ namespace Rendering {
 		return resources;
 	}
 
-	VulkanMeshResources RenderingSystem::CreateMesh(StaticMesh const& mesh, VkCommandPool pool, VulkanMeshCreationHelper& helper) {
-		VulkanMeshResources resources;
-
+	MeshResources RenderingSystem::CreateMesh(StaticMesh const& mesh, VkCommandPool pool, VulkanMeshCreationHelper& helper) {
 		//Calculate byte size values for the input mesh
 		const auto BufferSizeVisitor = [](auto const& v) { return v.size() * sizeof(typename std::remove_reference_t<decltype(v)>::value_type); };
 		size_t const vertexBytes = std::visit(BufferSizeVisitor, mesh.vertices);
@@ -460,13 +447,7 @@ namespace Rendering {
 		size_t const indexOffset = vertexBytes;
 
 		//Create the staging buffer used to upload data to the GPU-only buffer
-		constexpr VkBufferUsageFlags stagingBufferFlags = VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-		constexpr VmaMemoryUsage stagingAllocationFlags = VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_ONLY;
-		VulkanMappedBuffer const staging = CreateMappedBuffer(logical.allocator, totalBytes, stagingBufferFlags, stagingAllocationFlags);
-		if (!staging) {
-			LOG(Vulkan, Error, "Failed to create staging buffer");
-			return resources;
-		}
+		MappedBuffer staging{ logical.allocator, totalBytes, BufferUsageBits::TransferSrc, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_ONLY };
 
 		//Fill the staging buffer with the source data
 		const auto VertexWriteVisitor = [&](auto const& v) { staging.Write(v.data(), v.size() * sizeof(typename std::remove_reference_t<decltype(v)>::value_type), vertexOffset); };
@@ -474,18 +455,8 @@ namespace Rendering {
 		const auto IndexWriteVisitor = [&](auto const& v) { staging.Write(v.data(), v.size() * sizeof(typename std::remove_reference_t<decltype(v)>::value_type), indexOffset); };
 		std::visit(IndexWriteVisitor, mesh.indices);
 
-		//Create the target buffer that will contain the uploaded data for the GPU to use
-		constexpr VkBufferUsageFlags targetBufferFlags =
-			VkBufferUsageFlagBits::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
-			VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
-			VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-		constexpr VmaMemoryUsage targetMemoryFlags = VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY;
-		resources.buffer = CreateBuffer(logical.allocator, totalBytes, targetBufferFlags, targetMemoryFlags);
-		if (!resources.buffer) {
-			LOG(Vulkan, Error, "Failed to create gpu buffer");
-			helper.Submit(staging, nullptr);
-			return resources;
-		}
+		//Create the final resources that will be used for this mesh
+		MeshResources resources{ logical.allocator, totalBytes };
 
 		//Allocate a command buffer for the transfer from the staging to the target buffer
 		VkCommandBufferAllocateInfo bufferAI{};
@@ -494,40 +465,24 @@ namespace Rendering {
 		bufferAI.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		bufferAI.commandBufferCount = 1;
 
-		VkCommandBuffer commands;
-		if (vkAllocateCommandBuffers(logical.device, &bufferAI, &commands) != VK_SUCCESS) {
-			LOG(Vulkan, Error, "Failed to allocate command buffers");
-			helper.Submit(staging, nullptr);
-			return resources;
+		TUniquePoolHandles<1, &vkFreeCommandBuffers> tempCommands{ logical.device, pool };
+		if (vkAllocateCommandBuffers(logical.device, &bufferAI, *tempCommands) != VK_SUCCESS) {
+			throw std::runtime_error{ "Failed to allocate command buffer for staging commands" };
 		}
 
-		//Begin recording the command buffer for staging commands
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+		{
+			ScopedCommands const scope{ tempCommands[0], VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, nullptr };
 
-		if (vkBeginCommandBuffer(commands, &beginInfo) != VK_SUCCESS) {
-			LOG(Vulkan, Error, "Failed to begin recording command buffer");
-			helper.Submit(staging, nullptr);
-			return resources;
-		}
-
-		//Record the command to transfer from the staging buffer to the target buffer
-		VkBufferCopy copy{};
-		copy.srcOffset = 0; // Optional
-		copy.dstOffset = 0; // Optional
-		copy.size = totalBytes;
-		vkCmdCopyBuffer(commands, staging.buffer, resources.buffer, 1, &copy);
-
-		//Finish recording the command buffer
-		if (vkEndCommandBuffer(commands) != VK_SUCCESS) {
-			LOG(Vulkan, Error, "Failed to finish recording command buffer");
-			helper.Submit(staging, nullptr);
-			return resources;
+			//Record the command to transfer from the staging buffer to the target buffer
+			VkBufferCopy copy{};
+			copy.srcOffset = 0; // Optional
+			copy.dstOffset = 0; // Optional
+			copy.size = totalBytes;
+			vkCmdCopyBuffer(tempCommands[0], staging, resources.buffer, 1, &copy);
 		}
 
 		//Submit the buffer and commands. We've successfully created everything
-		helper.Submit(staging, commands);
+		helper.Submit(tempCommands.Release()[0], std::move(staging));
 
 		//Record the size and offset information. This is the primary way we'll know that the resources are valid
 		const auto CountVisitor = [](const auto& v) { return static_cast<uint32_t>(v.size()); };

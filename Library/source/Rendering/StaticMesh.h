@@ -21,7 +21,7 @@ namespace Rendering {
 
 		FormattedVertices vertices;
 		FormattedIndices indices;
-		VulkanMeshResources gpuResources;
+		std::optional<MeshResources> gpuResources;
 	};
 }
 

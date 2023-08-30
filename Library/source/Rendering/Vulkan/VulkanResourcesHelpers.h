@@ -28,18 +28,30 @@ namespace Rendering {
 	};
 
 	struct VulkanMeshCreationHelper {
-		std::vector<VulkanMappedBuffer> stagingBuffers;
+	public:
+		VulkanMeshCreationHelper(VkDevice inDevice, VkQueue inQueue, VkCommandPool inPool);
+		VulkanMeshCreationHelper(VulkanMeshCreationHelper const&) = delete;
+		VulkanMeshCreationHelper(VulkanMeshCreationHelper&&) = delete;
+		~VulkanMeshCreationHelper();
+
+		void Submit(VkCommandBuffer commands, MappedBuffer&& staging);
+		void Flush();
+
+	private:
+		/** Commands and buffers which haven't been submitted yet */
+		std::vector<VkCommandBuffer> pendingCommands;
+		std::vector<MappedBuffer> pendingStagingBuffers;
+		/** The commands and buffers which were most recently submitted to the queue */
+		std::vector<VkCommandBuffer> submittedCommands;
+		std::vector<MappedBuffer> submittedStagingBuffers;
 
 		VkDevice device = nullptr;
 		VmaAllocator allocator = nullptr;
 		VkQueue queue = nullptr;
 		VkCommandPool pool = nullptr;
 
-		VulkanMeshCreationHelper(VkDevice inDevice, VmaAllocator inAllocator, VkQueue inQueue, VkCommandPool inPool)
-		: device(inDevice), allocator(inAllocator), queue(inQueue), pool(inPool)
-		{}
+		VkFence fence = nullptr;
 
-		void Submit(VulkanMappedBuffer const& staging, VkCommandBuffer commands);
-		void Flush();
+		void FinishSubmit();
 	};
 }

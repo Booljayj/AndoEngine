@@ -43,32 +43,62 @@ namespace Rendering {
 		return nullptr;
 	}
 
-	void VulkanMeshCreationHelper::Submit(VulkanMappedBuffer const& staging, VkCommandBuffer commands) {
-		constexpr size_t NumStagingBuffersPerFlush = 512;
-		//Keep track of the results
-		stagingBuffers.push_back(staging);
+	VulkanMeshCreationHelper::VulkanMeshCreationHelper(VkDevice inDevice, VkQueue inQueue, VkCommandPool inPool)
+		: device(inDevice), queue(inQueue), pool(inPool)
+	{
+		VkFenceCreateInfo fenceCI{};
+		fenceCI.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+		fenceCI.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-		if (commands) {
-			//Submit the transfer requests
-			VkSubmitInfo submitInfo{};
-			submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-			submitInfo.commandBufferCount = 1;
-			submitInfo.pCommandBuffers = &commands;
-			vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
-		}
-
-		//If we've uploaded enough data, flush the queue so we can remove temporary resources
-		if (stagingBuffers.size() >= NumStagingBuffersPerFlush) {
-			Flush();
+		if (vkCreateFence(device, &fenceCI, nullptr, &fence) != VK_SUCCESS || !fence) {
+			throw std::runtime_error{ "Failed to create fence" };
 		}
 	}
 
+	VulkanMeshCreationHelper::~VulkanMeshCreationHelper() {
+		if (pendingCommands.size() > 0) Flush();
+		FinishSubmit();
+		vkDestroyFence(device, fence, nullptr);
+	}
+
+	void VulkanMeshCreationHelper::Submit(VkCommandBuffer commands, MappedBuffer&& staging) {
+		constexpr size_t NumStagingBuffersPerFlush = 512;
+		//Keep track of the results
+		pendingCommands.emplace_back(commands);
+		pendingStagingBuffers.emplace_back(std::move(staging));
+
+		//If we've collected enough data, flush the queue to send the commands to the GPU
+		if (pendingStagingBuffers.size() >= NumStagingBuffersPerFlush) {
+			Flush();
+		}		
+	}
+
 	void VulkanMeshCreationHelper::Flush() {
-		vkQueueWaitIdle(queue);
-		vkResetCommandPool(device, pool, 0);
-		for (VulkanMappedBuffer const& staging : stagingBuffers) {
-			staging.Destroy(allocator);
+		//Finish the previous submit
+		FinishSubmit();
+
+		//Prepare for the new submit
+		vkResetFences(device, 1, &fence);
+		std::swap(pendingCommands, submittedCommands);
+		std::swap(pendingStagingBuffers, submittedStagingBuffers);
+
+		//Submit the current commands
+		VkSubmitInfo submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.commandBufferCount = submittedCommands.size();
+		submitInfo.pCommandBuffers = submittedCommands.data();
+		vkQueueSubmit(queue, 1, &submitInfo, fence);
+	}
+
+	void VulkanMeshCreationHelper::FinishSubmit() {
+		//Wait for the previous flush to finish
+		vkWaitForFences(device, 1, &fence, VK_TRUE, std::numeric_limits<uint64_t>::max());
+
+		//Clean up the temporary resources from the previous flush
+		if (submittedCommands.size() > 0) {
+			vkFreeCommandBuffers(device, pool, submittedCommands.size(), submittedCommands.data());
+			submittedCommands.clear();
+			submittedStagingBuffers.clear();
 		}
-		stagingBuffers.clear();
 	}
 }

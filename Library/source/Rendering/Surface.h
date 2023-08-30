@@ -26,7 +26,7 @@ namespace Rendering {
 		std::optional<VulkanFramebuffers> framebuffers;
 
 		/** The frame organizer that keeps track of resources used each frame */
-		VulkanFrameOrganizer organizer;
+		std::optional<VulkanFrameOrganizer> organizer;
 
 		Surface(RenderingSystem& inOwner, HAL::Window& inWindow);
 		~Surface();
@@ -59,9 +59,6 @@ namespace Rendering {
 
 		/** Change the size of this surface */
 		void Resize(glm::u32vec2 const& newSize);
-
-		/** Block until pending work is complete */
-		void WaitForCompletion(VulkanLogicalDevice const& logical);
 
 	private:
 		RenderingSystem& owner;

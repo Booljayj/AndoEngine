@@ -11,7 +11,7 @@ namespace Rendering {
 
 		static VkDescriptorSetLayoutBinding GetBinding();
 	};
-
+	
 	/** Object for uniforms that are modified per-draw-call */
 	struct ObjectUniforms {
 		glm::mat4 modelViewProjection = glm::identity<glm::mat4>();

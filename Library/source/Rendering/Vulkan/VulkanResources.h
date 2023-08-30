@@ -16,14 +16,11 @@ namespace Rendering {
 		VkPipeline pipeline = nullptr;
 
 		VulkanPipelineResources() {}
-		VulkanPipelineResources(VulkanPipelineResources&& other) { *this = std::move(other); }
-		VulkanPipelineResources& operator=(VulkanPipelineResources&& other) {
-			descriptorSetLayout = other.descriptorSetLayout;
-			pipelineLayout = other.pipelineLayout;
-			pipeline = other.pipeline;
-			other.descriptorSetLayout = nullptr;
-			other.pipelineLayout = nullptr;
-			other.pipeline = nullptr;
+		VulkanPipelineResources(VulkanPipelineResources&& other) noexcept { *this = std::move(other); }
+		VulkanPipelineResources& operator=(VulkanPipelineResources&& other) noexcept {
+			std::swap(descriptorSetLayout, other.descriptorSetLayout);
+			std::swap(pipelineLayout, other.pipelineLayout);
+			std::swap(pipeline, other.pipeline);
 			return *this;
 		}
 
@@ -42,60 +39,79 @@ namespace Rendering {
 		}
 	};
 
+	namespace BufferUsageBits {
+		constexpr VkBufferUsageFlagBits TransferSrc = VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+		constexpr VkBufferUsageFlagBits TransferDst = VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+		constexpr VkBufferUsageFlagBits IndexBuffer = VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+		constexpr VkBufferUsageFlagBits VertexBuffer = VkBufferUsageFlagBits::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+	}
+
 	/** A buffer and the memory allocation for it */
-	struct VulkanBuffer {
-		VkBuffer buffer = nullptr;
-		VmaAllocation allocation = nullptr;
-		VkDeviceSize capacity = 0;
-		char* mapped = nullptr;
+	struct Buffer {
+		/** A scoped writing context for a vulkan buffer. Memory is mapped for CPU access while this exists. */
+		struct Writer {
+			Writer(Writer const&) = delete;
+			Writer(Writer&&) = delete;
+			~Writer();
 
-		inline operator bool() const { return buffer && allocation; }
+			/** Write a value at a specific offset in the buffer */
+			inline void Write(void const* begin, size_t size, size_t offset) const { memcpy(mapped + offset, begin, size); }
+			template<typename T>
+			inline void WriteValue(T const& value, size_t offset) const { Write(&value, sizeof(T), offset); }
+			template<typename T>
+			inline void WriteArray(TArrayView<T> values, size_t offset) const { Write(values.begin(), values.size() * sizeof(T), offset); }
+
+		private:
+			friend struct Buffer;
+
+			VmaAllocator allocator = nullptr;
+			VmaAllocation allocation = nullptr;
+			char* mapped = nullptr;
+
+			Writer(Buffer const&);
+		};
+
+		Buffer(VmaAllocator inAllocator, size_t inCapacity, VkBufferUsageFlags inBufferUsage, VmaMemoryUsage inAllocationUsage);
+		Buffer(Buffer const&) = delete;
+		Buffer(Buffer&&) noexcept;
+		~Buffer();
+
 		inline operator VkBuffer() const { return buffer; }
-		inline operator VmaAllocation() const { return allocation; }
 
-		inline void Destroy(VmaAllocator allocator) const {
-			vmaDestroyBuffer(allocator, buffer, allocation);
-		}
-		inline void Destroy(VmaAllocator allocator) {
-			vmaDestroyBuffer(allocator, buffer, allocation);
-			*this = VulkanBuffer{};
-		}
+		/** The capacity of this buffer in bytes */
+		VkDeviceSize GetCapacity() const { return capacity; }
+		/** Reserve a new capacity for this buffer. No effect if the current capacity is already larger than the new capacity. */
+		void Reserve(VkDeviceSize newCapacity);
 
-		/** Map the memory for CPU access. Returns true if successful. */
-		bool Map(VmaAllocator allocator) {
-			return vmaMapMemory(allocator, allocation, reinterpret_cast<void**>(&mapped)) == VK_SUCCESS;
-		}
-		/** Unmap the memory that has been previously mapped */
-		inline void Unmap(VmaAllocator allocator) {
-			vmaUnmapMemory(allocator, allocation);
-		}
+		/** Create a writer object that can be used to write to this buffer from the CPU */
+		Writer CreateWriter() const { return Writer(*this); }
 
-		/** Write a value at a specific offset in the buffer */
-		inline void Write(void const* begin, size_t size, size_t offset) const { memcpy(mapped + offset, begin, size); }
-		template<typename T>
-		inline void WriteValue(T const& value, size_t offset) const { Write(&value, sizeof(T), offset); }
-		template<typename T>
-		inline void WriteArray(TArrayView<T> values, size_t offset) const { Write(values.begin(), values.size() * sizeof(T), offset); }
+	private:
+		VmaAllocator allocator = nullptr;
+		VkDeviceSize capacity = 0;
+		VkBufferUsageFlags bufferUsage = 0;
+		VmaMemoryUsage allocationUsage = VmaMemoryUsage::VMA_MEMORY_USAGE_UNKNOWN;
+
+		VmaAllocation allocation = nullptr;
+		VkBuffer buffer = nullptr;
 	};
 
 	/** A buffer and the memory allocation for it. Memory is persistently mapped for CPU access. */
-	struct VulkanMappedBuffer {
-		VkBuffer buffer = nullptr;
-		VmaAllocation allocation = nullptr;
-		VkDeviceSize capacity = 0;
-		char* mapped = nullptr;
+	struct MappedBuffer {
+		MappedBuffer(VmaAllocator inAllocator, size_t inCapacity, VkBufferUsageFlags inBufferUsage, VmaMemoryUsage inAllocationUsage);
+		MappedBuffer(MappedBuffer const&) = delete;
+		MappedBuffer(MappedBuffer&&) noexcept;
+		~MappedBuffer();
 
-		inline operator bool() const { return buffer && allocation && capacity > 0 && mapped; }
 		inline operator VkBuffer() const { return buffer; }
-		inline operator VmaAllocation() const { return allocation; }
 
-		inline void Destroy(VmaAllocator allocator) const {
-			vmaDestroyBuffer(allocator, buffer, allocation);
-		}
-		inline void Destroy(VmaAllocator allocator) {
-			vmaDestroyBuffer(allocator, buffer, allocation);
-			*this = VulkanMappedBuffer{};
-		}
+		/** The capacity of this buffer in bytes */
+		VkDeviceSize GetCapacity() const { return capacity; }
+		/** Reserve a new capacity for this buffer. No effect if the current capacity is already larger than the new capacity. */
+		void Reserve(VkDeviceSize newCapacity);
+
+		/** Ensure all previous writes are available to the GPU. Must be called after writing and before submitting the buffer. */
+		void Flush() const;
 
 		/** Write a value at a specific offset in the buffer */
 		inline void Write(void const* begin, size_t size, size_t offset) const { memcpy(mapped + offset, begin, size); }
@@ -103,15 +119,21 @@ namespace Rendering {
 		inline void WriteValue(T const& value, size_t offset) const { Write(&value, sizeof(T), offset); }
 		template<typename T>
 		inline void WriteArray(TArrayView<T> values, size_t offset) const { Write(values.begin(), values.size() * sizeof(T), offset); }
+
+	private:
+		VmaAllocator allocator = nullptr;
+		VkDeviceSize capacity = 0;
+		VkBufferUsageFlags bufferUsage = 0;
+		VmaMemoryUsage allocationUsage = VmaMemoryUsage::VMA_MEMORY_USAGE_UNKNOWN;
+
+		VmaAllocation allocation = nullptr;
+		VkBuffer buffer = nullptr;
+		char* mapped = nullptr;
 	};
 
-	/** Create a buffer */
-	VulkanBuffer CreateBuffer(VmaAllocator allocator, size_t capacity, VkBufferUsageFlags bufferUsage, VmaMemoryUsage allocationUsage);
-	VulkanMappedBuffer CreateMappedBuffer(VmaAllocator allocator, size_t capacity, VkBufferUsageFlags bufferUsage, VmaMemoryUsage allocationUsage);
-
 	/** Stores resources related to a mesh */
-	struct VulkanMeshResources {
-		VulkanBuffer buffer;
+	struct MeshResources {
+		Buffer buffer;
 
 		struct {
 			VkDeviceSize vertex = 0;
@@ -125,50 +147,89 @@ namespace Rendering {
 
 		VkIndexType indexType = VK_INDEX_TYPE_MAX_ENUM;
 
-		inline operator bool() const { return buffer && size.vertices > 0 && size.indices > 0; }
+		MeshResources(VmaAllocator inAllocator, size_t inCapacity);
+		MeshResources(MeshResources const&) = delete;
+		MeshResources(MeshResources&&) noexcept;
+	};
 
-		inline void Destroy(VmaAllocator allocator) const {
-			buffer.Destroy(allocator);
+	/** A collection of descriptor sets allocated from a descriptor pool */
+	template<size_t Size>
+	struct DescriptorSets {
+	public:
+		DescriptorSets(VkDevice device, VkDescriptorPool pool, std::array<VkDescriptorSetLayout, Size> layouts)
+		{
+			VkDescriptorSetAllocateInfo descriptorSetAI{};
+			descriptorSetAI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+			descriptorSetAI.descriptorPool = pool;
+			descriptorSetAI.descriptorSetCount = Size;
+			descriptorSetAI.pSetLayouts = layouts.data();
+
+			//Descriptor pools are set up with the assumption that sets will not be individually freed.
+			//With that in mind, this class just needs to allocate the sets and nothing else.
+			if (vkAllocateDescriptorSets(device, &descriptorSetAI, sets.data()) != VK_SUCCESS || !sets[0]) {
+				throw std::runtime_error{ "Could not allocate descriptor sets" };
+			}
 		}
-		inline void Destroy(VmaAllocator allocator) {
-			buffer.Destroy(allocator);
-			*this = VulkanMeshResources{};
-		}
+		DescriptorSets(DescriptorSets const&) = delete;
+		DescriptorSets(DescriptorSets&& other) = default;
+
+		inline VkDescriptorSet operator[](size_t index) const { return sets[index]; }
+
+	private:
+		std::array<VkDescriptorSet, Size> sets;
+	};
+
+	/** The type of indexing used with a uniforms object */
+	enum struct EUniformsIndexing {
+		NonDynamic,
+		Dynamic,
 	};
 
 	/** Holds resources and the descriptor set that describes them */
-	struct VulkanUniforms {
+	template<typename T, EUniformsIndexing Indexing>
+	struct Uniforms {
+	public:
+		Uniforms(VkDevice inDevice, VkDescriptorSet inSet, uint32_t inBindingIndex, size_t initialNumElements, VmaAllocator allocator)
+			: device(inDevice), set(inSet), bindingIndex(inBindingIndex)
+			, ubo(allocator, initialNumElements * sizeof(T), VkBufferUsageFlagBits::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU)
+		{
+			UpdateDescriptorSet();
+		}
+
+		inline operator VkDescriptorSet() const { return set; }
+
+		inline size_t GetNumElements() const { return ubo.GetCapacity() / sizeof(T); }
+
+		/** Reserve a new capacity for this buffer. No effect if the current capacity is already larger than the new capacity. */
+		void Reserve(size_t newNumElements) {
+			ubo.Reserve(newNumElements * sizeof(T));
+			UpdateDescriptorSet();
+		}
+
+		/** Ensure all previous writes are available to the GPU. Must be called after writing and before submitting the buffer. */
+		void Flush() const { ubo.Flush(); }
+
+		/** Write a value at a specific index in the buffer */
+		inline void Write(T const& value, size_t index) const { ubo.Write(&value, sizeof(T), index * sizeof(T)); }
+
+	private:
+		VkDevice device = nullptr;
 		VkDescriptorSet set = nullptr;
-		VulkanMappedBuffer ubo;
-		size_t elementSize = 0;
+		uint32_t bindingIndex = 0;
+		MappedBuffer ubo;
 
-		inline operator bool() const { return set && ubo && elementSize > 0; }
-
-		inline void Destroy(VmaAllocator allocator) const {
-			ubo.Destroy(allocator);
-		}
-		inline void Destroy(VmaAllocator allocator) {
-			ubo.Destroy(allocator);
-			elementSize = 0;
-		}
-
-		/** Reserve a certain amount of space in the ubo buffer */
-		EResourceModifyResult Reserve(VmaAllocator allocator, size_t newElementSize, size_t newNumElements);
-
-		/** Update the descriptor set so it describes the resources */
-		template<bool UseDynamicOffsets>
-		inline void UpdateDescriptors(VkDevice device) {
+		void UpdateDescriptorSet() const {
 			VkDescriptorBufferInfo bufferInfo{};
-			bufferInfo.buffer = ubo.buffer;
+			bufferInfo.buffer = ubo;
 			bufferInfo.offset = 0;
-			bufferInfo.range = elementSize;
+			bufferInfo.range = VK_WHOLE_SIZE;
 
 			VkWriteDescriptorSet descriptorWrite{};
 			descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrite.dstSet = set;
-			descriptorWrite.dstBinding = 0;
+			descriptorWrite.dstBinding = bindingIndex;
 			descriptorWrite.dstArrayElement = 0;
-			descriptorWrite.descriptorType = UseDynamicOffsets ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			descriptorWrite.descriptorType = Indexing == EUniformsIndexing::Dynamic ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 			descriptorWrite.descriptorCount = 1;
 			descriptorWrite.pBufferInfo = &bufferInfo;
 			descriptorWrite.pImageInfo = nullptr; // Optional

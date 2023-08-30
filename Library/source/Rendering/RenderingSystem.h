@@ -104,7 +104,7 @@ namespace Rendering {
 
 		/** Resources that are pending destruction */
 		std::vector<VulkanPipelineResources> stalePipelineResources;
-		std::vector<VulkanMeshResources> staleMeshResources;
+		std::vector<MeshResources> staleMeshResources;
 
 		/** Refresh dirty materials so they are no longer dirty */
 		void RefreshMaterials();
@@ -136,7 +136,7 @@ namespace Rendering {
 		/** Create the pipeline resources for a material */
 		VulkanPipelineResources CreatePipeline(Material const& material, VulkanPipelineCreationHelper& helper);
 		/** Create the mesh resources for a mesh component */
-		VulkanMeshResources CreateMesh(StaticMesh const& mesh, VkCommandPool pool, VulkanMeshCreationHelper& helper);
+		MeshResources CreateMesh(StaticMesh const& mesh, VkCommandPool pool, VulkanMeshCreationHelper& helper);
 
 		//InitImGUI(VulkanLogicalDevice& logical, VulkanPhysicalDevice& physical, Surface& surface);
 	};

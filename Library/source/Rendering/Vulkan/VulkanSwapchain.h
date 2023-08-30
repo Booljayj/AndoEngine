@@ -12,6 +12,7 @@ namespace Rendering {
 	 * These components are recreated when devices or rendering parameters change (such as screen size).
 	 */
 	struct VulkanSwapchain {
+	public:
 		VkSwapchainKHR swapchain = nullptr;
 
 		/** The images in the swapchain */

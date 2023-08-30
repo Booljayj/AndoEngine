@@ -50,8 +50,7 @@ namespace Rendering {
 
 		swapchain.emplace(owner.logical.device, nullptr, *owner.selectedPhysical, *this);
 		framebuffers.emplace(owner.logical, *swapchain, passes);
-
-		if (!organizer.Create(*owner.selectedPhysical, owner.logical, owner.uniformLayouts, EBuffering::Double, swapchain->images.size(), 1)) return false;
+		organizer.emplace(owner.logical, *owner.selectedPhysical, *swapchain, owner.uniformLayouts, EBuffering::Double);
 
 		return true;
 	}
@@ -59,6 +58,7 @@ namespace Rendering {
 	bool Surface::RecreateSwapchain(VulkanPhysicalDevice const& physical, VkSurfaceFormatKHR surfaceFormat, VulkanRenderPasses const& passes) {
 		imageSize = physical.GetSwapExtent(surface, windowSize);
 
+		organizer.reset();
 		framebuffers.reset();
 
 		if (swapchain.has_value()) {
@@ -70,14 +70,13 @@ namespace Rendering {
 		}
 
 		framebuffers.emplace(owner.logical, *swapchain, passes);
-
-		if (!organizer.Create(*owner.selectedPhysical, owner.logical, owner.uniformLayouts, EBuffering::Double, swapchain->images.size(), 1)) return false;
+		organizer.emplace(owner.logical, *owner.selectedPhysical, *swapchain, owner.uniformLayouts, EBuffering::Double);
 
 		return true;
 	}
 
 	void Surface::Destroy(VulkanFramework const& framework, VulkanLogicalDevice const& logical) {
-		if (organizer) organizer.Destroy(logical);
+		organizer.reset();
 		framebuffers.reset();
 		swapchain.reset();
 		if (surface) vkDestroySurfaceKHR(framework.instance, surface, nullptr);
@@ -89,94 +88,95 @@ namespace Rendering {
 		//      out culled geometry.
 		auto const renderables = registry.view<MeshRenderer const>();
 
-		//Prepare the frame for rendering, which may need to wait for resources
-		EPreparationResult const result = organizer.Prepare(logical, *swapchain, renderables.size());
-		if (result == EPreparationResult::Retry) {
+		constexpr size_t numThreads = 1;
+		auto const context = organizer->CreateRecordingContext(renderables.size(), numThreads);
+		if (context) {
+			FrameUniforms& uniforms = context->uniforms;
+			VkCommandBuffer const commands = context->mainCommandBuffer;
+
+			Framebuffer const& surfaceFramebuffer = framebuffers->surface[context->imageIndex];
+			Geometry::ScreenRect const rect = { glm::vec2{ 0.0f, 0.0f }, swapchain->extent };
+
+			{
+				//Scope within which we will write commands to the buffer
+				ScopedCommands const scopedCommands{ commands, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, nullptr };
+				//Create a scope for all commands that belong to the surface render pass
+				SurfaceRenderPass::ScopedRecord const scopedRecord{ commands, passes.surface, surfaceFramebuffer, rect };
+
+				//Set the viewport and scissor that we are currently rendering for.
+				VkViewport viewport{};
+				viewport.x = 0.0f;
+				viewport.y = 0.0f;
+				viewport.width = (float)swapchain->extent.x;
+				viewport.height = (float)swapchain->extent.y;
+				viewport.minDepth = 0.0f;
+				viewport.maxDepth = 1.0f;
+
+				VkRect2D scissor{};
+				scissor.offset = { 0, 0 };
+				scissor.extent = VkExtent2D{ swapchain->extent.x, swapchain->extent.y };
+
+				vkCmdSetViewport(commands, 0, 1, &viewport);
+				vkCmdSetScissor(commands, 0, 1, &scissor);
+
+				//Write global uniform values that can be accessed by shaders
+				GlobalUniforms global;
+				global.viewProjection = glm::identity<glm::mat4>();
+				global.viewProjectionInverse = glm::inverse(global.viewProjection);
+				global.time = 0;
+				uniforms.global.Write(global, 0);
+
+				uint32_t objectIndex = 0;
+				for (const auto id : renderables) {
+					auto const& renderer = renderables.get<MeshRenderer const>(id);
+
+					if (renderer.material && renderer.material->resources && renderer.mesh && renderer.mesh->gpuResources) {
+						uint32_t const objectUniformsOffset = static_cast<uint32_t>(sizeof(ObjectUniforms) * objectIndex);
+
+						//Write to the part of the object uniform buffer designated for this object
+						ObjectUniforms object;
+						object.modelViewProjection = glm::identity<glm::mat4>();
+						uniforms.object.Write(object, objectIndex);
+
+						//Bind the pipeline that will be used for rendering
+						vkCmdBindPipeline(commands, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer.material->resources.pipeline);
+
+						//Bind the descriptor sets to use for this draw command
+						VkDescriptorSet sets[] = {
+							uniforms.global,
+							uniforms.object,
+							//materialInstance->resources.set,
+						};
+						vkCmdBindDescriptorSets(commands, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer.material->resources.pipelineLayout, 0, static_cast<uint32_t>(std::size(sets)), sets, 1, &objectUniformsOffset);
+
+						//Bind the vetex and index buffers for the mesh
+						MeshResources const& meshRes = *renderer.mesh->gpuResources;
+						VkBuffer const vertexBuffers[] = { meshRes.buffer };
+						VkDeviceSize const vertexOffsets[] = { meshRes.offset.vertex };
+						vkCmdBindVertexBuffers(commands, 0, 1, vertexBuffers, vertexOffsets);
+						vkCmdBindIndexBuffer(commands, meshRes.buffer, meshRes.offset.index, meshRes.indexType);
+
+						//Submit the command to draw using the vertex and index buffers
+						vkCmdDrawIndexed(commands, meshRes.size.indices, 1, 0, 0, 0);
+
+						++objectIndex;
+					}
+				}
+			}
+
+			//Submit the rendering commands for this frame
+			organizer->Submit(TArrayView<VkCommandBuffer const>{ context->mainCommandBuffer });
+
+			retryCount = 0;
+			return true;
+		}
+		else
+		{
 			if (++retryCount >= maxRetryCount) {
 				LOGF(Rendering, Error, "Too many subsequent frames (%i) have failed to render.", maxRetryCount);
 				return false;
 			}
 			return true;
 		}
-		if (result == EPreparationResult::Error) return false;
-
-		//Lambda to record rendering commands
-		auto const recorder = [&](const FrameResources& frame, size_t index) {
-			//Create a scope for all commands that belong to the surface render pass
-			const SurfaceRenderPass::ScopedRecord scope{ frame.commands, passes.surface, framebuffers->surface[index], Geometry::ScreenRect{ glm::vec2{0.0f}, swapchain->extent } };
-
-			//Set the viewport and scissor that we are currently rendering for.
-			VkViewport viewport{};
-			viewport.x = 0.0f;
-			viewport.y = 0.0f;
-			viewport.width = (float)swapchain->extent.x;
-			viewport.height = (float)swapchain->extent.y;
-			viewport.minDepth = 0.0f;
-			viewport.maxDepth = 1.0f;
-
-			VkRect2D scissor{};
-			scissor.offset = {0, 0};
-			scissor.extent = VkExtent2D{ swapchain->extent.x, swapchain->extent.y };
-
-			vkCmdSetViewport(frame.commands, 0, 1, &viewport);
-			vkCmdSetScissor(frame.commands, 0, 1, &scissor);
-
-			//Write global uniform values that can be accessed by shaders
-			GlobalUniforms global;
-			global.viewProjection = glm::identity<glm::mat4>();
-			global.viewProjectionInverse = glm::inverse(global.viewProjection);
-			global.time = 0;
-			frame.uniforms.global.ubo.WriteValue(global, 0);
-
-			uint32_t objectIndex = 0;
-			for (const auto id : renderables) {
-				auto const& renderer = renderables.get<MeshRenderer const>(id);
-
-				if (renderer.material && renderer.material->resources && renderer.mesh && renderer.mesh->gpuResources) {
-					uint32_t const objectUniformsOffset = static_cast<uint32_t>(sizeof(ObjectUniforms) * objectIndex);
-
-					//Write to the part of the object uniform buffer designated for this object
-					ObjectUniforms object;
-					object.modelViewProjection = glm::identity<glm::mat4>();
-					frame.uniforms.object.ubo.WriteValue(object, objectUniformsOffset);
-
-					//Bind the pipeline that will be used for rendering
-					vkCmdBindPipeline(frame.commands, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer.material->resources.pipeline);
-
-					//Bind the descriptor sets to use for this draw command
-					VkDescriptorSet sets[] = {
-						frame.uniforms.global.set,
-						//materialInstance->resources.set,
-						frame.uniforms.object.set,
-					};
-					vkCmdBindDescriptorSets(frame.commands, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer.material->resources.pipelineLayout, 0, static_cast<uint32_t>(std::size(sets)), sets, 1, &objectUniformsOffset);
-
-					//Bind the vetex and index buffers for the mesh
-					VulkanMeshResources const& meshRes = renderer.mesh->gpuResources;
-					VkBuffer const vertexBuffers[] = { meshRes.buffer };
-					VkDeviceSize const vertexOffsets[] = { meshRes.offset.vertex };
-					vkCmdBindVertexBuffers(frame.commands, 0, 1, vertexBuffers, vertexOffsets);
-					vkCmdBindIndexBuffer(frame.commands, meshRes.buffer, meshRes.offset.index, meshRes.indexType);
-
-					//Submit the command to draw using the vertex and index buffers
-					vkCmdDrawIndexed(frame.commands, meshRes.size.indices, 1, 0, 0, 0);
-
-					++objectIndex;
-				}
-			}
-		};
-
-		//Record rendering commands for this frame
-		if (!organizer.Record(recorder)) return false;
-
-		//Submit the rendering commands for this frame
-		if (!organizer.Submit(logical, *swapchain)) return false;
-
-		retryCount = 0;
-		return true;
-	}
-
-	void Surface::WaitForCompletion(VulkanLogicalDevice const& logical) {
-		organizer.WaitForCompletion(logical);
 	}
 }
