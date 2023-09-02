@@ -1,11 +1,11 @@
 #pragma once
 #include "Engine/StandardTypes.h"
 #include "Geometry/ScreenRect.h"
+#include "Rendering/Vulkan/Swapchain.h"
 #include "Rendering/Vulkan/VulkanFrameOrganizer.h"
 #include "Rendering/Vulkan/VulkanLogicalDevice.h"
 #include "Rendering/Vulkan/VulkanResources.h"
 #include "Rendering/Vulkan/VulkanResourcesHelpers.h"
-#include "Rendering/Vulkan/VulkanSwapchain.h"
 #include "ThirdParty/EnTT.h"
 
 namespace Rendering {
@@ -29,14 +29,14 @@ namespace Rendering {
 		virtual ~View() = default;
 
 		/** Prepare to render commands for this view for a single frame */
-		virtual EPreparationResult Prepare(entt::registry const& registry, FrameResources& frame) const = 0;
+		virtual void Prepare(entt::registry const& registry, FrameResources& frame) const = 0;
 		/** Record rendering commands for this view for a single frame */
 		virtual void Record(const entt::registry& registry, const FrameResources& frame, size_t index) const = 0;
 
 		/** Create the resources used in this view */
-		virtual bool CreateResources(VulkanLogicalDevice const& logical, VulkanSwapchain const& swapchain) = 0;
+		virtual bool CreateResources(VulkanLogicalDevice const& logical, Swapchain const& swapchain) = 0;
 		/** Destroy the resources for this view. Called when they are no longer going to be used, or before we need to create them again */
-		virtual void DestroyResources(VulkanLogicalDevice const& logical);
+		virtual void DestroyResources(VulkanLogicalDevice const& logical) = 0;
 
 		/** Reposition the part of the window to which this viewport should render */
 		virtual void Reposition(glm::ivec2 newExtent, glm::ivec2 newOffset) = 0;

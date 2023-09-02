@@ -1,13 +1,15 @@
 #pragma once
 #include "Engine/Logging.h"
-#include "Rendering/Uniforms.h"
+#include "Engine/StandardTypes.h"
+#include "Rendering/UniformTypes.h"
+#include "Rendering/Vulkan/Commands.h"
+#include "Rendering/Vulkan/Descriptors.h"
+#include "Rendering/Vulkan/Swapchain.h"
+#include "Rendering/Vulkan/Uniforms.h"
 #include "Rendering/Vulkan/Vulkan.h"
-#include "Rendering/Vulkan/VulkanCommandBuffers.h"
-#include "Rendering/Vulkan/VulkanDescriptors.h"
 #include "Rendering/Vulkan/VulkanLogicalDevice.h"
 #include "Rendering/Vulkan/VulkanPhysicalDevice.h"
 #include "Rendering/Vulkan/VulkanResources.h"
-#include "Rendering/Vulkan/VulkanSwapchain.h"
 #include "Rendering/Vulkan/VulkanUniformLayouts.h"
 
 namespace Rendering {
@@ -19,20 +21,10 @@ namespace Rendering {
 	};
 	inline size_t GetNumFrames(EBuffering buffering) { return static_cast<size_t>(buffering) + 1; };
 
-	/** The result of preparing to render a frame */
-	enum class EPreparationResult : uint8_t {
-		/** The next step can be taken for rendering */
-		Success,
-		/** There has been an error that prevents rendering, but we can retry rendering next frame */
-		Retry,
-		/** There has been a serious problem, and we should shut down */
-		Error,
-	};
-
 	/** Uniforms used for each frame */
 	struct FrameUniforms {
-		using GlobalUniformsType = Uniforms<GlobalUniforms, EUniformsIndexing::NonDynamic>;
-		using ObjectUniformsType = Uniforms<ObjectUniforms, EUniformsIndexing::Dynamic>;
+		using GlobalUniformsType = Uniforms<GlobalUniforms>;
+		using ObjectUniformsType = Uniforms<ObjectUniforms>;
 
 		DescriptorSets<2> sets;
 		GlobalUniformsType global;
@@ -45,7 +37,6 @@ namespace Rendering {
 
 	/** Synchronization objects used each frame to coordinate rendering operations */
 	struct FrameSynchronization {
-	public:
 		VkSemaphore imageAvailable = nullptr;
 		VkSemaphore renderFinished = nullptr;
 		VkFence fence = nullptr;
@@ -77,16 +68,20 @@ namespace Rendering {
 	};
 
 	struct RecordingContext {
-		size_t imageIndex;
-		size_t frameIndex;
+		/** The index of the buffering frame */
+		uint32_t frameIndex;
+		/** The index of the image in the swapchain */
+		uint32_t imageIndex;
+		/** Common uniforms used when recording */
 		FrameUniforms& uniforms;
-		VkCommandBuffer mainCommandBuffer;
-		TArrayView<VkCommandBuffer> threadCommandBuffers;
+		/** Command buffers used to record commands */
+		VkCommandBuffer primaryCommandBuffer;
+		TArrayView<VkCommandBuffer> secondaryCommandBuffers;
 	};
 
 	/** Keeps track of the resources used each frame, and how they should be used to render a number of viewports. */
 	struct VulkanFrameOrganizer {
-		VulkanFrameOrganizer(VulkanLogicalDevice const& logical, VulkanPhysicalDevice const& physical, VulkanSwapchain const& swapchain, VulkanUniformLayouts const& uniformLayouts, EBuffering buffering);
+		VulkanFrameOrganizer(VulkanLogicalDevice const& logical, VulkanPhysicalDevice const& physical, Swapchain const& swapchain, VulkanUniformLayouts const& uniformLayouts, EBuffering buffering);
 		VulkanFrameOrganizer(VulkanFrameOrganizer const&) = delete;
 		VulkanFrameOrganizer(VulkanFrameOrganizer&&) noexcept;
 
@@ -113,10 +108,11 @@ namespace Rendering {
 		DescriptorPool descriptorPool;
 
 		/** The frames that we will cycle through when rendering */
-		std::vector<FrameResources> resources;
+		std::vector<FrameResources> frames;
+		/** Copies of the per-frame resources that are being used for each swapchain image */
 		std::vector<VkFence> imageFences;
 
-		size_t currentResourceIndex = 0;
+		uint32_t currentFrameIndex = 0;
 		uint32_t currentImageIndex = -1;
 
 		/** Get the pool sizes that should be used with the type of buffering */

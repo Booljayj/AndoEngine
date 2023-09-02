@@ -3,7 +3,7 @@
 #include "Rendering/RenderingSystem.h"
 #include "Rendering/StaticMesh.h"
 #include "Rendering/Surface.h"
-#include "Rendering/Uniforms.h"
+#include "Rendering/UniformTypes.h"
 
 namespace Rendering {
 	Surface::Surface(RenderingSystem& inOwner, HAL::Window& inWindow)
@@ -12,9 +12,8 @@ namespace Rendering {
 	, retryCount(0)
 	, shouldRecreateSwapchain(false)
 	{
-		// Vulkan surface (via SDL)
 		if (SDL_Vulkan_CreateSurface(window, owner.framework.instance, &surface) != SDL_TRUE) {
-			LOG(Vulkan, Error, "Failed to create Vulkan window surface");
+			throw std::runtime_error{ "Failed to create Vulkan window surface" };
 		}
 
 		int32_t width = 1, height = 1;
@@ -24,6 +23,12 @@ namespace Rendering {
 	}
 
 	Surface::~Surface() {
+		organizer.reset();
+		framebuffers.reset();
+		swapchain.reset();
+		
+		vkDestroySurfaceKHR(owner.framework.instance, surface, nullptr);
+
 		window.destroyed.Remove(windowDestroyedHandle);
 		windowDestroyedHandle.reset();
 	}
@@ -45,17 +50,7 @@ namespace Rendering {
 		return physical.presentation.surfaceFormats[0];
 	}
 
-	bool Surface::CreateSwapchain(VulkanPhysicalDevice const& physical, VkSurfaceFormatKHR surfaceFormat, VulkanRenderPasses const& passes) {
-		imageSize = physical.GetSwapExtent(surface, windowSize);
-
-		swapchain.emplace(owner.logical.device, nullptr, *owner.selectedPhysical, *this);
-		framebuffers.emplace(owner.logical, *swapchain, passes);
-		organizer.emplace(owner.logical, *owner.selectedPhysical, *swapchain, owner.uniformLayouts, EBuffering::Double);
-
-		return true;
-	}
-
-	bool Surface::RecreateSwapchain(VulkanPhysicalDevice const& physical, VkSurfaceFormatKHR surfaceFormat, VulkanRenderPasses const& passes) {
+	bool Surface::RecreateSwapchain(VulkanPhysicalDevice const& physical, VkSurfaceFormatKHR surfaceFormat, RenderPasses const& passes) {
 		imageSize = physical.GetSwapExtent(surface, windowSize);
 
 		organizer.reset();
@@ -63,7 +58,7 @@ namespace Rendering {
 
 		if (swapchain.has_value()) {
 			//The previous swapchain needs to exist long enough to create the new one, so we create a temporary new value before assigning it.
-			auto recreated = std::make_optional<VulkanSwapchain>(owner.logical.device, &swapchain.value(), *owner.selectedPhysical, *this);
+			auto recreated = std::make_optional<Swapchain>(owner.logical.device, &swapchain.value(), *owner.selectedPhysical, *this);
 			swapchain.swap(recreated);
 		} else {
 			swapchain.emplace(owner.logical.device, nullptr, *owner.selectedPhysical, *this);
@@ -75,14 +70,7 @@ namespace Rendering {
 		return true;
 	}
 
-	void Surface::Destroy(VulkanFramework const& framework, VulkanLogicalDevice const& logical) {
-		organizer.reset();
-		framebuffers.reset();
-		swapchain.reset();
-		if (surface) vkDestroySurfaceKHR(framework.instance, surface, nullptr);
-	}
-
-	bool Surface::Render(VulkanLogicalDevice const& logical, VulkanRenderPasses const& passes, entt::registry& registry) {
+	bool Surface::Render(RenderPasses const& passes, entt::registry& registry) {
 		//@todo This would ideally be done with some acceleration structure that contains a mapping between the pipelines and all of
 		//      the geometry that should be drawn with that pipeline, to avoid binding the same pipeline more than once and to strip
 		//      out culled geometry.
@@ -92,10 +80,10 @@ namespace Rendering {
 		auto const context = organizer->CreateRecordingContext(renderables.size(), numThreads);
 		if (context) {
 			FrameUniforms& uniforms = context->uniforms;
-			VkCommandBuffer const commands = context->mainCommandBuffer;
+			VkCommandBuffer const commands = context->primaryCommandBuffer;
 
 			Framebuffer const& surfaceFramebuffer = framebuffers->surface[context->imageIndex];
-			Geometry::ScreenRect const rect = { glm::vec2{ 0.0f, 0.0f }, swapchain->extent };
+			Geometry::ScreenRect const rect = { glm::vec2{ 0.0f, 0.0f }, swapchain->GetExtent() };
 
 			{
 				//Scope within which we will write commands to the buffer
@@ -107,15 +95,14 @@ namespace Rendering {
 				VkViewport viewport{};
 				viewport.x = 0.0f;
 				viewport.y = 0.0f;
-				viewport.width = (float)swapchain->extent.x;
-				viewport.height = (float)swapchain->extent.y;
+				swapchain->GetExtent(viewport.width, viewport.height);
 				viewport.minDepth = 0.0f;
 				viewport.maxDepth = 1.0f;
 
 				VkRect2D scissor{};
 				scissor.offset = { 0, 0 };
-				scissor.extent = VkExtent2D{ swapchain->extent.x, swapchain->extent.y };
-
+				swapchain->GetExtent(scissor.extent.width, scissor.extent.height);
+				
 				vkCmdSetViewport(commands, 0, 1, &viewport);
 				vkCmdSetScissor(commands, 0, 1, &scissor);
 
@@ -165,7 +152,7 @@ namespace Rendering {
 			}
 
 			//Submit the rendering commands for this frame
-			organizer->Submit(TArrayView<VkCommandBuffer const>{ context->mainCommandBuffer });
+			organizer->Submit(TArrayView<VkCommandBuffer const>{ context->primaryCommandBuffer });
 
 			retryCount = 0;
 			return true;

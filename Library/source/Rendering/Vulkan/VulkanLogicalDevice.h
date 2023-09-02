@@ -21,7 +21,7 @@ namespace Rendering {
 		VmaAllocator allocator = nullptr;
 
 		VulkanLogicalDevice() = default;
-		VulkanLogicalDevice(VulkanLogicalDevice&& other);
+		VulkanLogicalDevice(VulkanLogicalDevice&&);
 
 		VulkanLogicalDevice& operator=(VulkanLogicalDevice&& other);
 		inline operator VkDevice() const { return device; }

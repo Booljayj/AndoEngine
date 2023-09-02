@@ -2,15 +2,13 @@
 #include "Engine/Logging.h"
 #include "Engine/StandardTypes.h"
 #include "Rendering/Surface.h"
+#include "Rendering/Vulkan/RenderPasses.h"
 #include "Rendering/Vulkan/Vulkan.h"
-#include "Rendering/Vulkan/VulkanFrameOrganizer.h"
 #include "Rendering/Vulkan/VulkanFramework.h"
 #include "Rendering/Vulkan/VulkanLogicalDevice.h"
 #include "Rendering/Vulkan/VulkanPhysicalDevice.h"
-#include "Rendering/Vulkan/VulkanRenderPasses.h"
 #include "Rendering/Vulkan/VulkanResources.h"
 #include "Rendering/Vulkan/VulkanResourcesHelpers.h"
-#include "Rendering/Vulkan/VulkanSwapchain.h"
 #include "Rendering/Vulkan/VulkanUniformLayouts.h"
 #include "Resources/Database.h"
 #include "ThirdParty/EnTT.h"
@@ -28,8 +26,6 @@ DECLARE_LOG_CATEGORY(Rendering);
 namespace Rendering {
 	struct RenderingSystem {
 	public:
-		using SurfaceContainer = std::vector<std::unique_ptr<Surface>>;
-
 		/** The maximum number of consecutive times we can fail to render a frame */
 		static constexpr uint8_t maxRetryCount = 5;
 
@@ -53,7 +49,7 @@ namespace Rendering {
 		VkSurfaceFormatKHR primarySurfaceFormat = {};
 
 		/** The render passes used for scene rendering */
-		std::optional<VulkanRenderPasses> passes;
+		std::optional<RenderPasses> passes;
 
 		/** Uniform layouts for standard uniforms */
 		VulkanUniformLayouts uniformLayouts;
@@ -128,7 +124,7 @@ namespace Rendering {
 
 	private:
 		/** Surfaces used for rendering */
-		SurfaceContainer surfaces;
+		std::vector<std::unique_ptr<Surface>> surfaces;
 
 		/** Returns true if the physical device can actually be used by this rendering system */
 		bool IsUsablePhysicalDevice(const Rendering::VulkanPhysicalDevice& physicalDevice, TArrayView<char const*> const& extensionNames);

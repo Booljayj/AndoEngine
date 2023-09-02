@@ -1,4 +1,4 @@
-#include "Rendering/Uniforms.h"
+#include "Rendering/UniformTypes.h"
 
 namespace Rendering {
 	VkDescriptorSetLayoutBinding GlobalUniforms::GetBinding() {

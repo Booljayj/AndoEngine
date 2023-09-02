@@ -1,36 +1,39 @@
-#include "Rendering/Vulkan/VulkanRenderPasses.h"
+#include "Rendering/Vulkan/RenderPasses.h"
 #include "Engine/Logging.h"
 #include "Engine/Utility.h"
 
 namespace Rendering {
-	Framebuffer::Framebuffer(Framebuffer&& other) noexcept {
-		std::swap(device, other.device);
-		std::swap(view, other.view);
-		std::swap(framebuffer, other.framebuffer);
+	Framebuffer::Framebuffer(VkDevice inDevice, VkImageView inView, VkFramebuffer inFramebuffer)
+		: device(inDevice), view(inView), framebuffer(inFramebuffer)
+	{}
+
+	Framebuffer::Framebuffer(Framebuffer&& other) noexcept
+		: device(other.device), view(other.view), framebuffer(other.framebuffer)
+	{
+		other.device = nullptr;
 	}
 
 	Framebuffer::~Framebuffer() {
 		if (device) {
 			vkDestroyFramebuffer(device, framebuffer, nullptr);
 			vkDestroyImageView(device, view, nullptr);
-			device = nullptr;
 		}
 	}
 
-	SurfaceRenderPass::FramebufferResources::FramebufferResources(VulkanLogicalDevice const& logical, VulkanSwapchain const& swapchain, SurfaceRenderPass const& pass)
+	SurfaceRenderPass::FramebufferResources::FramebufferResources(VulkanLogicalDevice const& logical, Swapchain const& swapchain, SurfaceRenderPass const& pass)
 		: device(logical)
 	{
 		//@todo Create shared image views (i.e. the depth pass image view)
 		
-		framebuffers.reserve(swapchain.images.size());
-		for (VkImage swapchainImage : swapchain.images)
+		framebuffers.reserve(swapchain.GetNumImages());
+		for (VkImage swapchainImage : swapchain.GetImages())
 		{
 			VkImageViewCreateInfo viewCI{};
 			viewCI.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 			viewCI.image = swapchainImage;
 			//Image data settings
 			viewCI.viewType = VK_IMAGE_VIEW_TYPE_2D;
-			viewCI.format = swapchain.surfaceFormat.format;
+			viewCI.format = swapchain.GetSurfaceFormat().format;
 			//Component swizzling settings
 			viewCI.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
 			viewCI.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -58,8 +61,7 @@ namespace Rendering {
 			framebufferCI.renderPass = pass;
 			framebufferCI.attachmentCount = attachmentImageViews.size();
 			framebufferCI.pAttachments = attachmentImageViews.data();
-			framebufferCI.width = swapchain.extent.x;
-			framebufferCI.height = swapchain.extent.y;
+			swapchain.GetExtent(framebufferCI.width, framebufferCI.height);
 			framebufferCI.layers = 1;
 
 			VkFramebuffer framebuffer = nullptr;
@@ -73,15 +75,14 @@ namespace Rendering {
 		}
 	}
 
-	SurfaceRenderPass::FramebufferResources::FramebufferResources(FramebufferResources&& other) noexcept {
-		std::swap(device, other.device);
-		std::swap(sharedImageViews, other.sharedImageViews);
-		std::swap(framebuffers, other.framebuffers);
+	SurfaceRenderPass::FramebufferResources::FramebufferResources(FramebufferResources&& other) noexcept
+		: device(other.device), sharedImageViews(other.sharedImageViews), framebuffers(std::move(other.framebuffers))
+	{
+		other.device = nullptr;
 	}
 
 	SurfaceRenderPass::FramebufferResources::~FramebufferResources() {
 		//@todo Destroy the shared image views
-		device = nullptr;
 	}
 
 	SurfaceRenderPass::ScopedRecord::ScopedRecord(VkCommandBuffer commands, SurfaceRenderPass const& surface, Framebuffer const& framebuffer, Geometry::ScreenRect const& rect)
@@ -182,23 +183,21 @@ namespace Rendering {
 		}
 	}
 
-	SurfaceRenderPass::SurfaceRenderPass(SurfaceRenderPass&& other) noexcept {
-		std::swap(device, other.device);
-		std::swap(pass, other.pass);
+	SurfaceRenderPass::SurfaceRenderPass(SurfaceRenderPass&& other) noexcept
+		: device(other.device), pass(other.pass)
+	{
+		other.device = nullptr;
 	}
 
 	SurfaceRenderPass::~SurfaceRenderPass() {
-		if (device) {
-			vkDestroyRenderPass(device, pass, nullptr);
-			device = nullptr;
-		}
+		if (device) vkDestroyRenderPass(device, pass, nullptr);
 	}
 
-	VulkanRenderPasses::VulkanRenderPasses(VulkanLogicalDevice const& logical, VkFormat format)
+	RenderPasses::RenderPasses(VulkanLogicalDevice const& logical, VkFormat format)
 		: surface(logical, format)
 	{}
 
-	VulkanFramebuffers::VulkanFramebuffers(VulkanLogicalDevice const& logical, VulkanSwapchain const& swapchain, VulkanRenderPasses const& passes)
+	VulkanFramebuffers::VulkanFramebuffers(VulkanLogicalDevice const& logical, Swapchain const& swapchain, RenderPasses const& passes)
 		: surface(logical, swapchain, passes.surface)
 	{}
 }

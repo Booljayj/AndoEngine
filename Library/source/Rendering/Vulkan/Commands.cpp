@@ -1,4 +1,4 @@
-#include "Rendering/Vulkan/VulkanCommandBuffers.h"
+#include "Rendering/Vulkan/Commands.h"
 
 namespace Rendering {
 	CommandPool::CommandPool(VkDevice inDevice, uint32_t queueFamilyIndex)
@@ -15,16 +15,14 @@ namespace Rendering {
 		}
 	}
 
-	CommandPool::CommandPool(CommandPool&& other) noexcept {
-		std::swap(device, other.device);
-		std::swap(pool, other.pool);
+	CommandPool::CommandPool(CommandPool&& other) noexcept
+		: device(other.device), pool(other.pool)
+	{
+		other.device = nullptr;
 	}
 
 	CommandPool::~CommandPool() {
-		if (device) {
-			vkDestroyCommandPool(device, pool, nullptr);
-			device = nullptr;
-		}
+		if (device) vkDestroyCommandPool(device, pool, nullptr);
 	}
 
 	void CommandPool::Reset() {

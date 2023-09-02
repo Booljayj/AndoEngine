@@ -1,5 +1,5 @@
 #include "Engine/Logging.h"
-#include "Rendering/Uniforms.h"
+#include "Rendering/UniformTypes.h"
 #include "Rendering/Vulkan/VulkanUniformLayouts.h"
 
 namespace Rendering {

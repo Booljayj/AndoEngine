@@ -1,4 +1,4 @@
-#include "Rendering/Vulkan/VulkanDescriptors.h"
+#include "Rendering/Vulkan/Descriptors.h"
 
 namespace Rendering {
 	DescriptorPool::DescriptorPool(VkDevice inDevice, TArrayView<VkDescriptorPoolSize> sizes, size_t maxNumSets)
@@ -15,9 +15,10 @@ namespace Rendering {
 		}
 	}
 
-	DescriptorPool::DescriptorPool(DescriptorPool&& other) noexcept {
-		std::swap(device, other.device);
-		std::swap(pool, other.pool);
+	DescriptorPool::DescriptorPool(DescriptorPool&& other) noexcept
+		: device(other.device), pool(other.pool)
+	{
+		other.device = nullptr;
 	}
 
 	DescriptorPool::~DescriptorPool() {

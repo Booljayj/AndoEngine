@@ -1,13 +1,9 @@
-#include "Rendering/Vulkan/VulkanSwapchain.h"
-#include "Engine/Logging.h"
-#include "Engine/Temporary.h"
+#include "Rendering/Vulkan/Swapchain.h"
 #include "Rendering/Surface.h"
-//#include "Rendering/Vulkan/VulkanFramework.h"
-#include "Rendering/Vulkan/VulkanLogicalDevice.h"
 #include "Rendering/Vulkan/VulkanPhysicalDevice.h"
 
 namespace Rendering {
-	namespace VulkanSwapchainUtilities {
+	namespace SwapchainUtilities {
 		uint32_t GetImageCountMinimum(VkSurfaceCapabilitiesKHR const& capabilities) {
 			uint32_t const maxImageCountActual = capabilities.maxImageCount > 0 ? capabilities.maxImageCount : std::numeric_limits<uint32_t>::max();
 			return std::min<uint32_t>(capabilities.minImageCount + 1, maxImageCountActual);
@@ -36,10 +32,10 @@ namespace Rendering {
 		}
 	}
 
-	VulkanSwapchain::VulkanSwapchain(VkDevice inDevice, VulkanSwapchain* previous, VulkanPhysicalDevice const& physical, Surface const& surface)
+	Swapchain::Swapchain(VkDevice inDevice, Swapchain* previous, VulkanPhysicalDevice const& physical, Surface const& surface)
 		: device(inDevice)
 	{
-		using namespace VulkanSwapchainUtilities;
+		using namespace SwapchainUtilities;
 
 		surfaceFormat = ChooseSwapSurfaceFormat(physical.presentation.surfaceFormats);
 		presentMode = ChooseSwapPresentMode(physical.presentation.presentModes);
@@ -78,16 +74,13 @@ namespace Rendering {
 		swapchainCI.oldSwapchain = previous ? *previous : nullptr;
 
 		VkSwapchainKHR tempSwapchain = nullptr;
-		if (vkCreateSwapchainKHR(device, &swapchainCI, nullptr, &tempSwapchain) != VK_SUCCESS || !tempSwapchain)
-		{
-			LOG(Vulkan, Error, "Unable to create swapchain");
+		if (vkCreateSwapchainKHR(device, &swapchainCI, nullptr, &tempSwapchain) != VK_SUCCESS || !tempSwapchain) {
 			throw std::runtime_error{ "Unable to create swapchain" };
 		}
 
 		uint32_t numImages = 0;
 		vkGetSwapchainImagesKHR(device, tempSwapchain, &numImages, nullptr);
 		if (numImages == 0) {
-			LOG(Vulkan, Error, "Swapchain has no images to retrieve");
 			vkDestroySwapchainKHR(device, tempSwapchain, nullptr);
 			throw std::runtime_error{ "Swapchain has no images to retrieve" };
 		}
@@ -97,22 +90,17 @@ namespace Rendering {
 		vkGetSwapchainImagesKHR(device, swapchain, &numImages, images.data());
 	}
 
-	VulkanSwapchain::VulkanSwapchain(VulkanSwapchain&& other) noexcept {
-		std::swap(device, other.device);
-		std::swap(swapchain, other.swapchain);
-		std::swap(images, other.images);
-		
-		surfaceFormat = other.surfaceFormat;
-		presentMode = other.presentMode;
-		extent = other.extent;
-		preTransform = other.preTransform;
+	Swapchain::Swapchain(Swapchain&& other) noexcept
+		: device(other.device), swapchain(other.swapchain), images(std::move(other.images))
+		, surfaceFormat(other.surfaceFormat), presentMode(other.presentMode), extent(other.extent), preTransform(other.preTransform)
+	{
+		other.device = nullptr;
 	}
 
-	VulkanSwapchain::~VulkanSwapchain() {
+	Swapchain::~Swapchain() {
 		if (device) {
 			vkDeviceWaitIdle(device);
 			vkDestroySwapchainKHR(device, swapchain, nullptr);
-			device = nullptr;
 		}
 	}
 }

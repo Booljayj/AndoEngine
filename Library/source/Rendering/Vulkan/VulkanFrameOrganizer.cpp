@@ -1,17 +1,15 @@
 #include "Rendering/Vulkan/VulkanFrameOrganizer.h"
-#include "Rendering/Uniforms.h"
+#include "Rendering/UniformTypes.h"
 
 namespace Rendering {
 	FrameUniforms::FrameUniforms(VkDevice inDevice, VulkanUniformLayouts const& uniformLayouts, VkDescriptorPool pool, VmaAllocator allocator)
 		: sets(inDevice, pool, { uniformLayouts.global, uniformLayouts.object })
-		, global(inDevice, sets[0], 0, 1, allocator)
-		, object(inDevice, sets[1], 0, 512, allocator)
+		, global(inDevice, sets[0], 1, allocator)
+		, object(inDevice, sets[1], 512, allocator)
 	{}
 
 	FrameUniforms::FrameUniforms(FrameUniforms&& other) noexcept
-		: sets(std::move(other.sets))
-		, global(std::move(other.global))
-		, object(std::move(other.object))
+		: sets(std::move(other.sets)), global(std::move(other.global)), object(std::move(other.object))
 	{}
 
 	FrameSynchronization::FrameSynchronization(VkDevice inDevice)
@@ -43,11 +41,10 @@ namespace Rendering {
 		renderFinished = tempRenderFinished.Release();
 	}
 
-	FrameSynchronization::FrameSynchronization(FrameSynchronization&& other) noexcept {
-		std::swap(imageAvailable, other.imageAvailable);
-		std::swap(renderFinished, other.renderFinished);
-		std::swap(fence, other.fence);
-		std::swap(device, other.device);
+	FrameSynchronization::FrameSynchronization(FrameSynchronization&& other) noexcept
+		: imageAvailable(other.imageAvailable), renderFinished(other.renderFinished), fence(other.fence), device(other.device)
+	{
+		other.device = nullptr;
 	}
 
 	FrameSynchronization::~FrameSynchronization() {
@@ -76,7 +73,7 @@ namespace Rendering {
 		, sync(std::move(other.sync))
 	{}
 
-	VulkanFrameOrganizer::VulkanFrameOrganizer(VulkanLogicalDevice const& logical, VulkanPhysicalDevice const& physical, VulkanSwapchain const& swapchain, VulkanUniformLayouts const& uniformLayouts, EBuffering buffering)
+	VulkanFrameOrganizer::VulkanFrameOrganizer(VulkanLogicalDevice const& logical, VulkanPhysicalDevice const& physical, Swapchain const& swapchain, VulkanUniformLayouts const& uniformLayouts, EBuffering buffering)
 		: device(logical)
 		, swapchain(swapchain)
 		, queue({ logical.queues.graphics, logical.queues.present })
@@ -85,34 +82,28 @@ namespace Rendering {
 	{
 		size_t const numFrames = GetNumFrames(buffering);
 		for (size_t index = 0; index < numFrames; ++index) {
-			resources.emplace_back(device, graphicsQueueFamilyIndex, uniformLayouts, descriptorPool, logical.allocator);
+			frames.emplace_back(device, graphicsQueueFamilyIndex, uniformLayouts, descriptorPool, logical.allocator);
 		}
-		imageFences.resize(swapchain.images.size(), nullptr);
+		imageFences.resize(swapchain.GetNumImages(), nullptr);
 	}
 
 	VulkanFrameOrganizer::VulkanFrameOrganizer(VulkanFrameOrganizer&& other) noexcept
-		: descriptorPool(std::move(other.descriptorPool))
-		, resources(std::move(other.resources))
+		: device(other.device), swapchain(other.swapchain), queue({ other.queue.graphics, other.queue.present }), graphicsQueueFamilyIndex(other.graphicsQueueFamilyIndex)
+		, descriptorPool(std::move(other.descriptorPool))
+		, frames(std::move(other.frames)), imageFences(std::move(other.imageFences))
+		, currentFrameIndex(other.currentFrameIndex), currentImageIndex(other.currentImageIndex)
 	{
-		std::swap(device, other.device);
-		std::swap(swapchain, other.swapchain);
-		std::swap(queue.graphics, other.queue.graphics);
-		std::swap(queue.present, other.queue.present);
-		std::swap(graphicsQueueFamilyIndex, other.graphicsQueueFamilyIndex);
-
-		std::swap(imageFences, other.imageFences);
-
-		std::swap(currentResourceIndex, other.currentResourceIndex);
-		std::swap(currentImageIndex, other.currentImageIndex);
+		other.device = nullptr;
 	}
 
 	std::optional<RecordingContext> VulkanFrameOrganizer::CreateRecordingContext(size_t numObjects, size_t numThreads) {
-		constexpr uint64_t waitTime = 5'000'000'000;
+		//The timeout duration in nanoseconds
+		constexpr uint64_t timeout = 5'000'000'000;
 
-		FrameResources& frame = resources[currentResourceIndex];
+		FrameResources& frame = frames[currentFrameIndex];
 
 		//Wait for the frame fence to finish, indicating this frame is no longer in use
-		if (vkWaitForFences(device, 1, &frame.sync.fence, VK_TRUE, waitTime) != VK_SUCCESS) {
+		if (vkWaitForFences(device, 1, &frame.sync.fence, VK_TRUE, timeout) != VK_SUCCESS) {
 			LOG(Vulkan, Warning, "Timed out waiting for fence");
 			return std::optional<RecordingContext>{};
 		}
@@ -123,27 +114,6 @@ namespace Rendering {
 			threadCommandPool.Reset();
 		}
 
-		//Acquire the swapchain image that can be used for this frame
-		currentImageIndex = 0;
-		if (vkAcquireNextImageKHR(device, swapchain, waitTime, frame.sync.imageAvailable, VK_NULL_HANDLE, &currentImageIndex) != VK_SUCCESS) {
-			LOG(Vulkan, Warning, "Timed out waiting for next available swapchain image");
-			return std::optional<RecordingContext>{};
-		}
-
-		//Expand the fences array to make sure it contains the current index.
-		if (currentImageIndex >= imageFences.size()) imageFences.resize(currentImageIndex + 1);
-
-		//If another frame is still using this image, wait for it to complete
-		if (imageFences[currentImageIndex] != VK_NULL_HANDLE) {
-			if (vkWaitForFences(device, 1, &imageFences[currentImageIndex], VK_TRUE, waitTime) != VK_SUCCESS) {
-				LOGF(Vulkan, Warning, "Timed out waiting for image fence %i", currentImageIndex);
-				return std::optional<RecordingContext>{};
-			}
-		}
-
-		//Resize the object uniforms buffer so we can store all the per-object data that will be used for rendering
-		frame.uniforms.object.Reserve(numObjects);
-
 		//Grow the number of command pools to match the number of threads
 		for (size_t threadIndex = frame.threadCommandPools.size(); threadIndex < numThreads; ++threadIndex) {
 			CommandPool& newPool = frame.threadCommandPools.emplace_back(device, graphicsQueueFamilyIndex);
@@ -152,17 +122,40 @@ namespace Rendering {
 			newBuffer = newPool.CreateBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY);
 		}
 
-		return RecordingContext{ currentImageIndex, currentResourceIndex, frame.uniforms, frame.mainCommandBuffer, frame.threadCommandBuffers };
+		//Resize the object uniforms buffer so we can store all the per-object data that will be used for rendering
+		frame.uniforms.object.Reserve(numObjects);
+
+		//Acquire the swapchain image that can be used for this frame
+		currentImageIndex = 0;
+		if (vkAcquireNextImageKHR(device, swapchain, timeout, frame.sync.imageAvailable, VK_NULL_HANDLE, &currentImageIndex) != VK_SUCCESS) {
+			LOG(Vulkan, Warning, "Timed out waiting for next available swapchain image");
+			return std::optional<RecordingContext>{};
+		}
+
+		if (currentImageIndex >= imageFences.size()) {
+			throw std::runtime_error{ t_printf("AcquireNextImage index is out of range: %i >= %i", currentImageIndex, imageFences.size()).data() };
+		}
+
+		//If another frame is still using this image, wait for it to complete
+		if (imageFences[currentImageIndex] != VK_NULL_HANDLE) {
+			if (vkWaitForFences(device, 1, &imageFences[currentImageIndex], VK_TRUE, timeout) != VK_SUCCESS) {
+				LOGF(Vulkan, Warning, "Timed out waiting for image fence %i", currentImageIndex);
+				return std::optional<RecordingContext>{};
+			}
+		}
+		//This frame will now be assocaited with a new image, so stop tracking this frame's fence with any other image
+		std::replace(imageFences.begin(), imageFences.end(), frame.sync.fence, VkFence{ VK_NULL_HANDLE });
+
+		return RecordingContext{ currentFrameIndex, currentImageIndex, frame.uniforms, frame.mainCommandBuffer, frame.threadCommandBuffers };
 	}
 
 	void VulkanFrameOrganizer::Submit(TArrayView<VkCommandBuffer const> commands) {
-		FrameResources const& frame = resources[currentResourceIndex];
+		FrameResources const& frame = frames[currentFrameIndex];
 
 		frame.uniforms.global.Flush();
 		frame.uniforms.object.Flush();
 		
 		//Assign this frame's fence as the one using the swap image so other frames that try to use this image know to wait
-		std::replace(imageFences.begin(), imageFences.end(), frame.sync.fence, VkFence{VK_NULL_HANDLE});
 		imageFences[currentImageIndex] = frame.sync.fence;
 
 		//Reset the fence for this frame, so we can start another rendering process that it will track
@@ -210,8 +203,8 @@ namespace Rendering {
 			throw std::runtime_error{ "Failed to present image" };
 		}
 
-		//We've successfully finished rendering this resource, so move to the next resource
-		currentResourceIndex = (currentResourceIndex + 1) % resources.size();
+		//We've successfully finished rendering this frame, so move to the next frame
+		currentFrameIndex = (currentFrameIndex + 1) % frames.size();
 	}
 
 	VulkanFrameOrganizer::PoolSizesType VulkanFrameOrganizer::GetPoolSizes(EBuffering buffering) {

@@ -6,8 +6,8 @@
 #include "Rendering/MeshRenderer.h"
 #include "Rendering/Shader.h"
 #include "Rendering/StaticMesh.h"
-#include "Rendering/Vulkan/VulkanRenderPasses.h"
-#include "Rendering/Uniforms.h"
+#include "Rendering/Vulkan/Buffers.h"
+#include "Rendering/Vulkan/RenderPasses.h"
 
 DEFINE_LOG_CATEGORY(Rendering, Info);
 
@@ -69,7 +69,7 @@ namespace Rendering {
 		}
 
 		//Create the swapchain on the primary surface
-		primarySurface.CreateSwapchain(*selectedPhysical, primarySurfaceFormat, *passes);
+		primarySurface.RecreateSwapchain(*selectedPhysical, primarySurfaceFormat, *passes);
 
 		//Listen for when rendering-relevant resource types are created or destroyed
 		materials.Created.Add(this, &RenderingSystem::MaterialCreated);
@@ -119,7 +119,7 @@ namespace Rendering {
 
 		bool success = true;
 		for (auto const& surface : surfaces) {
-			success &= surface->Render(logical, *passes, registry);
+			success &= surface->Render(*passes, registry);
 		}
 
 		return success;
@@ -174,12 +174,10 @@ namespace Rendering {
 		//Check if we already have a surface for this window, and return it if we do
 		if (Surface* existing = FindSurface(window.id)) return existing;
 
-		//Create the new surface and verify that it is functional
-		std::unique_ptr<Surface> surface = std::make_unique<Surface>(*this, window);
-		if (!surface->IsValid()) return nullptr;
+		//Create the surface in the collection of surfaces, and return a raw pointer to it
+		std::unique_ptr<Surface>& surface = surfaces.emplace_back(std::make_unique<Surface>(*this, window));
 
-		//Add the surface to the collection of surfaces, and return a raw pointer to it
-		return surfaces.emplace_back(std::move(surface)).get();
+		return surface.get();
 	}
 
 	Surface* RenderingSystem::FindSurface(uint32_t id) const {
@@ -191,7 +189,6 @@ namespace Rendering {
 	void RenderingSystem::DestroySurface(uint32_t id) {
 		const auto iter = std::find_if(surfaces.begin(), surfaces.end(), [=](auto const& surface) { return surface->GetID() == id; });
 		if (iter != surfaces.end() && iter != surfaces.begin()) {
-			(*iter)->Destroy(framework, logical);
 			surfaces.erase(iter);
 		} else {
 			LOGF(Rendering, Warning, "Unable to destroy surface with id %i", id);
@@ -447,7 +444,7 @@ namespace Rendering {
 		size_t const indexOffset = vertexBytes;
 
 		//Create the staging buffer used to upload data to the GPU-only buffer
-		MappedBuffer staging{ logical.allocator, totalBytes, BufferUsageBits::TransferSrc, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_ONLY };
+		MappedBuffer staging{ logical.allocator, totalBytes, BufferUsage::TransferSrc, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_ONLY };
 
 		//Fill the staging buffer with the source data
 		const auto VertexWriteVisitor = [&](auto const& v) { staging.Write(v.data(), v.size() * sizeof(typename std::remove_reference_t<decltype(v)>::value_type), vertexOffset); };

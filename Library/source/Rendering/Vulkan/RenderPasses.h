@@ -2,9 +2,9 @@
 #include "Engine/ArrayView.h"
 #include "Engine/StandardTypes.h"
 #include "Geometry/ScreenRect.h"
+#include "Rendering/Vulkan/Swapchain.h"
 #include "Rendering/Vulkan/Vulkan.h"
 #include "Rendering/Vulkan/VulkanLogicalDevice.h"
-#include "Rendering/Vulkan/VulkanSwapchain.h"
 
 /**
  * At a high level, each render pass is defined using a type. Static members of that type provide information about the render pass,
@@ -17,9 +17,7 @@ namespace Rendering {
 	public:
 		inline operator VkFramebuffer() const { return framebuffer; }
 
-		Framebuffer(VkDevice inDevice, VkImageView inView, VkFramebuffer inFramebuffer)
-			: device(inDevice), view(inView), framebuffer(inFramebuffer)
-		{}
+		Framebuffer(VkDevice inDevice, VkImageView inView, VkFramebuffer inFramebuffer);
 		Framebuffer(Framebuffer const&) = delete;
 		Framebuffer(Framebuffer&& other) noexcept;
 		~Framebuffer();
@@ -65,7 +63,7 @@ namespace Rendering {
 		public:
 			const Framebuffer& operator[](size_t index) const { return framebuffers[index]; }
 
-			FramebufferResources(VulkanLogicalDevice const& logical, VulkanSwapchain const& swapchain, SurfaceRenderPass const& pass);
+			FramebufferResources(VulkanLogicalDevice const& logical, Swapchain const& swapchain, SurfaceRenderPass const& pass);
 			FramebufferResources(FramebufferResources const&) = delete;
 			FramebufferResources(FramebufferResources&& other) noexcept;
 			~FramebufferResources();
@@ -122,15 +120,13 @@ namespace Rendering {
 	// };
 
 	/** Render passes */
-	struct VulkanRenderPasses {
+	struct RenderPasses {
 		SurfaceRenderPass surface;
 		//PostProcessRenderPass postProcess;
 
-		VulkanRenderPasses(VulkanLogicalDevice const& logical, VkFormat format);
-		VulkanRenderPasses(const VulkanRenderPasses&) = delete;
-		VulkanRenderPasses(VulkanRenderPasses&&) = default;
-
-		inline VulkanRenderPasses& operator=(VulkanRenderPasses&&) = default;
+		RenderPasses(VulkanLogicalDevice const& logical, VkFormat format);
+		RenderPasses(RenderPasses const&) = delete;
+		RenderPasses(RenderPasses&&) = default;
 	};
 
 	/** Framebuffers which can be used with different render passes */
@@ -138,7 +134,7 @@ namespace Rendering {
 		SurfaceRenderPass::FramebufferResources surface;
 		//PostProcessRenderPass::Framebuffers postProcess;
 
-		VulkanFramebuffers(VulkanLogicalDevice const& logical, VulkanSwapchain const& swapchain, VulkanRenderPasses const& passes);
+		VulkanFramebuffers(VulkanLogicalDevice const& logical, Swapchain const& swapchain, RenderPasses const& passes);
 		VulkanFramebuffers(const VulkanFramebuffers&) = delete;
 		VulkanFramebuffers(VulkanFramebuffers&&) = default;
 
