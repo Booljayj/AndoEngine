@@ -6,20 +6,16 @@
 #include "Rendering/UniformTypes.h"
 
 namespace Rendering {
-	Surface::Surface(RenderingSystem& inOwner, HAL::Window& inWindow)
-	: window(inWindow)
-	, owner(inOwner)
-	, retryCount(0)
-	, shouldRecreateSwapchain(false)
+	Surface::Surface(VkInstance instance, HAL::Window& inWindow)
+	: instance(instance), window(inWindow), retryCount(0), shouldRecreateSwapchain(false)
 	{
-		if (SDL_Vulkan_CreateSurface(window, owner.framework.instance, &surface) != SDL_TRUE) {
+		if (SDL_Vulkan_CreateSurface(window, instance, &surface) != SDL_TRUE || !surface) {
 			throw std::runtime_error{ "Failed to create Vulkan window surface" };
 		}
 
 		int32_t width = 1, height = 1;
 		SDL_Vulkan_GetDrawableSize(window, &width, &height);
 		windowSize = glm::u32vec2{ static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
-		imageSize = windowSize;
 	}
 
 	Surface::~Surface() {
@@ -27,45 +23,60 @@ namespace Rendering {
 		framebuffers.reset();
 		swapchain.reset();
 		
-		vkDestroySurfaceKHR(owner.framework.instance, surface, nullptr);
+		vkDestroySurfaceKHR(instance, surface, nullptr);
 
 		window.destroyed.Remove(windowDestroyedHandle);
-		windowDestroyedHandle.reset();
 	}
 
-	VulkanPhysicalDevice Surface::GetPhysicalDevice(VkPhysicalDevice device) {
-		return VulkanPhysicalDevice::Get(device, surface);
-	}
+	void Surface::InitializeRendering(Device const& device, PhysicalDeviceDescription const& physical, RenderPasses const& passes, UniformLayouts const& layouts) {
+		if (queues || swapchain) throw std::runtime_error{ "Initializing rendering on a surface which is already initialized" };
 
-	bool Surface::IsPhysicalDeviceUsable(VulkanPhysicalDevice const& physical) const {
-		return physical.HasRequiredQueues() && physical.HasSwapchainSupport();
-	}
-
-	VkSurfaceFormatKHR Surface::GetPreferredSurfaceFormat(VulkanPhysicalDevice const& physical) {
-		for (const auto& availableSurfaceFormat : physical.presentation.surfaceFormats) {
-			if (availableSurfaceFormat.format == VK_FORMAT_B8G8R8A8_UNORM && availableSurfaceFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-				return availableSurfaceFormat;
-			}
+		t_vector<QueueFamilyDescription> const families = physical.GetSurfaceFamilies(*this);
+		
+		auto const references = SurfaceQueues::References::Find(families);
+		if (!references) {
+			LOGF(Vulkan, Warning, "Physical device does not support required queues for surface %i. Cannot initialize rendering.", GetID());
+			return;
 		}
-		return physical.presentation.surfaceFormats[0];
+
+		queues = references->ResolveFrom(device.queues);
+		if (!queues) {
+			LOGF(Vulkan, Warning, "Device does not contain required queues for surface %i. Cannot initialize rendering.", GetID());
+			return;
+		}
+
+		PhysicalDevicePresentation const presentation = PhysicalDevicePresentation::GetPresentation(physical, *this).value();
+		PhysicalDeviceCapabilities const capabilities{ physical, *this };
+
+		swapchain.emplace(device, nullptr, presentation, capabilities, *this);
+		framebuffers.emplace(device, *swapchain, passes);
+		organizer.emplace(device, device, *queues, *swapchain, layouts, EBuffering::Double);
 	}
 
-	bool Surface::RecreateSwapchain(VulkanPhysicalDevice const& physical, VkSurfaceFormatKHR surfaceFormat, RenderPasses const& passes) {
-		imageSize = physical.GetSwapExtent(surface, windowSize);
+	void Surface::DeinitializeRendering() {
+		organizer.reset();
+		framebuffers.reset();
+		swapchain.reset();
+		queues.reset();
+	}
 
+	bool Surface::RecreateSwapchain(Device const& device, PhysicalDeviceDescription const& physical, RenderPasses const& passes, UniformLayouts const& layouts) {
 		organizer.reset();
 		framebuffers.reset();
 
+		PhysicalDevicePresentation const presentation = PhysicalDevicePresentation::GetPresentation(physical, *this).value();
+		PhysicalDeviceCapabilities const capabilities{ physical, *this };
+
 		if (swapchain.has_value()) {
 			//The previous swapchain needs to exist long enough to create the new one, so we create a temporary new value before assigning it.
-			auto recreated = std::make_optional<Swapchain>(owner.logical.device, &swapchain.value(), *owner.selectedPhysical, *this);
+			auto recreated = std::make_optional<Swapchain>(device, &swapchain.value(), presentation, capabilities, *this);
 			swapchain.swap(recreated);
 		} else {
-			swapchain.emplace(owner.logical.device, nullptr, *owner.selectedPhysical, *this);
+			swapchain.emplace(device, nullptr, presentation, capabilities, *this);
 		}
 
-		framebuffers.emplace(owner.logical, *swapchain, passes);
-		organizer.emplace(owner.logical, *owner.selectedPhysical, *swapchain, owner.uniformLayouts, EBuffering::Double);
+		framebuffers.emplace(device, *swapchain, passes);
+		organizer.emplace(device, device, *queues, *swapchain, layouts, EBuffering::Double);
 
 		return true;
 	}

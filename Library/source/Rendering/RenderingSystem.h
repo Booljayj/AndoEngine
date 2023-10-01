@@ -2,14 +2,14 @@
 #include "Engine/Logging.h"
 #include "Engine/StandardTypes.h"
 #include "Rendering/Surface.h"
+#include "Rendering/Vulkan/Device.h"
+#include "Rendering/Vulkan/Framework.h"
+#include "Rendering/Vulkan/PhysicalDevice.h"
 #include "Rendering/Vulkan/RenderPasses.h"
+#include "Rendering/Vulkan/UniformLayouts.h"
 #include "Rendering/Vulkan/Vulkan.h"
-#include "Rendering/Vulkan/VulkanFramework.h"
-#include "Rendering/Vulkan/VulkanLogicalDevice.h"
-#include "Rendering/Vulkan/VulkanPhysicalDevice.h"
 #include "Rendering/Vulkan/VulkanResources.h"
 #include "Rendering/Vulkan/VulkanResourcesHelpers.h"
-#include "Rendering/Vulkan/VulkanUniformLayouts.h"
 #include "Resources/Database.h"
 #include "ThirdParty/EnTT.h"
 
@@ -33,29 +33,25 @@ namespace Rendering {
 		VkPhysicalDeviceFeatures features = {};
 
 		/** The vulkan framework for this application */
-		VulkanFramework framework;
+		std::optional<Framework> framework;
 
-		/** The available physical devices which can be used */
-		std::vector<VulkanPhysicalDevice> availablePhysicalDevices;
-		/** The current selected physical device */
-		VulkanPhysicalDevice const* selectedPhysical = nullptr;
 		/** The index of the currently selected physical device */
 		size_t selectedPhysicalIndex = std::numeric_limits<size_t>::max();
 
 		/** The logical device for the currently selected physical device */
-		VulkanLogicalDevice logical;
+		std::optional<Device> device;
+		/** Shared queues used for system operations */
+		std::optional<SharedQueues> queues;
 
 		/** The surface format of the primary surface, which is used when rendering to all surfaces */
 		VkSurfaceFormatKHR primarySurfaceFormat = {};
 
 		/** The render passes used for scene rendering */
 		std::optional<RenderPasses> passes;
-
 		/** Uniform layouts for standard uniforms */
-		VulkanUniformLayouts uniformLayouts;
-
-		/** Command recording objects */
-		VkCommandPool commandPool = nullptr;
+		std::optional<UniformLayouts> uniformLayouts;
+		/** Pool for command buffers used in transfer operations */
+		std::optional<CommandPool> transferCommandPool;
 
 		/** Flags for tracking rendering behavior and changes */
 		uint8_t retryCount = 0;
@@ -68,11 +64,7 @@ namespace Rendering {
 		bool Render(entt::registry& registry);
 		void RebuildResources();
 
-		inline size_t NumPhysicalDevices() const { return availablePhysicalDevices.size(); }
-		inline const Rendering::VulkanPhysicalDevice* GetPhysicalDevice(size_t Index) const {
-			if (Index < NumPhysicalDevices()) return &availablePhysicalDevices[Index];
-			else return nullptr;
-		}
+		PhysicalDeviceDescription const& GetPhysicalDevice() const { return framework->GetPhysicalDevices()[selectedPhysicalIndex]; }
 		bool SelectPhysicalDevice(size_t Index);
 
 		/** Get the primary window, which is the first window created on startup */
@@ -86,6 +78,11 @@ namespace Rendering {
 		void DestroySurface(HAL::Window::IdType id);
 
 	protected:
+		/** Determine which queues to request from the physical device. Queues needed for surface rendering will be avoided if possible. */
+		static std::tuple<QueueRequests, SharedQueues::References> GetQueueRequests(PhysicalDeviceDescription const& physical, VkSurfaceKHR surface);
+		/** Determine which queues to request from the physical device. Used in headless mode when surface rendering is not available. */
+		static std::tuple<QueueRequests, SharedQueues::References> GetHeadlessQueueRequests(PhysicalDeviceDescription const& physical);
+
 		/** Callbacks for when materials are created or destroyed */
 		void MaterialCreated(Resources::Handle<Material> const& material);
 		void MaterialDestroyed(Resources::Handle<Material> const& material);
@@ -125,9 +122,6 @@ namespace Rendering {
 	private:
 		/** Surfaces used for rendering */
 		std::vector<std::unique_ptr<Surface>> surfaces;
-
-		/** Returns true if the physical device can actually be used by this rendering system */
-		bool IsUsablePhysicalDevice(const Rendering::VulkanPhysicalDevice& physicalDevice, TArrayView<char const*> const& extensionNames);
 
 		/** Create the pipeline resources for a material */
 		VulkanPipelineResources CreatePipeline(Material const& material, VulkanPipelineCreationHelper& helper);

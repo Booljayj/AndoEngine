@@ -7,9 +7,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 add_executable(Tests WIN32 source/main.cpp)
 target_include_directories(Tests PUBLIC ${PROJECT_SOURCE_DIR}/source)
 target_precompile_headers(Tests PRIVATE source/PCH.h)
-set_target_properties(Tests PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}"
-    VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+
+#Copy the contents directory to the same directory as the executable
+add_custom_command(
+    TARGET Tests POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJECT_SOURCE_DIR}/content $<TARGET_FILE_DIR:Tests>/content
 )
 
 #Library library

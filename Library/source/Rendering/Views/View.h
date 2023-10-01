@@ -2,8 +2,8 @@
 #include "Engine/StandardTypes.h"
 #include "Geometry/ScreenRect.h"
 #include "Rendering/Vulkan/Swapchain.h"
-#include "Rendering/Vulkan/VulkanFrameOrganizer.h"
-#include "Rendering/Vulkan/VulkanLogicalDevice.h"
+#include "Rendering/Vulkan/FrameOrganizer.h"
+#include "Rendering/Vulkan/Device.h"
 #include "Rendering/Vulkan/VulkanResources.h"
 #include "Rendering/Vulkan/VulkanResourcesHelpers.h"
 #include "ThirdParty/EnTT.h"
@@ -34,9 +34,9 @@ namespace Rendering {
 		virtual void Record(const entt::registry& registry, const FrameResources& frame, size_t index) const = 0;
 
 		/** Create the resources used in this view */
-		virtual bool CreateResources(VulkanLogicalDevice const& logical, Swapchain const& swapchain) = 0;
+		virtual bool CreateResources(Device const& logical, Swapchain const& swapchain) = 0;
 		/** Destroy the resources for this view. Called when they are no longer going to be used, or before we need to create them again */
-		virtual void DestroyResources(VulkanLogicalDevice const& logical) = 0;
+		virtual void DestroyResources(Device const& logical) = 0;
 
 		/** Reposition the part of the window to which this viewport should render */
 		virtual void Reposition(glm::ivec2 newExtent, glm::ivec2 newOffset) = 0;

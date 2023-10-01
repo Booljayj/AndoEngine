@@ -4,13 +4,13 @@
 #include "Rendering/UniformTypes.h"
 #include "Rendering/Vulkan/Commands.h"
 #include "Rendering/Vulkan/Descriptors.h"
+#include "Rendering/Vulkan/Device.h"
+#include "Rendering/Vulkan/PhysicalDevice.h"
 #include "Rendering/Vulkan/Swapchain.h"
+#include "Rendering/Vulkan/UniformLayouts.h"
 #include "Rendering/Vulkan/Uniforms.h"
 #include "Rendering/Vulkan/Vulkan.h"
-#include "Rendering/Vulkan/VulkanLogicalDevice.h"
-#include "Rendering/Vulkan/VulkanPhysicalDevice.h"
 #include "Rendering/Vulkan/VulkanResources.h"
-#include "Rendering/Vulkan/VulkanUniformLayouts.h"
 
 namespace Rendering {
 	/** Buffering levels, which determine the number of frames that will be cycled through for rendering */
@@ -30,7 +30,7 @@ namespace Rendering {
 		GlobalUniformsType global;
 		ObjectUniformsType object;
 
-		FrameUniforms(VkDevice inDevice, VulkanUniformLayouts const& uniformLayouts, VkDescriptorPool pool, VmaAllocator allocator);
+		FrameUniforms(VkDevice inDevice, UniformLayouts const& uniformLayouts, VkDescriptorPool pool, VmaAllocator allocator);
 		FrameUniforms(FrameUniforms const&) = delete;
 		FrameUniforms(FrameUniforms&&) noexcept;
 	};
@@ -62,7 +62,7 @@ namespace Rendering {
 
 		FrameSynchronization sync;
 
-		FrameResources(VkDevice inDevice, uint32_t graphicsQueueFamilyIndex, VulkanUniformLayouts const& uniformLayouts, VkDescriptorPool descriptorPool, VmaAllocator allocator);
+		FrameResources(VkDevice inDevice, uint32_t graphicsQueueFamilyIndex, UniformLayouts const& uniformLayouts, VkDescriptorPool descriptorPool, VmaAllocator allocator);
 		FrameResources(FrameResources const&) = delete;
 		FrameResources(FrameResources&&) noexcept;
 	};
@@ -80,10 +80,10 @@ namespace Rendering {
 	};
 
 	/** Keeps track of the resources used each frame, and how they should be used to render a number of viewports. */
-	struct VulkanFrameOrganizer {
-		VulkanFrameOrganizer(VulkanLogicalDevice const& logical, VulkanPhysicalDevice const& physical, Swapchain const& swapchain, VulkanUniformLayouts const& uniformLayouts, EBuffering buffering);
-		VulkanFrameOrganizer(VulkanFrameOrganizer const&) = delete;
-		VulkanFrameOrganizer(VulkanFrameOrganizer&&) noexcept;
+	struct FrameOrganizer {
+		FrameOrganizer(VkDevice device, VmaAllocator allocator, SurfaceQueues const& queues, Swapchain const& swapchain, UniformLayouts const& uniformLayouts, EBuffering buffering);
+		FrameOrganizer(FrameOrganizer const&) = delete;
+		FrameOrganizer(FrameOrganizer&&) noexcept;
 
 		/**
 		 * Create a recording context for the current frame using an unused set of resources.

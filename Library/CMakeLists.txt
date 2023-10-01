@@ -10,11 +10,6 @@ file(GLOB_RECURSE GeneratedFiles LIST_DIRECTORIES false RELATIVE ${PROJECT_SOURC
 add_library(Library STATIC ${SourceFiles} ${GeneratedFiles})
 target_include_directories(Library PUBLIC ${PROJECT_SOURCE_DIR}/source)
 target_precompile_headers(Library PRIVATE source/Engine/StandardTypes.h)
-set_target_properties(Library
-    PROPERTIES
-    ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}"
-    LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}"
-)
 target_compile_definitions(Library PUBLIC "$<$<CONFIG:DEBUG>:VULKAN_DEBUG>")
 
 #IMGUI module

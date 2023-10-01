@@ -3,8 +3,9 @@
 #include "Rendering/Vulkan/Vulkan.h"
 
 namespace Rendering {
+	struct PhysicalDeviceCapabilities;
+	struct PhysicalDevicePresentation;
 	struct Surface;
-	struct VulkanPhysicalDevice;
 
 	/**
 	 * Contains the components of a Vulkan swapchain, which are used to communicate with the graphics device.
@@ -12,7 +13,7 @@ namespace Rendering {
 	 */
 	struct Swapchain {
 	public:
-		Swapchain(VkDevice inDevice, Swapchain* previous, VulkanPhysicalDevice const& physical, Surface const& surface);
+		Swapchain(VkDevice inDevice, Swapchain* previous, PhysicalDevicePresentation const& presentation, PhysicalDeviceCapabilities const& capabilities, Surface const& surface);
 		Swapchain(Swapchain const&) = delete;
 		Swapchain(Swapchain&&) noexcept;
 		~Swapchain();

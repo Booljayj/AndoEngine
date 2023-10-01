@@ -15,61 +15,19 @@ namespace Rendering {
 	bool RenderingSystem::Startup(HAL::WindowingSystem& windowing, Resources::Cache<Material>& materials, Resources::Cache<StaticMesh>& staticMeshes) {
 		//The primary window must exist in order to start the rendering system
 		HAL::Window& primaryWindow = windowing.GetPrimaryWindow();
-		
-		// Vulkan instance
-		if (!framework.Create(primaryWindow)) return false;
+
+		framework.emplace(primaryWindow);
 
 		//Create the primary surface for the primary window
 		if (!CreateSurface(primaryWindow)) return false;
 		
 		Surface& primarySurface = GetPrimarySurface();
 
-		// Collect physical devices and select default one
-		{
-			t_vector<char const*> const extensionNames = VulkanPhysicalDevice::GetExtensionNames();
-
-			uint32_t deviceCount = 0;
-			vkEnumeratePhysicalDevices(framework.instance, &deviceCount, nullptr);
-			t_vector<VkPhysicalDevice> devices{ deviceCount };
-			vkEnumeratePhysicalDevices(framework.instance, &deviceCount, devices.data());
-
-			for (uint32_t deviceIndex = 0; deviceIndex < deviceCount; ++deviceIndex) {
-				const VulkanPhysicalDevice physicalDevice = primarySurface.GetPhysicalDevice(devices[deviceIndex]);
-				if (IsUsablePhysicalDevice(physicalDevice, extensionNames)) {
-					availablePhysicalDevices.push_back(physicalDevice);
-				}
-			}
-
-			if (availablePhysicalDevices.size() == 0) {
-				LOG(Rendering, Error, "Failed to find any vulkan physical devices");
-				return false;
-			}
-
-			if (!SelectPhysicalDevice(0)) {
-				LOG(Rendering, Error, "Failed to select default physical device");
-				return false;
-			}
+		//Select a default physical device
+		if (!SelectPhysicalDevice(0)) {
+			LOG(Rendering, Error, "Failed to select default physical device");
+			return false;
 		}
-
-		//Create the render passes
-		passes.emplace(logical, primarySurfaceFormat.format);
-		if (!uniformLayouts.Create(logical)) return false;
-
-		//Create the command pool
-		{
-			VkCommandPoolCreateInfo poolInfo{};
-			poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-			poolInfo.queueFamilyIndex = selectedPhysical->queues.graphics.value().index;
-			poolInfo.flags = 0; // Optional
-
-			if (vkCreateCommandPool(logical.device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
-				LOG(Vulkan, Error, "Failed to create command pool for rendering system");
-				return false;
-			}
-		}
-
-		//Create the swapchain on the primary surface
-		primarySurface.RecreateSwapchain(*selectedPhysical, primarySurfaceFormat, *passes);
 
 		//Listen for when rendering-relevant resource types are created or destroyed
 		materials.Created.Add(this, &RenderingSystem::MaterialCreated);
@@ -83,10 +41,8 @@ namespace Rendering {
 	}
 
 	bool RenderingSystem::Shutdown(Resources::Cache<Material>& materials, Resources::Cache<StaticMesh>& staticMeshes) {
-		availablePhysicalDevices.clear();
-
-		if (logical) {
-			vkDeviceWaitIdle(logical.device);
+		if (device) {
+			vkDeviceWaitIdle(*device);
 
 			surfaces.clear();
 
@@ -95,12 +51,14 @@ namespace Rendering {
 			DestroyStalePipelines();
 			DestroyStaleMeshes();
 
-			uniformLayouts.Destroy(logical);
+			transferCommandPool.reset();
+			uniformLayouts.reset();
 			passes.reset();
-			vkDestroyCommandPool(logical.device, commandPool, nullptr);
+			
+			device.reset();
 		}
-		logical.Destroy();
-		framework.Destroy();
+
+		framework.reset();
 		return true;
 	}
 
@@ -109,8 +67,8 @@ namespace Rendering {
 		for (auto const& surface : surfaces) {
 			if (surface->IsSwapchainDirty()) {
 				LOG(Rendering, Info, "Recreating swapchain");
-				vkDeviceWaitIdle(logical.device);
-				surface->RecreateSwapchain(*selectedPhysical, primarySurfaceFormat, *passes);
+				vkDeviceWaitIdle(*device);
+				surface->RecreateSwapchain(*device, GetPhysicalDevice(), *passes, *uniformLayouts);
 			}
 		}
 
@@ -130,7 +88,7 @@ namespace Rendering {
 		if (hasStaleResources) {
 			LOG(Rendering, Info, "Destroying stale resources");
 			//Wait until the device is idle so we don't destroy resources that are in use
-			vkDeviceWaitIdle(logical.device);
+			vkDeviceWaitIdle(*device);
 
 			DestroyStalePipelines();
 			DestroyStaleMeshes();
@@ -148,24 +106,61 @@ namespace Rendering {
 
 	bool RenderingSystem::SelectPhysicalDevice(size_t index) {
 		if (index != selectedPhysicalIndex) {
-			if (VulkanPhysicalDevice const* newPhysical = GetPhysicalDevice(index)) {
-				TArrayView<char const*> const extensions = VulkanPhysicalDevice::GetExtensionNames();
-
-				VulkanLogicalDevice newLogical = VulkanLogicalDevice::Create(framework, *newPhysical, features, extensions);
-				if (!newLogical) {
-					LOGF(Rendering, Error, "Failed to create logical device for physical device %i", index);
-					return false;
-				}
-				logical = std::move(newLogical);
-
-				selectedPhysical = newPhysical;
-				selectedPhysicalIndex = index;
-				primarySurfaceFormat = GetPrimarySurface().GetPreferredSurfaceFormat(*selectedPhysical);
-
-				VulkanVersion const version = selectedPhysical->GetDriverVersion();
-				LOGF(Rendering, Info, "Selected device %s (%i.%i.%i)", selectedPhysical->properties.deviceName, version.major, version.minor, version.patch);
-				return true;
+			if (index >= framework->GetPhysicalDevices().size()) throw std::out_of_range{ t_printf("Physical device index %i out of range", index).data() };
+			
+			//Clean up the previous device, and everything created for it
+			if (device) {
+				vkDeviceWaitIdle(*device);
+				for (auto const& surface : surfaces) surface->DeinitializeRendering();
+				transferCommandPool.reset();
+				uniformLayouts.reset();
+				passes.reset();
+				device.reset();
 			}
+
+			PhysicalDeviceDescription const& physical = framework->GetPhysicalDevices()[index];
+
+			//Get information about how to present to this device
+			auto const presentation = PhysicalDevicePresentation::GetPresentation(physical, *surfaces[0]);
+			if (!presentation) {
+				LOGF(Vulkan, Warning, "Physical device %s is unable to present to surfaces", physical.properties.deviceName);
+				return false;
+			}
+
+			//Determine which extensions to enable on this device
+			t_vector<char const*> const extensions = Framework::GetDeviceExtensionNames();
+
+			//Determine which queues to request from this device
+			QueueRequests requests;
+			SharedQueues::References shared;
+			if (surfaces.size() > 0) std::tie(requests, shared) = GetQueueRequests(physical, *surfaces[0]);
+			else std::tie(requests, shared) = GetHeadlessQueueRequests(physical);
+
+			//Create the new device, and set up all the required values
+			selectedPhysicalIndex = index;
+			device.emplace(*framework, physical, features, extensions, requests);
+			queues = shared.ResolveFrom(device->queues);
+
+			//Get the surface format that will be used when rendering with this device
+			primarySurfaceFormat = [presentation]() -> VkSurfaceFormatKHR {
+				for (const auto& surfaceFormat : presentation->surfaceFormats) {
+					if (surfaceFormat.format == VK_FORMAT_B8G8R8A8_UNORM && surfaceFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+						return surfaceFormat;
+					}
+				}
+				return presentation->surfaceFormats[0];
+			}();
+
+			passes.emplace(*device, primarySurfaceFormat.format);
+			uniformLayouts.emplace(*device);
+			transferCommandPool.emplace(*device, queues->transfer.index);
+
+			//Let the surfaces know about the new rendering objects so they can prepare for rendering
+			for (auto const& surface : surfaces) surface->InitializeRendering(*device, GetPhysicalDevice(), *passes, *uniformLayouts);
+			
+			VulkanVersion const version = VulkanVersion{ physical.properties.driverVersion };
+			LOGF(Rendering, Info, "Selected device %s (%i.%i.%i)", physical.properties.deviceName, version.major, version.minor, version.patch);
+			return true;
 		}
 		return false;
 	}
@@ -175,24 +170,60 @@ namespace Rendering {
 		if (Surface* existing = FindSurface(window.id)) return existing;
 
 		//Create the surface in the collection of surfaces, and return a raw pointer to it
-		std::unique_ptr<Surface>& surface = surfaces.emplace_back(std::make_unique<Surface>(*this, window));
+		std::unique_ptr<Surface>& surface = surfaces.emplace_back(std::make_unique<Surface>(*framework, window));
 
 		return surface.get();
 	}
 
-	Surface* RenderingSystem::FindSurface(uint32_t id) const {
+	Surface* RenderingSystem::FindSurface(HAL::Window::IdType id) const {
 		const auto iter = std::find_if(surfaces.begin(), surfaces.end(), [&](const auto& surface) { return surface->GetID() == id; });
 		if (iter != surfaces.end()) return iter->get();
 		else return nullptr;
 	}
 
-	void RenderingSystem::DestroySurface(uint32_t id) {
+	void RenderingSystem::DestroySurface(HAL::Window::IdType id) {
 		const auto iter = std::find_if(surfaces.begin(), surfaces.end(), [=](auto const& surface) { return surface->GetID() == id; });
 		if (iter != surfaces.end() && iter != surfaces.begin()) {
 			surfaces.erase(iter);
 		} else {
 			LOGF(Rendering, Warning, "Unable to destroy surface with id %i", id);
 		}
+	}
+
+	std::tuple<QueueRequests, SharedQueues::References> RenderingSystem::GetQueueRequests(PhysicalDeviceDescription const& physical, VkSurfaceKHR surface) {
+		struct {
+			std::optional<SurfaceQueues::References> surface;
+			std::optional<SharedQueues::References> shared;
+		} found;
+	
+		//Default mode - we're creating queues that will work for the first surface, and assuming other surfaces should also be able to use those queues
+		t_vector<QueueFamilyDescription> const families = physical.GetSurfaceFamilies(surface);
+
+		found.surface = SurfaceQueues::References::Find(families);
+		if (!found.surface) throw std::runtime_error{ t_printf("Physical device %s does not contain required queues", physical.properties.deviceName).data() };
+
+		found.shared = SharedQueues::References::Find(families, *found.surface);
+		if (!found.shared) throw std::runtime_error{ t_printf("Physical device %s does not contain required queues", physical.properties.deviceName).data() };
+
+		QueueRequests requests;
+		requests += *found.surface;
+		requests += *found.shared;
+
+		return std::make_tuple(requests, *found.shared);
+	}
+
+	std::tuple<QueueRequests, SharedQueues::References> RenderingSystem::GetHeadlessQueueRequests(PhysicalDeviceDescription const& physical) {
+		struct {
+			std::optional<SharedQueues::References> shared;
+		} found;
+
+		found.shared = SharedQueues::References::FindHeadless(physical.families);
+		if (!found.shared) throw std::runtime_error{ t_printf("Physical device %s does not contain required queues", physical.properties.deviceName).data() };
+
+		QueueRequests requests;
+		requests += *found.shared;
+
+		return std::make_tuple(requests, *found.shared);
 	}
 
 	void RenderingSystem::MaterialCreated(Resources::Handle<Material> const& material) {
@@ -213,7 +244,7 @@ namespace Rendering {
 
 	void RenderingSystem::RefreshMaterials() {
 		//The library of shader modules that will stay loaded as long as we need to continue creating pipelines
-		VulkanPipelineCreationHelper helper{logical.device};
+		VulkanPipelineCreationHelper helper{*device};
 
 		for (Resources::Handle<Material> const& material : dirtyMaterials) {
 			//Existing resources become stale
@@ -222,7 +253,7 @@ namespace Rendering {
 			//Create new resources
 			VulkanPipelineResources resources = CreatePipeline(*material, helper);
 			if (resources) material->resources = std::move(resources);
-			else resources.Destroy(logical.device);
+			else resources.Destroy(*device);
 		}
 		dirtyMaterials.clear();
 	}
@@ -239,19 +270,19 @@ namespace Rendering {
 
 	void RenderingSystem::DestroyStalePipelines() {
 		for (VulkanPipelineResources const& resources : stalePipelineResources) {
-			resources.Destroy(logical.device);
+			resources.Destroy(*device);
 		}
 		stalePipelineResources.clear();
 	}
 
 	void RenderingSystem::RefreshStaticMeshes() {
-		VulkanMeshCreationHelper helper{ logical.device, logical.queues.graphics, commandPool};
+		VulkanMeshCreationHelper helper{ *device, queues->transfer, *transferCommandPool};
 
 		for (const Resources::Handle<StaticMesh>& mesh : dirtyStaticMeshes) {
 			//Existing resources become stale
 			if (mesh->gpuResources) staleMeshResources.emplace_back(std::move(*mesh->gpuResources));
 			//Create new resources
-			mesh->gpuResources.emplace(CreateMesh(*mesh, commandPool, helper));
+			mesh->gpuResources.emplace(CreateMesh(*mesh, *transferCommandPool, helper));
 		}
 
 		dirtyStaticMeshes.clear();
@@ -271,10 +302,6 @@ namespace Rendering {
 		stalePipelineResources.clear();
 	}
 
-	bool RenderingSystem::IsUsablePhysicalDevice(const VulkanPhysicalDevice& physicalDevice, TArrayView<char const*> const& extensionNames) {
-		return physicalDevice.HasRequiredQueues() && physicalDevice.HasRequiredExtensions(extensionNames) && physicalDevice.HasSwapchainSupport();
-	}
-
 	VulkanPipelineResources RenderingSystem::CreatePipeline(Material const& material, VulkanPipelineCreationHelper& helper) {
 		VulkanPipelineResources resources;
 
@@ -287,8 +314,8 @@ namespace Rendering {
 		//Create the pipeline layout
 		{
 			VkDescriptorSetLayout setLayouts[] = {
-				uniformLayouts.global,
-				uniformLayouts.object,
+				uniformLayouts->global,
+				uniformLayouts->object,
 				//resources.descriptors,
 			};
 
@@ -299,7 +326,7 @@ namespace Rendering {
 			layoutCI.pushConstantRangeCount = 0; // Optional
 			layoutCI.pPushConstantRanges = nullptr; // Optional
 
-			if (vkCreatePipelineLayout(logical.device, &layoutCI, nullptr, &resources.pipelineLayout) != VK_SUCCESS) {
+			if (vkCreatePipelineLayout(*device, &layoutCI, nullptr, &resources.pipelineLayout) != VK_SUCCESS) {
 				LOGF(Temp, Error, "Failed to create pipeline layout for material %i", material.id.ToValue());
 				return resources;
 			}
@@ -426,7 +453,7 @@ namespace Rendering {
 		pipelineCI.basePipelineHandle = VK_NULL_HANDLE; // Optional
 		pipelineCI.basePipelineIndex = -1; // Optional
 
-		if (vkCreateGraphicsPipelines(logical.device, VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &resources.pipeline) != VK_SUCCESS) {
+		if (vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &resources.pipeline) != VK_SUCCESS) {
 			LOGF(Temp, Error, "Failed to create pipeline for material %i", material.id.ToValue());
 		}
 
@@ -444,7 +471,7 @@ namespace Rendering {
 		size_t const indexOffset = vertexBytes;
 
 		//Create the staging buffer used to upload data to the GPU-only buffer
-		MappedBuffer staging{ logical.allocator, totalBytes, BufferUsage::TransferSrc, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_ONLY };
+		MappedBuffer staging{ *device, totalBytes, BufferUsage::TransferSrc, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_ONLY };
 
 		//Fill the staging buffer with the source data
 		const auto VertexWriteVisitor = [&](auto const& v) { staging.Write(v.data(), v.size() * sizeof(typename std::remove_reference_t<decltype(v)>::value_type), vertexOffset); };
@@ -453,7 +480,7 @@ namespace Rendering {
 		std::visit(IndexWriteVisitor, mesh.indices);
 
 		//Create the final resources that will be used for this mesh
-		MeshResources resources{ logical.allocator, totalBytes };
+		MeshResources resources{ *device, totalBytes };
 
 		//Allocate a command buffer for the transfer from the staging to the target buffer
 		VkCommandBufferAllocateInfo bufferAI{};
@@ -462,8 +489,8 @@ namespace Rendering {
 		bufferAI.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		bufferAI.commandBufferCount = 1;
 
-		TUniquePoolHandles<1, &vkFreeCommandBuffers> tempCommands{ logical.device, pool };
-		if (vkAllocateCommandBuffers(logical.device, &bufferAI, *tempCommands) != VK_SUCCESS) {
+		TUniquePoolHandles<1, &vkFreeCommandBuffers> tempCommands{ *device, pool };
+		if (vkAllocateCommandBuffers(*device, &bufferAI, *tempCommands) != VK_SUCCESS) {
 			throw std::runtime_error{ "Failed to allocate command buffer for staging commands" };
 		}
 

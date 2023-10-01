@@ -1,8 +1,8 @@
-#include "Rendering/Vulkan/VulkanFrameOrganizer.h"
+#include "Rendering/Vulkan/FrameOrganizer.h"
 #include "Rendering/UniformTypes.h"
 
 namespace Rendering {
-	FrameUniforms::FrameUniforms(VkDevice inDevice, VulkanUniformLayouts const& uniformLayouts, VkDescriptorPool pool, VmaAllocator allocator)
+	FrameUniforms::FrameUniforms(VkDevice inDevice, UniformLayouts const& uniformLayouts, VkDescriptorPool pool, VmaAllocator allocator)
 		: sets(inDevice, pool, { uniformLayouts.global, uniformLayouts.object })
 		, global(inDevice, sets[0], 1, allocator)
 		, object(inDevice, sets[1], 512, allocator)
@@ -57,7 +57,7 @@ namespace Rendering {
 		}
 	}
 
-	FrameResources::FrameResources(VkDevice inDevice, uint32_t graphicsQueueFamilyIndex, VulkanUniformLayouts const& uniformLayouts, VkDescriptorPool descriptorPool, VmaAllocator allocator)
+	FrameResources::FrameResources(VkDevice inDevice, uint32_t graphicsQueueFamilyIndex, UniformLayouts const& uniformLayouts, VkDescriptorPool descriptorPool, VmaAllocator allocator)
 		: uniforms(inDevice, uniformLayouts, descriptorPool, allocator)
 		, mainCommandPool(inDevice, graphicsQueueFamilyIndex)
 		, mainCommandBuffer(mainCommandPool.CreateBuffer(VkCommandBufferLevel::VK_COMMAND_BUFFER_LEVEL_PRIMARY))
@@ -73,21 +73,21 @@ namespace Rendering {
 		, sync(std::move(other.sync))
 	{}
 
-	VulkanFrameOrganizer::VulkanFrameOrganizer(VulkanLogicalDevice const& logical, VulkanPhysicalDevice const& physical, Swapchain const& swapchain, VulkanUniformLayouts const& uniformLayouts, EBuffering buffering)
-		: device(logical)
+	FrameOrganizer::FrameOrganizer(VkDevice device, VmaAllocator allocator, SurfaceQueues const& queues, Swapchain const& swapchain, UniformLayouts const& uniformLayouts, EBuffering buffering)
+		: device(device)
 		, swapchain(swapchain)
-		, queue({ logical.queues.graphics, logical.queues.present })
-		, graphicsQueueFamilyIndex(physical.queues.graphics->index)
+		, queue({ queues.graphics, queues.present })
+		, graphicsQueueFamilyIndex(queues.graphics.family)
 		, descriptorPool(device, GetPoolSizes(buffering), GetNumFrames(buffering) * 2)
 	{
 		size_t const numFrames = GetNumFrames(buffering);
 		for (size_t index = 0; index < numFrames; ++index) {
-			frames.emplace_back(device, graphicsQueueFamilyIndex, uniformLayouts, descriptorPool, logical.allocator);
+			frames.emplace_back(device, graphicsQueueFamilyIndex, uniformLayouts, descriptorPool, allocator);
 		}
 		imageFences.resize(swapchain.GetNumImages(), nullptr);
 	}
 
-	VulkanFrameOrganizer::VulkanFrameOrganizer(VulkanFrameOrganizer&& other) noexcept
+	FrameOrganizer::FrameOrganizer(FrameOrganizer&& other) noexcept
 		: device(other.device), swapchain(other.swapchain), queue({ other.queue.graphics, other.queue.present }), graphicsQueueFamilyIndex(other.graphicsQueueFamilyIndex)
 		, descriptorPool(std::move(other.descriptorPool))
 		, frames(std::move(other.frames)), imageFences(std::move(other.imageFences))
@@ -96,7 +96,7 @@ namespace Rendering {
 		other.device = nullptr;
 	}
 
-	std::optional<RecordingContext> VulkanFrameOrganizer::CreateRecordingContext(size_t numObjects, size_t numThreads) {
+	std::optional<RecordingContext> FrameOrganizer::CreateRecordingContext(size_t numObjects, size_t numThreads) {
 		//The timeout duration in nanoseconds
 		constexpr uint64_t timeout = 5'000'000'000;
 
@@ -149,7 +149,7 @@ namespace Rendering {
 		return RecordingContext{ currentFrameIndex, currentImageIndex, frame.uniforms, frame.mainCommandBuffer, frame.threadCommandBuffers };
 	}
 
-	void VulkanFrameOrganizer::Submit(TArrayView<VkCommandBuffer const> commands) {
+	void FrameOrganizer::Submit(TArrayView<VkCommandBuffer const> commands) {
 		FrameResources const& frame = frames[currentFrameIndex];
 
 		frame.uniforms.global.Flush();
@@ -207,7 +207,7 @@ namespace Rendering {
 		currentFrameIndex = (currentFrameIndex + 1) % frames.size();
 	}
 
-	VulkanFrameOrganizer::PoolSizesType VulkanFrameOrganizer::GetPoolSizes(EBuffering buffering) {
+	FrameOrganizer::PoolSizesType FrameOrganizer::GetPoolSizes(EBuffering buffering) {
 		uint32_t const numFrames = static_cast<uint32_t>(GetNumFrames(buffering));
 
 		//Each frame should have:

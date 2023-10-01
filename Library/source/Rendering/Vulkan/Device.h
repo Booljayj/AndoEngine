@@ -1,48 +1,50 @@
 #pragma once
+#include "Rendering/Vulkan/Framework.h"
 #include "Rendering/Vulkan/Vulkan.h"
-#include "Rendering/Vulkan/VulkanFramework.h"
-#include "Rendering/Vulkan/VulkanPhysicalDevice.h"
+#include "Rendering/Vulkan/PhysicalDevice.h"
+#include "Rendering/Vulkan/Queues.h"
 
 namespace Rendering {
 	/**
 	 * Contains the components of a Vulkan logical device, which is used to communicate with a physical device.
 	 * A new logical device is created for each physical device that will be used.
 	 */
-	struct VulkanLogicalDevice {
-		/** The underlying logical device */
-		VkDevice device = nullptr;
+	struct Device {
+		using ExtensionsView = TArrayView<char const* const>;
+		
+		/** Queues created on this device */
+		QueueResults queues;
 
-		struct {
-			VkQueue present = nullptr;
-			VkQueue graphics = nullptr;
-		} queues;
+		Device(Framework const& framework, PhysicalDeviceDescription const& physical, VkPhysicalDeviceFeatures features, ExtensionsView extensions, QueueRequests const& requests);
+		Device(Device const&) = delete;
+		Device(Device&&) noexcept;
+		~Device();
 
-		/** The allocator for device memory */
-		VmaAllocator allocator = nullptr;
-
-		VulkanLogicalDevice() = default;
-		VulkanLogicalDevice(VulkanLogicalDevice&&);
-
-		VulkanLogicalDevice& operator=(VulkanLogicalDevice&& other);
 		inline operator VkDevice() const { return device; }
-		inline operator bool() const { return device && allocator; }
+		inline operator VmaAllocator() const { return allocator; }
 
-		static VulkanLogicalDevice Create(VulkanFramework framework, VulkanPhysicalDevice const& physical, VkPhysicalDeviceFeatures const& features, TArrayView<char const*> const& extensions);
-		void Destroy();
+		/** Get the physical device backing this logical device */
+		PhysicalDeviceDescription const& GetPhysical() const { return physical; }
 
 #ifdef VULKAN_DEBUG
 #define SET_DEBUG_NAME_IMPL(Class, type) inline VkResult SetDebugName(Class object, char const* name) const { return SetDebugName(object, type, name); }
 		SET_DEBUG_NAME_IMPL(VkQueue, VK_OBJECT_TYPE_QUEUE);
+		SET_DEBUG_NAME_IMPL(VkImage, VK_OBJECT_TYPE_IMAGE);
+		SET_DEBUG_NAME_IMPL(VkImageView, VK_OBJECT_TYPE_IMAGE_VIEW);
 #undef SET_DEBUG_NAME_IMPL
 #endif
 
 	private:
+		PhysicalDeviceDescription const& physical;
+		VkDevice device = nullptr;
+		VmaAllocator allocator = nullptr;
 #ifdef VULKAN_DEBUG
 		PFN_vkSetDebugUtilsObjectNameEXT functionSetDebugName = nullptr;
-		VkResult SetDebugName(void* object, VkObjectType type, char const* name) const;
 #endif
 
-		static VmaAllocatorCreateFlags GetAllocatorFlags();
+#ifdef VULKAN_DEBUG
+		VkResult SetDebugName(void* object, VkObjectType type, char const* name) const;
+#endif
 	};
 
 	template<auto Destroyer>

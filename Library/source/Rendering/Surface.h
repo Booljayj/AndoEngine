@@ -1,10 +1,10 @@
 #pragma once
 #include "Engine/StandardTypes.h"
 #include "HAL/WindowingSystem.h"
+#include "Rendering/Vulkan/FrameOrganizer.h"
 #include "Rendering/Vulkan/RenderPasses.h"
 #include "Rendering/Vulkan/Swapchain.h"
 #include "Rendering/Vulkan/Vulkan.h"
-#include "Rendering/Vulkan/VulkanFrameOrganizer.h"
 #include "ThirdParty/EnTT.h"
 
 namespace Rendering {
@@ -16,7 +16,9 @@ namespace Rendering {
 		/** The maximum number of consecutive times we can fail to render a frame */
 		static constexpr uint8_t maxRetryCount = 5;
 
-		Surface(RenderingSystem& inOwner, HAL::Window& inWindow);
+		Surface(VkInstance instance, HAL::Window& inWindow);
+		Surface(Surface const&) = delete;
+		Surface(Surface&&) = delete;
 		~Surface();
 
 		operator VkSurfaceKHR() const { return surface; }
@@ -26,46 +28,45 @@ namespace Rendering {
 		inline HAL::Window::IdType GetID() const { return window.id; }
 
 		/** Return whether this is a valid surface that is prepared for rendering */
-		inline bool CanRender() const { return surface && swapchain; }
+		inline bool CanRender() const { return surface && queues && swapchain; }
 		/** Whether the swapchain needs to be recreated before it is used again */
 		inline bool IsSwapchainDirty() const { return shouldRecreateSwapchain; }
 
-		/** Get information about how a physical device can be used with this surface */
-		VulkanPhysicalDevice GetPhysicalDevice(VkPhysicalDevice device);
-		/** Returns whether the physical device can be used to render to this surface */
-		bool IsPhysicalDeviceUsable(VulkanPhysicalDevice const& physical) const;
-		/** Get the preferred surface format when rendering to this surface with the given physical device */
-		VkSurfaceFormatKHR GetPreferredSurfaceFormat(VulkanPhysicalDevice const& physical);
+		/** Create resources used for rendering */
+		void InitializeRendering(Device const& device, PhysicalDeviceDescription const& physical, RenderPasses const& passes, UniformLayouts const& layouts);
+		/** Remove resources used for rendering */
+		void DeinitializeRendering();
 
 		/** Create or recreate the swapchain and related resources for this surface */
-		bool RecreateSwapchain(VulkanPhysicalDevice const& physical, VkSurfaceFormatKHR surfaceFormat, RenderPasses const& passes);
+		bool RecreateSwapchain(Device const& device, PhysicalDeviceDescription const& physical, RenderPasses const& passes, UniformLayouts const& layouts);
 		
 		/** Render the renderable entities from the registry to this surface */
 		bool Render(RenderPasses const& passes, entt::registry& registry);
 
-		/** Change the size of this surface */
-		void Resize(glm::u32vec2 const& newSize);
-
 	private:
-		RenderingSystem& owner;
+		friend RenderingSystem;
+		friend Swapchain;
+
+		VkInstance instance = nullptr;
 		HAL::Window& window;
 
 		/** The internal surface tied to this surface */
 		VkSurfaceKHR surface = nullptr;
 
+		/** The queues that this surface will use to submit commands */
+		std::optional<SurfaceQueues> queues;
+
 		/** The swapchain that is currently being used for images */
 		std::optional<Swapchain> swapchain;
 		/** The framebuffers for rendering on the swapchain */
-		std::optional<VulkanFramebuffers> framebuffers;
+		std::optional<Framebuffers> framebuffers;
 		/** The frame organizer that keeps track of resources used each frame */
-		std::optional<VulkanFrameOrganizer> organizer;
+		std::optional<FrameOrganizer> organizer;
 
 		EventHandleType windowDestroyedHandle;
 
 		/** The full size of the window that is associated with this surface */
 		glm::u32vec2 windowSize;
-		/** The actual drawable size of swapchain images created for this surface */
-		glm::u32vec2 imageSize;
 
 		uint8_t retryCount : 1;
 		uint8_t shouldRecreateSwapchain : 1;

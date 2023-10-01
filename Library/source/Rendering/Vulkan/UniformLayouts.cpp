@@ -1,9 +1,11 @@
+#include "Rendering/Vulkan/UniformLayouts.h"
 #include "Engine/Logging.h"
 #include "Rendering/UniformTypes.h"
-#include "Rendering/Vulkan/VulkanUniformLayouts.h"
 
 namespace Rendering {
-	bool VulkanUniformLayouts::Create(VulkanLogicalDevice const& logical) {
+	UniformLayouts::UniformLayouts(VkDevice device)
+		: device(device)
+	{
 		//Create the uniform layout for global uniforms
 		{
 			std::array<VkDescriptorSetLayoutBinding, 1> bindings;
@@ -15,9 +17,8 @@ namespace Rendering {
 			layoutCI.pBindings = bindings.data();
 
 			assert(!global);
-			if (vkCreateDescriptorSetLayout(logical.device, &layoutCI, nullptr, &global) != VK_SUCCESS) {
-				LOG(Vulkan, Error, "Failed to create descriptor set layout");
-				return false;
+			if (vkCreateDescriptorSetLayout(device, &layoutCI, nullptr, &global) != VK_SUCCESS || !global) {
+				throw std::runtime_error{ "Failed to create descriptor set layout" };
 			}
 		}
 		//Create the uniform layout for object uniforms
@@ -31,18 +32,22 @@ namespace Rendering {
 			layoutCI.pBindings = bindings.data();
 
 			assert(!object);
-			if (vkCreateDescriptorSetLayout(logical.device, &layoutCI, nullptr, &object) != VK_SUCCESS) {
-				LOG(Vulkan, Error, "Failed to create descriptor set layout");
-				return false;
+			if (vkCreateDescriptorSetLayout(device, &layoutCI, nullptr, &object) != VK_SUCCESS || !object) {
+				throw std::runtime_error{ "Failed to create descriptor set layout" };
 			}
 		}
-		return true;
 	}
 
-	void VulkanUniformLayouts::Destroy(VulkanLogicalDevice const& logical) {
-		vkDestroyDescriptorSetLayout(logical.device, global, nullptr);
-		vkDestroyDescriptorSetLayout(logical.device, object, nullptr);
-		global = nullptr;
-		object = nullptr;
+	UniformLayouts::UniformLayouts(UniformLayouts&& other)
+		: global(other.global), object(other.object), device(other.device)
+	{
+		other.device = nullptr;
+	}
+
+	UniformLayouts::~UniformLayouts() {
+		if (device) {
+			vkDestroyDescriptorSetLayout(device, global, nullptr);
+			vkDestroyDescriptorSetLayout(device, object, nullptr);
+		}
 	}
 }

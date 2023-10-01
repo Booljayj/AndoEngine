@@ -1,7 +1,6 @@
 #pragma once
 #include "Engine/Hash.h"
 #include "Rendering/Vulkan/Vulkan.h"
-#include "Rendering/Vulkan/VulkanLogicalDevice.h"
 #include "Rendering/Vulkan/VulkanResources.h"
 #include "Resources/Resource.h"
 

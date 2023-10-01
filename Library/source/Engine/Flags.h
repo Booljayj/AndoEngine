@@ -18,6 +18,9 @@ public:
 	constexpr inline TFlags(const TFlags& other) : flags(other.flags) {}
 	constexpr inline TFlags(UnderlyingType inFlags) : flags(inFlags) {}
 	constexpr inline TFlags(EnumType inFlag) : flags(1 << (UnderlyingType)inFlag) {}
+	constexpr inline TFlags(std::initializer_list<EnumType> inFlags) : flags(0) {
+		for (EnumType flag : inFlags) flags |= (1 << (UnderlyingType)flag);
+	}
 
 	template<typename... FlagTypes>
 	static constexpr inline TFlags Make(FlagTypes... inFlags) {
@@ -59,6 +62,13 @@ public:
 	constexpr inline bool HasAll(TFlags other) const noexcept { return (flags & other.flags) == other.flags; }
 	/** True if this set of flags contains any of the values in the other set */
 	constexpr inline bool HasAny(TFlags other) const noexcept { return (flags & other.flags) != 0; }
+
+	/** True if this set of flags contains all of the values */
+	template<typename... FlagTypes>
+	constexpr inline bool HasAll(EnumType flag, FlagTypes... other) { return HasAll(Make(flag, other...)); }
+	/** True if this set of flags contains any of the values */
+	template<typename... FlagTypes>
+	constexpr inline bool HasAny(EnumType flag, FlagTypes... other) { return HasAny(Make(flag, other...)); }
 
 protected:
 	UnderlyingType flags = 0;

@@ -20,8 +20,8 @@ namespace Rendering {
 		}
 	}
 
-	SurfaceRenderPass::FramebufferResources::FramebufferResources(VulkanLogicalDevice const& logical, Swapchain const& swapchain, SurfaceRenderPass const& pass)
-		: device(logical)
+	SurfaceRenderPass::FramebufferResources::FramebufferResources(VkDevice device, Swapchain const& swapchain, SurfaceRenderPass const& pass)
+		: device(device)
 	{
 		//@todo Create shared image views (i.e. the depth pass image view)
 		
@@ -105,8 +105,8 @@ namespace Rendering {
 		vkCmdEndRenderPass(cachedCommands);
 	}
 
-	SurfaceRenderPass::SurfaceRenderPass(VulkanLogicalDevice const& logical, VkFormat format) 
-		: device(logical)
+	SurfaceRenderPass::SurfaceRenderPass(Device const& inDevice, VkFormat format) 
+		: device(inDevice)
 	{
 		// Attachments
 		EnumBackedContainer<VkAttachmentDescription, EAttachments> descriptions;
@@ -193,11 +193,11 @@ namespace Rendering {
 		if (device) vkDestroyRenderPass(device, pass, nullptr);
 	}
 
-	RenderPasses::RenderPasses(VulkanLogicalDevice const& logical, VkFormat format)
-		: surface(logical, format)
+	RenderPasses::RenderPasses(Device const& inDevice, VkFormat format)
+		: surface(inDevice, format)
 	{}
 
-	VulkanFramebuffers::VulkanFramebuffers(VulkanLogicalDevice const& logical, Swapchain const& swapchain, RenderPasses const& passes)
-		: surface(logical, swapchain, passes.surface)
+	Framebuffers::Framebuffers(VkDevice device, Swapchain const& swapchain, RenderPasses const& passes)
+		: surface(device, swapchain, passes.surface)
 	{}
 }

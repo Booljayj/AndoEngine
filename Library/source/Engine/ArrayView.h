@@ -10,8 +10,8 @@ struct TArrayView {
 	constexpr TArrayView(std::initializer_list<T> const& list) : TArrayView(list.begin(), list.size()) {}
 
 	template<size_t Size> constexpr TArrayView(T const (&array)[Size]) : TArrayView(array, Size) {}
-	template<size_t Size> constexpr TArrayView(std::array<T, Size> const& array) : TArrayView(array.data(), Size) {}
-	template<typename Allocator> constexpr TArrayView(std::vector<T, Allocator> const& vector) : TArrayView(vector.data(), vector.size()) {}
+	template<size_t Size> constexpr TArrayView(std::array<std::remove_const_t<T>, Size> const& array) : TArrayView(array.data(), Size) {}
+	template<typename Allocator> constexpr TArrayView(std::vector<std::remove_const_t<T>, Allocator> const& vector) : TArrayView(vector.data(), vector.size()) {}
 
 	constexpr inline T const& operator[](size_t index) const { return begin_[index]; }
 	constexpr inline operator bool() const {return size_ == 0;}

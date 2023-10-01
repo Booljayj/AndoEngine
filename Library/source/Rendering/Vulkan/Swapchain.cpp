@@ -1,15 +1,12 @@
 #include "Rendering/Vulkan/Swapchain.h"
 #include "Rendering/Surface.h"
-#include "Rendering/Vulkan/VulkanPhysicalDevice.h"
+#include "Rendering/Vulkan/PhysicalDevice.h"
 
 namespace Rendering {
-	namespace SwapchainUtilities {
-		uint32_t GetImageCountMinimum(VkSurfaceCapabilitiesKHR const& capabilities) {
-			uint32_t const maxImageCountActual = capabilities.maxImageCount > 0 ? capabilities.maxImageCount : std::numeric_limits<uint32_t>::max();
-			return std::min<uint32_t>(capabilities.minImageCount + 1, maxImageCountActual);
-		}
-
-		VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableSurfaceFormats) {
+	Swapchain::Swapchain(VkDevice inDevice, Swapchain* previous, PhysicalDevicePresentation const& presentation, PhysicalDeviceCapabilities const& capabilities, Surface const& surface)
+		: device(inDevice)
+	{
+		auto const ChooseSwapSurfaceFormat = [](const std::vector<VkSurfaceFormatKHR>& availableSurfaceFormats) -> VkSurfaceFormatKHR {
 			if (availableSurfaceFormats.size() == 0) {
 				throw std::runtime_error{ "Physical device does not provide any avialable surface formats" };
 			}
@@ -20,40 +17,34 @@ namespace Rendering {
 				}
 			}
 			return availableSurfaceFormats[0];
-		}
+		};
 
-		VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
+		auto const ChooseSwapPresentMode = [](const std::vector<VkPresentModeKHR>& availablePresentModes) -> VkPresentModeKHR {
 			for (const auto& availablePresentMode : availablePresentModes) {
 				if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
 					return availablePresentMode;
 				}
 			}
 			return VK_PRESENT_MODE_FIFO_KHR;
-		}
-	}
+		};
 
-	Swapchain::Swapchain(VkDevice inDevice, Swapchain* previous, VulkanPhysicalDevice const& physical, Surface const& surface)
-		: device(inDevice)
-	{
-		using namespace SwapchainUtilities;
-
-		surfaceFormat = ChooseSwapSurfaceFormat(physical.presentation.surfaceFormats);
-		presentMode = ChooseSwapPresentMode(physical.presentation.presentModes);
-		extent = physical.GetSwapExtent(surface, extent);
-		preTransform = physical.GetPreTransform(surface);
+		surfaceFormat = ChooseSwapSurfaceFormat(presentation.surfaceFormats);
+		presentMode = ChooseSwapPresentMode(presentation.presentModes);
+		extent = capabilities.GetSwapExtent(surface, extent);
+		preTransform = capabilities.GetPreTransform(surface);
 
 		VkSwapchainCreateInfoKHR swapchainCI = {};
 		swapchainCI.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
 		swapchainCI.surface = surface;
 		//Image settings
-		swapchainCI.minImageCount = GetImageCountMinimum(physical.presentation.capabilities);
+		swapchainCI.minImageCount = capabilities.GetImageCountMinimum();
 		swapchainCI.imageFormat = surfaceFormat.format;
 		swapchainCI.imageColorSpace = surfaceFormat.colorSpace;
 		swapchainCI.imageExtent = VkExtent2D{ extent.x, extent.y };
 		swapchainCI.imageArrayLayers = 1;
 		swapchainCI.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 		//Queue settings
-		uint32_t const queueFamilyIndices[2] = { physical.queues.graphics->index, physical.queues.present->index };
+		uint32_t const queueFamilyIndices[2] = { surface.queues->graphics.index, surface.queues->present.index };
 		if (queueFamilyIndices[0] == queueFamilyIndices[1]) {
 			swapchainCI.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
 			swapchainCI.queueFamilyIndexCount = 0;
