@@ -4,12 +4,12 @@
 #include "Rendering/Surface.h"
 #include "Rendering/Vulkan/Device.h"
 #include "Rendering/Vulkan/Framework.h"
+#include "Rendering/Vulkan/Helpers.h"
 #include "Rendering/Vulkan/PhysicalDevice.h"
 #include "Rendering/Vulkan/RenderPasses.h"
+#include "Rendering/Vulkan/Resources.h"
 #include "Rendering/Vulkan/UniformLayouts.h"
 #include "Rendering/Vulkan/Vulkan.h"
-#include "Rendering/Vulkan/VulkanResources.h"
-#include "Rendering/Vulkan/VulkanResourcesHelpers.h"
 #include "Resources/Database.h"
 #include "ThirdParty/EnTT.h"
 
@@ -96,7 +96,7 @@ namespace Rendering {
 		std::vector<Resources::Handle<StaticMesh>> dirtyStaticMeshes;
 
 		/** Resources that are pending destruction */
-		std::vector<VulkanPipelineResources> stalePipelineResources;
+		std::vector<GraphicsPipelineResources> staleGraphicsPipelineResources;
 		std::vector<MeshResources> staleMeshResources;
 
 		/** Refresh dirty materials so they are no longer dirty */
@@ -124,9 +124,9 @@ namespace Rendering {
 		std::vector<std::unique_ptr<Surface>> surfaces;
 
 		/** Create the pipeline resources for a material */
-		VulkanPipelineResources CreatePipeline(Material const& material, VulkanPipelineCreationHelper& helper);
+		GraphicsPipelineResources CreateGraphicsPipeline(Material const& material, PipelineCreationHelper& helper);
 		/** Create the mesh resources for a mesh component */
-		MeshResources CreateMesh(StaticMesh const& mesh, VkCommandPool pool, VulkanMeshCreationHelper& helper);
+		MeshResources CreateMesh(StaticMesh const& mesh, VkCommandPool pool, MeshCreationHelper& helper);
 
 		//InitImGUI(VulkanLogicalDevice& logical, VulkanPhysicalDevice& physical, Surface& surface);
 	};

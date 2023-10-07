@@ -1,17 +1,19 @@
 #pragma once
 #include "Engine/Hash.h"
+#include "Rendering/Vulkan/Resources.h"
 #include "Rendering/Vulkan/Vulkan.h"
-#include "Rendering/Vulkan/VulkanResources.h"
 #include "Resources/Resource.h"
 
 namespace Rendering {
 	struct Shader;
 
 	/** A library of loaded shader modules which can be re-used to create pipelines */
-	struct VulkanPipelineCreationHelper {
+	struct PipelineCreationHelper {
 	public:
-		VulkanPipelineCreationHelper(VkDevice inDevice);
-		~VulkanPipelineCreationHelper();
+		PipelineCreationHelper(VkDevice device);
+		PipelineCreationHelper(PipelineCreationHelper const&) = delete;
+		PipelineCreationHelper(PipelineCreationHelper&&) = delete;
+		~PipelineCreationHelper();
 
 		/** Get an already-loaded module, or load a new one */
 		VkShaderModule GetModule(Resources::Handle<Shader> shader);
@@ -20,18 +22,20 @@ namespace Rendering {
 		struct Entry {
 			Resources::Identifier id;
 			VkShaderModule module = nullptr;
+
+			Entry(Resources::Identifier id) : id(id) {}
 		};
 
-		VkDevice device;
+		VkDevice device = nullptr;
 		std::vector<Entry> entries;
 	};
 
-	struct VulkanMeshCreationHelper {
+	struct MeshCreationHelper {
 	public:
-		VulkanMeshCreationHelper(VkDevice inDevice, VkQueue inQueue, VkCommandPool inPool);
-		VulkanMeshCreationHelper(VulkanMeshCreationHelper const&) = delete;
-		VulkanMeshCreationHelper(VulkanMeshCreationHelper&&) = delete;
-		~VulkanMeshCreationHelper();
+		MeshCreationHelper(VkDevice device, VkQueue queue, VkCommandPool pool);
+		MeshCreationHelper(MeshCreationHelper const&) = delete;
+		MeshCreationHelper(MeshCreationHelper&&) = delete;
+		~MeshCreationHelper();
 
 		void Submit(VkCommandBuffer commands, MappedBuffer&& staging);
 		void Flush();

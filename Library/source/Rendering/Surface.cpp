@@ -128,8 +128,16 @@ namespace Rendering {
 				for (const auto id : renderables) {
 					auto const& renderer = renderables.get<MeshRenderer const>(id);
 
-					if (renderer.material && renderer.material->resources && renderer.mesh && renderer.mesh->gpuResources) {
-						uint32_t const objectUniformsOffset = static_cast<uint32_t>(sizeof(ObjectUniforms) * objectIndex);
+					Material const* material = renderer.material.Get();
+					StaticMesh const* mesh = renderer.mesh.Get();
+
+					if (material && material->gpuResources && mesh && mesh->gpuResources) {
+						enum class EDynamicOffsets : uint8_t {
+							Object,
+							MAX
+						};
+						EnumBackedContainer<uint32_t, EDynamicOffsets> offsets;
+						offsets[EDynamicOffsets::Object] = static_cast<uint32_t>(sizeof(ObjectUniforms) * objectIndex);
 
 						//Write to the part of the object uniform buffer designated for this object
 						ObjectUniforms object;
@@ -137,18 +145,21 @@ namespace Rendering {
 						uniforms.object.Write(object, objectIndex);
 
 						//Bind the pipeline that will be used for rendering
-						vkCmdBindPipeline(commands, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer.material->resources.pipeline);
+						vkCmdBindPipeline(commands, VK_PIPELINE_BIND_POINT_GRAPHICS, material->gpuResources->pipeline);
 
 						//Bind the descriptor sets to use for this draw command
-						VkDescriptorSet sets[] = {
-							uniforms.global,
-							uniforms.object,
-							//materialInstance->resources.set,
-						};
-						vkCmdBindDescriptorSets(commands, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer.material->resources.pipelineLayout, 0, static_cast<uint32_t>(std::size(sets)), sets, 1, &objectUniformsOffset);
+						EnumBackedContainer<VkDescriptorSet, EGraphicsLayouts> sets;
+						sets[EGraphicsLayouts::Global] = uniforms.global;
+						sets[EGraphicsLayouts::Object] = uniforms.object;
+						//sets[EGraphicsLayouts::Material] = material->gpuResources->set;
+
+						vkCmdBindDescriptorSets(
+							commands, VK_PIPELINE_BIND_POINT_GRAPHICS, material->gpuResources->layouts.pipeline,
+							0, sets.size(), sets.data(), offsets.size(), offsets.data()
+						);
 
 						//Bind the vetex and index buffers for the mesh
-						MeshResources const& meshRes = *renderer.mesh->gpuResources;
+						MeshResources const& meshRes = *mesh->gpuResources;
 						VkBuffer const vertexBuffers[] = { meshRes.buffer };
 						VkDeviceSize const vertexOffsets[] = { meshRes.offset.vertex };
 						vkCmdBindVertexBuffers(commands, 0, 1, vertexBuffers, vertexOffsets);

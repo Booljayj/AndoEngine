@@ -1,11 +1,11 @@
 #pragma once
 #include "Engine/StandardTypes.h"
 #include "Geometry/ScreenRect.h"
-#include "Rendering/Vulkan/Swapchain.h"
-#include "Rendering/Vulkan/FrameOrganizer.h"
 #include "Rendering/Vulkan/Device.h"
-#include "Rendering/Vulkan/VulkanResources.h"
-#include "Rendering/Vulkan/VulkanResourcesHelpers.h"
+#include "Rendering/Vulkan/FrameOrganizer.h"
+#include "Rendering/Vulkan/Helpers.h"
+#include "Rendering/Vulkan/Resources.h"
+#include "Rendering/Vulkan/Swapchain.h"
 #include "ThirdParty/EnTT.h"
 
 namespace Rendering {

@@ -4,6 +4,7 @@
 #include "Geometry/ScreenRect.h"
 #include "Rendering/Vulkan/Device.h"
 #include "Rendering/Vulkan/Swapchain.h"
+#include "Rendering/Vulkan/Utility.h"
 #include "Rendering/Vulkan/Vulkan.h"
 
 /**
@@ -26,21 +27,6 @@ namespace Rendering {
 		VkDevice device = nullptr;
 		VkImageView view = nullptr;
 		VkFramebuffer framebuffer = nullptr;
-	};
-
-	template<typename ValueType, typename EnumType>
-	struct EnumBackedContainer {
-	public:
-		EnumBackedContainer() { std::memset(&array, 0, sizeof(array)); }
-
-		ValueType& operator[](EnumType attachment) { return array[static_cast<std::underlying_type_t<EnumType>>(attachment)]; }
-		ValueType const& operator[](EnumType attachment) const { return array[static_cast<std::underlying_type_t<EnumType>>(attachment)]; }
-
-		uint32_t size() const { return static_cast<uint32_t>(EnumType::MAX); }
-		ValueType const* data() const { return array.data(); }
-
-	private:
-		std::array<ValueType, static_cast<uint8_t>(EnumType::MAX)> array;
 	};
 
 	/** The primary render pass responsible for rendering surfaces on 3D geometry */

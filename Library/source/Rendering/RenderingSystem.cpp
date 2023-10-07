@@ -84,7 +84,7 @@ namespace Rendering {
 	}
 
 	void RenderingSystem::RebuildResources() {
-		const bool hasStaleResources = stalePipelineResources.size() > 0 || staleMeshResources.size() > 0;
+		const bool hasStaleResources = staleGraphicsPipelineResources.size() > 0 || staleMeshResources.size() > 0;
 		if (hasStaleResources) {
 			LOG(Rendering, Info, "Destroying stale resources");
 			//Wait until the device is idle so we don't destroy resources that are in use
@@ -244,16 +244,13 @@ namespace Rendering {
 
 	void RenderingSystem::RefreshMaterials() {
 		//The library of shader modules that will stay loaded as long as we need to continue creating pipelines
-		VulkanPipelineCreationHelper helper{*device};
+		PipelineCreationHelper helper{*device};
 
 		for (Resources::Handle<Material> const& material : dirtyMaterials) {
 			//Existing resources become stale
-			if (material->resources) stalePipelineResources.emplace_back(std::move(material->resources));
-
+			if (material->gpuResources) staleGraphicsPipelineResources.emplace_back(std::move(*material->gpuResources));
 			//Create new resources
-			VulkanPipelineResources resources = CreatePipeline(*material, helper);
-			if (resources) material->resources = std::move(resources);
-			else resources.Destroy(*device);
+			material->gpuResources.emplace(CreateGraphicsPipeline(*material, helper));
 		}
 		dirtyMaterials.clear();
 	}
@@ -265,18 +262,15 @@ namespace Rendering {
 
 	void RenderingSystem::MarkMaterialStale(Resources::Handle<Material> const& material) {
 		//Steal the resources from the material so we can destroy them later when they're no longer being used
-		stalePipelineResources.emplace_back(std::move(material->resources));
+		staleGraphicsPipelineResources.emplace_back(std::move(*material->gpuResources));
 	}
 
 	void RenderingSystem::DestroyStalePipelines() {
-		for (VulkanPipelineResources const& resources : stalePipelineResources) {
-			resources.Destroy(*device);
-		}
-		stalePipelineResources.clear();
+		staleGraphicsPipelineResources.clear();
 	}
 
 	void RenderingSystem::RefreshStaticMeshes() {
-		VulkanMeshCreationHelper helper{ *device, queues->transfer, *transferCommandPool};
+		MeshCreationHelper helper{ *device, queues->transfer, *transferCommandPool};
 
 		for (const Resources::Handle<StaticMesh>& mesh : dirtyStaticMeshes) {
 			//Existing resources become stale
@@ -299,168 +293,23 @@ namespace Rendering {
 
 	void RenderingSystem::DestroyStaleMeshes() {
 		staleMeshResources.clear();
-		stalePipelineResources.clear();
 	}
 
-	VulkanPipelineResources RenderingSystem::CreatePipeline(Material const& material, VulkanPipelineCreationHelper& helper) {
-		VulkanPipelineResources resources;
+	GraphicsPipelineResources RenderingSystem::CreateGraphicsPipeline(Material const& material, PipelineCreationHelper& helper) {
+		GraphicsPipelineResources::ShaderModules modules;
+		modules.vertex = helper.GetModule(material.vertex);
+		modules.fragment = helper.GetModule(material.fragment);
 
-		//Create the descriptor set layout
-		{
-			//@todo Actually create this on a per-material basis
-			resources.descriptorSetLayout = nullptr;
-		}
-
-		//Create the pipeline layout
-		{
-			VkDescriptorSetLayout setLayouts[] = {
-				uniformLayouts->global,
-				uniformLayouts->object,
-				//resources.descriptors,
-			};
-
-			VkPipelineLayoutCreateInfo layoutCI{};
-			layoutCI.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-			layoutCI.setLayoutCount = static_cast<uint32_t>(std::size(setLayouts));
-			layoutCI.pSetLayouts = setLayouts;
-			layoutCI.pushConstantRangeCount = 0; // Optional
-			layoutCI.pPushConstantRanges = nullptr; // Optional
-
-			if (vkCreatePipelineLayout(*device, &layoutCI, nullptr, &resources.pipelineLayout) != VK_SUCCESS) {
-				LOGF(Temp, Error, "Failed to create pipeline layout for material %i", material.id.ToValue());
-				return resources;
-			}
-		}
-
-		VkShaderModule const vertShaderModule = helper.GetModule(material.vertex);
-		VkShaderModule const fragShaderModule = helper.GetModule(material.fragment);
-		if (!vertShaderModule || !fragShaderModule) return resources;
-
-		VkPipelineShaderStageCreateInfo vertShaderStageCI{};
-		vertShaderStageCI.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		vertShaderStageCI.stage = VK_SHADER_STAGE_VERTEX_BIT;
-		vertShaderStageCI.module = vertShaderModule;
-		vertShaderStageCI.pName = "main";
-
-		VkPipelineShaderStageCreateInfo fragShaderStageCI{};
-		fragShaderStageCI.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		fragShaderStageCI.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		fragShaderStageCI.module = fragShaderModule;
-		fragShaderStageCI.pName = "main";
-
-		VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageCI, fragShaderStageCI};
-
-		//Vertex Input function
-		auto const bindings = Vertex_Simple::GetBindingDescription();
+		auto const binding = Vertex_Simple::GetBindingDescription();
 		auto const attributes = Vertex_Simple::GetAttributeDescriptions();
+		VertexInformationViews vertex;
+		vertex.bindings = TArrayView{ binding };
+		vertex.attributes = attributes;
 
-		VkPipelineVertexInputStateCreateInfo vertexInputCI{};
-		vertexInputCI.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-		vertexInputCI.vertexBindingDescriptionCount = 1;
-		vertexInputCI.pVertexBindingDescriptions = &bindings;
-		vertexInputCI.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributes.size());
-		vertexInputCI.pVertexAttributeDescriptions = attributes.data();
-
-		//Input assembly function
-		VkPipelineInputAssemblyStateCreateInfo inputAssemblyCI{};
-		inputAssemblyCI.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-		inputAssemblyCI.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-		inputAssemblyCI.primitiveRestartEnable = VK_FALSE;
-
-		//Viewport
-		VkPipelineViewportStateCreateInfo viewportStateCI{};
-		viewportStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-		viewportStateCI.viewportCount = 1;
-		viewportStateCI.pViewports = nullptr; //provided dynamically
-		viewportStateCI.scissorCount = 1;
-		viewportStateCI.pScissors = nullptr; //provided dynamically
-
-		//Rasterizer
-		VkPipelineRasterizationStateCreateInfo rasterizerCI{};
-		rasterizerCI.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-		rasterizerCI.depthClampEnable = VK_FALSE;
-		rasterizerCI.rasterizerDiscardEnable = VK_FALSE;
-		rasterizerCI.polygonMode = VK_POLYGON_MODE_FILL;
-		rasterizerCI.lineWidth = 1.0f;
-		rasterizerCI.cullMode = VK_CULL_MODE_BACK_BIT;
-		rasterizerCI.frontFace = VK_FRONT_FACE_CLOCKWISE;
-		rasterizerCI.depthBiasEnable = VK_FALSE;
-		rasterizerCI.depthBiasConstantFactor = 0.0f;
-		rasterizerCI.depthBiasClamp = 0.0f;
-		rasterizerCI.depthBiasSlopeFactor = 0.0f;
-
-		//Multisampling
-		//Disabled for now, requires a GPU feature to enable
-		VkPipelineMultisampleStateCreateInfo multisamplingCI{};
-		multisamplingCI.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-		multisamplingCI.sampleShadingEnable = VK_FALSE;
-		multisamplingCI.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-		multisamplingCI.minSampleShading = 1.0f;
-		multisamplingCI.pSampleMask = nullptr;
-		multisamplingCI.alphaToCoverageEnable = VK_FALSE;
-		multisamplingCI.alphaToOneEnable = VK_FALSE;
-
-		//Color blending (alpha blending setup)
-		VkPipelineColorBlendAttachmentState colorBlendAttachment{};
-		colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-		colorBlendAttachment.blendEnable = VK_TRUE;
-		colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-		colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-		colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
-		colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-		colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-		colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
-
-		VkPipelineColorBlendStateCreateInfo colorBlendingCI{};
-		colorBlendingCI.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-		colorBlendingCI.logicOpEnable = VK_FALSE;
-		colorBlendingCI.logicOp = VK_LOGIC_OP_COPY; // Optional
-		colorBlendingCI.attachmentCount = 1;
-		colorBlendingCI.pAttachments = &colorBlendAttachment;
-		colorBlendingCI.blendConstants[0] = 0.0f; // Optional
-		colorBlendingCI.blendConstants[1] = 0.0f; // Optional
-		colorBlendingCI.blendConstants[2] = 0.0f; // Optional
-		colorBlendingCI.blendConstants[3] = 0.0f; // Optional
-
-		//Dynamic state
-		VkDynamicState dynamicStates[2] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
-
-		VkPipelineDynamicStateCreateInfo dynamicStateCI{};
-		dynamicStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-		dynamicStateCI.dynamicStateCount = 2;
-		dynamicStateCI.pDynamicStates = dynamicStates;
-
-		//Final pipeline creation
-		VkGraphicsPipelineCreateInfo pipelineCI{};
-		pipelineCI.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-		//Programmable stages
-		pipelineCI.stageCount = 2;
-		pipelineCI.pStages = shaderStages;
-		//Fixed states
-		pipelineCI.pVertexInputState = &vertexInputCI;
-		pipelineCI.pInputAssemblyState = &inputAssemblyCI;
-		pipelineCI.pViewportState = &viewportStateCI;
-		pipelineCI.pRasterizationState = &rasterizerCI;
-		pipelineCI.pMultisampleState = &multisamplingCI;
-		pipelineCI.pDepthStencilState = nullptr; // Optional
-		pipelineCI.pColorBlendState = &colorBlendingCI;
-		pipelineCI.pDynamicState = &dynamicStateCI;
-		//Additional data
-		pipelineCI.layout = resources.pipelineLayout;
-		pipelineCI.renderPass = passes->surface;
-		pipelineCI.subpass = 0;
-		//Parent pipelines, if this pipeline derives from another
-		pipelineCI.basePipelineHandle = VK_NULL_HANDLE; // Optional
-		pipelineCI.basePipelineIndex = -1; // Optional
-
-		if (vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &resources.pipeline) != VK_SUCCESS) {
-			LOGF(Temp, Error, "Failed to create pipeline for material %i", material.id.ToValue());
-		}
-
-		return resources;
+		return GraphicsPipelineResources{ *device, modules, *uniformLayouts, vertex, passes->surface };
 	}
 
-	MeshResources RenderingSystem::CreateMesh(StaticMesh const& mesh, VkCommandPool pool, VulkanMeshCreationHelper& helper) {
+	MeshResources RenderingSystem::CreateMesh(StaticMesh const& mesh, VkCommandPool pool, MeshCreationHelper& helper) {
 		//Calculate byte size values for the input mesh
 		const auto BufferSizeVisitor = [](auto const& v) { return v.size() * sizeof(typename std::remove_reference_t<decltype(v)>::value_type); };
 		size_t const vertexBytes = std::visit(BufferSizeVisitor, mesh.vertices);

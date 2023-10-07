@@ -1,6 +1,6 @@
 #pragma once
 #include "Rendering/Vertex.h"
-#include "Rendering/Vulkan/VulkanResources.h"
+#include "Rendering/Vulkan/Resources.h"
 #include "Resources/Resource.h"
 
 namespace Rendering {
@@ -19,7 +19,7 @@ namespace Rendering {
 		Resources::Handle<FragmentShader> fragment;
 
 		/** Rendering resources for this material */
-		VulkanPipelineResources resources;
+		std::optional<GraphicsPipelineResources> gpuResources;
 	};
 }
 

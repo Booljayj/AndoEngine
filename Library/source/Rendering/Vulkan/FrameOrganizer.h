@@ -10,7 +10,6 @@
 #include "Rendering/Vulkan/UniformLayouts.h"
 #include "Rendering/Vulkan/Uniforms.h"
 #include "Rendering/Vulkan/Vulkan.h"
-#include "Rendering/Vulkan/VulkanResources.h"
 
 namespace Rendering {
 	/** Buffering levels, which determine the number of frames that will be cycled through for rendering */
