@@ -16,14 +16,13 @@ namespace HAL {
 		using HandleType = SDL_Window*;
 		using IdType = uint32_t;
 
-		/** The unique identifier that can be used to retrieve this window */
-		IdType id = std::numeric_limits<IdType>::max();
+		static constexpr IdType Invalid = 0;
 
-		/** Broadcast when this window is destroyed by the owning WindowingSystem */
-		TEvent<IdType> destroyed;
+		/** The unique identifier that can be used to retrieve this window */
+		IdType id = Invalid;
 	
 		Window(const Window&) = delete;
-		Window(Window&&) = default;
+		Window(Window&&) = delete;
 		~Window();
 
 		inline operator bool() const { return !!handle; }
@@ -31,8 +30,6 @@ namespace HAL {
 		inline Window& operator=(const Window&) = default;
 		inline bool operator==(IdType otherID) const { return id == otherID; }
 		inline bool operator==(HandleType otherHandle) const { return handle == otherHandle; }
-
-		inline bool IsValid() const { return this->operator bool(); }
 
 	protected:
 		friend struct WindowingSystem;
@@ -47,6 +44,9 @@ namespace HAL {
 	public:
 		using WindowContainer = std::vector<std::unique_ptr<Window>>;
 
+		/** Broadcast just before a window is destroyed */
+		TEvent<Window::IdType> destroying;
+
 		bool Startup();
 		bool Shutdown();
 
@@ -60,8 +60,8 @@ namespace HAL {
 		/** Destroy a window using its id. Cannot be used to destroy the primary window. Returns true if a window was destroyed. */
 		bool DestroyWindow(Window::IdType id);
 
-		inline WindowContainer::const_iterator cbegin() const { return windows.cbegin(); }
-		inline WindowContainer::const_iterator cend() const { return windows.cend(); }
+		inline WindowContainer::const_iterator begin() const { return windows.begin(); }
+		inline WindowContainer::const_iterator end() const { return windows.end(); }
 
 	protected:
 		WindowContainer windows;

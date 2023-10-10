@@ -13,6 +13,8 @@ DEFINE_LOG_CATEGORY(Rendering, Info);
 
 namespace Rendering {
 	bool RenderingSystem::Startup(HAL::WindowingSystem& windowing, Resources::Cache<Material>& materials, Resources::Cache<StaticMesh>& staticMeshes) {
+		windowing.destroying.Add(this, &RenderingSystem::OnDestroyingWindow);
+
 		//The primary window must exist in order to start the rendering system
 		HAL::Window& primaryWindow = windowing.GetPrimaryWindow();
 
@@ -184,6 +186,7 @@ namespace Rendering {
 	void RenderingSystem::DestroySurface(HAL::Window::IdType id) {
 		const auto iter = std::find_if(surfaces.begin(), surfaces.end(), [=](auto const& surface) { return surface->GetID() == id; });
 		if (iter != surfaces.end() && iter != surfaces.begin()) {
+			if (device) vkDeviceWaitIdle(*device);
 			surfaces.erase(iter);
 		} else {
 			LOGF(Rendering, Warning, "Unable to destroy surface with id %i", id);
@@ -224,6 +227,15 @@ namespace Rendering {
 		requests += *found.shared;
 
 		return std::make_tuple(requests, *found.shared);
+	}
+
+	void RenderingSystem::OnDestroyingWindow(HAL::Window::IdType id) {
+		if (id == HAL::Window::Invalid) {
+			if (device) vkDeviceWaitIdle(*device);
+			surfaces.clear();
+		} else {
+			DestroySurface(id);
+		}
 	}
 
 	void RenderingSystem::MaterialCreated(Resources::Handle<Material> const& material) {

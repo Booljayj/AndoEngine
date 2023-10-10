@@ -63,14 +63,10 @@ namespace Rendering {
 		/** The frame organizer that keeps track of resources used each frame */
 		std::optional<FrameOrganizer> organizer;
 
-		EventHandleType windowDestroyedHandle;
-
 		/** The full size of the window that is associated with this surface */
 		glm::u32vec2 windowSize;
 
 		uint8_t retryCount : 1;
 		uint8_t shouldRecreateSwapchain : 1;
-
-		void OnWindowDestroyed(HAL::Window::IdType id);
 	};
 }

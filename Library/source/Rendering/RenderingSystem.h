@@ -1,6 +1,7 @@
 #pragma once
 #include "Engine/Logging.h"
 #include "Engine/StandardTypes.h"
+#include "HAL/WindowingSystem.h"
 #include "Rendering/Surface.h"
 #include "Rendering/Vulkan/Device.h"
 #include "Rendering/Vulkan/Framework.h"
@@ -82,6 +83,9 @@ namespace Rendering {
 		static std::tuple<QueueRequests, SharedQueues::References> GetQueueRequests(PhysicalDeviceDescription const& physical, VkSurfaceKHR surface);
 		/** Determine which queues to request from the physical device. Used in headless mode when surface rendering is not available. */
 		static std::tuple<QueueRequests, SharedQueues::References> GetHeadlessQueueRequests(PhysicalDeviceDescription const& physical);
+
+		/** Called just before a window is destroyed in the windowing system */
+		void OnDestroyingWindow(HAL::Window::IdType id);
 
 		/** Callbacks for when materials are created or destroyed */
 		void MaterialCreated(Resources::Handle<Material> const& material);

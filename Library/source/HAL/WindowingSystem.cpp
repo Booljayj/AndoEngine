@@ -6,17 +6,13 @@
 
 namespace HAL {
 	Window::~Window() {
-		destroyed(id);
 		SDL_DestroyWindow(handle);
 	}
 
 	Window::Window(WindowCreationParams const& params) {
 		handle = SDL_CreateWindow(params.title.data(), params.position.x, params.position.y, params.size.x, params.size.y, params.flags | SDL_WINDOW_VULKAN);
-		if (handle) {
-			id = SDL_GetWindowID(handle);
-		} else {
-			LOGF(SDL, Error, "Failed to create SDL window: %i", SDL_GetError());
-		}
+		if (!handle) throw std::runtime_error{ t_printf("Failed to create SDL window: %i", SDL_GetError()).data() };
+		id = SDL_GetWindowID(handle);
 	}
 
 	bool WindowingSystem::Startup() {
@@ -25,6 +21,7 @@ namespace HAL {
 	}
 
 	bool WindowingSystem::Shutdown() {
+		destroying.Broadcast(Window::Invalid);
 		windows.clear();
 		return true;
 	}
@@ -36,14 +33,13 @@ namespace HAL {
 	}
 
 	Window* WindowingSystem::CreateWindow(WindowCreationParams const& params) {
-		std::unique_ptr<Window> window = std::unique_ptr<Window>(new Window(params));
-		if (!window->IsValid()) return nullptr;
-		else return windows.emplace_back(std::move(window)).get();
+		return windows.emplace_back(std::unique_ptr<Window>{ new Window(params) }).get();
 	}
 
 	bool WindowingSystem::DestroyWindow(Window::IdType id) {
 		auto const iter = std::find_if(windows.begin(), windows.end(), [&](auto const& window) { return window->id == id; });
 		if (iter != windows.end() && iter != windows.begin()) {
+			destroying.Broadcast((*iter)->id);
 			windows.erase(iter);
 			return true;
 		} else {

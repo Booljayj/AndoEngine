@@ -24,8 +24,6 @@ namespace Rendering {
 		swapchain.reset();
 		
 		vkDestroySurfaceKHR(instance, surface, nullptr);
-
-		window.destroyed.Remove(windowDestroyedHandle);
 	}
 
 	void Surface::InitializeRendering(Device const& device, PhysicalDeviceDescription const& physical, RenderPasses const& passes, UniformLayouts const& layouts) {
