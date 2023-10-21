@@ -41,7 +41,10 @@ namespace Rendering {
 		bool RecreateSwapchain(Device const& device, PhysicalDeviceDescription const& physical, RenderPasses const& passes, UniformLayouts const& layouts);
 		
 		/** Render the renderable entities from the registry to this surface */
-		bool Render(RenderPasses const& passes, entt::registry& registry);
+		bool Render(RenderPasses const& passes, entt::registry& registry, RenderKey key);
+
+		/** Get keys for any currently in-progress rendering for any frame */
+		t_vector<RenderKey> GetInProgressRenderKeys() const;
 
 	private:
 		friend RenderingSystem;

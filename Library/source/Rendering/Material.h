@@ -13,13 +13,12 @@ namespace Rendering {
 		REFLECT_STRUCT(Material, Resources::Resource);
 		using Resources::Resource::Resource;
 
-		/** The vertex shader used to create this material */
-		Resources::Handle<VertexShader> vertex;
-		/** The fragment shader used to create this material */
-		Resources::Handle<FragmentShader> fragment;
+		struct {
+			Resources::Handle<VertexShader> vertex;
+			Resources::Handle<FragmentShader> fragment;
+		} shaders;
 
-		/** Rendering resources for this material */
-		std::optional<GraphicsPipelineResources> gpuResources;
+		std::unique_ptr<GraphicsPipelineResources> objects;
 	};
 }
 

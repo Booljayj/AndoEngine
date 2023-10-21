@@ -21,7 +21,8 @@ namespace Rendering {
 
 		FormattedVertices vertices;
 		FormattedIndices indices;
-		std::optional<MeshResources> gpuResources;
+
+		std::unique_ptr<MeshResources> objects;
 	};
 }
 

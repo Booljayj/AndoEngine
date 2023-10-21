@@ -96,7 +96,7 @@ namespace Rendering {
 		other.device = nullptr;
 	}
 
-	std::optional<RecordingContext> FrameOrganizer::CreateRecordingContext(size_t numObjects, size_t numThreads) {
+	std::optional<RecordingContext> FrameOrganizer::CreateRecordingContext(RenderKey key, size_t numObjects, size_t numThreads) {
 		//The timeout duration in nanoseconds
 		constexpr uint64_t timeout = 5'000'000'000;
 
@@ -146,10 +146,12 @@ namespace Rendering {
 		//This frame will now be assocaited with a new image, so stop tracking this frame's fence with any other image
 		std::replace(imageFences.begin(), imageFences.end(), frame.sync.fence, VkFence{ VK_NULL_HANDLE });
 
-		return RecordingContext{ currentFrameIndex, currentImageIndex, frame.uniforms, frame.mainCommandBuffer, frame.threadCommandBuffers };
+		frame.key = key;
+
+		return RecordingContext{ currentFrameIndex, currentImageIndex, key, frame.uniforms, frame.mainCommandBuffer, frame.threadCommandBuffers };
 	}
 
-	void FrameOrganizer::Submit(TArrayView<VkCommandBuffer const> commands) {
+	void FrameOrganizer::Submit(std::span<VkCommandBuffer const> commands) {
 		FrameResources const& frame = frames[currentFrameIndex];
 
 		frame.uniforms.global.Flush();
@@ -174,7 +176,7 @@ namespace Rendering {
 		submitInfo.pWaitDstStageMask = waitStages;
 
 		submitInfo.commandBufferCount = static_cast<uint32_t>(commands.size());
-		submitInfo.pCommandBuffers = commands.begin();
+		submitInfo.pCommandBuffers = commands.data();
 
 		VkSemaphore const signalSemaphores[] = { frame.sync.renderFinished };
 		submitInfo.signalSemaphoreCount = static_cast<uint32_t>(std::size(signalSemaphores));
@@ -205,6 +207,19 @@ namespace Rendering {
 
 		//We've successfully finished rendering this frame, so move to the next frame
 		currentFrameIndex = (currentFrameIndex + 1) % frames.size();
+	}
+
+	t_vector<RenderKey> FrameOrganizer::GetInProgressRenderKeys() const {
+		t_vector<RenderKey> keys;
+		keys.reserve(frames.size());
+
+		for (const auto& frame : frames) {
+			if ((frame.key != RenderKey::Invalid) && (vkGetFenceStatus(device, frame.sync.fence) == VK_SUCCESS)) {
+				keys.emplace_back(frame.key);
+			}
+		}
+		
+		return keys;
 	}
 
 	FrameOrganizer::PoolSizesType FrameOrganizer::GetPoolSizes(EBuffering buffering) {

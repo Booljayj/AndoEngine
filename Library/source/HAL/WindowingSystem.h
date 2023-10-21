@@ -25,13 +25,11 @@ namespace HAL {
 		Window(Window&&) = delete;
 		~Window();
 
-		inline operator bool() const { return !!handle; }
 		inline operator HandleType() const { return handle; }
-		inline Window& operator=(const Window&) = default;
 		inline bool operator==(IdType otherID) const { return id == otherID; }
 		inline bool operator==(HandleType otherHandle) const { return handle == otherHandle; }
 
-	protected:
+	private:
 		friend struct WindowingSystem;
 
 		/** The low-level handle for this window */

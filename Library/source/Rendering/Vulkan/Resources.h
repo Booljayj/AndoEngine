@@ -6,6 +6,11 @@
 namespace Rendering {
 	struct UniformLayouts;
 
+	struct RenderObjectsBase {
+		RenderKey key;
+		virtual ~RenderObjectsBase() = default;
+	};
+
 	enum class EGraphicsLayouts : uint8_t {
 		Global,
 		Object,
@@ -18,7 +23,7 @@ namespace Rendering {
 		TArrayView<VkVertexInputAttributeDescription> attributes;
 	};
 
-	struct GraphicsPipelineResources {
+	struct GraphicsPipelineResources : public RenderObjectsBase {
 		struct ShaderModules {
 			VkShaderModule vertex = nullptr;
 			VkShaderModule fragment = nullptr;
@@ -41,7 +46,7 @@ namespace Rendering {
 	};
 
 	/** Stores resources related to a mesh */
-	struct MeshResources {
+	struct MeshResources : public RenderObjectsBase {
 		Buffer buffer;
 
 		struct {

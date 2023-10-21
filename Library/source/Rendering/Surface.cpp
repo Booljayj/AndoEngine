@@ -13,9 +13,9 @@ namespace Rendering {
 			throw std::runtime_error{ "Failed to create Vulkan window surface" };
 		}
 
-		int32_t width = 1, height = 1;
-		SDL_Vulkan_GetDrawableSize(window, &width, &height);
-		windowSize = glm::u32vec2{ static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
+		glm::i32vec2 drawableSize = { 1, 1 };
+		SDL_Vulkan_GetDrawableSize(window, &drawableSize.x, &drawableSize.y);
+		windowSize = glm::u32vec2{ static_cast<uint32_t>(drawableSize.x), static_cast<uint32_t>(drawableSize.y) };
 	}
 
 	Surface::~Surface() {
@@ -79,14 +79,14 @@ namespace Rendering {
 		return true;
 	}
 
-	bool Surface::Render(RenderPasses const& passes, entt::registry& registry) {
+	bool Surface::Render(RenderPasses const& passes, entt::registry& registry, RenderKey key) {
 		//@todo This would ideally be done with some acceleration structure that contains a mapping between the pipelines and all of
 		//      the geometry that should be drawn with that pipeline, to avoid binding the same pipeline more than once and to strip
 		//      out culled geometry.
 		auto const renderables = registry.view<MeshRenderer const>();
 
 		constexpr size_t numThreads = 1;
-		auto const context = organizer->CreateRecordingContext(renderables.size(), numThreads);
+		auto const context = organizer->CreateRecordingContext(key, renderables.size(), numThreads);
 		if (context) {
 			FrameUniforms& uniforms = context->uniforms;
 			VkCommandBuffer const commands = context->primaryCommandBuffer;
@@ -122,6 +122,8 @@ namespace Rendering {
 				global.time = 0;
 				uniforms.global.Write(global, 0);
 
+				std::vector<RenderObjectsBase*> usedObjects;
+
 				uint32_t objectIndex = 0;
 				for (const auto id : renderables) {
 					auto const& renderer = renderables.get<MeshRenderer const>(id);
@@ -129,7 +131,10 @@ namespace Rendering {
 					Material const* material = renderer.material.Get();
 					StaticMesh const* mesh = renderer.mesh.Get();
 
-					if (material && material->gpuResources && mesh && mesh->gpuResources) {
+					if (material && material->objects && mesh && mesh->objects) {
+						usedObjects.emplace_back(material->objects.get());
+						usedObjects.emplace_back(mesh->objects.get());
+
 						enum class EDynamicOffsets : uint8_t {
 							Object,
 							MAX
@@ -143,7 +148,7 @@ namespace Rendering {
 						uniforms.object.Write(object, objectIndex);
 
 						//Bind the pipeline that will be used for rendering
-						vkCmdBindPipeline(commands, VK_PIPELINE_BIND_POINT_GRAPHICS, material->gpuResources->pipeline);
+						vkCmdBindPipeline(commands, VK_PIPELINE_BIND_POINT_GRAPHICS, material->objects->pipeline);
 
 						//Bind the descriptor sets to use for this draw command
 						EnumBackedContainer<VkDescriptorSet, EGraphicsLayouts> sets;
@@ -152,12 +157,12 @@ namespace Rendering {
 						//sets[EGraphicsLayouts::Material] = material->gpuResources->set;
 
 						vkCmdBindDescriptorSets(
-							commands, VK_PIPELINE_BIND_POINT_GRAPHICS, material->gpuResources->layouts.pipeline,
+							commands, VK_PIPELINE_BIND_POINT_GRAPHICS, material->objects->layouts.pipeline,
 							0, sets.size(), sets.data(), offsets.size(), offsets.data()
 						);
 
 						//Bind the vetex and index buffers for the mesh
-						MeshResources const& meshRes = *mesh->gpuResources;
+						MeshResources const& meshRes = *mesh->objects;
 						VkBuffer const vertexBuffers[] = { meshRes.buffer };
 						VkDeviceSize const vertexOffsets[] = { meshRes.offset.vertex };
 						vkCmdBindVertexBuffers(commands, 0, 1, vertexBuffers, vertexOffsets);
@@ -168,6 +173,12 @@ namespace Rendering {
 
 						++objectIndex;
 					}
+				}
+
+				/** Mark the resources that we used when recording commands. This prevents them from being destroyed until the operation is complete. */
+				for (RenderObjectsBase* objects : usedObjects)
+				{
+					objects->key = context->key;
 				}
 			}
 
@@ -185,5 +196,10 @@ namespace Rendering {
 			}
 			return true;
 		}
+	}
+
+	t_vector<RenderKey> Surface::GetInProgressRenderKeys() const {
+		if (organizer) return organizer->GetInProgressRenderKeys();
+		else return t_vector<RenderKey>{};
 	}
 }

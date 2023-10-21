@@ -152,8 +152,8 @@ void main() {
 		}
 
 		Handle<Material> const material = application.database.GetCache<Material>().Create(10);
-		material->vertex = vertex;
-		material->fragment = fragment;
+		material->shaders.vertex = vertex;
+		material->shaders.fragment = fragment;
 
 		Handle<StaticMesh> const plane = application.database.GetCache<StaticMesh>().Create(100);
 		Vertices_Simple& vertices = plane->vertices.emplace<Vertices_Simple>();

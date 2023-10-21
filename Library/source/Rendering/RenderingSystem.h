@@ -54,6 +54,8 @@ namespace Rendering {
 		/** Pool for command buffers used in transfer operations */
 		std::optional<CommandPool> transferCommandPool;
 
+		/** The current render key used to mark resources that are in-use */
+		RenderKey key = RenderKey::Initial;
 		/** Flags for tracking rendering behavior and changes */
 		uint8_t retryCount = 0;
 
@@ -79,6 +81,8 @@ namespace Rendering {
 		void DestroySurface(HAL::Window::IdType id);
 
 	protected:
+		uint8_t hasStaleObjects : 1 = false;
+
 		/** Determine which queues to request from the physical device. Queues needed for surface rendering will be avoided if possible. */
 		static std::tuple<QueueRequests, SharedQueues::References> GetQueueRequests(PhysicalDeviceDescription const& physical, VkSurfaceKHR surface);
 		/** Determine which queues to request from the physical device. Used in headless mode when surface rendering is not available. */
@@ -99,38 +103,35 @@ namespace Rendering {
 		std::vector<Resources::Handle<Material>> dirtyMaterials;
 		std::vector<Resources::Handle<StaticMesh>> dirtyStaticMeshes;
 
-		/** Resources that are pending destruction */
-		std::vector<GraphicsPipelineResources> staleGraphicsPipelineResources;
-		std::vector<MeshResources> staleMeshResources;
+		/** Resources that are pending destruction when they are no longer used */
+		std::vector<std::unique_ptr<GraphicsPipelineResources>> staleGraphicsPipelineResources;
+		std::vector<std::unique_ptr<MeshResources>> staleMeshResources;
 
 		/** Refresh dirty materials so they are no longer dirty */
 		void RefreshMaterials();
-
 		/** Mark the pipeline resources on the material as dirty */
 		void MarkMaterialDirty(Resources::Handle<Material> const& material);
 		/** Mark the pipeline resources on the material as stale */
 		void MarkMaterialStale(Resources::Handle<Material> const& material);
-		/** Destroy any stale pipeline resources */
-		void DestroyStalePipelines();
 
 		/** Refresh dirty meshes so they are no longer dirty */
 		void RefreshStaticMeshes();
-
 		/** Mark the mesh resources on the static mesh as dirty */
 		void MarkStaticMeshDirty(Resources::Handle<StaticMesh> const& mesh);
 		/** Mark the mesh resources on the material as stale */
 		void MarkStaticMeshStale(Resources::Handle<StaticMesh> const& mesh);
-		/** Destroy any stale pipeline resources */
-		void DestroyStaleMeshes();
+
+		/** Destroy any stale objects which are no longer being used */
+		void DestroyUnusedStaleObjects();
 
 	private:
 		/** Surfaces used for rendering */
 		std::vector<std::unique_ptr<Surface>> surfaces;
 
 		/** Create the pipeline resources for a material */
-		GraphicsPipelineResources CreateGraphicsPipeline(Material const& material, PipelineCreationHelper& helper);
+		std::unique_ptr<GraphicsPipelineResources> CreateGraphicsPipeline(Material const& material, PipelineCreationHelper & helper);
 		/** Create the mesh resources for a mesh component */
-		MeshResources CreateMesh(StaticMesh const& mesh, VkCommandPool pool, MeshCreationHelper& helper);
+		std::unique_ptr<MeshResources> CreateMesh(StaticMesh const& mesh, VkCommandPool pool, MeshCreationHelper& helper);
 
 		//InitImGUI(VulkanLogicalDevice& logical, VulkanPhysicalDevice& physical, Surface& surface);
 	};
