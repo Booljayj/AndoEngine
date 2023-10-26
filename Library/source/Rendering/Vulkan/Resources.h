@@ -1,15 +1,11 @@
 #pragma once
 #include "Engine/ArrayView.h"
 #include "Rendering/Vulkan/Buffers.h"
+#include "Rendering/Vulkan/RenderObjects.h"
 #include "Rendering/Vulkan/Vulkan.h"
 
 namespace Rendering {
 	struct UniformLayouts;
-
-	struct RenderObjectsBase {
-		RenderKey key;
-		virtual ~RenderObjectsBase() = default;
-	};
 
 	enum class EGraphicsLayouts : uint8_t {
 		Global,

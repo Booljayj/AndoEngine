@@ -50,7 +50,8 @@ namespace Rendering {
 
 			materials.Destroy();
 			staticMeshes.Destroy();
-			DestroyUnusedStaleObjects();
+			staleGraphicsPipelineResources.clear();
+			staleMeshResources.clear();
 
 			transferCommandPool.reset();
 			uniformLayouts.reset();
@@ -64,6 +65,16 @@ namespace Rendering {
 	}
 
 	bool RenderingSystem::Render(entt::registry& registry) {
+		//Collect unused resources and destroy them on a parallel thread
+		std::jthread const cleanup = [this]() {
+			RenderObjectsHandleCollection collection;
+			for (auto& surface : surfaces) collection << *surface;
+			collection << std::move(staleGraphicsPipelineResources);
+			collection << std::move(staleMeshResources);
+
+			return std::jthread{ [](std::stop_token, RenderObjectsHandleCollection collection) { collection.clear(); }, std::move(collection) };
+		}();
+
 		//Recreate swapchains if necessary. This happens periodically if the rendering parameters have changed significantly.
 		for (auto const& surface : surfaces) {
 			if (surface->IsSwapchainDirty()) {
@@ -73,31 +84,18 @@ namespace Rendering {
 			}
 		}
 
-		//Modify the render key. After this point, we know previously-used resources can be cleaned up if their dependent operations are complete,
-		//and newly-used resources will be cleaned up when this current operation is complete.
-		key.Increment();
-
 		//Rebuild any resources, creating new ones and destroying stale ones
 		RebuildResources();
 
 		bool success = true;
 		for (auto const& surface : surfaces) {
-			success &= surface->Render(*passes, registry, key);
+			success &= surface->Render(*passes, registry);
 		}
 
 		return success;
 	}
 
 	void RenderingSystem::RebuildResources() {
-		const bool hasStaleResources = staleGraphicsPipelineResources.size() > 0 || staleMeshResources.size() > 0;
-		if (hasStaleResources) {
-			LOG(Rendering, Info, "Destroying stale resources");
-			//Wait until the device is idle so we don't destroy resources that are in use
-			vkDeviceWaitIdle(*device);
-
-			DestroyUnusedStaleObjects();
-		}
-
 		if (dirtyMaterials.size() > 0) {
 			LOG(Rendering, Info, "Creating new pipelines");
 			RefreshMaterials();
@@ -243,7 +241,7 @@ namespace Rendering {
 	void RenderingSystem::MaterialCreated(Resources::Handle<Material> const& material) {
 		MarkMaterialDirty(material);
 	}
-
+	
 	void RenderingSystem::MaterialDestroyed(Resources::Handle<Material> const& material) {
 		MarkMaterialStale(material);
 	}
@@ -258,14 +256,11 @@ namespace Rendering {
 
 	void RenderingSystem::RefreshMaterials() {
 		//The library of shader modules that will stay loaded as long as we need to continue creating pipelines
-		PipelineCreationHelper helper{*device};
+		PipelineCreationHelper helper{ *device };
 
 		for (Resources::Handle<Material> const& material : dirtyMaterials) {
 			//Existing resources become stale
-			if (material->objects) {
-				staleGraphicsPipelineResources.emplace_back(std::move(material->objects));
-				hasStaleObjects = true;
-			}
+			if (material->objects) staleGraphicsPipelineResources.emplace_back(std::move(material->objects));
 			//Create new resources
 			material->objects = CreateGraphicsPipeline(*material, helper);
 		}
@@ -280,7 +275,6 @@ namespace Rendering {
 	void RenderingSystem::MarkMaterialStale(Resources::Handle<Material> const& material) {
 		//Steal the resources from the material so we can destroy them later when they're no longer being used
 		staleGraphicsPipelineResources.emplace_back(std::move(material->objects));
-		hasStaleObjects = true;
 	}
 
 	void RenderingSystem::RefreshStaticMeshes() {
@@ -288,10 +282,7 @@ namespace Rendering {
 
 		for (const Resources::Handle<StaticMesh>& mesh : dirtyStaticMeshes) {
 			//Existing resources become stale
-			if (mesh->objects) {
-				staleMeshResources.emplace_back(std::move(mesh->objects));
-				hasStaleObjects = true;
-			}
+			if (mesh->objects) staleMeshResources.emplace_back(std::move(mesh->objects));
 			//Create new resources
 			mesh->objects = CreateMesh(*mesh, *transferCommandPool, helper);
 		}
@@ -306,28 +297,9 @@ namespace Rendering {
 
 	void RenderingSystem::MarkStaticMeshStale(Resources::Handle<StaticMesh> const& mesh) {
 		staleMeshResources.emplace_back(std::move(mesh->objects));
-		hasStaleObjects = true;
 	}
 
-	void RenderingSystem::DestroyUnusedStaleObjects() {
-		if (hasStaleObjects) {
-			ScopedThreadBufferMark mark;
-
-			std::unordered_set<RenderKey> keys;
-			for (const auto& surface : surfaces) {
-				const auto inProgressKeys = surface->GetInProgressRenderKeys();
-				keys.insert(inProgressKeys.begin(), inProgressKeys.end());
-			}
-
-			const auto IsNotUsed = [&keys](auto const& objects) { return !keys.contains(objects->key); };
-			Algo::RemoveAllSwapIf(staleGraphicsPipelineResources, IsNotUsed);
-			Algo::RemoveAllSwapIf(staleMeshResources, IsNotUsed);
-
-			hasStaleObjects = staleGraphicsPipelineResources.size() > 0 || staleMeshResources.size() > 0;
-		}
-	}
-
-	std::unique_ptr<GraphicsPipelineResources> RenderingSystem::CreateGraphicsPipeline(Material const& material, PipelineCreationHelper& helper) {
+	std::shared_ptr<GraphicsPipelineResources> RenderingSystem::CreateGraphicsPipeline(Material const& material, PipelineCreationHelper& helper) {
 		GraphicsPipelineResources::ShaderModules modules;
 		modules.vertex = helper.GetModule(material.shaders.vertex);
 		modules.fragment = helper.GetModule(material.shaders.fragment);
@@ -338,10 +310,10 @@ namespace Rendering {
 		vertex.bindings = TArrayView{ binding };
 		vertex.attributes = attributes;
 
-		return std::make_unique<GraphicsPipelineResources>(*device, modules, *uniformLayouts, vertex, passes->surface);
+		return std::make_shared<GraphicsPipelineResources>(*device, modules, *uniformLayouts, vertex, passes->surface);
 	}
 
-	std::unique_ptr<MeshResources> RenderingSystem::CreateMesh(StaticMesh const& mesh, VkCommandPool pool, MeshCreationHelper& helper) {
+	std::shared_ptr<MeshResources> RenderingSystem::CreateMesh(StaticMesh const& mesh, VkCommandPool pool, MeshCreationHelper& helper) {
 		//Calculate byte size values for the input mesh
 		const auto BufferSizeVisitor = [](auto const& v) { return v.size() * sizeof(typename std::remove_reference_t<decltype(v)>::value_type); };
 		size_t const vertexBytes = std::visit(BufferSizeVisitor, mesh.vertices);
@@ -361,7 +333,7 @@ namespace Rendering {
 		std::visit(IndexWriteVisitor, mesh.indices);
 
 		//Create the final resources that will be used for this mesh
-		std::unique_ptr<MeshResources> resources = std::make_unique<MeshResources>(*device, totalBytes);
+		std::shared_ptr<MeshResources> resources = std::make_shared<MeshResources>(*device, totalBytes);
 
 		//Allocate a command buffer for the transfer from the staging to the target buffer
 		VkCommandBufferAllocateInfo bufferAI{};

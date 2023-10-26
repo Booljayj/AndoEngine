@@ -5,7 +5,9 @@
 #include "Rendering/Vulkan/Commands.h"
 #include "Rendering/Vulkan/Descriptors.h"
 #include "Rendering/Vulkan/Device.h"
+#include "Rendering/Vulkan/Fence.h"
 #include "Rendering/Vulkan/PhysicalDevice.h"
+#include "Rendering/Vulkan/RenderObjects.h"
 #include "Rendering/Vulkan/Swapchain.h"
 #include "Rendering/Vulkan/UniformLayouts.h"
 #include "Rendering/Vulkan/Uniforms.h"
@@ -38,7 +40,7 @@ namespace Rendering {
 	struct FrameSynchronization {
 		VkSemaphore imageAvailable = nullptr;
 		VkSemaphore renderFinished = nullptr;
-		VkFence fence = nullptr;
+		Fence fence;
 		
 		FrameSynchronization(VkDevice inDevice);
 		FrameSynchronization(FrameSynchronization const&) = delete;
@@ -60,11 +62,17 @@ namespace Rendering {
 		std::vector<VkCommandBuffer> threadCommandBuffers;
 
 		FrameSynchronization sync;
-		RenderKey key;
+
+		RenderObjectsHandleCollection objects;
 
 		FrameResources(VkDevice inDevice, uint32_t graphicsQueueFamilyIndex, UniformLayouts const& uniformLayouts, VkDescriptorPool descriptorPool, VmaAllocator allocator);
 		FrameResources(FrameResources const&) = delete;
 		FrameResources(FrameResources&&) noexcept;
+
+		friend RenderObjectsHandleCollection& operator<<(RenderObjectsHandleCollection& collection, FrameResources& frame);
+
+		bool WaitUntilUnused(std::chrono::nanoseconds timeout) const;
+		void Prepare(VkDevice device, size_t numObjects, size_t numThreads, uint32_t graphicsQueueFamilyIndex);
 	};
 
 	struct RecordingContext {
@@ -72,14 +80,14 @@ namespace Rendering {
 		uint32_t frameIndex;
 		/** The index of the image in the swapchain */
 		uint32_t imageIndex;
-		/** The unique key for the current render operation. Used to mark dependent resources so we know when they were last used (or are still in use). */
-		RenderKey key;
 
 		/** Common uniforms used when recording */
 		FrameUniforms& uniforms;
 		/** Command buffers used to record commands */
 		VkCommandBuffer primaryCommandBuffer;
 		std::span<VkCommandBuffer> secondaryCommandBuffers;
+
+		RenderObjectsHandleCollection& objects;
 	};
 
 	/** Keeps track of the resources used each frame, and how they should be used to render a number of viewports. */
@@ -88,17 +96,17 @@ namespace Rendering {
 		FrameOrganizer(FrameOrganizer const&) = delete;
 		FrameOrganizer(FrameOrganizer&&) noexcept;
 
+		friend RenderObjectsHandleCollection& operator<<(RenderObjectsHandleCollection& collection, FrameOrganizer& organizer);
+
 		/**
 		 * Create a recording context for the current frame using an unused set of resources.
 		 * Returngs nothing if all resources are in use and we should skip recording this frame.
 		 */
-		std::optional<RecordingContext> CreateRecordingContext(RenderKey key, size_t numObjects, size_t numThreads);
+		std::optional<RecordingContext> CreateRecordingContext(size_t numObjects, size_t numThreads);
 
 		/** Submit everything currently recorded so that it can be rendered. */
 		void Submit(std::span<VkCommandBuffer const> commands);
-
-		t_vector<RenderKey> GetInProgressRenderKeys() const;
-
+		
 	private:
 		using PoolSizesType = std::array<VkDescriptorPoolSize, 3>;
 

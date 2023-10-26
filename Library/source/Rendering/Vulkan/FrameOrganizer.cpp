@@ -14,6 +14,7 @@ namespace Rendering {
 
 	FrameSynchronization::FrameSynchronization(VkDevice inDevice)
 		: device(inDevice)
+		, fence(inDevice)
 	{
 		//Create the semaphores
 		VkSemaphoreCreateInfo semaphoreInfo{};
@@ -28,32 +29,21 @@ namespace Rendering {
 			throw std::runtime_error{ "Failed to create render finished semaphore" };
 		}
 
-		//Create the fence
-		VkFenceCreateInfo fenceInfo{};
-		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-		if (vkCreateFence(device, &fenceInfo, nullptr, &fence) != VK_SUCCESS || !fence) {
-			throw std::runtime_error{ "Failed to create fence" };
-		}
-
 		imageAvailable = tempImageAvailable.Release();
 		renderFinished = tempRenderFinished.Release();
 	}
 
 	FrameSynchronization::FrameSynchronization(FrameSynchronization&& other) noexcept
-		: imageAvailable(other.imageAvailable), renderFinished(other.renderFinished), fence(other.fence), device(other.device)
+		: imageAvailable(other.imageAvailable), renderFinished(other.renderFinished), fence(std::move(other.fence)), device(other.device)
 	{
 		other.device = nullptr;
 	}
 
 	FrameSynchronization::~FrameSynchronization() {
 		if (device) {
-			vkWaitForFences(device, 1, &fence, VK_TRUE, std::numeric_limits<uint64_t>::max());
-
+			fence.WaitUntilSignalled(std::chrono::nanoseconds(std::numeric_limits<uint64_t>::max()));
 			vkDestroySemaphore(device, renderFinished, nullptr);
 			vkDestroySemaphore(device, imageAvailable, nullptr);
-			vkDestroyFence(device, fence, nullptr);
 		}
 	}
 
@@ -72,6 +62,30 @@ namespace Rendering {
 		, threadCommandBuffers(std::move(other.threadCommandBuffers))
 		, sync(std::move(other.sync))
 	{}
+
+	bool FrameResources::WaitUntilUnused(std::chrono::nanoseconds timeout) const {
+		return sync.fence.WaitUntilSignalled(timeout);
+	}
+
+	void FrameResources::Prepare(VkDevice device, size_t numObjects, size_t numThreads, uint32_t graphicsQueueFamilyIndex) {
+		//Resize the object uniforms buffer so we can store all the per-object data that will be used for rendering
+		uniforms.object.Reserve(numObjects);
+
+		//Reset the command pools so new commands can be written
+		mainCommandPool.Reset();
+		for (CommandPool& threadCommandPool : threadCommandPools) {
+			threadCommandPool.Reset();
+		}
+
+		//Grow the number of command pools to match the number of threads
+		for (size_t threadIndex = threadCommandPools.size(); threadIndex < numThreads; ++threadIndex) {
+			CommandPool& newPool = threadCommandPools.emplace_back(device, graphicsQueueFamilyIndex);
+			threadCommandBuffers.emplace_back(newPool.CreateBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY));
+		}
+
+		//Release resources that were previously used to render this frame
+		objects.clear();
+	}
 
 	FrameOrganizer::FrameOrganizer(VkDevice device, VmaAllocator allocator, SurfaceQueues const& queues, Swapchain const& swapchain, UniformLayouts const& uniformLayouts, EBuffering buffering)
 		: device(device)
@@ -96,38 +110,24 @@ namespace Rendering {
 		other.device = nullptr;
 	}
 
-	std::optional<RecordingContext> FrameOrganizer::CreateRecordingContext(RenderKey key, size_t numObjects, size_t numThreads) {
+	std::optional<RecordingContext> FrameOrganizer::CreateRecordingContext(size_t numObjects, size_t numThreads) {
 		//The timeout duration in nanoseconds
-		constexpr uint64_t timeout = 5'000'000'000;
+		//constexpr uint64_t timeout = 5'000'000'000;
+		constexpr auto timeout = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::seconds(5));
 
 		FrameResources& frame = frames[currentFrameIndex];
 
-		//Wait for the frame fence to finish, indicating this frame is no longer in use
-		if (vkWaitForFences(device, 1, &frame.sync.fence, VK_TRUE, timeout) != VK_SUCCESS) {
+		//Wait until the frame is no longer being used. If this takes too long, we'll have to skip rendering.
+		if (!frame.WaitUntilUnused(timeout)) {
 			LOG(Vulkan, Warning, "Timed out waiting for fence");
 			return std::optional<RecordingContext>{};
 		}
 
-		//Reset the command pools so new commands can be written
-		frame.mainCommandPool.Reset();
-		for (CommandPool& threadCommandPool : frame.threadCommandPools) {
-			threadCommandPool.Reset();
-		}
-
-		//Grow the number of command pools to match the number of threads
-		for (size_t threadIndex = frame.threadCommandPools.size(); threadIndex < numThreads; ++threadIndex) {
-			CommandPool& newPool = frame.threadCommandPools.emplace_back(device, graphicsQueueFamilyIndex);
-			VkCommandBuffer& newBuffer = frame.threadCommandBuffers.emplace_back();
-
-			newBuffer = newPool.CreateBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY);
-		}
-
-		//Resize the object uniforms buffer so we can store all the per-object data that will be used for rendering
-		frame.uniforms.object.Reserve(numObjects);
+		frame.Prepare(device, numObjects, numThreads, graphicsQueueFamilyIndex);
 
 		//Acquire the swapchain image that can be used for this frame
 		currentImageIndex = 0;
-		if (vkAcquireNextImageKHR(device, swapchain, timeout, frame.sync.imageAvailable, VK_NULL_HANDLE, &currentImageIndex) != VK_SUCCESS) {
+		if (vkAcquireNextImageKHR(device, swapchain, timeout.count(), frame.sync.imageAvailable, VK_NULL_HANDLE, &currentImageIndex) != VK_SUCCESS) {
 			LOG(Vulkan, Warning, "Timed out waiting for next available swapchain image");
 			return std::optional<RecordingContext>{};
 		}
@@ -138,17 +138,15 @@ namespace Rendering {
 
 		//If another frame is still using this image, wait for it to complete
 		if (imageFences[currentImageIndex] != VK_NULL_HANDLE) {
-			if (vkWaitForFences(device, 1, &imageFences[currentImageIndex], VK_TRUE, timeout) != VK_SUCCESS) {
+			if (vkWaitForFences(device, 1, &imageFences[currentImageIndex], VK_TRUE, timeout.count()) != VK_SUCCESS) {
 				LOGF(Vulkan, Warning, "Timed out waiting for image fence %i", currentImageIndex);
 				return std::optional<RecordingContext>{};
 			}
 		}
 		//This frame will now be assocaited with a new image, so stop tracking this frame's fence with any other image
-		std::replace(imageFences.begin(), imageFences.end(), frame.sync.fence, VkFence{ VK_NULL_HANDLE });
+		std::replace(imageFences.begin(), imageFences.end(), (VkFence)frame.sync.fence, VkFence{ VK_NULL_HANDLE });
 
-		frame.key = key;
-
-		return RecordingContext{ currentFrameIndex, currentImageIndex, key, frame.uniforms, frame.mainCommandBuffer, frame.threadCommandBuffers };
+		return RecordingContext{ currentFrameIndex, currentImageIndex, frame.uniforms, frame.mainCommandBuffer, frame.threadCommandBuffers, frame.objects };
 	}
 
 	void FrameOrganizer::Submit(std::span<VkCommandBuffer const> commands) {
@@ -161,9 +159,7 @@ namespace Rendering {
 		imageFences[currentImageIndex] = frame.sync.fence;
 
 		//Reset the fence for this frame, so we can start another rendering process that it will track
-		if (vkResetFences(device, 1, &frame.sync.fence) != VK_SUCCESS) {
-			throw std::runtime_error{ "Unable to reset image fence" };
-		}
+		frame.sync.fence.Reset();
 
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -209,19 +205,6 @@ namespace Rendering {
 		currentFrameIndex = (currentFrameIndex + 1) % frames.size();
 	}
 
-	t_vector<RenderKey> FrameOrganizer::GetInProgressRenderKeys() const {
-		t_vector<RenderKey> keys;
-		keys.reserve(frames.size());
-
-		for (const auto& frame : frames) {
-			if ((frame.key != RenderKey::Invalid) && (vkGetFenceStatus(device, frame.sync.fence) == VK_SUCCESS)) {
-				keys.emplace_back(frame.key);
-			}
-		}
-		
-		return keys;
-	}
-
 	FrameOrganizer::PoolSizesType FrameOrganizer::GetPoolSizes(EBuffering buffering) {
 		uint32_t const numFrames = static_cast<uint32_t>(GetNumFrames(buffering));
 
@@ -235,5 +218,15 @@ namespace Rendering {
 			VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, numFrames },
 			VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, numFrames * 16 },
 		};
+	}
+
+	RenderObjectsHandleCollection& operator<<(RenderObjectsHandleCollection& collection, FrameResources& frame) {
+		collection << std::move(frame.objects);
+		return collection;
+	}
+
+	RenderObjectsHandleCollection& operator<<(RenderObjectsHandleCollection& collection, FrameOrganizer& organizer) {
+		for (auto& frame : organizer.frames) collection << frame;
+		return collection;
 	}
 }

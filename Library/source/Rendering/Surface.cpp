@@ -79,14 +79,15 @@ namespace Rendering {
 		return true;
 	}
 
-	bool Surface::Render(RenderPasses const& passes, entt::registry& registry, RenderKey key) {
+	bool Surface::Render(RenderPasses const& passes, entt::registry& registry) {
 		//@todo This would ideally be done with some acceleration structure that contains a mapping between the pipelines and all of
 		//      the geometry that should be drawn with that pipeline, to avoid binding the same pipeline more than once and to strip
 		//      out culled geometry.
+		
 		auto const renderables = registry.view<MeshRenderer const>();
 
 		constexpr size_t numThreads = 1;
-		auto const context = organizer->CreateRecordingContext(key, renderables.size(), numThreads);
+		auto const context = organizer->CreateRecordingContext(renderables.size(), numThreads);
 		if (context) {
 			FrameUniforms& uniforms = context->uniforms;
 			VkCommandBuffer const commands = context->primaryCommandBuffer;
@@ -122,8 +123,6 @@ namespace Rendering {
 				global.time = 0;
 				uniforms.global.Write(global, 0);
 
-				std::vector<RenderObjectsBase*> usedObjects;
-
 				uint32_t objectIndex = 0;
 				for (const auto id : renderables) {
 					auto const& renderer = renderables.get<MeshRenderer const>(id);
@@ -132,8 +131,8 @@ namespace Rendering {
 					StaticMesh const* mesh = renderer.mesh.Get();
 
 					if (material && material->objects && mesh && mesh->objects) {
-						usedObjects.emplace_back(material->objects.get());
-						usedObjects.emplace_back(mesh->objects.get());
+						context->objects.push_back(material->objects);
+						context->objects.push_back(mesh->objects);
 
 						enum class EDynamicOffsets : uint8_t {
 							Object,
@@ -174,16 +173,10 @@ namespace Rendering {
 						++objectIndex;
 					}
 				}
-
-				/** Mark the resources that we used when recording commands. This prevents them from being destroyed until the operation is complete. */
-				for (RenderObjectsBase* objects : usedObjects)
-				{
-					objects->key = context->key;
-				}
 			}
 
 			//Submit the rendering commands for this frame
-			organizer->Submit(TArrayView<VkCommandBuffer const>{ context->primaryCommandBuffer });
+			organizer->Submit(std::span<VkCommandBuffer const>{ &context->primaryCommandBuffer, 1 });
 
 			retryCount = 0;
 			return true;
@@ -198,8 +191,8 @@ namespace Rendering {
 		}
 	}
 
-	t_vector<RenderKey> Surface::GetInProgressRenderKeys() const {
-		if (organizer) return organizer->GetInProgressRenderKeys();
-		else return t_vector<RenderKey>{};
+	RenderObjectsHandleCollection& operator<<(RenderObjectsHandleCollection& collection, Surface& surface) {
+		if (surface.organizer) collection << *surface.organizer;
+		return collection;
 	}
 }

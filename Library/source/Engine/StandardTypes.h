@@ -76,6 +76,19 @@ using namespace std::string_view_literals;
 
 //Custom extensions
 namespace stdext {
+	template<typename TargetType, typename TargetAllocatorType, typename SourceType, typename SourceAllocatorType>
+	void append(std::vector<TargetType, TargetAllocatorType>& target, std::vector<SourceType, SourceAllocatorType> const& source) {
+		target.reserve(target.size() + source.size());
+		for (SourceType const& element : source) target.emplace_back(element);
+	}
+
+	template<typename TargetType, typename TargetAllocatorType, typename SourceType, typename SourceAllocatorType>
+	void append(std::vector<TargetType, TargetAllocatorType>& target, std::vector<SourceType, SourceAllocatorType>&& source) {
+		target.reserve(target.size() + source.size());
+		for (SourceType& element : source) target.emplace_back(std::move(element));
+		source.clear();
+	}
+
 	class shared_recursive_mutex : public std::shared_mutex {
 	public:
 		inline void lock(void) {

@@ -18,7 +18,7 @@ namespace Rendering {
 			Resources::Handle<FragmentShader> fragment;
 		} shaders;
 
-		std::unique_ptr<GraphicsPipelineResources> objects;
+		std::shared_ptr<GraphicsPipelineResources> objects;
 	};
 }
 

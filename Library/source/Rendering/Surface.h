@@ -21,6 +21,8 @@ namespace Rendering {
 		Surface(Surface&&) = delete;
 		~Surface();
 
+		friend RenderObjectsHandleCollection& operator<<(RenderObjectsHandleCollection& collection, Surface& surface);
+
 		operator VkSurfaceKHR() const { return surface; }
 		inline bool operator==(HAL::Window::IdType otherID) const { return GetID() == otherID; }
 
@@ -41,10 +43,7 @@ namespace Rendering {
 		bool RecreateSwapchain(Device const& device, PhysicalDeviceDescription const& physical, RenderPasses const& passes, UniformLayouts const& layouts);
 		
 		/** Render the renderable entities from the registry to this surface */
-		bool Render(RenderPasses const& passes, entt::registry& registry, RenderKey key);
-
-		/** Get keys for any currently in-progress rendering for any frame */
-		t_vector<RenderKey> GetInProgressRenderKeys() const;
+		bool Render(RenderPasses const& passes, entt::registry& registry);
 
 	private:
 		friend RenderingSystem;
@@ -72,4 +71,6 @@ namespace Rendering {
 		uint8_t retryCount : 1;
 		uint8_t shouldRecreateSwapchain : 1;
 	};
+
+	RenderObjectsHandleCollection& operator<<(RenderObjectsHandleCollection& collection, Surface& surface);
 }

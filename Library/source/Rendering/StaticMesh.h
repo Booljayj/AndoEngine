@@ -22,7 +22,7 @@ namespace Rendering {
 		FormattedVertices vertices;
 		FormattedIndices indices;
 
-		std::unique_ptr<MeshResources> objects;
+		std::shared_ptr<MeshResources> objects;
 	};
 }
 
