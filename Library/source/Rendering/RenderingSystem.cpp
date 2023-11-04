@@ -209,8 +209,8 @@ namespace Rendering {
 		if (!found.shared) throw std::runtime_error{ t_printf("Physical device %s does not contain required queues", physical.properties.deviceName).data() };
 
 		QueueRequests requests;
-		requests += *found.surface;
-		requests += *found.shared;
+		requests << *found.surface;
+		requests << *found.shared;
 
 		return std::make_tuple(requests, *found.shared);
 	}
@@ -224,7 +224,7 @@ namespace Rendering {
 		if (!found.shared) throw std::runtime_error{ t_printf("Physical device %s does not contain required queues", physical.properties.deviceName).data() };
 
 		QueueRequests requests;
-		requests += *found.shared;
+		requests << *found.shared;
 
 		return std::make_tuple(requests, *found.shared);
 	}

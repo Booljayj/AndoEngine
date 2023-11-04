@@ -278,13 +278,13 @@ namespace Rendering {
 		return SharedQueues{ *resolved.transfer, std::move(resolved.computes) };
 	}
 
-	QueueRequests& operator+=(QueueRequests& requests, SurfaceQueues::References const& references) {
+	QueueRequests& operator<<(QueueRequests& requests, SurfaceQueues::References const& references) {
 		requests += references.present;
 		requests += references.graphics;
 		return requests;
 	}
 
-	QueueRequests& operator+=(QueueRequests& requests, SharedQueues::References const& references) {
+	QueueRequests& operator<<(QueueRequests& requests, SharedQueues::References const& references) {
 		requests += references.transfer;
 		for (auto const& compute : references.computes) requests += compute;
 		return requests;

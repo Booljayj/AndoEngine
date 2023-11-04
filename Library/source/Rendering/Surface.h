@@ -71,6 +71,4 @@ namespace Rendering {
 		uint8_t retryCount : 1;
 		uint8_t shouldRecreateSwapchain : 1;
 	};
-
-	RenderObjectsHandleCollection& operator<<(RenderObjectsHandleCollection& collection, Surface& surface);
 }

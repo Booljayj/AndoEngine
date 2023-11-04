@@ -89,6 +89,8 @@ namespace Rendering {
 			/** Find references to queues that can be used from the set of families. */
 			static std::optional<References> Find(TArrayView<QueueFamilyDescription> families);
 
+			friend QueueRequests& operator<<(QueueRequests& requests, References const& references);
+
 			/** Resolve these references into the actual queues by searching for them in the results */
 			std::optional<SurfaceQueues> ResolveFrom(QueueResults const& results) const;
 		};
@@ -108,11 +110,10 @@ namespace Rendering {
 			/** Find references to queues that can be used from the set of families. Used in headless mode where surface rendering is not needed. */
 			static std::optional<References> FindHeadless(TArrayView<QueueFamilyDescription> families);
 
+			friend QueueRequests& operator<<(QueueRequests& requests, References const& references);
+
 			/** Resolve these references into the actual queues by searching for them in the results */
 			std::optional<SharedQueues> ResolveFrom(QueueResults const& results) const;
 		};
 	};
-
-	QueueRequests& operator+=(QueueRequests& requests, SurfaceQueues::References const& references);
-	QueueRequests& operator+=(QueueRequests& requests, SharedQueues::References const& references);
 }
