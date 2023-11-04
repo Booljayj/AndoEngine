@@ -35,9 +35,9 @@ namespace Rendering {
 		VkPipelineVertexInputStateCreateInfo vertexInputCI{};
 		vertexInputCI.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 		vertexInputCI.vertexBindingDescriptionCount = static_cast<uint32_t>(vertex.bindings.size());
-		vertexInputCI.pVertexBindingDescriptions = vertex.bindings.begin();
+		vertexInputCI.pVertexBindingDescriptions = vertex.bindings.data();
 		vertexInputCI.vertexAttributeDescriptionCount = static_cast<uint32_t>(vertex.attributes.size());
-		vertexInputCI.pVertexAttributeDescriptions = vertex.attributes.begin();
+		vertexInputCI.pVertexAttributeDescriptions = vertex.attributes.data();
 
 		//Input assembly function
 		VkPipelineInputAssemblyStateCreateInfo inputAssemblyCI{};

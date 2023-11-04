@@ -10,7 +10,7 @@ namespace Rendering {
 	 * A new logical device is created for each physical device that will be used.
 	 */
 	struct Device {
-		using ExtensionsView = TArrayView<char const* const>;
+		using ExtensionsView = std::span<char const* const>;
 		
 		/** Queues created on this device */
 		QueueResults queues;

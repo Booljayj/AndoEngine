@@ -1,5 +1,4 @@
 #pragma once
-#include "Engine/ArrayView.h"
 #include "Rendering/Vulkan/Buffers.h"
 #include "Rendering/Vulkan/RenderObjects.h"
 #include "Rendering/Vulkan/Vulkan.h"
@@ -15,8 +14,8 @@ namespace Rendering {
 	};
 
 	struct VertexInformationViews {
-		TArrayView<VkVertexInputBindingDescription> bindings;
-		TArrayView<VkVertexInputAttributeDescription> attributes;
+		std::span<VkVertexInputBindingDescription const> bindings;
+		std::span<VkVertexInputAttributeDescription const> attributes;
 	};
 
 	struct GraphicsPipelineResources : public RenderObjectsBase {

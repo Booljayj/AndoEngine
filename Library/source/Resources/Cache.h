@@ -53,7 +53,7 @@ namespace Resources {
 			return handle;
 		}
 
-		virtual Handle<ResourceType> Load(Identifier id, TArrayView<std::byte> archive) { return nullptr; }
+		virtual Handle<ResourceType> Load(Identifier id, std::span<std::byte const> archive) { return nullptr; }
 
 		virtual Handle<ResourceType> Find(Identifier id) {
 			std::shared_lock lock{ mutex };

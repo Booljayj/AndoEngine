@@ -71,8 +71,8 @@ namespace Rendering {
 		return buffers;
 	}
 
-	void CommandPool::DestroyBuffers(TArrayView<VkCommandBuffer const> buffers) {
-		vkFreeCommandBuffers(device, pool, buffers.size(), buffers.begin());
+	void CommandPool::DestroyBuffers(std::span<VkCommandBuffer const> buffers) {
+		vkFreeCommandBuffers(device, pool, buffers.size(), buffers.data());
 	}
 
 	ScopedCommands::ScopedCommands(VkCommandBuffer inBuffer, VkCommandBufferUsageFlags flags, VkCommandBufferInheritanceInfo const* inheritance)

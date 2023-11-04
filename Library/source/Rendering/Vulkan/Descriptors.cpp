@@ -1,13 +1,13 @@
 #include "Rendering/Vulkan/Descriptors.h"
 
 namespace Rendering {
-	DescriptorPool::DescriptorPool(VkDevice inDevice, TArrayView<VkDescriptorPoolSize> sizes, size_t maxNumSets)
+	DescriptorPool::DescriptorPool(VkDevice inDevice, std::span<VkDescriptorPoolSize const> sizes, size_t maxNumSets)
 		: device(inDevice)
 	{
 		VkDescriptorPoolCreateInfo descriptorPoolCI{};
 		descriptorPoolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		descriptorPoolCI.poolSizeCount = static_cast<uint32_t>(sizes.size());
-		descriptorPoolCI.pPoolSizes = sizes.begin();
+		descriptorPoolCI.pPoolSizes = sizes.data();
 		descriptorPoolCI.maxSets = maxNumSets;
 
 		if (vkCreateDescriptorPool(device, &descriptorPoolCI, nullptr, &pool) != VK_SUCCESS || !pool) {

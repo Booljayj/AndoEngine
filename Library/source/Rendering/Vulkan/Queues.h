@@ -1,5 +1,4 @@
 #pragma once
-#include "Engine/ArrayView.h"
 #include "Engine/Flags.h"
 #include "Engine/StandardTypes.h"
 #include "Rendering/Vulkan/Vulkan.h"
@@ -87,7 +86,7 @@ namespace Rendering {
 			QueueReference graphics;
 
 			/** Find references to queues that can be used from the set of families. */
-			static std::optional<References> Find(TArrayView<QueueFamilyDescription> families);
+			static std::optional<References> Find(std::span<QueueFamilyDescription const> families);
 
 			friend QueueRequests& operator<<(QueueRequests& requests, References const& references);
 
@@ -106,9 +105,9 @@ namespace Rendering {
 			std::vector<QueueReference> computes;
 
 			/** Find references to queues that can be used from the set of families. Queues already used for surface rendering will be avoided if possible. */
-			static std::optional<References> Find(TArrayView<QueueFamilyDescription> families, SurfaceQueues::References const& surface);
+			static std::optional<References> Find(std::span<QueueFamilyDescription const> families, SurfaceQueues::References const& surface);
 			/** Find references to queues that can be used from the set of families. Used in headless mode where surface rendering is not needed. */
-			static std::optional<References> FindHeadless(TArrayView<QueueFamilyDescription> families);
+			static std::optional<References> FindHeadless(std::span<QueueFamilyDescription const> families);
 
 			friend QueueRequests& operator<<(QueueRequests& requests, References const& references);
 

@@ -53,7 +53,7 @@ namespace Rendering {
 		else return Queue{ iter->queues[reference.index], reference };
 	}
 
-	std::optional<SurfaceQueues::References> SurfaceQueues::References::Find(TArrayView<QueueFamilyDescription> families) {
+	std::optional<SurfaceQueues::References> SurfaceQueues::References::Find(std::span<QueueFamilyDescription const> families) {
 		struct {
 			std::optional<QueueReference> graphics;
 			std::optional<QueueReference> present;
@@ -102,7 +102,7 @@ namespace Rendering {
 		else return std::nullopt;
 	}
 
-	std::optional<SharedQueues::References> SharedQueues::References::Find(TArrayView<QueueFamilyDescription> families, SurfaceQueues::References const& surface) {
+	std::optional<SharedQueues::References> SharedQueues::References::Find(std::span<QueueFamilyDescription const> families, SurfaceQueues::References const& surface) {
 		struct {
 			std::optional<QueueReference> transfer;
 			std::vector<QueueReference> computes;
@@ -192,7 +192,7 @@ namespace Rendering {
 		return result;
 	}
 
-	std::optional<SharedQueues::References> SharedQueues::References::FindHeadless(TArrayView<QueueFamilyDescription> families) {
+	std::optional<SharedQueues::References> SharedQueues::References::FindHeadless(std::span<QueueFamilyDescription const> families) {
 		struct {
 			std::optional<QueueReference> transfer;
 			std::vector<QueueReference> computes;

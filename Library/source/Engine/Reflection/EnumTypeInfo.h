@@ -1,5 +1,4 @@
 #pragma once
-#include "Engine/ArrayView.h"
 #include "Engine/Reflection/TypeInfo.h"
 
 namespace Reflection {
@@ -39,7 +38,7 @@ namespace Reflection {
 		using EnumTypeInfo::underlyingType;
 
 		/** The elements in this enumeration */
-		TArrayView<EnumPairType> elementView;
+		std::span<EnumPairType> elementView;
 
 		TStandardEnumTypeInfo(std::string_view inName) : ImplementedTypeInfo<EnumType, EnumTypeInfo>(Reflect<EnumType>::ID, inName) {
 			underlyingType = Reflect<UnderlyingType>::Get();
@@ -66,7 +65,7 @@ namespace Reflection {
 		}
 
 		TYPEINFO_BUILDER_METHODS(EnumType)
-		decltype(auto) ElementView(TArrayView<EnumPairType> inElementView) { elementView = inElementView; return *this; }
+		decltype(auto) ElementView(std::span<EnumPairType> inElementView) { elementView = inElementView; return *this; }
 	};
 
 	/** Generic type info that allows any array of name-value pairs to be considered an enum. Must be explicitly named, because there is no actual type involved. */
@@ -77,7 +76,7 @@ namespace Reflection {
 		using EnumTypeInfo::underlyingType;
 
 		/** The elements in this enumeration */
-		TArrayView<EnumPairType> elementView;
+		std::span<EnumPairType> elementView;
 
 		TGenericEnumTypeInfo(Hash128 inID, std::string_view inName) : ImplementedTypeInfo<UnderlyingType, EnumTypeInfo>(inID, inName) {
 			underlyingType = Reflect<UnderlyingType>::Get();
@@ -104,7 +103,7 @@ namespace Reflection {
 		}
 
 		TYPEINFO_BUILDER_METHODS(UnderlyingType)
-		decltype(auto) ElementView(TArrayView<EnumPairType> inElementView) { elementView = inElementView; return *this; }
+		decltype(auto) ElementView(std::span<EnumPairType> inElementView) { elementView = inElementView; return *this; }
 	};
 }
 

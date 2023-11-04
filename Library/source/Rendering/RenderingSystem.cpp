@@ -307,7 +307,7 @@ namespace Rendering {
 		auto const binding = Vertex_Simple::GetBindingDescription();
 		auto const attributes = Vertex_Simple::GetAttributeDescriptions();
 		VertexInformationViews vertex;
-		vertex.bindings = TArrayView{ binding };
+		vertex.bindings = std::span{ &binding, 1 };
 		vertex.attributes = attributes;
 
 		return std::make_shared<GraphicsPipelineResources>(*device, modules, *uniformLayouts, vertex, passes->surface);

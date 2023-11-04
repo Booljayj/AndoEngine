@@ -68,6 +68,8 @@ using namespace std::string_view_literals;
 #include <limits>
 #include <numbers>
 #include <numeric>
+#include <ranges>
+#include <span>
 #include <typeinfo>
 #include <utility>
 

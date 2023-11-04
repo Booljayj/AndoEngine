@@ -35,7 +35,7 @@ namespace Rendering {
 		deviceCI.pEnabledFeatures = &features;
 		//Extensions
 		deviceCI.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
-		deviceCI.ppEnabledExtensionNames = extensions.begin();
+		deviceCI.ppEnabledExtensionNames = extensions.data();
 
 		if (vkCreateDevice(physical, &deviceCI, nullptr, &device) != VK_SUCCESS || !device) {
 			throw std::runtime_error{ "Failed to create command pool for logical device" };

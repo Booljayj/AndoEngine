@@ -1,5 +1,4 @@
 #pragma once
-#include "Engine/ArrayView.h"
 #include "Engine/StandardTypes.h"
 #include "Rendering/Vulkan/Vulkan.h"
 
@@ -26,7 +25,7 @@ namespace Rendering {
 			template<typename T>
 			inline void WriteValue(T const& value, size_t offset) const { Write(&value, sizeof(T), offset); }
 			template<typename T>
-			inline void WriteArray(TArrayView<T> values, size_t offset) const { Write(values.begin(), values.size() * sizeof(T), offset); }
+			inline void WriteArray(std::span<T> values, size_t offset) const { Write(values.begin(), values.size() * sizeof(T), offset); }
 
 		private:
 			friend struct Buffer;
@@ -85,7 +84,7 @@ namespace Rendering {
 		template<typename T>
 		inline void WriteValue(T const& value, size_t offset) const { Write(&value, sizeof(T), offset); }
 		template<typename T>
-		inline void WriteArray(TArrayView<T> values, size_t offset) const { Write(values.begin(), values.size() * sizeof(T), offset); }
+		inline void WriteArray(std::span<T> values, size_t offset) const { Write(values.begin(), values.size() * sizeof(T), offset); }
 
 	private:
 		VmaAllocator allocator = nullptr;

@@ -1,5 +1,4 @@
 #pragma once
-#include "Engine/ArrayView.h"
 #include "Engine/Reflection/TypeInfo.h"
 
 //============================================================
@@ -72,9 +71,9 @@ namespace Reflection {
 		using FlagsTypeInfo::underlyingType;
 
 		/** The components for the flags */
-		TArrayView<FlagsPairType> componentsView;
+		std::span<FlagsPairType> componentsView;
 		/** The aggregates for the flags */
-		TArrayView<FlagsPairType> aggregatesView;
+		std::span<FlagsPairType> aggregatesView;
 
 		/** Information about the flags "empty" value */
 		FlagsPairType const* empty = nullptr;
@@ -138,8 +137,8 @@ namespace Reflection {
 		}
 
 		TYPEINFO_BUILDER_METHODS(FlagsType)
-		TStandardFlagsTypeInfo& ComponentsView(TArrayView<FlagsPairType> inComponentsView) { componentsView = inComponentsView; return *this; }
-		TStandardFlagsTypeInfo& AggregatesView(TArrayView<FlagsPairType> inAggregatesView) { aggregatesView = inAggregatesView; return *this; }
+		TStandardFlagsTypeInfo& ComponentsView(std::span<FlagsPairType> inComponentsView) { componentsView = inComponentsView; return *this; }
+		TStandardFlagsTypeInfo& AggregatesView(std::span<FlagsPairType> inAggregatesView) { aggregatesView = inAggregatesView; return *this; }
 		TStandardFlagsTypeInfo& Empty(FlagsPairType const* inEmpty) { empty = inEmpty; return *this; }
 	};
 }

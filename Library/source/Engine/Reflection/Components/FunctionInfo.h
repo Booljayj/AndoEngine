@@ -1,5 +1,4 @@
 #pragma once
-#include "Engine/ArrayView.h"
 #include "Engine/StandardTypes.h"
 #include "Engine/Reflection/Components/ArgumentInfo.h"
 #include "Engine/Reflection/TypeInfo.h"
@@ -21,7 +20,7 @@ namespace Reflection {
 	};
 	using FFunctionFlags = TFlags<EFunctionFlags>;
 
-	struct ArgumentView : TArrayView<ArgumentInfo const*> {
+	struct ArgumentView : std::span<ArgumentInfo const*> {
 		ArgumentInfo const* Find(Hash32 id) const {
 			//@todo If we have a way to ensure that the field array is sorted, we can use a binary search here for better speed.
 			const auto iter = std::find_if(this->begin(), this->end(), [=](ArgumentInfo const* info) { return info->id == id; });
@@ -43,8 +42,8 @@ namespace Reflection {
 		uint16_t NameHash = 0;
 		FFunctionFlags Flags = FFunctionFlags::None();
 
-		virtual TArrayView<char> CreateArguments() const = 0;
-		virtual bool Invoke(void* ret, TArrayView<char> args) = 0;
+		virtual std::span<char> CreateArguments() const = 0;
+		virtual bool Invoke(void* ret, std::span<char> args) = 0;
 	};
 
 	template<typename T, typename Enable = void>
@@ -60,7 +59,7 @@ namespace Reflection {
 
 		FunctionType func;
 
-		virtual bool Invoke(void* ret, TArrayView<char> args) override {
+		virtual bool Invoke(void* ret, std::span<char> args) override {
 			if (args.size() != argumentsSize) return false;
 			std::apply(func, *static_cast<ArgsTupleType const*>(args.begin()));
 			return true;
@@ -73,7 +72,7 @@ namespace Reflection {
 
 		FunctionType func;
 
-		virtual bool Invoke(void* ret, TArrayView<char> args) override {
+		virtual bool Invoke(void* ret, std::span<char> args) override {
 			if (!ret || args.size() != argumentsSize) return false;
 			*static_cast<ReturnType*>(ret) = std::apply(Func, *static_cast<ArgsTupleType const*>(args.begin()));
 			return true;
@@ -90,7 +89,7 @@ namespace Reflection {
 
 		FunctionType func;
 
-		virtual bool Invoke(void* ret, TArrayView<char> args) override {
+		virtual bool Invoke(void* ret, std::span<char> args) override {
 			if (args.size() != argumentsSize) return false;
 			std::apply(func, *static_cast<ArgsTupleType const*>(args.begin()));
 			return true;
@@ -104,7 +103,7 @@ namespace Reflection {
 
 		FunctionType func;
 
-		virtual bool Invoke(void* ret, TArrayView<char> args) override {
+		virtual bool Invoke(void* ret, std::span<char> args) override {
 			if (args.size() != argumentsSize) return false;
 			*static_cast<ReturnType*>(ret) = std::apply(func, *static_cast<ArgsTupleType const*>(args.begin()));
 			return true;

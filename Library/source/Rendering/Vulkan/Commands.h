@@ -1,5 +1,4 @@
 #pragma once
-#include "Engine/ArrayView.h"
 #include "Rendering/Vulkan/Vulkan.h"
 
 namespace Rendering {
@@ -19,7 +18,7 @@ namespace Rendering {
 		void DestroyBuffer(VkCommandBuffer buffer);
 
 		std::vector<VkCommandBuffer> CreateBuffers(size_t numBuffers, VkCommandBufferLevel level);
-		void DestroyBuffers(TArrayView<VkCommandBuffer const> buffers);
+		void DestroyBuffers(std::span<VkCommandBuffer const> buffers);
 
 	private:
 		VkDevice device = nullptr;
