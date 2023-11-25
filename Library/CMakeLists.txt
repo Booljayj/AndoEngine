@@ -11,6 +11,7 @@ add_library(Library STATIC ${SourceFiles} ${GeneratedFiles})
 target_include_directories(Library PUBLIC ${PROJECT_SOURCE_DIR}/source)
 target_precompile_headers(Library PRIVATE source/Engine/StandardTypes.h)
 target_compile_definitions(Library PUBLIC "$<$<CONFIG:DEBUG>:VULKAN_DEBUG>")
+target_compile_features(Library PUBLIC cxx_std_20)
 
 #IMGUI module
 add_subdirectory(modules/imgui-docking)
