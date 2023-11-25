@@ -28,20 +28,13 @@ namespace Reflection {
 			return;
 		}
 
-		//Print the unique ID of this type in hexadecimal
-		std::ios_base::fmtflags f{ stream.flags() };
-		stream << std::hex << std::right << std::setw(sizeof(type->id.low)) << std::setfill('0') << type->id.low << '-' << type->id.high;
-		stream.flags(f);
-
-		//Print the kind of TypeInfo this is.
-		stream << " ["sv << GetClassificationIdentifier(type->classification) << "] "sv;
-
-		//Print the name of the type
-		stream << type->GetName();
+		std::ostream_iterator<char> out{ stream };
+		
+		std::format_to(out, "{} [{}] {}"sv, type->id, GetClassificationIdentifier(type->classification), type->GetName());
 
 		//Print the memory parameters
 		if (flags.Has(EDebugPrintFlags::IncludeMetrics)) {
-			stream << " ("sv << type->memory.size << ':' << type->memory.alignment << ")"sv;
+			std::format_to(out, " ({}:{})"sv, type->memory.size, type->memory.alignment);
 		}
 
 		//Print detailed info for this type, depending on the kind
@@ -49,8 +42,9 @@ namespace Reflection {
 			if (StructTypeInfo const* structType = type->As<StructTypeInfo>()) {
 				//Print variables
 				if (structType->variables.size() > 0) {
+					std::format_to(out, " variables:\n");
 					for (auto const& variable : structType->variables) {
-						stream << '\t' << variable.name << " : "sv << variable.type->GetName() << "\n"sv;
+						std::format_to(out, "\t{} : {}\n"sv, variable.name, variable.type->GetName());
 					}
 				}
 			}

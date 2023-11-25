@@ -74,13 +74,15 @@ namespace Serialization {
 	}
 
 	void StructSerializer::WriteVariableIdentifier(VariableInfo const& variable, std::ostream& stream) {
-		Hash32 const id = variable.id;
-		WriteLE(&id.hash, stream);
+		uint32_t const value = variable.id.ToValue();
+		WriteLE(&value, stream);
 	}
 
 	VariableInfo const* StructSerializer::ReadVariableIdentifier(StructTypeInfo const& structType, std::istream& stream) {
-		Hash32 id;
-		ReadLE(&id.hash, stream);
+		uint32_t value;
+		ReadLE(&value, stream);
+
+		Hash32 const id = Hash32{ value };
 
 		//Walk up the chain of base classes, searching for a variable with the correct name hash.
 		StructTypeInfo const* currentStructType = &structType;
