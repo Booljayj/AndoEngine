@@ -102,42 +102,16 @@ TimeStamp::TimeStamp(TimePointType const& timepoint) {
 }
 
 std::ostream& operator<<(std::ostream& stream, CalendarTimeStamp const& calendar) {
-	char output[11] = "00-00-0000";
-
-	Utility::WriteReversedValue(calendar.day + 1, output, 2);
-	Utility::WriteReversedValue(calendar.month + 1, output + 3, 2);
-	Utility::WriteReversedValue(calendar.year, output + 6, 4);
-
-	std::reverse(output, output + sizeof(output)-1);
-	stream.write(output, sizeof(output)-1);
+	std::format_to(std::ostream_iterator<char>(stream), "{0}"sv, calendar);
 	return stream;
 }
 
 std::ostream& operator<<(std::ostream& stream, ClockTimeStamp const& clock) {
-	char output[13] = "000.00:00:00";
-
-	Utility::WriteReversedValue(clock.millisecond, output, 3);
-	Utility::WriteReversedValue(clock.second, output + 4, 2);
-	Utility::WriteReversedValue(clock.minute, output + 7, 2);
-	Utility::WriteReversedValue(clock.hour, output + 10, 2);
-
-	std::reverse(output, output + sizeof(output)-1);
-	stream.write(output, sizeof(output)-1);
+	std::format_to(std::ostream_iterator<char>(stream), "{0}"sv, clock);
 	return stream;
 }
 
 std::ostream& operator<<(std::ostream& stream, TimeStamp const& timestamp) {
-	char output[24] = "000.00:00:00 00-00-0000";
-
-	Utility::WriteReversedValue(timestamp.clock.millisecond, output, 3);
-	Utility::WriteReversedValue(timestamp.clock.second, output + 4, 2);
-	Utility::WriteReversedValue(timestamp.clock.minute, output + 7, 2);
-	Utility::WriteReversedValue(timestamp.clock.hour, output + 10, 2);
-	Utility::WriteReversedValue(timestamp.calendar.day + 1, output + 13, 2);
-	Utility::WriteReversedValue(timestamp.calendar.month + 1, output + 16, 2);
-	Utility::WriteReversedValue(timestamp.calendar.year, output + 19, 4);
-
-	std::reverse(output, output + sizeof(output)-1);
-	stream.write(output, sizeof(output)-1);
+	std::format_to(std::ostream_iterator<char>(stream), "{0}"sv, timestamp);
 	return stream;
 }

@@ -1,4 +1,5 @@
 #include "Profiling/Profiler.h"
+#include "Engine/Temporary.h"
 
 DEFINE_LOG_CATEGORY(Profiler, Info);
 
@@ -18,7 +19,7 @@ namespace Profiling {
 		session = std::make_unique<Session>(name);
 
 		if (!session || !session->IsValid()) {
-			LOGF(Profiler, Error, "Could not start profiling session '%s'.", name);
+			LOG(Profiler, Error, "Could not start profiling session '{}'.", name);
 			session.reset();
 			return false;
 		}
@@ -88,7 +89,7 @@ namespace Profiling {
 		flushCounter = 5;
 
 		static uint32_t counter = 0;
-		const std::string_view filename = t_printf("%s_%u_%u.profile.json", name.c_str(), beginTimePoint.time_since_epoch().count(), counter++);
+		const std::string_view filename = format_temp("{0}_{1}_{2}.profile.json", name.c_str(), beginTimePoint.time_since_epoch().count(), counter++);
 
 		file.open(filename.data(), std::ios_base::out | std::ios_base::trunc);
 
@@ -99,12 +100,12 @@ namespace Profiling {
 				<< "[{\"ph\":\"I\",\"cat\":\"Default\",\"pid\":0,\"name\":\""sv << name
 				<< " start\",\"tid\":"sv << threadID
 				<< ",\"ts\":0}\n"sv;
-
+			
 			IncrementFlushCounter();
-			LOGF(Profiler, Info, "Started profiling session for file: %s", filename.data());
+			LOG(Profiler, Info, "Started profiling session for file: {}", filename.data());
 
 		} else {
-			LOGF(Profiler, Error, "Could not open profiler output file: %s. Session not started.", filename.data());
+			LOG(Profiler, Error, "Could not open profiler output file: {}. Session not started.", filename.data());
 		}
 	}
 

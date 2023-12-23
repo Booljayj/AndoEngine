@@ -1,7 +1,6 @@
 #pragma once
 #include "Engine/Reflection.h"
 #include "Engine/StandardTypes.h"
-#include "Rendering/RenderingSystem.h"
 #include "Rendering/Vertex.h"
 #include "Rendering/Vulkan/Resources.h"
 #include "Resources/Resource.h"

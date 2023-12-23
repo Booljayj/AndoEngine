@@ -14,11 +14,12 @@ namespace Resources {
 	struct Database {
 	public:
 		template<typename ResourceType>
+			requires std::derived_from<ResourceType, Resource>
 		Cache<ResourceType>& GetCache() {
 			using Tuple = std::tuple<ResourceTypes...>;
 			constexpr size_t TypeIndex = TupleUtility::Index<ResourceType, Tuple>();
 			if constexpr (TypeIndex < std::tuple_size_v<Tuple>) {
-				return std::get<TypeIndex>(defined_caches);
+				return std::get<Cache<ResourceType>>(defined_caches);
 
 			} else {
 				using CacheType = Cache<ResourceType>;

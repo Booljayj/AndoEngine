@@ -13,7 +13,7 @@ ThreadBuffer::~ThreadBuffer() {
 }
 
 void ThreadBuffer::LogDebugStats() {
-	LOGF(Temp, Info, "Thread Buffer:{ Capacity: %i, Current: %i, Peak: %i }", current->GetCapacity(), current->GetUsed(), current->GetPeakUsage());
+	LOG(Temp, Info, "Thread Buffer:{{ Capacity: {}, Current: {}, Peak: {} }}", current->GetCapacity(), current->GetUsed(), current->GetPeakUsage());
 }
 
 ScopedThreadBufferMark::ScopedThreadBufferMark() : HeapBuffer::ScopedMark(ThreadBuffer::Get()) {}

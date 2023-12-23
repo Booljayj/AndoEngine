@@ -69,6 +69,7 @@ using namespace std::string_view_literals;
 #include <numbers>
 #include <numeric>
 #include <ranges>
+#include <source_location>
 #include <span>
 #include <typeinfo>
 #include <utility>
@@ -78,8 +79,10 @@ using namespace std::string_view_literals;
 
 //Custom extensions
 namespace stdext {
-	template<typename TargetType, typename TargetAllocatorType, typename SourceType, typename SourceAllocatorType>
-	void append(std::vector<TargetType, TargetAllocatorType>& target, std::vector<SourceType, SourceAllocatorType> const& source) {
+	constexpr size_t hash_combine(size_t a, size_t b) { return a ^ (b + 0x9e3779b9 + (a << 6) + (a >> 2)); }
+
+	template<typename TargetType, typename TargetAllocatorType, typename SourceType>
+	constexpr void append(std::vector<TargetType, TargetAllocatorType>& target, std::span<SourceType const> const& source) {
 		target.reserve(target.size() + source.size());
 		for (SourceType const& element : source) target.emplace_back(element);
 	}

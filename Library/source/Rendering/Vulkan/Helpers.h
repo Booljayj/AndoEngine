@@ -20,10 +20,10 @@ namespace Rendering {
 
 	private:
 		struct Entry {
-			Resources::Identifier id;
+			StringID id;
 			VkShaderModule module = nullptr;
 
-			Entry(Resources::Identifier id) : id(id) {}
+			Entry(StringID id) : id(id) {}
 		};
 
 		VkDevice device = nullptr;

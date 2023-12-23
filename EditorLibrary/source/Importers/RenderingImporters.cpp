@@ -1,4 +1,5 @@
 #include "Importers/RenderingImporters.h"
+#include "Engine/Temporary.h"
 
 namespace Importers {
 	shaderc_include_result* ShaderImporter::Includer::GetInclude(const char* requested_source, shaderc_include_type type, const char* requesting_source, size_t include_depth) {
@@ -50,7 +51,7 @@ namespace Importers {
 		//Preprocess the source
 		const auto preprocessed = compiler.PreprocessGlsl(source.data(), source.size(), kind, filename.data(), options);
 		if (preprocessed.GetCompilationStatus() != shaderc_compilation_status_success) {
-			LOGF(Importer, Error, "Preprocessor failure: %s", preprocessed.GetErrorMessage().data());
+			LOG(Importer, Error, "Preprocessor failure: {}", preprocessed.GetErrorMessage().data());
 			return false;
 		}
 
@@ -59,11 +60,11 @@ namespace Importers {
 		const size_t preprocessedSize = std::distance(preprocessed.cbegin(), preprocessed.cend());
 		const auto compiled = compiler.CompileGlslToSpv(preprocessedBegin, preprocessedSize, kind, filename.data(), options);
 		if (compiled.GetCompilationStatus() != shaderc_compilation_status_success) {
-			LOGF(Importer, Error, "Compilation failure: %s", compiled.GetErrorMessage().data());
+			LOG(Importer, Error, "Compilation failure: {}", compiled.GetErrorMessage().data());
 			return false;
 		}
 
-		LOGF(Importer, Info, "Imported shader %s", filename.data());
+		LOG(Importer, Info, "Imported shader {}", filename.data());
 		//Add the compiled bytecode to the resource
 		shaderTarget.bytecode.clear();
 		for (uint32_t word : compiled) shaderTarget.bytecode.push_back(word);

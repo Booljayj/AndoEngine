@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.24)
 project(Library)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 file(GLOB_RECURSE SourceFiles LIST_DIRECTORIES false RELATIVE ${PROJECT_SOURCE_DIR} CONFIGURE_DEPENDS ${PROJECT_SOURCE_DIR}/source/*.cpp)
@@ -11,7 +11,7 @@ add_library(Library STATIC ${SourceFiles} ${GeneratedFiles})
 target_include_directories(Library PUBLIC ${PROJECT_SOURCE_DIR}/source)
 target_precompile_headers(Library PRIVATE source/Engine/StandardTypes.h)
 target_compile_definitions(Library PUBLIC "$<$<CONFIG:DEBUG>:VULKAN_DEBUG>")
-target_compile_features(Library PUBLIC cxx_std_20)
+target_compile_features(Library PUBLIC cxx_std_23)
 
 #IMGUI module
 add_subdirectory(modules/imgui-docking)

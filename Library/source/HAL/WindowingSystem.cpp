@@ -1,5 +1,6 @@
 #include "HAL/WindowingSystem.h"
 #include "Engine/Logging.h"
+#include "Engine/Temporary.h"
 #include "HAL/SDL2.h"
 #include "imgui.h"
 #include "backends/imgui_impl_sdl.h"
@@ -11,7 +12,7 @@ namespace HAL {
 
 	Window::Window(WindowCreationParams const& params) {
 		handle = SDL_CreateWindow(params.title.data(), params.position.x, params.position.y, params.size.x, params.size.y, params.flags | SDL_WINDOW_VULKAN);
-		if (!handle) throw std::runtime_error{ t_printf("Failed to create SDL window: %i", SDL_GetError()).data() };
+		if (!handle) throw std::runtime_error{ format_temp("Failed to create SDL window: {0}", SDL_GetError()).data() };
 		id = SDL_GetWindowID(handle);
 	}
 
@@ -43,7 +44,7 @@ namespace HAL {
 			windows.erase(iter);
 			return true;
 		} else {
-			LOGF(SDL, Warning, "Unable to destroy window with id %i", id);
+			LOG(SDL, Warning, "Unable to destroy window with id {}", id);
 			return false;
 		}
 	}

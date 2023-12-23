@@ -4,11 +4,11 @@
 namespace LogUtility {
 	std::string_view GetText(ELogVerbosity const verbosity) noexcept {
 		switch (verbosity) {
-			case ELogVerbosity::Debug: return "Debug: "sv;
-			case ELogVerbosity::Info: return "Info: "sv;
-			case ELogVerbosity::Warning: return "Warning: "sv;
-			case ELogVerbosity::Error: return "Error: "sv;
-			default: return "!INVALID VERBOSITY! "sv;
+			case ELogVerbosity::Debug: return "Debug"sv;
+			case ELogVerbosity::Info: return "Info"sv;
+			case ELogVerbosity::Warning: return "Warning"sv;
+			case ELogVerbosity::Error: return "Error"sv;
+			default: return "!INVALID VERBOSITY!"sv;
 		}
 	}
 

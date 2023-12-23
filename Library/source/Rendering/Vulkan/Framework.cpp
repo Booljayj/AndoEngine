@@ -81,7 +81,7 @@ namespace Rendering {
 
 				for (auto extension : requiredDeviceExtensions) {
 					if (!physical.SupportsExtension(extension)) {
-						LOGF(Vulkan, Warning, "Physical device %s cannot be used because it does not support required extension %s", physical.properties.deviceName, extension);
+						LOG(Vulkan, Warning, "Physical device {} cannot be used because it does not support required extension {}", physical.properties.deviceName, extension);
 						continue;
 					}
 				}
@@ -222,13 +222,13 @@ namespace Rendering {
 
 		//Log the message
 		if (messageSeverity & VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
-			LOGF(VulkanMessage, Error, "%s%i %s%s", prefix, pCallbackData->messageIdNumber, pCallbackData->pMessage, contextBuilder.Get());
+			LOG(VulkanMessage, Error, "{}{} {}{}", prefix, pCallbackData->messageIdNumber, pCallbackData->pMessage, contextBuilder.Get());
 		} else if (messageSeverity & VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
-			LOGF(VulkanMessage, Warning, "%s%i %s%s", prefix, pCallbackData->messageIdNumber, pCallbackData->pMessage, contextBuilder.Get());
+			LOG(VulkanMessage, Warning, "{}{} {}{}", prefix, pCallbackData->messageIdNumber, pCallbackData->pMessage, contextBuilder.Get());
 		} else if (messageSeverity & VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {
-			LOGF(VulkanMessage, Info, "%s%i %s%s", prefix, pCallbackData->messageIdNumber, pCallbackData->pMessage, contextBuilder.Get());
+			LOG(VulkanMessage, Info, "{}{} {}{}", prefix, pCallbackData->messageIdNumber, pCallbackData->pMessage, contextBuilder.Get());
 		} else {
-			LOGF(VulkanMessage, Debug, "%s%i %s%s", prefix, pCallbackData->messageIdNumber, pCallbackData->pMessage, contextBuilder.Get());
+			LOG(VulkanMessage, Debug, "{}{} {}{}", prefix, pCallbackData->messageIdNumber, pCallbackData->pMessage, contextBuilder.Get());
 		}
 
 		return VK_FALSE;

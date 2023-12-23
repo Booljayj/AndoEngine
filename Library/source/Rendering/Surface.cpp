@@ -33,13 +33,13 @@ namespace Rendering {
 		
 		auto const references = SurfaceQueues::References::Find(families);
 		if (!references) {
-			LOGF(Vulkan, Warning, "Physical device does not support required queues for surface %i. Cannot initialize rendering.", GetID());
+			LOG(Vulkan, Warning, "Physical device does not support required queues for surface {}. Cannot initialize rendering.", GetID());
 			return;
 		}
 
 		queues = references->ResolveFrom(device.queues);
 		if (!queues) {
-			LOGF(Vulkan, Warning, "Device does not contain required queues for surface %i. Cannot initialize rendering.", GetID());
+			LOG(Vulkan, Warning, "Device does not contain required queues for surface {}. Cannot initialize rendering.", GetID());
 			return;
 		}
 
@@ -112,7 +112,7 @@ namespace Rendering {
 				VkRect2D scissor{};
 				scissor.offset = { 0, 0 };
 				swapchain->GetExtent(scissor.extent.width, scissor.extent.height);
-				
+
 				vkCmdSetViewport(commands, 0, 1, &viewport);
 				vkCmdSetScissor(commands, 0, 1, &scissor);
 
@@ -180,11 +180,10 @@ namespace Rendering {
 
 			retryCount = 0;
 			return true;
-		}
-		else
-		{
+
+		} else {
 			if (++retryCount >= maxRetryCount) {
-				LOGF(Rendering, Error, "Too many subsequent frames (%i) have failed to render.", maxRetryCount);
+				LOG(Rendering, Error, "Too many subsequent frames ({}) have failed to render.", maxRetryCount);
 				return false;
 			}
 			return true;

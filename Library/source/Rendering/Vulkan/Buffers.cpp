@@ -1,4 +1,5 @@
 #include "Rendering/Vulkan/Buffers.h"
+#include "Engine/Temporary.h"
 
 namespace Rendering {
 	Buffer::Writer::Writer(Buffer const& source)
@@ -29,7 +30,7 @@ namespace Rendering {
 
 		VmaAllocationInfo info{};
 		if (vmaCreateBuffer(allocator, &bufferCI, &allocCI, &buffer, &allocation, &info) != VK_SUCCESS || !buffer || !allocation) {
-			throw std::runtime_error{ t_printf("Unable to allocate %i bytes for buffer", size).data() };
+			throw std::runtime_error{ format_temp("Unable to allocate {0} bytes for buffer", size).data() };
 		}
 	}
 
@@ -62,7 +63,7 @@ namespace Rendering {
 			allocCI.usage = allocationUsage;
 
 			if (vmaCreateBuffer(allocator, &bufferCI, &allocCI, &buffer, &allocation, nullptr) != VK_SUCCESS || !buffer || !allocation) {
-				throw std::runtime_error{ t_printf("Unable to allocate %i bytes for buffer", size).data() };
+				throw std::runtime_error{ format_temp("Unable to allocate {0} bytes for buffer", size).data() };
 			}
 		}
 	}
@@ -82,7 +83,7 @@ namespace Rendering {
 
 		VmaAllocationInfo info{};
 		if (vmaCreateBuffer(allocator, &bufferCI, &allocCI, &buffer, &allocation, &info) != VK_SUCCESS || !buffer || !allocation) {
-			throw std::runtime_error{ t_printf("Unable to allocate %i bytes for buffer", size).data() };
+			throw std::runtime_error{ format_temp("Unable to allocate {0} bytes for buffer", size).data() };
 		}
 		mapped = static_cast<char*>(info.pMappedData);
 
@@ -123,7 +124,7 @@ namespace Rendering {
 
 			VmaAllocationInfo info{};
 			if (vmaCreateBuffer(allocator, &bufferCI, &allocCI, &buffer, &allocation, &info) != VK_SUCCESS || !buffer || !allocation) {
-				throw std::runtime_error{ t_printf("Unable to allocate %i bytes for buffer", size).data() };
+				throw std::runtime_error{ format_temp("Unable to allocate {0} bytes for buffer", size).data() };
 			}
 			mapped = static_cast<char*>(info.pMappedData);
 

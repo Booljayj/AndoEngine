@@ -46,9 +46,8 @@ namespace Rendering {
 			viewCI.subresourceRange.baseArrayLayer = 0;
 			viewCI.subresourceRange.layerCount = 1;
 
-			VkImageView imageView = nullptr;
-			if (vkCreateImageView(device, &viewCI, nullptr, &imageView) != VK_SUCCESS || !imageView) {
-				LOGF(Vulkan, Error, "Failed to create image view");
+			TUniqueHandle<&vkDestroyImageView> imageView{ device };
+			if (vkCreateImageView(device, &viewCI, nullptr, *imageView) != VK_SUCCESS || !imageView) {
 				throw std::runtime_error{ "Failed to create framebuffer image view" };
 			}
 
@@ -66,12 +65,10 @@ namespace Rendering {
 
 			VkFramebuffer framebuffer = nullptr;
 			if (vkCreateFramebuffer(device, &framebufferCI, nullptr, &framebuffer) != VK_SUCCESS || !framebuffer) {
-				LOGF(Vulkan, Error, "Failed to create frambuffer");
-				vkDestroyImageView(device, imageView, nullptr);
 				throw std::runtime_error{ "Failed to create framebuffer" };
 			}
 
-			framebuffers.emplace_back(device, imageView, framebuffer);
+			framebuffers.emplace_back(device, imageView.Release(), framebuffer);
 		}
 	}
 

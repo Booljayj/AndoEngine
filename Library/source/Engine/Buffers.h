@@ -7,7 +7,7 @@ public:
 	/** A mark which will save a buffer's current cursor position when created, and set the buffer to that position when destroyed. */
 	struct ScopedMark {
 	public:
-		inline ScopedMark(Buffer& inBuffer) : buffer(inBuffer), cursor(inBuffer.GetCursor()) {}
+		inline ScopedMark(Buffer& buffer) : buffer(buffer), cursor(buffer.GetCursor()) {}
 		inline ~ScopedMark() { Pop(); }
 
 		inline void Pop() const { buffer.SetCursor(cursor); }
@@ -17,9 +17,17 @@ public:
 		char* cursor;
 	};
 
+	using value_type = char;
+
 	/** Read-only iteration support for the buffer */
 	inline char const* begin() const { return start; }
 	inline char const* end() const { return start + capacity; }
+
+	/** push_back support for the buffer, including std::back_iterator */
+	inline void push_back(char c) {
+		*current = c; current = std::min(current + 1, start + capacity);
+		peakUsage = std::max(peakUsage, GetUsed());
+	}
 
 	/** Reset the entire buffer, returning the cursor back to the beginning of the buffer */
 	inline void Reset() noexcept { current = start; }
@@ -71,7 +79,7 @@ protected:
 	/** When the capacity of the buffer is exceeded during a request, this is the approximate total amount that was requested */
 	size_t peakOverflow = 0;
 
-	Buffer(size_t inCapacity) : capacity(inCapacity) {}
+	Buffer(size_t capacity) : capacity(capacity) {}
 	~Buffer() = default;
 
 	inline void InitStart(char* newStart) {
@@ -83,8 +91,8 @@ protected:
 /** A heap-allocated buffer */
 struct HeapBuffer : public Buffer {
 public:
-	HeapBuffer(size_t inCapacity)
-	: Buffer(inCapacity)
+	HeapBuffer(size_t capacity)
+		: Buffer(capacity)
 	{
 		//The actual allocation size is one larger than the capacity, so we can guarantee the final byte is 0
 		data = std::make_unique<char[]>(capacity+1);
@@ -102,7 +110,7 @@ template<size_t N>
 struct StackBuffer : public Buffer {
 public:
 	StackBuffer()
-	: Buffer(N)
+		: Buffer(N)
 	{
 		//The actual allocation size is one larger than the capacity, so we can guarantee the final byte is 0
 		InitStart(data);

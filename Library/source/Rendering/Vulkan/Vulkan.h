@@ -26,7 +26,9 @@ namespace Rendering {
 	};
 }
 
-inline std::ostream& operator<<(std::ostream& stream, Rendering::VulkanVersion const& version) {
-	stream << version.major << '.' << version.minor << '.' << version.patch;
-	return stream;
-}
+template<>
+struct std::formatter<Rendering::VulkanVersion> : std::formatter<std::string_view> {
+	auto format(const Rendering::VulkanVersion& version, format_context& ctx) const {
+		return std::format_to(ctx.out(), "{0}.{1}.{2}"sv, version.major, version.minor, version.patch);
+	}
+};

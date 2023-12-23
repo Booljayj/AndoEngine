@@ -63,6 +63,18 @@ using t_u32string = t_basic_string<char32_t>;
 
 std::string_view t_printf(char const* format, ...);
 
+template<typename... ArgTypes>
+std::string_view format_temp(const std::format_string<ArgTypes...>& format, ArgTypes&& ... args) {
+	Buffer& buffer = ThreadBuffer::Get();
+	size_t const available = buffer.GetAvailable();
+
+	char* const begin = buffer.GetCursor();
+	(void)std::format_to_n(std::back_inserter(buffer), available, format, std::forward<ArgTypes>(args)...);
+	char* const end = buffer.GetCursor();
+
+	return std::string_view{ begin, end };
+}
+
 //============================================================
 // Temporary container types
 

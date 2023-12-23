@@ -98,23 +98,24 @@ struct Application {
 };
 
 int main(int argc, char** argv) {
+	using namespace glm;
 	using namespace Rendering;
 	using namespace Resources;
 
 	ThreadBuffer buffer{ 20'000 };
 	
-	Logger::Get().CreateDevice<TerminalOutputDevice>();
+	Logger::Get().AddDevices(std::make_shared<TerminalLogDevice>());
 
 	LOG(Main, Info, "Hello, World! This is AndoEngine.");
 	LOG(Main, Debug, "Compiled with " COMPILER_VERSION " on " __DATE__);
-	LOGF(Main, Debug, "CWD: %s", std::filesystem::current_path().generic_string().data());
+	LOG(Main, Debug, "CWD: {}", std::filesystem::current_path().generic_string());
 
 	Application application;
 
 	if (application.Startup()) {
 		//Create default built-in vertex and fragment shaders
-		Handle<VertexShader> const vertex = application.database.GetCache<VertexShader>().Create(0);
-		Handle<FragmentShader> const fragment = application.database.GetCache<FragmentShader>().Create(1);
+		Handle<VertexShader> const vertex = application.database.GetCache<VertexShader>().Create("SH_DefaultVertex"_sid);
+		Handle<FragmentShader> const fragment = application.database.GetCache<FragmentShader>().Create("SH_DefaultFragment"_sid);
 		{
 			Importers::ShaderImporter shaderImporter;
 			shaderImporter.Import(
@@ -130,8 +131,8 @@ void main() {
 	gl_Position = object.modelViewProjection * vec4(inPosition, 1.0);
 	outFragColor = inColor;
 }
-				)",
-				"default.vert"
+				)"sv,
+				"default.vert"sv
 			);
 
 			shaderImporter.Import(
@@ -146,22 +147,22 @@ void main() {
 void main() {
     outColor = inFragColor;
 }
-				)",
-				"default.frag"
+				)"sv,
+				"default.frag"sv
 			);
 		}
 
-		Handle<Material> const material = application.database.GetCache<Material>().Create(10);
+		Handle<Material> const material = application.database.GetCache<Material>().Create("M_Default"_sid);
 		material->shaders.vertex = vertex;
 		material->shaders.fragment = fragment;
 
-		Handle<StaticMesh> const plane = application.database.GetCache<StaticMesh>().Create(100);
+		Handle<StaticMesh> const plane = application.database.GetCache<StaticMesh>().Create("SM_Plane"_sid);
 		Vertices_Simple& vertices = plane->vertices.emplace<Vertices_Simple>();
 		vertices = {
-			{{-0.5f, -0.5f, 0.0f}, {255, 0, 0, 255}, {0,0,1}, {0,0}},
-			{{0.5f, -0.5f, 0.0f}, {0, 255, 0, 255}, {0,0,1}, {0,0}},
-			{{0.5f, 0.5f, 0.0f}, {0, 0, 255, 255}, {0,0,1}, {0,0}},
-			{{-0.5f, 0.5f, 0.0f}, {255, 255, 255, 255}, {0,0,1}, {0,0}},
+			{ vec3{ -0.5f, -0.5f, 0.0f }, Color{ 255, 0, 0, 255 }, vec3{ 0, 0, 1 }, vec2{ 0, 0 } },
+			{ vec3{ 0.5f, -0.5f, 0.0f }, Color{ 0, 255, 0, 255 }, vec3{ 0, 0, 1 }, vec2{ 0, 0 } },
+			{ vec3{ 0.5f, 0.5f, 0.0f }, Color{ 0, 0, 255, 255 }, vec3{ 0, 0, 1 }, vec2{ 0, 0 } },
+			{ vec3{ -0.5f, 0.5f, 0.0f }, Color{ 255, 255, 255, 255 }, vec3{ 0, 0, 1 }, vec2{ 0, 0 } },
 		};
 		Indices_Short& indices = plane->indices.emplace<Indices_Short>();
 		indices = { 0, 1, 2, 2, 3, 0 };

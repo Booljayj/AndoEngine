@@ -125,7 +125,7 @@ namespace Rendering {
 			//Get information about how to present to this device
 			auto const presentation = PhysicalDevicePresentation::GetPresentation(physical, *surfaces[0]);
 			if (!presentation) {
-				LOGF(Vulkan, Warning, "Physical device %s is unable to present to surfaces", physical.properties.deviceName);
+				LOG(Vulkan, Warning, "Physical device {} is unable to present to surfaces", physical.properties.deviceName);
 				return false;
 			}
 
@@ -161,7 +161,7 @@ namespace Rendering {
 			for (auto const& surface : surfaces) surface->InitializeRendering(*device, GetPhysicalDevice(), *passes, *uniformLayouts);
 			
 			VulkanVersion const version = VulkanVersion{ physical.properties.driverVersion };
-			LOGF(Rendering, Info, "Selected device %s (%i.%i.%i)", physical.properties.deviceName, version.major, version.minor, version.patch);
+			LOG(Rendering, Info, "Selected device {} ({})", physical.properties.deviceName, version);
 			return true;
 		}
 		return false;
@@ -189,7 +189,7 @@ namespace Rendering {
 			if (device) vkDeviceWaitIdle(*device);
 			surfaces.erase(iter);
 		} else {
-			LOGF(Rendering, Warning, "Unable to destroy surface with id %i", id);
+			LOG(Rendering, Warning, "Unable to destroy surface with id {}", id);
 		}
 	}
 

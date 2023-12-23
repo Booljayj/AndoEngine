@@ -2,6 +2,8 @@
 #include "Engine/Bitfields.h"
 #include "Engine/StandardTypes.h"
 
+#include "Engine/Utility.h"
+
 /** A broken-down time point used for displaying year-month-day calendar information */
 union CalendarTimeStamp {
 private:
@@ -109,6 +111,53 @@ struct TimeStamp {
 	TimeStamp(TimePointType const& timepoint);
 };
 
+template<>
+struct std::formatter<CalendarTimeStamp> : std::formatter<std::string_view> {
+	auto format(const CalendarTimeStamp& calendar, format_context& ctx) const {
+		char output[11] = "00-00-0000";
+
+		Utility::WriteReversedValue(calendar.day + 1, output, 2);
+		Utility::WriteReversedValue(calendar.month + 1, output + 3, 2);
+		Utility::WriteReversedValue(calendar.year, output + 6, 4);
+
+		std::reverse(output, output + sizeof(output) - 1);
+		return formatter<string_view>::format(output, ctx);
+	}
+};
+
+template<>
+struct std::formatter<ClockTimeStamp> : std::formatter<std::string_view> {
+	auto format(const ClockTimeStamp& clock, format_context& ctx) const {
+		char output[13] = "000.00:00:00";
+
+		Utility::WriteReversedValue(clock.millisecond, output, 3);
+		Utility::WriteReversedValue(clock.second, output + 4, 2);
+		Utility::WriteReversedValue(clock.minute, output + 7, 2);
+		Utility::WriteReversedValue(clock.hour, output + 10, 2);
+
+		std::reverse(output, output + sizeof(output) - 1);
+		return formatter<string_view>::format(output, ctx);
+	}
+};
+
+template<>
+struct std::formatter<TimeStamp> : std::formatter<std::string_view> {
+	auto format(const TimeStamp& time, format_context& ctx) const {
+		char output[24] = "000.00:00:00 00-00-0000";
+
+		Utility::WriteReversedValue(time.clock.millisecond, output, 3);
+		Utility::WriteReversedValue(time.clock.second, output + 4, 2);
+		Utility::WriteReversedValue(time.clock.minute, output + 7, 2);
+		Utility::WriteReversedValue(time.clock.hour, output + 10, 2);
+		Utility::WriteReversedValue(time.calendar.day + 1, output + 13, 2);
+		Utility::WriteReversedValue(time.calendar.month + 1, output + 16, 2);
+		Utility::WriteReversedValue(time.calendar.year, output + 19, 4);
+
+		std::reverse(output, output + sizeof(output) - 1);
+		return formatter<string_view>::format(output, ctx);
+	}
+};
+
 std::ostream& operator<<(std::ostream& stream, CalendarTimeStamp const& calendar);
 std::ostream& operator<<(std::ostream& stream, ClockTimeStamp const& clock);
-std::ostream& operator<<(std::ostream& stream, TimeStamp const& timestamp);
+std::ostream& operator<<(std::ostream& stream, TimeStamp const& time);

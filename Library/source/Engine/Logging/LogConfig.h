@@ -1,7 +1,7 @@
 #pragma once
 #include "Engine/Logging/LogVerbosity.h"
 
-/** Contains methods used to configure log behavior, usually controlled by compiler- */
+/** Contains methods used to configure log behavior, usually controlled by compiler-assigned flags */
 namespace LogConfig {
 	/** True if log messages should include the source location of the message */
 	constexpr inline bool IncludeLocations() {

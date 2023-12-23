@@ -139,7 +139,7 @@ namespace Rendering {
 		//If another frame is still using this image, wait for it to complete
 		if (imageFences[currentImageIndex] != VK_NULL_HANDLE) {
 			if (vkWaitForFences(device, 1, &imageFences[currentImageIndex], VK_TRUE, timeout.count()) != VK_SUCCESS) {
-				LOGF(Vulkan, Warning, "Timed out waiting for image fence %i", currentImageIndex);
+				LOG(Vulkan, Warning, "Timed out waiting for image fence {}", currentImageIndex);
 				return std::optional<RecordingContext>{};
 			}
 		}

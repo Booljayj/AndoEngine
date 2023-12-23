@@ -7,7 +7,7 @@ namespace HAL {
 		if (SDL_Init(SDL_INIT_VIDEO) == 0) {
 			return true;
 		} else {
-			LOGF(SDL, Error, "SDL_Init Error: %i", SDL_GetError());
+			LOG(SDL, Error, "SDL_Init Error: {}", SDL_GetError());
 			return false;
 		}
 	}

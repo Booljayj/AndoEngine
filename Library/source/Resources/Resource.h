@@ -7,8 +7,10 @@
 namespace Resources {
 	/** Initializer passed to the constructor when constructing a resource */
 	struct Initializer {
-		Identifier id;
+		StringID id;
 		size_t index;
+
+		Initializer(StringID id, size_t index) : id(id), index(index) {}
 	};
 
 	/** Base class for an object that can be shared between many entities and scenes, and is tracked by resource counting */
@@ -16,11 +18,9 @@ namespace Resources {
 		REFLECT_STRUCT(Resource, void);
 
 		/** The unique identifier for this resource */
-		Identifier id;
+		StringID id;
 		/** The flags that currently apply to this resource */
 		FResourceFlags flags;
-		/** The human-readable name of this resource */
-		std::string name;
 
 		Resource(Initializer const& init) : id(init.id) {}
 		virtual ~Resource() = default;
