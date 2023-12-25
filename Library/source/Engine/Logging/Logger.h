@@ -1,10 +1,10 @@
 #pragma once
-#include "Engine/Logging/LogMessage.h"
-#include "Engine/Logging/LogDevice.h"
 #include "Engine/Logging/LogVerbosity.h"
 #include "Engine/StandardTypes.h"
 
+struct ILogDevice;
 struct LogCategory;
+struct LogMessageQueue;
 
 /** Delegates log output to various devices, which handle displaying and/or storing that output */
 struct Logger {
@@ -15,21 +15,27 @@ struct Logger {
 	~Logger();
 
 	/** Push a message through this logger. Mainly used through logging macros. */
-	template<typename... ArgTypes>
-	inline void Push(LogCategory const& category, ELogVerbosity verbosity, std::source_location location, std::format_string<ArgTypes...> format, ArgTypes... arguments) noexcept {
-		PushInternal(category, verbosity, location, format.get(), std::make_format_args(arguments...));
+	template<typename ArgType, typename... OtherArgTypes>
+	inline void Push(LogCategory const& category, ELogVerbosity verbosity, std::source_location location, std::format_string<ArgType, OtherArgTypes...> format, ArgType argument, OtherArgTypes... arguments) noexcept {
+		PushFormatted(category, verbosity, location, format.get(), std::make_format_args(argument, arguments...));
+	}
+
+	/** Push a message through this logger. Mainly used through logging macros. */
+	inline void Push(LogCategory const& category, ELogVerbosity verbosity, std::source_location location, std::format_string<> format) noexcept {
+		PushUnformatted(category, verbosity, location, format.get());
 	}
 
 	/** Add new devices that will handle output */
-	void AddDevices(ILogDeviceView view);
+	void AddDevices(std::span<std::shared_ptr<ILogDevice> const> view);
 	inline void AddDevices(std::shared_ptr<ILogDevice> device) { AddDevices(std::span{ &device, 1 }); }
 
 	/** Remove previously created devices from this logger */
-	void RemoveDevices(ILogDeviceView view);
+	void RemoveDevices(std::span<std::shared_ptr<ILogDevice> const> view);
 	inline void RemoveDevices(std::shared_ptr<ILogDevice> device) { RemoveDevices(std::span{ &device, 1 }); }
 
 private:
 	static Logger instance;
+	static thread_local std::string scratch;
 	
 	struct {
 		std::mutex queue;
@@ -39,10 +45,11 @@ private:
 	std::unique_ptr<LogMessageQueue> queue;
 	std::condition_variable cv;
 
-	ILogDeviceCollection devices;
+	std::vector<std::shared_ptr<ILogDevice>> devices;
 	std::optional<std::jthread> thread;
 
-	void PushInternal(LogCategory const& category, ELogVerbosity verbosity, std::source_location location, std::string_view format, std::format_args const& args) noexcept;
+	void PushFormatted(LogCategory const& category, ELogVerbosity verbosity, std::source_location location, std::string_view format, std::format_args const& args) noexcept;
+	void PushUnformatted(LogCategory const& category, ELogVerbosity verbosity, std::source_location location, std::string_view message) noexcept;
 	
 	void StopWorkerThread();
 	void RestartWorkerThread();

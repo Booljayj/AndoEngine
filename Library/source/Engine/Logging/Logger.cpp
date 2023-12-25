@@ -1,5 +1,7 @@
 #include "Engine/Logging/Logger.h"
 #include "Engine/Algo.h"
+#include "Engine/Logging/LogDevice.h"
+#include "Engine/Logging/LogMessage.h"
 
 /** Allows log devices to process log messages on a separate thread */
 struct LogWorker {
@@ -10,7 +12,7 @@ struct LogWorker {
 		std::condition_variable& cv;
 	};
 
-	LogWorker(Shared const& shared, ILogDeviceCollection const& devices)
+	LogWorker(Shared const& shared, std::vector<std::shared_ptr<ILogDevice>> const& devices)
 		: shared(shared), devices(devices), back(std::make_unique<LogMessageQueue>())
 	{}
 
@@ -28,7 +30,7 @@ struct LogWorker {
 
 private:
 	Shared shared;
-	ILogDeviceCollection devices;
+	std::vector<std::shared_ptr<ILogDevice>> devices;
 	std::unique_ptr<LogMessageQueue> back;
 
 	void WaitSwapQueues(std::stop_token const& token) {
@@ -47,6 +49,7 @@ private:
 };
 
 Logger Logger::instance;
+std::string Logger::scratch;
 
 Logger::Logger()
 	: queue(std::make_unique<LogMessageQueue>())
@@ -58,33 +61,51 @@ Logger::~Logger() {
 	StopWorkerThread();
 }
 
-void Logger::AddDevices(ILogDeviceView view) {
+void Logger::AddDevices(std::span<std::shared_ptr<ILogDevice> const> view) {
 	std::lock_guard const lock{ mutex.thread };
 
 	stdext::append(devices, view);
 	RestartWorkerThread();
 }
 
-void Logger::RemoveDevices(ILogDeviceView view) {
+void Logger::RemoveDevices(std::span<std::shared_ptr<ILogDevice> const> view) {
 	std::lock_guard const lock{ mutex.thread };
 
 	for (auto const& device : view) Algo::RemoveSwap(devices, device);
 	RestartWorkerThread();
 }
 
-void Logger::PushInternal(LogCategory const& category, ELogVerbosity verbosity, std::source_location location, std::string_view format, std::format_args const& args) noexcept {
+void Logger::PushFormatted(LogCategory const& category, ELogVerbosity verbosity, std::source_location location, std::string_view format, std::format_args const& args) noexcept {
 	if (verbosity <= category.GetMaxVerbosity()) {
 		//Perform formatting on the calling thread
-		static thread_local std::string message;
-		message.clear();
-		std::vformat_to(std::back_inserter(message), format, args);
+		scratch.clear();
+		std::vformat_to(std::back_inserter(scratch), format, args);
 
 		//Push the output onto the queue. We'll lock the mutex as briefly as possible, copying the header and swapping the message memory.
 		{
 			std::lock_guard const lock{ mutex.queue };
 			queue->PushSwap(
 				LogMessageHeader{ ClockTimeStamp::Now(), verbosity, &category, location },
-				message
+				scratch
+			);
+		}
+
+		//Notify the writer thread that there are new messages in the queue
+		cv.notify_one();
+	}
+}
+
+void Logger::PushUnformatted(LogCategory const& category, ELogVerbosity verbosity, std::source_location location, std::string_view message) noexcept {
+	if (verbosity <= category.GetMaxVerbosity()) {
+		//Copy the message on the calling thread
+		scratch = message;
+
+		//Push the output onto the queue. We'll lock the mutex as briefly as possible, copying the header and swapping the message memory.
+		{
+			std::lock_guard const lock{ mutex.queue };
+			queue->PushSwap(
+				LogMessageHeader{ ClockTimeStamp::Now(), verbosity, &category, location },
+				scratch
 			);
 		}
 

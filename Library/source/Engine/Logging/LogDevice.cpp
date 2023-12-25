@@ -8,7 +8,7 @@
 #include "Windows.h"
 #endif
 
-ILogDeviceCollection& operator<<(ILogDeviceCollection& devices, LogMessageQueue& queue) {
+std::vector<std::shared_ptr<ILogDevice>>& operator<<(std::vector<std::shared_ptr<ILogDevice>>& devices, LogMessageQueue& queue) {
 	//Allow the devices to process the log messages
 	//We'll go through each device first because they're not inline, while the messages are.
 	for (auto const& device : devices) {

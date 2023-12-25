@@ -10,13 +10,8 @@ struct ILogDevice {
 	virtual void ProcessMessage(LogMessageHeader const& header, std::string const& message) noexcept = 0;
 };
 
-/** A managed collection of log devices */
-using ILogDeviceCollection = std::vector<std::shared_ptr<ILogDevice>>;
-/** A view to a managed collection of log devices */
-using ILogDeviceView = std::span<std::shared_ptr<ILogDevice> const>;
-
 /** Allow the collection of devices to process the queue of log messages, emptying the queue when finished */
-ILogDeviceCollection& operator<<(ILogDeviceCollection& devices, LogMessageQueue& queue);
+std::vector<std::shared_ptr<ILogDevice>>& operator<<(std::vector<std::shared_ptr<ILogDevice>>& devices, LogMessageQueue& queue);
 
 /** Writes output to the standard output streams with terminal formatting */
 struct TerminalLogDevice : public ILogDevice {

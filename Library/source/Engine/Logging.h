@@ -3,7 +3,6 @@
 #include "Engine/Logging/LogConfig.h"
 #include "Engine/Logging/LogDevice.h"
 #include "Engine/Logging/Logger.h"
-#include "Engine/Logging/LogMessage.h"
 #include "Engine/Logging/LogUtility.h"
 
 //============================================================
