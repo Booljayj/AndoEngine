@@ -1,4 +1,5 @@
 #include "Rendering/Vulkan/Framework.h"
+#include "Engine/Exceptions.h"
 #include "Engine/Logging.h"
 #include "Engine/StringBuilding.h"
 
@@ -21,7 +22,7 @@ namespace Rendering {
 
 			auto const requiredLayers = GetInstanceLayerNames();
 			for (auto layer : requiredLayers) {
-				if (!SupportsLayer(layer)) throw std::runtime_error{ t_printf("Required layer %s is not supported by Vulkan instances", layer).data() };
+				if (!SupportsLayer(layer)) throw MakeException<std::runtime_error>("Required layer %s is not supported by Vulkan instances", layer);
 			}
 
 			//Extension support
@@ -32,7 +33,7 @@ namespace Rendering {
 
 			auto const requiredExtensions = GetInstanceExtensionNames(window);
 			for (auto extension : requiredExtensions) {
-				if (!SupportsExtension(extension)) throw std::runtime_error{ t_printf("Required extension %s is not supported by Vulkan instances", extension).data() };
+				if (!SupportsExtension(extension)) throw MakeException<std::runtime_error>("Required extension %s is not supported by Vulkan instances", extension);
 			}
 
 			//Application info
@@ -63,7 +64,7 @@ namespace Rendering {
 #endif
 
 			if (vkCreateInstance(&instanceCI, nullptr, &instance) != VK_SUCCESS || !instance) {
-				throw std::runtime_error{ "Failed to create Vulkan instance" };
+				throw MakeException<std::runtime_error>("Failed to create Vulkan instance");
 			}
 		}
 
@@ -90,7 +91,7 @@ namespace Rendering {
 			}
 
 			if (physicalDevices.empty()) {
-				throw std::runtime_error{ "No usable physical devices were found" };
+				throw MakeException<std::runtime_error>("No usable physical devices were found");
 			}
 		}
 
@@ -99,11 +100,11 @@ namespace Rendering {
 		createMessenger = GetFunction<PFN_vkCreateDebugUtilsMessengerEXT>("vkCreateDebugUtilsMessengerEXT");
 		destroyMessenger = GetFunction<PFN_vkDestroyDebugUtilsMessengerEXT>("vkDestroyDebugUtilsMessengerEXT");
 		if (!createMessenger || !destroyMessenger) {
-			throw std::runtime_error{ "Failed to find debug messenger extension methods" };
+			throw MakeException<std::runtime_error>("Failed to find debug messenger extension methods");
 		}
 
 		if (createMessenger(instance, &messengerCI, nullptr, &messenger) != VK_SUCCESS || !messenger) {
-			throw std::runtime_error{ "Failed to create debug messenger" };
+			throw MakeException<std::runtime_error>("Failed to create debug messenger");
 		}
 #endif
 	}

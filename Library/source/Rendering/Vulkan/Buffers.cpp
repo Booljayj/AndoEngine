@@ -1,4 +1,5 @@
 #include "Rendering/Vulkan/Buffers.h"
+#include "Engine/Exceptions.h"
 #include "Engine/Temporary.h"
 
 namespace Rendering {
@@ -6,7 +7,7 @@ namespace Rendering {
 		: allocator(source.allocator), allocation(source.allocation)
 	{
 		if (vmaMapMemory(allocator, allocation, reinterpret_cast<void**>(&mapped)) == VK_SUCCESS || !mapped) {
-			throw std::runtime_error{ "Unable to map buffer. This may mean the wrong VmaMemoryUsage was used to create it." };
+			throw MakeException<std::runtime_error>("Unable to map buffer. This may mean the wrong VmaMemoryUsage was used to create it.");
 		}
 	}
 
@@ -30,7 +31,7 @@ namespace Rendering {
 
 		VmaAllocationInfo info{};
 		if (vmaCreateBuffer(allocator, &bufferCI, &allocCI, &buffer, &allocation, &info) != VK_SUCCESS || !buffer || !allocation) {
-			throw std::runtime_error{ format_temp("Unable to allocate {0} bytes for buffer", size).data() };
+			throw MakeException<std::runtime_error>("Unable to allocate {} bytes for buffer", size);
 		}
 	}
 
@@ -46,7 +47,7 @@ namespace Rendering {
 	}
 
 	void Buffer::Reserve(VkDeviceSize newSize) {
-		if (!allocator) throw std::runtime_error{ "Cannot resize buffer, no allocator present" };
+		if (!allocator) throw MakeException<std::runtime_error>("Cannot resize buffer, no allocator present");
 
 		if (newSize > size) {
 			size = newSize;
@@ -63,7 +64,7 @@ namespace Rendering {
 			allocCI.usage = allocationUsage;
 
 			if (vmaCreateBuffer(allocator, &bufferCI, &allocCI, &buffer, &allocation, nullptr) != VK_SUCCESS || !buffer || !allocation) {
-				throw std::runtime_error{ format_temp("Unable to allocate {0} bytes for buffer", size).data() };
+				throw MakeException<std::runtime_error>("Unable to allocate {} bytes for buffer", size);
 			}
 		}
 	}
@@ -83,13 +84,13 @@ namespace Rendering {
 
 		VmaAllocationInfo info{};
 		if (vmaCreateBuffer(allocator, &bufferCI, &allocCI, &buffer, &allocation, &info) != VK_SUCCESS || !buffer || !allocation) {
-			throw std::runtime_error{ format_temp("Unable to allocate {0} bytes for buffer", size).data() };
+			throw MakeException<std::runtime_error>("Unable to allocate {} bytes for buffer", size);
 		}
 		mapped = static_cast<char*>(info.pMappedData);
 
 		if (!mapped) {
 			vmaDestroyBuffer(allocator, buffer, allocation);
-			throw std::runtime_error{ "Unable to map memory allocated for MappedBuffer. This may mean the wrong VmaMemoryUsage was provided." };
+			throw MakeException<std::runtime_error>("Unable to map memory allocated for MappedBuffer. This may mean the wrong VmaMemoryUsage was provided.");
 		}
 	}
 
@@ -105,7 +106,7 @@ namespace Rendering {
 	}
 
 	void MappedBuffer::Reserve(VkDeviceSize newSize) {
-		if (!allocator) throw std::runtime_error{ "Cannot resize buffer, no allocator present" };
+		if (!allocator) throw MakeException<std::runtime_error>("Cannot resize buffer, no allocator present");
 
 		if (newSize > size) {
 			size = newSize;
@@ -124,20 +125,20 @@ namespace Rendering {
 
 			VmaAllocationInfo info{};
 			if (vmaCreateBuffer(allocator, &bufferCI, &allocCI, &buffer, &allocation, &info) != VK_SUCCESS || !buffer || !allocation) {
-				throw std::runtime_error{ format_temp("Unable to allocate {0} bytes for buffer", size).data() };
+				throw MakeException<std::runtime_error>("Unable to allocate {0} bytes for buffer", size);
 			}
 			mapped = static_cast<char*>(info.pMappedData);
 
 			if (!mapped) {
 				vmaDestroyBuffer(allocator, buffer, allocation);
-				throw std::runtime_error{ "Unable to map memory allocated for MappedBuffer. This may mean the wrong VmaMemoryUsage was used to create it." };
+				throw MakeException<std::runtime_error>("Unable to map memory allocated for MappedBuffer. This may mean the wrong VmaMemoryUsage was used to create it.");
 			}
 		}
 	}
 
 	void MappedBuffer::Flush() const {
 		if (vmaFlushAllocation(allocator, allocation, 0, VK_WHOLE_SIZE) != VK_SUCCESS) {
-			throw std::runtime_error{ "Unable to flush mapped buffer" };
+			throw MakeException<std::runtime_error>("Unable to flush mapped buffer");
 		}
 	}
 }

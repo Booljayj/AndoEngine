@@ -1,4 +1,5 @@
 #include "Rendering/RenderingSystem.h"
+#include "Engine/Exceptions.h"
 #include "Engine/StandardTypes.h"
 #include "Engine/Utility.h"
 #include "HAL/WindowingSystem.h"
@@ -108,7 +109,7 @@ namespace Rendering {
 
 	bool RenderingSystem::SelectPhysicalDevice(size_t index) {
 		if (index != selectedPhysicalIndex) {
-			if (index >= framework->GetPhysicalDevices().size()) throw std::out_of_range{ t_printf("Physical device index %i out of range", index).data() };
+			if (index >= framework->GetPhysicalDevices().size()) throw MakeException<std::out_of_range>("Physical device index {} out of range", index);
 			
 			//Clean up the previous device, and everything created for it
 			if (device) {
@@ -203,11 +204,11 @@ namespace Rendering {
 		t_vector<QueueFamilyDescription> const families = physical.GetSurfaceFamilies(surface);
 
 		found.surface = SurfaceQueues::References::Find(families);
-		if (!found.surface) throw std::runtime_error{ t_printf("Physical device %s does not contain required queues", physical.properties.deviceName).data() };
+		if (!found.surface) throw MakeException<std::runtime_error>("Physical device %s does not contain required queues", physical.properties.deviceName);
 
 		found.shared = SharedQueues::References::Find(families, *found.surface);
-		if (!found.shared) throw std::runtime_error{ t_printf("Physical device %s does not contain required queues", physical.properties.deviceName).data() };
-
+		if (!found.shared) throw MakeException<std::runtime_error>("Physical device %s does not contain required queues", physical.properties.deviceName);
+		
 		QueueRequests requests;
 		requests << *found.surface;
 		requests << *found.shared;
@@ -221,7 +222,7 @@ namespace Rendering {
 		} found;
 
 		found.shared = SharedQueues::References::FindHeadless(physical.families);
-		if (!found.shared) throw std::runtime_error{ t_printf("Physical device %s does not contain required queues", physical.properties.deviceName).data() };
+		if (!found.shared) throw MakeException<std::runtime_error>("Physical device %s does not contain required queues", physical.properties.deviceName);
 
 		QueueRequests requests;
 		requests << *found.shared;
@@ -344,7 +345,7 @@ namespace Rendering {
 
 		TUniquePoolHandles<1, &vkFreeCommandBuffers> tempCommands{ *device, pool };
 		if (vkAllocateCommandBuffers(*device, &bufferAI, *tempCommands) != VK_SUCCESS) {
-			throw std::runtime_error{ "Failed to allocate command buffer for staging commands" };
+			throw MakeException<std::runtime_error>("Failed to allocate command buffer for staging commands");
 		}
 
 		{

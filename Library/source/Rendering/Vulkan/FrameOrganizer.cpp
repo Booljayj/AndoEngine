@@ -1,4 +1,5 @@
 #include "Rendering/Vulkan/FrameOrganizer.h"
+#include "Engine/Exceptions.h"
 #include "Rendering/UniformTypes.h"
 
 namespace Rendering {
@@ -22,11 +23,11 @@ namespace Rendering {
 
 		TUniqueHandle<vkDestroySemaphore> tempImageAvailable{ device };
 		if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, *tempImageAvailable) != VK_SUCCESS || !tempImageAvailable) {
-			throw std::runtime_error{ "Failed to create image available semaphore" };
+			throw MakeException<std::runtime_error>("Failed to create image available semaphore");
 		}
 		TUniqueHandle<vkDestroySemaphore> tempRenderFinished{ device };
 		if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, *tempRenderFinished) != VK_SUCCESS || !tempRenderFinished) {
-			throw std::runtime_error{ "Failed to create render finished semaphore" };
+			throw MakeException<std::runtime_error>("Failed to create render finished semaphore");
 		}
 
 		imageAvailable = tempImageAvailable.Release();
@@ -133,7 +134,7 @@ namespace Rendering {
 		}
 
 		if (currentImageIndex >= imageFences.size()) {
-			throw std::runtime_error{ t_printf("AcquireNextImage index is out of range: %i >= %i", currentImageIndex, imageFences.size()).data() };
+			throw MakeException<std::runtime_error>("AcquireNextImage index is out of range: %i >= %i", currentImageIndex, imageFences.size());
 		}
 
 		//If another frame is still using this image, wait for it to complete
@@ -180,7 +181,7 @@ namespace Rendering {
 
 		//Submit the actual command buffer
 		if (vkQueueSubmit(queue.graphics, 1, &submitInfo, frame.sync.fence) != VK_SUCCESS) {
-			throw std::runtime_error{ "Failed to submit command buffer to qraphics queue" };
+			throw MakeException<std::runtime_error>("Failed to submit command buffer to qraphics queue");
 		}
 
 		//Set up information for how to present the rendered image
@@ -198,7 +199,7 @@ namespace Rendering {
 		presentInfo.pResults = nullptr; //Optional
 
 		if (vkQueuePresentKHR(queue.present, &presentInfo) != VK_SUCCESS) {
-			throw std::runtime_error{ "Failed to present image" };
+			throw MakeException<std::runtime_error>("Failed to present image");
 		}
 
 		//We've successfully finished rendering this frame, so move to the next frame

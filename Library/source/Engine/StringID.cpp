@@ -109,7 +109,7 @@ struct StringStorage {
 			if (auto const offset = pools[poolIndex].Store(string)) return Locator{ poolIndex, offset.value() };
 		}
 
-		if (pools.size() == std::numeric_limits<uint16_t>::max()) throw std::runtime_error{ "Cannot store new string, maximum number of string pools has been reached." };
+		if (pools.size() == std::numeric_limits<uint16_t>::max()) throw MakeException<std::runtime_error>("Cannot store new string, maximum number of string pools has been reached.");
 
 		//Add a new pool where we can store this string
 		auto const entryIndex = pools.emplace_back().Store(string);
@@ -183,7 +183,7 @@ uint16_t StringID::EmplaceString(uint16_t hash, std::string_view string) {
 	}
 
 	//Create a new locator for the input string by storing it in the pools
-	if (locators.size() == std::numeric_limits<uint16_t>::max()) throw std::runtime_error{ "Too many collisions for hash" };
+	if (locators.size() == std::numeric_limits<uint16_t>::max()) throw MakeException<std::runtime_error>("Too many collisions for hash");
 	locators.emplace_back(storage.Store(string));
 	return locators.size() - 1;
 }

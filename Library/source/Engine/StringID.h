@@ -1,4 +1,5 @@
 #pragma once
+#include "Engine/Exceptions.h"
 #include "Engine/Hash.h"
 #include "Engine/Reflection.h"
 #include "Engine/StandardTypes.h"
@@ -13,7 +14,7 @@ struct StringID {
 		friend consteval Initializer operator ""_sid(char const* p, size_t s);
 
 		constexpr Initializer(StringUtils::DecomposedString const& source) : source(source), hash(CreateHash(source.body)) {
-			if (ContainsInvalidCharacters(source.body)) throw std::runtime_error{ "Source string contains invalid characters" };
+			if (ContainsInvalidCharacters(source.body)) throw MakeException<std::runtime_error>("Source string contains invalid characters");
 		}
 		constexpr Initializer(std::string_view string) : Initializer(StringUtils::DecomposedString{ string }) {}
 
