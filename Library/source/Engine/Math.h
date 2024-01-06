@@ -4,7 +4,7 @@
 //Advanced math functions not available in standard libraries
 namespace Math {
 	//Circular shift left
-	template<typename T>
+	template<std::integral T>
 	constexpr inline T RotateLeft(const T x, uint32_t n) noexcept {
 		static_assert(std::is_integral<T>::value, "Cannot rotate non-integral type");
 		static_assert(!std::is_signed<T>::value, "Cannot rotate signed type");
@@ -18,7 +18,7 @@ namespace Math {
 	}
 
 	//Circular shift right
-	template<typename T>
+	template<std::integral T>
 	constexpr inline T RotateRight(const T x, uint32_t n) noexcept {
 		static_assert(std::is_integral<T>::value, "Cannot rotate non-integral type");
 		static_assert(!std::is_signed<T>::value, "Cannot rotate signed type");

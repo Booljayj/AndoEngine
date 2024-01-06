@@ -48,9 +48,12 @@ private:
 constexpr Hash32 operator ""_h32(char const* p, size_t s) { return Hash32{ std::string_view{ p, s }, 0 }; };
 
 template<>
-struct std::formatter<Hash32> {
-	constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
-	auto format(const Hash32& hash, format_context& ctx) const { return format_to(ctx.out(), "{:08x}"sv, hash.ToValue()); }
+struct std::formatter<Hash32> : std::formatter<std::string_view> {
+	auto format(const Hash32& hash, format_context& ctx) const {
+		char scratch[20] = { 0 };
+		auto const result = format_to_n(scratch, sizeof(scratch), "{:08x}"sv, hash.ToValue());
+		return formatter<string_view>::format(string_view{ scratch, result.out }, ctx);
+	}
 };
 
 /** A 64-bit string hash */
@@ -81,9 +84,12 @@ private:
 constexpr Hash64 operator ""_h64(char const* p, size_t s) { return Hash64{ std::string_view{ p, s }, 0 }; };
 
 template<>
-struct std::formatter<Hash64> {
-	constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
-	auto format(const Hash64& hash, format_context& ctx) const { return format_to(ctx.out(), "{:016x}"sv, hash.ToValue()); }
+struct std::formatter<Hash64> : std::formatter<std::string_view> {
+	auto format(const Hash64& hash, format_context& ctx) const {
+		char scratch[20] = { 0 };
+		auto const result = format_to_n(scratch, sizeof(scratch), "{:016x}"sv, hash.ToValue());
+		return formatter<string_view>::format(string_view{ scratch, result.out }, ctx);
+	}
 };
 
 /** A 128-bit string hash */
@@ -116,9 +122,12 @@ private:
 constexpr Hash128 operator ""_h128(char const* p, size_t s) { return Hash128{ std::string_view{ p, s }, 0, 0 }; };
 
 template<>
-struct std::formatter<Hash128> {
-	constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
-	auto format(const Hash128& hash, format_context& ctx) const { return format_to(ctx.out(), "{:016x}-{:016x}"sv, hash.ToHighValue(), hash.ToLowValue()); }
+struct std::formatter<Hash128> : std::formatter<std::string_view> {
+	auto format(const Hash128& hash, format_context& ctx) const {
+		char scratch[40] = { 0 };
+		auto const result = format_to_n(scratch, sizeof(scratch), "{:016x}-{:016x}"sv, hash.ToHighValue(), hash.ToLowValue());
+		return formatter<string_view>::format(string_view{ scratch, result.out }, ctx);
+	}
 };
 
 //============================================================================================

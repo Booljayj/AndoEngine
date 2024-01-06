@@ -14,12 +14,10 @@ struct TInlineClonable
  * but the internal type can be replaced by any interface implementation using Construct().
  */
 template<typename InterfaceType, size_t MinConcreteTypeSize = 0>
+	requires std::has_virtual_destructor_v<InterfaceType> and std::is_base_of_v<TInlineClonable<InterfaceType>, InterfaceType>
 struct TInlineInterface
 {
 public:
-	static_assert(std::has_virtual_destructor_v<InterfaceType>, "InterfaceType must have a virtual destructor");
-	static_assert(std::is_base_of_v<TInlineClonable<InterfaceType>, InterfaceType>, "InterfaceType must derive from TInlineClonable<InterfaceType>");
-
 	static constexpr size_t ConcreteTypeSize = std::max(sizeof(InterfaceType), MinConcreteTypeSize);
 	
 	template<typename ConcreteType>

@@ -19,10 +19,19 @@
 #endif
 
 namespace Utility {
+	/** Calculates floor(log2(value)) */
+	constexpr size_t FloorLog2(size_t value) {
+		return value == 1 ? 0 : 1 + FloorLog2(value >> 1);
+	}
+
+	/** Calculates the minimum number of bits required to store a maximum value. Also equal to ceil(log2(value)). */
+	constexpr size_t GetMinimumNumBits(size_t max) {
+		return max == 1 ? 0 : FloorLog2(max - 1) + 1;
+	}
+
 	/** Load a value from a char array. Char array is assumed to be in little-endian order, and must be large enought to contain the value */
-	template<typename T>
+	template<std::integral T>
 	constexpr inline T Load(char const* data, size_t offset = 0) {
-		static_assert(std::is_integral_v<T>, "Load must only be used with integral types");
 		T value = 0;
 		if constexpr (boost::endian::order::native == boost::endian::order::little) {
 			for (size_t index = 0; index < sizeof(T); ++index) {
@@ -37,30 +46,40 @@ namespace Utility {
 		}
 		return value;
 	}
-
-	/** Write a value to a buffer in reverse order. Return the number of digits written. */
-	uint8_t WriteReversedValue(uint64_t value, char* buffer, size_t size);
-	/** Write a signed value to a buffer in reverse order. Return the number of digits written. */
-	uint8_t WriteReversedValueSigned(int64_t value, char* buffer, size_t size);
-
-	/** Returns the maximum number of characters required to write an integer value with the given type to a string */
-	template<typename T>
-	constexpr uint8_t MaxCharacters() {
-		static_assert(std::numeric_limits<T>::is_integer && std::is_same_v<T, bool>, "MaxCharacters requires an integer type");
-		uint8_t count = 0;
-		for (size_t value = std::numeric_limits<T>::max(); value > 0; value /= 10) ++count;
-		return count + static_cast<uint8_t>(std::is_signed_v<T>);
-	}
 }
 
-template<typename T>
+template<stdext::enumeration T>
 std::underlying_type_t<T> IndexOfEnum(T value) { return static_cast<std::underlying_type_t<T>>(value); }
 
-/** A size value in bytes */
+/** A size value in bytes. Used as a wrapper to distinguish a byte size from a raw number. */
 struct ByteSize {
 	uint64_t size = 0;
-	ByteSize(uint64_t inSize) : size(inSize) {}
+	ByteSize(uint64_t size) : size(size) {}
 };
 
-/** Write the value as a size in bytes using an appropriate suffix */
-std::ostream& operator<<(std::ostream& stream, ByteSize bytes);
+template<>
+struct std::formatter<ByteSize> : std::formatter<std::string_view> {
+	/** Format a number as a fixed-point value, where the least significant digit is the tenths precision */
+	auto format_fixed_point(format_context& ctx, char prefix, uint64_t value) const {
+		return std::format_to(ctx.out(), "{}.{}{}B", value / 10u, value % 10u, prefix);
+	}
+
+	auto format(const ByteSize& bytes, format_context& ctx) const {
+		uint64_t const size = bytes.size;
+		if (size < 1000L) {
+			return std::format_to(ctx.out(), "{}B", size);
+		} else if (size < 999'950u) {
+			return format_fixed_point(ctx, 'k', size / 100u);
+		} else if (size < 999'950'000u) {
+			return format_fixed_point(ctx, 'M', size / 100'000u);
+		} else if (size < 999'950'000'000u) {
+			return format_fixed_point(ctx, 'G', size / 100'000'000u);
+		} else if (size < 999'950'000'000'000u) {
+			return format_fixed_point(ctx, 'T', size / 100'000'000'000u);
+		} else if (size < 999'950'000'000'000'000u) {
+			return format_fixed_point(ctx, 'P', size / 100'000'000'000'000u);
+		} else {
+			return format_fixed_point(ctx, 'E', size / 100'000'000'000'000'000u);
+		}
+	}
+};

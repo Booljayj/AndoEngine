@@ -32,6 +32,13 @@ namespace Algo {
 		return RemoveSwap(range, std::ranges::find(range, value));
 	}
 
+	template<typename TRange>
+	bool RemoveSwap(TRange& range, std::span<typename TRange::value_type const> values) {
+		bool removed = false;
+		for (auto const& value : values) removed |= RemoveSwap(range, value);
+		return removed;
+	}
+
 	/** Remove an element from  a container by swapping it with the last element and removing the last. Faster removal but does not preserve order. */
 	template<typename TRange, typename TPredicate>
 	bool RemoveSwapIf(TRange& range, TPredicate&& predicate) {

@@ -49,7 +49,7 @@ private:
 };
 
 Logger Logger::instance;
-std::string Logger::scratch;
+thread_local std::string Logger::scratch;
 
 Logger::Logger()
 	: queue(std::make_unique<LogMessageQueue>())
@@ -71,7 +71,7 @@ void Logger::AddDevices(std::span<std::shared_ptr<ILogDevice> const> view) {
 void Logger::RemoveDevices(std::span<std::shared_ptr<ILogDevice> const> view) {
 	std::lock_guard const lock{ mutex.thread };
 
-	for (auto const& device : view) Algo::RemoveSwap(devices, device);
+	Algo::RemoveSwap(devices, view);
 	RestartWorkerThread();
 }
 

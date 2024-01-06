@@ -8,25 +8,24 @@
 /** Set the bitflag to false in the mask */
 #define CLEAR_BIT(Mask, Flag) ((size_t)(Mask) &= (size_t)(~(Flag)))
 
-template<typename EnumType_>
+template<stdext::enumeration InEnumType>
 struct TFlags {
 public:
-	using EnumType = EnumType_;
-	using UnderlyingType = typename std::underlying_type<EnumType>::type;
+	using EnumType = InEnumType;
+	using UnderlyingType = typename std::underlying_type_t<EnumType>;
 
 	constexpr inline TFlags() = default;
 	constexpr inline TFlags(const TFlags& other) : flags(other.flags) {}
-	constexpr inline TFlags(UnderlyingType inFlags) : flags(inFlags) {}
-	constexpr inline TFlags(EnumType inFlag) : flags(1 << (UnderlyingType)inFlag) {}
-	constexpr inline TFlags(std::initializer_list<EnumType> inFlags) : flags(0) {
+	constexpr inline TFlags(UnderlyingType flags) : flags(flags) {}
+	constexpr inline TFlags(EnumType flag) : flags(1 << static_cast<UnderlyingType>(flag)) {}
+	constexpr inline TFlags(std::initializer_list<EnumType> inFlags) {
 		for (EnumType flag : inFlags) flags |= (1 << (UnderlyingType)flag);
 	}
 
 	template<typename... FlagTypes>
-	static constexpr inline TFlags Make(FlagTypes... inFlags) {
-		static_assert(std::conjunction_v<std::is_same<FlagTypes, EnumType>...>, "Invalid types for creating flags");
-		const UnderlyingType flags = (... | (1 << (UnderlyingType)inFlags));
-		return TFlags{ flags };
+		requires std::conjunction_v<std::is_same<FlagTypes, EnumType>...>
+	static constexpr inline TFlags Make(FlagTypes... flags) {
+		return TFlags{ static_cast<UnderlyingType>((... | (1 << static_cast<UnderlyingType>(flags)))) };
 	}
 
 	static constexpr inline TFlags None() { return TFlags{}; }

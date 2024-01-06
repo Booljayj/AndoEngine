@@ -62,10 +62,10 @@ namespace Reflection {
 		template<typename Type>
 		constexpr static FTypeFlags Create() {
 			FTypeFlags flags;
-			if constexpr (std::is_default_constructible_v<Type>) flags += ETypeFlags::DefaultConstructable;
-			if constexpr (std::is_copy_constructible_v<Type>) flags += ETypeFlags::CopyConstructable;
-			if constexpr (std::is_copy_assignable_v<Type>) flags += ETypeFlags::CopyAssignable;
-			if constexpr (HasOperatorEquals_V<Type>) flags += ETypeFlags::EqualityComparable;
+			if constexpr (std::default_initializable<Type>) flags += ETypeFlags::DefaultConstructable;
+			if constexpr (std::copy_constructible<Type>) flags += ETypeFlags::CopyConstructable;
+			if constexpr (std::copyable<Type>) flags += ETypeFlags::CopyAssignable;
+			if constexpr (std::equality_comparable<Type>) flags += ETypeFlags::EqualityComparable;
 			if constexpr (std::is_trivial_v<Type>) flags += ETypeFlags::Trivial;
 			if constexpr (std::is_abstract_v<Type>) flags += ETypeFlags::Abstract;
 			return flags;
@@ -123,6 +123,9 @@ namespace Reflection {
 		static inline void Register(TypeInfo const* type) { LocalMutable().types.push_back(type); }
 	};
 
+	template<typename T>
+	concept TypeInfoSubclass = std::is_base_of_v<struct TypeInfo, T>;
+
 	/** Provides a set of runtime information about a type */
 	struct TypeInfo {
 	public:
@@ -165,10 +168,9 @@ namespace Reflection {
 		virtual bool Equal(void const* a, void const* b) const = 0;
 
 		/** Convert this TypeInfo to a specific kind of TypeInfo. Will return nullptr if the conversion is not possible */
-		template<typename TypeInfoType>
-		TypeInfoType const* As() const {
-			static_assert(std::is_base_of_v<TypeInfo, TypeInfoType>, "TypeInfo::As may only convert to types that derive from TypeInfo");
-			if (TypeInfoType::Classification == classification) return static_cast<TypeInfoType const*>(this);
+		template<TypeInfoSubclass T>
+		T const* As() const {
+			if (T::Classification == classification) return static_cast<T const*>(this);
 			else return nullptr;
 		}
 
@@ -182,17 +184,16 @@ namespace Reflection {
 	};
 
 	/** Implements type-specific operation overrides for a particular TypeInfo instance. */
-	template<typename Type, typename TypeInfoType>
-	struct ImplementedTypeInfo : public TypeInfoType {
+	template<std::destructible Type, TypeInfoSubclass BaseType>
+	struct ImplementedTypeInfo : public BaseType {
 		static constexpr Type const& Cast(void const* pointer) { return *static_cast<Type const*>(pointer); }
 		static constexpr Type& Cast(void* pointer) { return *static_cast<Type*>(pointer); }
 
-		ImplementedTypeInfo(Hash128 inID, std::string_view inName)
-			: TypeInfoType(TypeInfoType::Classification, inID, inName, FTypeFlags::Create<Type>(), MemoryParams::Create<Type>())
+		ImplementedTypeInfo(Hash128 id, std::string_view name)
+			: BaseType(BaseType::Classification, id, name, FTypeFlags::Create<Type>(), MemoryParams::Create<Type>())
 		{}
 
 		virtual void Destruct(void* instance) const final {
-			static_assert(std::is_destructible_v<Type>, "Reflected types must always be destructible");
 			if constexpr (!std::is_trivially_destructible_v<Type>) Cast(instance).~Type();
 		}
 		virtual void Construct(void* instance) const final {
@@ -206,16 +207,15 @@ namespace Reflection {
 			if constexpr (std::is_copy_assignable_v<Type>) Cast(instance) = Cast(other);
 		}
 		virtual bool Equal(void const* a, void const* b) const final {
-			if constexpr (HasOperatorEquals_V<Type>) return Cast(a) == Cast(b);
+			if constexpr (std::equality_comparable<Type>) return Cast(a) == Cast(b);
 			else return false;
 		}
 	};
 
 	/** Convert a TypeInfo pointer to a specific kind of TypeInfo. Will return nullptr if the conversion is not possible */
-	template<typename TypeInfoType>
-	TypeInfoType const* Cast(TypeInfo const* info) {
-		static_assert(std::is_base_of_v<TypeInfo, TypeInfoType>, "TypeInfo::Cast may only convert to types that derive from TypeInfo");
-		if (info) return info->As<TypeInfoType>();
+	template<TypeInfoSubclass T>
+	T const* Cast(TypeInfo const* info) {
+		if (info) return info->As<T>();
 		else return nullptr;
 	}
 }

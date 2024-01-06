@@ -1,103 +1,85 @@
 #pragma once
-#include "Engine/Bitfields.h"
 #include "Engine/StandardTypes.h"
-
 #include "Engine/Utility.h"
 
 /** A broken-down time point used for displaying year-month-day calendar information */
-union CalendarTimeStamp {
-private:
-	static constexpr uint16_t YearMax = 9999; //Years are always CE, and we only support up to four year digits.
-	static constexpr uint8_t YearOffset = 0;
-	static constexpr uint8_t YearNumBits = 14;
-	static_assert((1ULL<<YearNumBits)-1 >= YearMax, "Number of bits cannot contain required value range");
-
-	static constexpr uint16_t MonthMax = 12; //Months are 1-indexed
-	static constexpr uint8_t MonthOffset = YearOffset + YearNumBits;
-	static constexpr uint8_t MonthNumBits = 4;
-	static_assert((1ULL<<MonthNumBits)-1 >= 12, "Number of bits cannot contain required value range");
-
-	static constexpr uint16_t DayMax = 31; //Days are 1-indexed
-	static constexpr uint8_t DayOffset = MonthOffset + MonthNumBits;
-	static constexpr uint8_t DayNumBits = 5;
-	static_assert((1ULL<<DayNumBits)-1 >= 31, "Number of bits cannot contain required value range");
-
-public:
-	using TimePointType = std::chrono::system_clock::time_point;
-	using DaysType = std::chrono::duration<int64_t, std::ratio_multiply<std::chrono::hours::period, std::ratio<24>>>;
+struct CalendarTimeStamp {
 	using StorageType = uint32_t;
 
-	StorageType value = (StorageType)0;
+	using TimePointType = std::chrono::system_clock::time_point;
+	using DaysType = std::chrono::duration<int64_t, std::ratio_multiply<std::chrono::hours::period, std::ratio<24>>>;
+	using YearCountType = uint16_t;
+	using MonthCountType = uint8_t;
+	using DayCountType = uint8_t;
+
+	static constexpr uint16_t YearMax = 9999; //Years are always CE, and we only support up to four year digits.
+	static constexpr uint16_t MonthMax = 12;
+	static constexpr uint16_t DayMax = 31;
 
 	/** [0-9999] the gregorian calendar year */
-	TBitfieldMember<StorageType, YearOffset, YearNumBits> year;
+	StorageType year : Utility::GetMinimumNumBits(YearMax) = 0;
 	/** [0-11] the month index */
-	TBitfieldMember<StorageType, MonthOffset, MonthNumBits> month;
+	StorageType month : Utility::GetMinimumNumBits(MonthMax) = 0;
 	/** [0-30] the day index in the current month */
-	TBitfieldMember<StorageType, DayOffset, DayNumBits> day;
+	StorageType day : Utility::GetMinimumNumBits(DayMax) = 0;
 
 	static CalendarTimeStamp Now();
 
 	CalendarTimeStamp() = default;
-	CalendarTimeStamp(StorageType inValue) noexcept : value(inValue) {}
+	CalendarTimeStamp(YearCountType year, MonthCountType month, DayCountType day) noexcept : year(year), month(month), day(day) {}
 	CalendarTimeStamp(DaysType const& daysSinceEpochStart) noexcept;
-	CalendarTimeStamp(TimePointType const& timepoint) noexcept;
+	CalendarTimeStamp(TimePointType const& timepoint) noexcept : CalendarTimeStamp(GetDaysSinceEpoch(timepoint)) {}
 
 private:
-	DaysType GetDaysFromTimePoint(TimePointType const& timepoint);
+	static_assert(sizeof(YearCountType) * CHAR_BIT >= Utility::GetMinimumNumBits(YearMax));
+	static_assert(sizeof(MonthCountType) * CHAR_BIT >= Utility::GetMinimumNumBits(MonthMax));
+	static_assert(sizeof(DayCountType) * CHAR_BIT >= Utility::GetMinimumNumBits(DayMax));
+
+	DaysType GetDaysSinceEpoch(TimePointType const& timepoint);
 };
-static_assert(sizeof(CalendarTimeStamp)==sizeof(CalendarTimeStamp::StorageType), "CalendarTimeStamp must be tightly packed");
+static_assert(sizeof(CalendarTimeStamp) == sizeof(CalendarTimeStamp::StorageType), "CalendarTimeStamp must be tightly packed");
 
 /** A broken-down time point used for displaying hour-minute-second clock information. */
-union ClockTimeStamp {
-private:
-	static constexpr uint16_t HourMax = 23; //Hours are 0-indexed internally, where 0 is 12am.
-	static constexpr uint8_t HourOffset = 0;
-	static constexpr uint8_t HourNumBits = 5;
-	static_assert((1ULL<<HourNumBits)-1 >= HourMax, "Number of bits cannot contain required value range");
-
-	static constexpr uint16_t MinuteMax = 59;
-	static constexpr uint8_t MinuteOffset = HourOffset + HourNumBits;
-	static constexpr uint8_t MinuteNumBits = 6;
-	static_assert((1ULL<<MinuteNumBits)-1 >= MinuteMax, "Number of bits cannot contain required value range");
-
-	static constexpr uint16_t SecondMax = 60; //Full 60 seconds is required for leap seconds support
-	static constexpr uint8_t SecondOffset = MinuteOffset + MinuteNumBits;
-	static constexpr uint8_t SecondNumBits = 6;
-	static_assert((1ULL<<SecondNumBits)-1 >= SecondMax, "Number of bits cannot contain required value range");
-
-	static constexpr uint16_t MillisecondMax = 999;
-	static constexpr uint8_t MillisecondOffset = SecondOffset + SecondNumBits;
-	static constexpr uint8_t MillisecondNumBits = 10;
-	static_assert((1ULL<<MillisecondNumBits)-1 >= MillisecondMax, "Number of bits cannot contain required value range");
-
-public:
-	using TimePointType = std::chrono::system_clock::time_point;
-	using MillisecondsType = std::chrono::milliseconds;
+struct ClockTimeStamp {
 	using StorageType = uint32_t;
 
-	StorageType value = (StorageType)0;
+	using TimePointType = std::chrono::system_clock::time_point;
+	using MillisecondsType = std::chrono::milliseconds;
+	using HourCountType = uint8_t;
+	using MinuteCountType = uint8_t;
+	using SecondCountType = uint8_t;
+	using MillisecondCountType = uint16_t;
+
+	static constexpr uint16_t HourMax = 23; //Hours are 0-indexed internally, where 0 is 12am.
+	static constexpr uint16_t MinuteMax = 59;
+	static constexpr uint16_t SecondMax = 60; //Full 60 seconds is required to support leap seconds
+	static constexpr uint16_t MillisecondMax = 999;
 
 	/** [0-23] the hour of the day */
-	TBitfieldMember<StorageType, HourOffset, HourNumBits> hour;
+	StorageType hour : Utility::GetMinimumNumBits(HourMax) = 0;
 	/** [0-59] the minute of the hour */
-	TBitfieldMember<StorageType, MinuteOffset, MinuteNumBits> minute;
+	StorageType minute : Utility::GetMinimumNumBits(MinuteMax) = 0;
 	/** [0-60] the second of the minute (60 is used for leap seconds in some cases) */
-	TBitfieldMember<StorageType, SecondOffset, SecondNumBits> second;
+	StorageType second : Utility::GetMinimumNumBits(SecondMax) = 0;
 	/** [0-999] the milliseconds past the second */
-	TBitfieldMember<StorageType, MillisecondOffset, MillisecondNumBits> millisecond;
+	StorageType millisecond : Utility::GetMinimumNumBits(MillisecondMax) = 0;
 
 	static ClockTimeStamp Now();
 
 	ClockTimeStamp() = default;
-	ClockTimeStamp(StorageType inValue) noexcept : value(inValue) {}
+	ClockTimeStamp(HourCountType hour, MinuteCountType minute, SecondCountType second, MillisecondCountType millisecond) noexcept : hour(hour), minute(minute), second(second), millisecond(millisecond) {}
 	ClockTimeStamp(MillisecondsType const& millisecondsSinceDayStart) noexcept;
-	ClockTimeStamp(TimePointType const& timepoint) noexcept;
+	ClockTimeStamp(TimePointType const& timepoint) noexcept : ClockTimeStamp(GetMillisecondsSinceDayStart(timepoint)) {}
 
 private:
-	static MillisecondsType GetMillisecondsFromTimePoint(TimePointType const& timepoint);
+	static_assert(sizeof(HourCountType) * CHAR_BIT >= Utility::GetMinimumNumBits(HourMax));
+	static_assert(sizeof(MinuteCountType) * CHAR_BIT >= Utility::GetMinimumNumBits(MinuteMax));
+	static_assert(sizeof(SecondCountType) * CHAR_BIT >= Utility::GetMinimumNumBits(HourMax));
+	static_assert(sizeof(MillisecondCountType) * CHAR_BIT >= Utility::GetMinimumNumBits(HourMax));
+
+	static MillisecondsType GetMillisecondsSinceDayStart(TimePointType const& timepoint);
 };
-static_assert(sizeof(ClockTimeStamp)==sizeof(ClockTimeStamp::StorageType), "ClockTimeStamp must be tightly packed");
+static_assert(sizeof(ClockTimeStamp) == sizeof(ClockTimeStamp::StorageType), "ClockTimeStamp must be tightly packed");
 
 struct TimeStamp {
 	using TimePointType = std::chrono::system_clock::time_point;
@@ -114,50 +96,26 @@ struct TimeStamp {
 template<>
 struct std::formatter<CalendarTimeStamp> : std::formatter<std::string_view> {
 	auto format(const CalendarTimeStamp& calendar, format_context& ctx) const {
-		char output[11] = "00-00-0000";
-
-		Utility::WriteReversedValue(calendar.day + 1, output, 2);
-		Utility::WriteReversedValue(calendar.month + 1, output + 3, 2);
-		Utility::WriteReversedValue(calendar.year, output + 6, 4);
-
-		std::reverse(output, output + sizeof(output) - 1);
-		return formatter<string_view>::format(output, ctx);
+		char scratch[11] = { 0 };
+		auto const result = std::format_to_n(scratch, sizeof(scratch), "{:0>4}-{:0>2}-{:0>2}", calendar.year, calendar.month + 1, calendar.day + 1);
+		return formatter<string_view>::format(string_view{ scratch, result.out }, ctx);
 	}
 };
 
 template<>
 struct std::formatter<ClockTimeStamp> : std::formatter<std::string_view> {
 	auto format(const ClockTimeStamp& clock, format_context& ctx) const {
-		char output[13] = "000.00:00:00";
-
-		Utility::WriteReversedValue(clock.millisecond, output, 3);
-		Utility::WriteReversedValue(clock.second, output + 4, 2);
-		Utility::WriteReversedValue(clock.minute, output + 7, 2);
-		Utility::WriteReversedValue(clock.hour, output + 10, 2);
-
-		std::reverse(output, output + sizeof(output) - 1);
-		return formatter<string_view>::format(output, ctx);
+		char scratch[13] = { 0 };
+		auto const result = std::format_to_n(scratch, sizeof(scratch), "{:0>2}:{:0>2}:{:0>2}.{:0>3}", clock.hour, clock.minute, clock.second, clock.millisecond);
+		return formatter<string_view>::format(string_view{ scratch, result.out }, ctx);
 	}
 };
 
 template<>
 struct std::formatter<TimeStamp> : std::formatter<std::string_view> {
 	auto format(const TimeStamp& time, format_context& ctx) const {
-		char output[24] = "000.00:00:00 00-00-0000";
-
-		Utility::WriteReversedValue(time.clock.millisecond, output, 3);
-		Utility::WriteReversedValue(time.clock.second, output + 4, 2);
-		Utility::WriteReversedValue(time.clock.minute, output + 7, 2);
-		Utility::WriteReversedValue(time.clock.hour, output + 10, 2);
-		Utility::WriteReversedValue(time.calendar.day + 1, output + 13, 2);
-		Utility::WriteReversedValue(time.calendar.month + 1, output + 16, 2);
-		Utility::WriteReversedValue(time.calendar.year, output + 19, 4);
-
-		std::reverse(output, output + sizeof(output) - 1);
-		return formatter<string_view>::format(output, ctx);
+		char scratch[25] = { 0 };
+		auto const result = std::format_to_n(scratch, sizeof(scratch), "{} {}", time.calendar, time.clock);
+		return formatter<string_view>::format(string_view{ scratch, result.out }, ctx);
 	}
 };
-
-std::ostream& operator<<(std::ostream& stream, CalendarTimeStamp const& calendar);
-std::ostream& operator<<(std::ostream& stream, ClockTimeStamp const& clock);
-std::ostream& operator<<(std::ostream& stream, TimeStamp const& time);

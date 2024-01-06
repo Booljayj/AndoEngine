@@ -47,11 +47,7 @@ CalendarTimeStamp::CalendarTimeStamp(DaysType const& daysSinceEpochStart) noexce
 	year = static_cast<uint16_t>(std::max<int64_t>(0, std::min<int64_t>(9999, highPrecisionYear))); //[0-9999]
 }
 
-CalendarTimeStamp::CalendarTimeStamp(TimePointType const& timepoint) noexcept
-: CalendarTimeStamp(GetDaysFromTimePoint(timepoint))
-{}
-
-CalendarTimeStamp::DaysType CalendarTimeStamp::GetDaysFromTimePoint(TimePointType const& timepoint) {
+CalendarTimeStamp::DaysType CalendarTimeStamp::GetDaysSinceEpoch(TimePointType const& timepoint) {
 	return std::chrono::duration_cast<DaysType>(timepoint.time_since_epoch());
 }
 
@@ -77,11 +73,7 @@ ClockTimeStamp::ClockTimeStamp(MillisecondsType const& millisecondsSinceDayStart
 	millisecond = ms; //[0-999]
 }
 
-ClockTimeStamp::ClockTimeStamp(TimePointType const& timepoint) noexcept
-: ClockTimeStamp(GetMillisecondsFromTimePoint(timepoint))
-{}
-
-ClockTimeStamp::MillisecondsType ClockTimeStamp::GetMillisecondsFromTimePoint(TimePointType const& timepoint) {
+ClockTimeStamp::MillisecondsType ClockTimeStamp::GetMillisecondsSinceDayStart(TimePointType const& timepoint) {
 	auto const nowUTC = timepoint.time_since_epoch();
 	auto const todayUTC = std::chrono::duration_cast<CalendarTimeStamp::DaysType>(nowUTC);
 	auto const duration = nowUTC - todayUTC;
@@ -93,25 +85,10 @@ TimeStamp TimeStamp::Now() {
 }
 
 TimeStamp::TimeStamp(TimePointType const& timepoint) {
-	auto const nowUTC = timepoint.time_since_epoch();
-	auto const daysSinceEpochStart = std::chrono::duration_cast<CalendarTimeStamp::DaysType>(nowUTC);
-	auto const millisecondsSinceDayStart = std::chrono::duration_cast<std::chrono::milliseconds>(nowUTC - daysSinceEpochStart);
+	auto const timeSinceEpoch = timepoint.time_since_epoch();
+	auto const daysSinceEpochStart = std::chrono::duration_cast<CalendarTimeStamp::DaysType>(timeSinceEpoch);
+	auto const millisecondsSinceDayStart = std::chrono::duration_cast<std::chrono::milliseconds>(timeSinceEpoch - daysSinceEpochStart);
 
 	calendar = CalendarTimeStamp{ daysSinceEpochStart };
 	clock = ClockTimeStamp{ millisecondsSinceDayStart };
-}
-
-std::ostream& operator<<(std::ostream& stream, CalendarTimeStamp const& calendar) {
-	std::format_to(std::ostream_iterator<char>(stream), "{0}"sv, calendar);
-	return stream;
-}
-
-std::ostream& operator<<(std::ostream& stream, ClockTimeStamp const& clock) {
-	std::format_to(std::ostream_iterator<char>(stream), "{0}"sv, clock);
-	return stream;
-}
-
-std::ostream& operator<<(std::ostream& stream, TimeStamp const& timestamp) {
-	std::format_to(std::ostream_iterator<char>(stream), "{0}"sv, timestamp);
-	return stream;
 }
