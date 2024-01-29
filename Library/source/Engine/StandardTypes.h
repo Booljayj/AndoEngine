@@ -1,4 +1,10 @@
 #pragma once
+/*
+ * This file contains standard types that should be precompiled.
+ *
+ * This includes many commonly-used elements from the Standard Template Library, fundamental external libraries like math utilities,
+ * and custom types that are broadly used and don't have many other dependencies.
+ */
 
 //============================================================
 // STL types
@@ -77,12 +83,22 @@ using namespace std::string_view_literals;
 //Third-party and upcoming
 #include "ThirdParty/uuid.h"
 
-//Custom extensions
+namespace ranges = std::ranges;
+
+//Custom extensions to the standard library
 namespace stdext {
+	/** A type that is an enum */
 	template<typename T>
 	concept enumeration = std::is_enum_v<T>;
 
-	constexpr size_t hash_combine(size_t a, size_t b) { return a ^ (b + 0x9e3779b9 + (a << 6) + (a >> 2)); }
+	/** A type which can be compared to nullptr, but is not literally nullptr */
+	template<typename T>
+	concept null_comparable =
+		std::equality_comparable_with<std::nullptr_t, T> and
+		std::copyable<T> and
+		!std::is_null_pointer_v<T>;
+
+	constexpr inline size_t hash_combine(size_t a, size_t b) { return a ^ (b + 0x9e3779b9 + (a << 6) + (a >> 2)); }
 
 	template<typename SourceType, std::constructible_from<SourceType const&> TargetType, typename TargetAllocatorType>
 	constexpr void append(std::vector<TargetType, TargetAllocatorType>& target, std::span<SourceType const> const& source) {
@@ -97,7 +113,7 @@ namespace stdext {
 		source.clear();
 	}
 
-	class shared_recursive_mutex : public std::shared_mutex {
+	class recursive_shared_mutex : public std::shared_mutex {
 	public:
 		inline void lock(void) {
 			std::thread::id this_id = std::this_thread::get_id();
@@ -113,7 +129,7 @@ namespace stdext {
 		}
 
 		inline void unlock(void) {
-			if(count > 1) {
+			if (count > 1) {
 				// recursive unlocking
 				count--;
 			} else {
@@ -128,6 +144,59 @@ namespace stdext {
 		std::atomic<std::thread::id> owner;
 		uint32_t count;
 	};
+
+	/** Determines whether a return value should be a copy or a reference, in the context of returning a const value of type T */
+	template<typename T>
+	using value_or_reference_return_t = std::conditional_t<
+		(sizeof(T) < 2 * sizeof(void*)) && std::is_trivially_copy_constructible_v<T>,
+		const T,
+		const T&
+	>;
+
+	/** Based on the Microsoft GSL implementation of not_null, but modified to use C++20 features and exceptions */
+	template<null_comparable T>
+	struct not_null {
+		template<std::convertible_to<T> U>
+		constexpr not_null(U&& u) noexcept(std::is_nothrow_move_constructible_v<T>) : ptr_(std::forward<U>(u)) {
+			if (ptr_ == nullptr) throw std::runtime_error{ "not_null object was assigned to nullptr" };
+		}
+
+		constexpr not_null(T u) noexcept(std::is_nothrow_move_constructible_v<T>) : ptr_(std::move(u)) {
+			if (ptr_ == nullptr) throw std::runtime_error{ "not_null object was assigned to nullptr" };
+		}
+
+		template<std::convertible_to<T> U>
+		constexpr not_null(const not_null<U>& other) noexcept(std::is_nothrow_move_constructible_v<T>) : not_null(other.get()) {}
+
+		not_null(const not_null& other) = default;
+		not_null& operator=(const not_null& other) = default;
+
+		constexpr inline value_or_reference_return_t<T> get() const noexcept(noexcept(value_or_reference_return_t<T>{ std::declval<T&>() })) {
+			return ptr_;
+		}
+		constexpr operator T() const { return get(); }
+		constexpr decltype(auto) operator->() const { return get(); }
+		constexpr decltype(auto) operator*() const { return *get(); }
+
+		// prevents compilation when someone attempts to assign a null pointer constant
+		not_null(std::nullptr_t) = delete;
+		not_null& operator=(std::nullptr_t) = delete;
+
+		// unwanted operators...pointers only point to single objects!
+		not_null& operator++() = delete;
+		not_null& operator--() = delete;
+		not_null operator++(int) = delete;
+		not_null operator--(int) = delete;
+		not_null& operator+=(std::ptrdiff_t) = delete;
+		not_null& operator-=(std::ptrdiff_t) = delete;
+		void operator[](std::ptrdiff_t) const = delete;
+
+	private:
+		T ptr_;
+	};
+
+	template<typename T>
+	using shared_ref = not_null<std::shared_ptr<T>>;
 }
 
 //============================================================

@@ -14,8 +14,10 @@ public:
 	using EnumType = InEnumType;
 	using UnderlyingType = typename std::underlying_type_t<EnumType>;
 
-	constexpr inline TFlags() = default;
-	constexpr inline TFlags(const TFlags& other) : flags(other.flags) {}
+	constexpr inline TFlags() noexcept = default;
+	constexpr inline TFlags(TFlags const& other) noexcept = default;
+	constexpr inline TFlags(TFlags&& other) noexcept = default;
+
 	constexpr inline TFlags(UnderlyingType flags) : flags(flags) {}
 	constexpr inline TFlags(EnumType flag) : flags(1 << static_cast<UnderlyingType>(flag)) {}
 	constexpr inline TFlags(std::initializer_list<EnumType> inFlags) {
@@ -29,6 +31,9 @@ public:
 	}
 
 	static constexpr inline TFlags None() { return TFlags{}; }
+	
+	constexpr inline TFlags& operator=(TFlags const& other) noexcept = default;
+	constexpr inline TFlags& operator=(TFlags&& other) noexcept = default;
 
 	constexpr inline bool operator==(TFlags other) const noexcept { return flags == other.flags; }
 	constexpr inline bool operator!=(TFlags other) const noexcept { return flags != other.flags; }

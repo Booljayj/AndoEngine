@@ -1,9 +1,9 @@
 #pragma once
-#include "Engine/Exceptions.h"
 #include "Engine/Hash.h"
 #include "Engine/Reflection.h"
 #include "Engine/StandardTypes.h"
 #include "Engine/StringUtils.h"
+#include "Engine/Temporary.h"
 
 /** A stable and cheap identifier based on a string, but which internally caches strings to avoid keeping many duplicates in memory. This also means comparisons are very fast. */
 struct StringID {
@@ -14,7 +14,7 @@ struct StringID {
 		friend consteval Initializer operator ""_sid(char const* p, size_t s);
 
 		constexpr Initializer(StringUtils::DecomposedString const& source) : source(source), hash(CreateHash(source.body)) {
-			if (ContainsInvalidCharacters(source.body)) throw MakeException<std::runtime_error>("Source string contains invalid characters");
+			if (ContainsInvalidCharacters(source.body)) throw FormatType<std::runtime_error>("Source string contains invalid characters");
 		}
 		constexpr Initializer(std::string_view string) : Initializer(StringUtils::DecomposedString{ string }) {}
 
@@ -96,7 +96,7 @@ inline bool operator<(StringID const& a, StringID const& b) { return StringID::F
 
 template<>
 struct std::hash<StringID> {
-	size_t operator()(StringID const& id) {
+	size_t operator()(StringID id) const {
 		return stdext::hash_combine(stdext::hash_combine(id.hash, id.collision), id.var);
 	}
 };

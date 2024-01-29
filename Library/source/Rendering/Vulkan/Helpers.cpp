@@ -16,11 +16,11 @@ namespace Rendering {
 
 	VkShaderModule PipelineCreationHelper::GetModule(Resources::Handle<Shader> shader) {
 		//Try to find an existing loaded shader entry
-		auto const iter = std::find_if(entries.begin(), entries.end(), [&](auto const& entry) { return entry.id == shader->id; });
+		auto const iter = std::find_if(entries.begin(), entries.end(), [&](auto const& entry) { return entry.id == shader->GetName(); });
 		if (iter != entries.end()) return iter->module;
 
 		//No existing entry was found, so make a new one. Even if we fail to actually create this shader, this entry should always be returned for this id.
-		auto& entry = entries.emplace_back(shader->id);
+		auto& entry = entries.emplace_back(shader->GetName());
 
 		if (shader->bytecode.size() > 0) {
 			VkShaderModuleCreateInfo moduleCI{};
@@ -29,7 +29,7 @@ namespace Rendering {
 			moduleCI.pCode = shader->bytecode.data();
 
 			if (vkCreateShaderModule(device, &moduleCI, nullptr, &entry.module) != VK_SUCCESS || !entry.module) {
-				LOG(Vulkan, Error, "Failed to create shader module for shader {}", shader->id);
+				LOG(Vulkan, Error, "Failed to create shader module for shader {}", shader->GetName());
 			}
 		}
 

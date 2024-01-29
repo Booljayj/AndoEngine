@@ -89,7 +89,7 @@ namespace Profiling {
 		flushCounter = 5;
 
 		static uint32_t counter = 0;
-		const std::string_view filename = format_temp("{0}_{1}_{2}.profile.json", name.c_str(), beginTimePoint.time_since_epoch().count(), counter++);
+		const std::string_view filename = Format("{0}_{1}_{2}.profile.json", name.c_str(), beginTimePoint.time_since_epoch().count(), counter++);
 
 		file.open(filename.data(), std::ios_base::out | std::ios_base::trunc);
 

@@ -31,20 +31,13 @@ namespace Resources {
 	};
 
 	/** A cache that manages a specific type of resource */
-	template<typename ResourceType, typename AllocatorType = std::allocator<ResourceType>>
-	struct Cache : public ICache, public Handle<ResourceType>::Factory {
+	template<typename ResourceType>
+	struct Cache : public ICache {
 	public:
 		/** Broadcast just after a resource is created */
 		TEvent<Handle<ResourceType> const&> Created;
 		/** Broadcast just before a resource is destroyed */
 		TEvent<Handle<ResourceType> const&> Destroyed;
-
-		~Cache() {
-			for (ResourceType* resource : resources) {
-				std::destroy_at(resource);
-				allocator.deallocate(resource, 1);
-			}
-		}
 
 		/** Creates a new resource in the cache. Thread-safe. */
 		virtual Handle<ResourceType> Create(StringID id) {
@@ -57,15 +50,11 @@ namespace Resources {
 				return nullptr;
 			}
 
-			//Allocate the memory for the resource and associate it with the id. This allows the resource to be queried in the cache during its own constructor.
-			ResourceType* resource = allocator.allocate(1);
-			ids.emplace_back(id);
-			resources.emplace_back(resource);
+			Initializer const init{ id, resources.size() };
 
-			Initializer const init{ id, resources.size() - 1 };
-			std::construct_at(resource, init);
+			ids.emplace_back(id);
+			auto const handle = resources.emplace_back(std::make_shared<ResourceType>(init));
 			
-			Handle<ResourceType> const handle = CreateHandle(*resource, *resource);
 			Created(handle);
 
 			return handle;
@@ -76,10 +65,7 @@ namespace Resources {
 		virtual Handle<ResourceType> Find(StringID id) {
 			std::shared_lock lock{ mutex };
 			auto const iter = std::find(ids.begin(), ids.end(), id);
-			if (iter != ids.end()) {
-				ResourceType* resource = resources[iter - ids.begin()];
-				return CreateHandle(*resource, *resource);
-			}
+			if (iter != ids.end()) return resources[std::distance(ids.begin(), iter)];
 			return nullptr;
 		}
 
@@ -93,21 +79,17 @@ namespace Resources {
 		/** Destroys any registered state for all resources. The resources will still exist, but they should be ready to be deallocated. */
 		void Destroy() {
 			std::shared_lock lock{ mutex };
-			for (ResourceType* resource : resources) {
-				Destroyed(CreateHandle(*resource, *resource));
+			for (auto const& resource : resources) {
+				Destroyed(resource);
 			}
 		}
 
 	protected:
-		using Handle<ResourceType>::Factory::CreateHandle;
-
 		/** Mutex which controls access to the resources in the database */
-		stdext::shared_recursive_mutex mutex;
-		/** Allocator used to allocate new resource objects */
-		AllocatorType allocator;
+		mutable stdext::recursive_shared_mutex mutex;
 		/** IDs for all resources in the database, indices are kept in sync with the resources collection */
 		std::deque<StringID> ids;
 		/** Resources that are currently in this cache */
-		std::deque<ResourceType*> resources;
+		std::deque<Handle<ResourceType>> resources;
 	};
 }

@@ -127,8 +127,8 @@ namespace Rendering {
 				for (const auto id : renderables) {
 					auto const& renderer = renderables.get<MeshRenderer const>(id);
 
-					Material const* material = renderer.material.Get();
-					StaticMesh const* mesh = renderer.mesh.Get();
+					Material const* material = renderer.material.get();
+					StaticMesh const* mesh = renderer.mesh.get();
 
 					if (material && material->objects && mesh && mesh->objects) {
 						context->objects.push_back(material->objects);

@@ -37,9 +37,9 @@ private:
 
 public:
 	/** A handle to a managed object. Instances of handles will increase the reference count for the managed object. */
-	template<typename InObjectType>
+	template<typename ObjectType_>
 	struct Handle {
-		using ObjectType = InObjectType;
+		using ObjectType = ObjectType_;
 		using MutableObjectType = std::remove_const_t<ObjectType>;
 
 		template<typename A> friend struct Handle;
@@ -69,12 +69,12 @@ public:
 			return *this;
 		}
 
-		template<typename OtherObjectType>
+		template<std::derived_from<MutableObjectType> OtherObjectType>
 		Handle(Handle<OtherObjectType> const& other) noexcept : Handle(static_cast<MutableObjectType*>(other.object), other.control) {
 			static_assert(std::is_base_of_v<ManagedObject, ObjectType>, "Handle template parameter must derive from ManagedObject");
 			static_assert(std::is_base_of_v<ObjectType, OtherObjectType>, "Cannot implicitly cast handle to target type");
 		}
-		template<typename OtherObjectType>
+		template<std::derived_from<MutableObjectType> OtherObjectType>
 		Handle(Handle<OtherObjectType>&& other) noexcept {
 			static_assert(std::is_base_of_v<ManagedObject, ObjectType>, "Handle template parameter must derive from ManagedObject");
 			static_assert(std::is_base_of_v<ObjectType, OtherObjectType>, "Cannot implicitly cast handle to target type");
@@ -152,4 +152,31 @@ ManagedObject::Handle<OtherObjectType> Cast(ManagedObject::Handle<ObjectType>&& 
 	handle.object = nullptr;
 	handle.control = nullptr;
 	return newHandle;
+}
+
+
+//TEST
+namespace
+{
+	struct Base : ManagedObject {};
+	struct Child : Base {};
+	struct Unrelated : ManagedObject {};
+	struct NotManaged {};
+
+	void Test() {
+		ManagedObject::Handle<Base> base;
+		ManagedObject::Handle<Child> child;
+		ManagedObject::Handle<Unrelated> urelated;
+		ManagedObject::Handle<NotManaged> notManaged;
+
+		//These should succeed
+		child = Cast<Child>(base);
+		base = Cast<Base>(child);
+		base = child;
+
+		//These should fail
+		child = base;
+		urelated = base;
+		notManaged = Cast<NotManaged>(base);
+	}
 }

@@ -14,4 +14,11 @@ namespace Resources {
 		Initialized,
 	};
 	using FResourceFlags = TFlags<EResourceFlags>;
+
+	struct Identifier {
+		/** The name of the package in which the resource can be found */
+		StringID package;
+		/** The name of the resource that this identifier points to */
+		StringID resource;
+	};
 }

@@ -1,11 +1,12 @@
 #pragma once
 #include "Engine/StandardTypes.h"
+#include "Engine/Temporary.h"
 
 namespace StringUtils {
 	constexpr int32_t ConvertStringToInteger(std::string_view string) {
 		int32_t value = 0;
 		std::from_chars_result const result = std::from_chars(string.data(), string.data() + string.size(), value);
-		if (result.ec != std::errc{}) throw MakeException<std::runtime_error>("Could not convert string to number value");
+		if (result.ec != std::errc{}) throw FormatType<std::runtime_error>("Could not convert string {} to number value", string);
 		else return value;
 	}
 

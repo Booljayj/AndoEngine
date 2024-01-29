@@ -19,7 +19,7 @@ private:
 	static constexpr char HandleByteValue = 0b00001111;
 
 	std::vector<DelegateInfo> delegateInfos;
-	mutable stdext::shared_recursive_mutex mutex;
+	mutable stdext::recursive_shared_mutex mutex;
 	
 public:
 	/** Return the number of delegates bound to this event */

@@ -1,5 +1,4 @@
 #include "HAL/WindowingSystem.h"
-#include "Engine/Exceptions.h"
 #include "Engine/Logging.h"
 #include "Engine/Temporary.h"
 #include "HAL/SDL2.h"
@@ -13,7 +12,7 @@ namespace HAL {
 
 	Window::Window(WindowCreationParams const& params) {
 		handle = SDL_CreateWindow(params.title.data(), params.position.x, params.position.y, params.size.x, params.size.y, params.flags | SDL_WINDOW_VULKAN);
-		if (!handle) throw MakeException<std::runtime_error>("Failed to create SDL window: {}", SDL_GetError());
+		if (!handle) throw FormatType<std::runtime_error>("Failed to create SDL window: {}", SDL_GetError());
 		id = SDL_GetWindowID(handle);
 	}
 
