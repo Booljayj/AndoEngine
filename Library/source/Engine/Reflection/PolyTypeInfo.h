@@ -9,13 +9,13 @@ namespace Reflection {
 		static constexpr ETypeClassification Classification = ETypeClassification::Poly;
 
 		/** The base type for this poly */
-		TypeInfo const* baseType = nullptr;
+		StructTypeInfo const* base = nullptr;
 
 		virtual ~PolyTypeInfo() = default;
 
-		inline bool CanAssignType(TypeInfo const& type) const {
+		inline bool CanAssignType(StructTypeInfo const& type) const {
 			if (type.flags.Has(ETypeFlags::Abstract)) return false;
-			else if (&type == baseType || StructTypeInfo::IsDerivedFrom(*baseType, type)) return true;
+			else if (type.IsChildOf(*base)) return true;
 			else return false;
 		}
 
@@ -32,18 +32,13 @@ namespace Reflection {
 	//============================================================
 	// Templates
 
-	template<typename PointerType, typename BaseType>
+	template<typename PointerType, Concepts::ReflectedStruct BaseType>
 	struct TPointerTypeInfo : public ImplementedTypeInfo<PointerType, PolyTypeInfo> {
-		static_assert(
-			!std::is_void_v<BaseType>,
-			"Poly of void is not supported for reflection. Reflecting the internal value is inherently impossible, which makes it unsafe to use."
-		);
-
 		using ImplementedTypeInfo<PointerType, PolyTypeInfo>::Cast;
-		using PolyTypeInfo::baseType;
+		using PolyTypeInfo::base;
 
-		TPointerTypeInfo(std::string_view inName) : ImplementedTypeInfo<PointerType, PolyTypeInfo>(Reflect<PointerType>::ID, inName) {
-			baseType = Reflect<BaseType>::Get();
+		TPointerTypeInfo(std::string_view name) : ImplementedTypeInfo<PointerType, PolyTypeInfo>(::Reflection::Reflect<PointerType>::ID, name) {
+			base = ::Reflection::Reflect<BaseType>::Get();
 		}
 
 		virtual void* GetValue(void* instance) const final { return Cast(instance).get(); }
@@ -64,20 +59,20 @@ namespace Reflection {
 
 		TYPEINFO_BUILDER_METHODS(PointerType)
 	};
+
+	//============================================================
+	// Standard poly reflection
+
+	template<typename BaseType>
+	struct Reflect<std::unique_ptr<BaseType>> {
+		static PolyTypeInfo const& Get() { return info; }
+		static constexpr Hash128 ID = Hash128{ "std::unique_ptr"sv } + Reflect<BaseType>::ID;
+	private:
+		using ThisTypeInfo = TPointerTypeInfo<std::unique_ptr<BaseType>, BaseType>;
+		static ThisTypeInfo const info;
+	};
+	template<typename BaseType>
+	typename Reflect<std::unique_ptr<BaseType>>::ThisTypeInfo const Reflect<std::unique_ptr<BaseType>>::info =
+		Reflect<std::unique_ptr<BaseType>>{ "std::unique_ptr"sv }
+		.Description("unique pointer"sv);
 }
-
-TYPEINFO_REFLECT(Poly);
-
-//============================================================
-// Standard poly reflection
-
-template<typename BaseType>
-struct Reflect<std::unique_ptr<BaseType>> {
-	using ThisTypeInfo = ::Reflection::TPointerTypeInfo<std::unique_ptr<BaseType>, BaseType>;
-	static ThisTypeInfo const info;
-	static ::Reflection::PolyTypeInfo const* Get() { return &info; }
-	static constexpr Hash128 ID = Hash128{ "std::unique_ptr"sv } + Reflect<BaseType>::ID;
-};
-template<typename BaseType>
-typename Reflect<std::unique_ptr<BaseType>>::ThisTypeInfo const Reflect<std::unique_ptr<BaseType>>::info = Reflect<std::unique_ptr<BaseType>>{ "std::unique_ptr"sv }
-	.Description("unique pointer"sv);

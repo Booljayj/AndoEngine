@@ -11,6 +11,7 @@
 #include "Rendering/Vulkan/Resources.h"
 #include "Rendering/Vulkan/UniformLayouts.h"
 #include "Rendering/Vulkan/Vulkan.h"
+#include "Resources/Cache.h"
 #include "Resources/Database.h"
 #include "ThirdParty/EnTT.h"
 
@@ -25,7 +26,7 @@ namespace Rendering {
 DECLARE_LOG_CATEGORY(Rendering);
 
 namespace Rendering {
-	struct RenderingSystem {
+	struct RenderingSystem : public Resources::Observer<Material>, public Resources::Observer<StaticMesh> {
 	public:
 		/** The maximum number of consecutive times we can fail to render a frame */
 		static constexpr uint8_t maxRetryCount = 5;
@@ -56,11 +57,11 @@ namespace Rendering {
 
 		/** Flags for tracking rendering behavior and changes */
 		uint8_t retryCount = 0;
-
+		
 		RenderingSystem() = default;
 
-		bool Startup(HAL::WindowingSystem& windowing, Resources::Cache<Material>& materials, Resources::Cache<StaticMesh>& staticMeshes);
-		bool Shutdown(Resources::Cache<Material>& materials, Resources::Cache<StaticMesh>& staticMeshes);
+		bool Startup(HAL::WindowingSystem& windowing, Resources::Database& database);
+		bool Shutdown(Resources::Database& database);
 
 		bool Render(entt::registry& registry);
 		void RebuildResources();
@@ -88,12 +89,12 @@ namespace Rendering {
 		void OnDestroyingWindow(HAL::Window::IdType id);
 
 		/** Callbacks for when materials are created or destroyed */
-		void MaterialCreated(Resources::Handle<Material> const& material);
-		void MaterialDestroyed(Resources::Handle<Material> const& material);
+		void OnCreated(Resources::Handle<Material> const& material) final;
+		void OnDestroyed(Resources::Handle<Material> const& material) final;
 
 		/** Callbacks for when static meshes are created or destroyed */
-		void StaticMeshCreated(Resources::Handle<StaticMesh> const& mesh);
-		void StaticMeshDestroyed(Resources::Handle<StaticMesh> const& mesh);
+		void OnCreated(Resources::Handle<StaticMesh> const& mesh) final;
+		void OnDestroyed(Resources::Handle<StaticMesh> const& mesh) final;
 
 		/** Dirty resources that need to be rebuilt */
 		std::vector<Resources::Handle<Material>> dirtyMaterials;

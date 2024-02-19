@@ -7,7 +7,7 @@ namespace Serialization {
 	using namespace Reflection;
 
 	bool StructSerializer::SerializeBinary(TypeInfo const& type, void const* data, std::ostream& stream) const {
-		StructTypeInfo const* const structType = type.As<StructTypeInfo>();
+		StructTypeInfo const* const structType = Cast<StructTypeInfo>(type);
 		if (!structType) return false;
 
 		ScopedDataBlockWrite const scopedWrite{stream};
@@ -28,14 +28,14 @@ namespace Serialization {
 					}
 				}
 			}
-			currentStructType = currentStructType->baseType;
+			currentStructType = currentStructType->base;
 		}
 
 		return stream.good();
 	}
 
 	bool StructSerializer::DeserializeBinary(TypeInfo const& type, void* data, std::istream& stream) const {
-		StructTypeInfo const* const structType = type.As<StructTypeInfo>();
+		StructTypeInfo const* const structType = Cast<StructTypeInfo>(type);
 		if (!structType) return false;
 
 		constexpr uint8_t NestedBlockHeaderSize = sizeof(Hash32) + sizeof(BlockSizeType);
@@ -90,7 +90,7 @@ namespace Serialization {
 			if (VariableInfo const* foundVariable = currentStructType->FindVariable(id)) {
 				return foundVariable;
 			}
-			currentStructType = currentStructType->baseType;
+			currentStructType = currentStructType->base;
 		}
 		return nullptr;
 	}

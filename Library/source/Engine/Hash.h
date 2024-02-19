@@ -27,8 +27,8 @@ struct Hash32 {
 	explicit constexpr Hash32(uint32_t value) : hash(value) {}
 	constexpr Hash32(const Hash32&) = default;
 
-	constexpr bool operator==(const Hash32& other) const { return hash == other.hash; }
-	constexpr bool operator!=(const Hash32& other) const { return !operator==(other); }
+	constexpr bool operator==(const Hash32& other) const = default;
+	constexpr bool operator!=(const Hash32& other) const = default;
 
 	constexpr Hash32& operator+=(Hash32 second);
 	friend constexpr Hash32 operator+(Hash32 first, Hash32 second) { return first.operator+=(second);  }
@@ -48,6 +48,11 @@ private:
 constexpr Hash32 operator ""_h32(char const* p, size_t s) { return Hash32{ std::string_view{ p, s }, 0 }; };
 
 template<>
+struct std::hash<Hash32> {
+	constexpr size_t operator()(Hash32 hash) const { return hash.ToValue(); }
+};
+
+template<>
 struct std::formatter<Hash32> : std::formatter<std::string_view> {
 	auto format(const Hash32& hash, format_context& ctx) const {
 		char scratch[20] = { 0 };
@@ -63,8 +68,8 @@ struct Hash64 {
 	explicit constexpr Hash64(uint64_t value) : hash(value) {}
 	constexpr Hash64(const Hash64& other) = default;
 
-	constexpr bool operator==(const Hash64& other) const { return hash == other.hash; }
-	constexpr bool operator!=(const Hash64& other) const { return !operator==(other); }
+	constexpr bool operator==(const Hash64& other) const = default;
+	constexpr bool operator!=(const Hash64& other) const = default;
 
 	constexpr Hash64& operator+=(Hash64 second);
 	friend constexpr Hash64 operator+(Hash64 first, Hash64 second) { return first.operator+=(second); }
@@ -84,6 +89,11 @@ private:
 constexpr Hash64 operator ""_h64(char const* p, size_t s) { return Hash64{ std::string_view{ p, s }, 0 }; };
 
 template<>
+struct std::hash<Hash64> {
+	constexpr size_t operator()(Hash64 hash) const { return hash.ToValue(); }
+};
+
+template<>
 struct std::formatter<Hash64> : std::formatter<std::string_view> {
 	auto format(const Hash64& hash, format_context& ctx) const {
 		char scratch[20] = { 0 };
@@ -99,8 +109,8 @@ struct Hash128 {
 	explicit constexpr Hash128(uint64_t low, uint64_t high) : low(low), high(high) {}
 	constexpr Hash128(const Hash128& other) = default;
 
-	constexpr bool operator==(const Hash128& other) const { return low == other.low && high == other.high; }
-	constexpr bool operator!=(const Hash128& other) const { return !operator==(other); }
+	constexpr bool operator==(const Hash128& other) const = default;
+	constexpr bool operator!=(const Hash128& other) const = default;
 
 	constexpr Hash128& operator+=(Hash128 second);
 	friend constexpr Hash128 operator+(Hash128 first, Hash128 second) { return first.operator+=(second); }
@@ -120,6 +130,11 @@ private:
 };
 
 constexpr Hash128 operator ""_h128(char const* p, size_t s) { return Hash128{ std::string_view{ p, s }, 0, 0 }; };
+
+template<>
+struct std::hash<Hash128> {
+	constexpr size_t operator()(Hash128 const& hash) const { return hash.ToLowValue() ^ hash.ToHighValue(); }
+};
 
 template<>
 struct std::formatter<Hash128> : std::formatter<std::string_view> {

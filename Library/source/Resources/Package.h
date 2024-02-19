@@ -1,10 +1,11 @@
 #pragma once
 #include "Engine/StandardTypes.h"
 #include "Engine/StringID.h"
+#include "Engine/Threads.h"
 #include "Resources/Resource.h"
 
 namespace Resources {
-	struct PackageDatabase;
+	struct Database;
 
 	/** Flags that describe various states or metadata that apply to an individual package. Some flags are only used in specific contexts. */
 	enum class EPackageFlags {
@@ -13,7 +14,7 @@ namespace Resources {
 		/** This package was loaded from disk, rather than being newly created */
 		Loaded,
 	};
-	using FPackageFlags = TFlags<EPackageFlags>;
+	using FPackageFlags = TAtomicFlags<EPackageFlags>;
 
 	/**
 	 * A package is an abstract representation of a collection of resources.
@@ -23,49 +24,43 @@ namespace Resources {
 	struct Package final : public std::enable_shared_from_this<Package> {
 		struct PrivateToken;
 
-		std::atomic<FPackageFlags> flags;
+		FPackageFlags flags;
 
 		Package() = delete;
-		explicit Package(PrivateToken, std::shared_ptr<PackageDatabase> owner, StringID name) : owner(owner), name(name) {}
+		explicit Package(PrivateToken, std::shared_ptr<Database> owner, StringID name) : owner(owner), name(name) {}
 
 		/** Get the unique name of this package */
 		inline StringID GetName() const { return name; }
-
-		/** Returns true if this package contains a resource with the given name */
-		bool Contains(StringID resourceName) const;
-		/** Find a resource with the given name that is contained in this package */
-		Handle<Resource> Find(StringID resourceName) const;
 		
-		/** Get a read-only thread-safe view that allows the contents of the package to be inspected */
-		[[nodiscard]] inline auto GetContentsView() const { return thread.contents.LockInclusive(); }
+		/** Return the resource with the provided id that is within this package, or nullptr if it cannot be found */
+		std::shared_ptr<Resource> Find(StringID id) const;
 
-		/** Add a new resource to this package. The resource must not already be contained in another package. */
-		void Add(Reference<Resource> const& resource);
-		/** Remove the resource from this package */
-		void Remove(Reference<Resource> const& resource);
+		/** Return the resource of a specific type with the provided id that is within this package, or nullptr if it cannot be found */
+		template<std::derived_from<Resource> T>
+		std::shared_ptr<T> Find(StringID id) const {
+			if constexpr (std::is_same_v<T, Resource>) return Find(id);
+			else {
+				auto const resource = Find(id);
+				if (resource && resource->GetTypeInfo().IsChildOf(Reflect<T>::Get())) return std::static_pointer_cast<T>(resource);
+				else return nullptr;
+			}
+		}
 
-		/** Rename this package. Will throw if another package with this name already exists in the owning database.  */
-		void Rename(StringID newName);
+		/** Get a read-only thread-safe view that allows the contents of the package to be inspected. Used to optimize bulk search operations on a package's contents. */
+		[[nodiscard]] inline auto GetContentsView() const { return ts_contents.LockInclusive(); }
 
 	private:
-		friend Resource;
-		friend PackageDatabase;
+		friend struct Database;
+		friend struct Resource;
+		friend struct ResourceUtility;
 
+		using ContentsContainerType = std::unordered_map<StringID, std::shared_ptr<Resource>>;
 		struct PrivateToken {};
 
-		std::weak_ptr<PackageDatabase> const owner;
+		std::weak_ptr<Database> const owner;
 		StringID name;
 
-		struct {
-			ThreadSafe<std::unordered_map<StringID, std::weak_ptr<Resource>>> contents;
-		} thread;
-
-		/** Mount a loaded resource to this package, associating it with the matching reference in the package. Called after loading a resource. */
-		void Mount(Reference<Resource> const& resource);
-		/** Unmount a loaded resource from this package, disassociating it with the matching reference in the package. Called before destroying a resource. */
-		void Unmount(StringID resourceName);
-
-		void RenameResource(Resource& resource, StringID newName);
+		ThreadSafe<ContentsContainerType> ts_contents;
 	};
 }
 

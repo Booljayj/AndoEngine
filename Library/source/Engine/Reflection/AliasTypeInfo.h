@@ -27,5 +27,3 @@ namespace Reflection {
 		inline decltype(auto) Variable(VariableInfo const& inVariable) { variable = inVariable; return *this; }
 	};
 }
-
-TYPEINFO_REFLECT(Alias);

@@ -1,95 +1,131 @@
 #pragma once
+#include "Engine/Events.h"
 #include "Engine/StandardTypes.h"
+#include "Resources/Package.h"
 #include "Resources/Resource.h"
 #include "Resources/ResourceTypes.h"
+#include "Resources/ResourceUtility.h"
 
 namespace Resources {
-	/** A handler for a certain type of resource, which can handle the details of how to create the resource. */
-	template<typename ResourceType>
-	struct ResourceCreationHandler {
-		/** Construct a brand new instance of the resource at the specified memory location */
-		virtual ResourceType& Construct(std::in_place_type_t<ResourceType>, std::byte* memory, Resources::Initializer& init) = 0;
-		/** Load an instnace of the resource at the specified memory location using the buffer of serialized data */
-		virtual ResourceType& Load(std::in_place_type_t<ResourceType>, std::byte* memory, std::span<std::byte const> buffer, Resources::Initializer& init) = 0;
-		/** Called before the resource is removed from the cache */
-		virtual void PreDestroy(ResourceType&) = 0;
-	};
-	
-	struct ICache {
-		virtual ~ICache() = default;
+	/**
+	 * Base class for caches that manage a specific type of resource.
+	 * Caches allow systems to easily and efficiently iterate over all resources of a given type. The order of iteration is unspecified.
+	 * The resources within a cache are unnamed, identified only by their handles. A garbage collection pass can be performed to clean
+	 * up resources that are no longer being used.
+	 * Systems can also listen for events that are broadcast whenever a resource is created or destroyed, which allows them to perform
+	 * bookkeeping related to the resource (such as uploading mesh data to a GPU for a static mesh resource).
+	 */
+	struct Cache : std::enable_shared_from_this<Cache> {
+		virtual ~Cache() = default;
+
+		/**
+		 * Destroy resources that are unused. If limit is not 0, this specifies some quantity that should not be exceeded during
+		 * this call, possibly leaving unused resources in place if the limit is reached. The exact meaning of the limit is type-specific
+		 * for the cache, but generally corresponds to the maximum number of individual resources that will be cleaned.
+		 */
+		virtual size_t CollectGarbage(size_t limit = std::numeric_limits<size_t>::max()) = 0;
+
+	protected:
+
 	};
 
+	/** An observer that can listen for when resources are created or destroyed by a specific cache */
 	template<typename ResourceType>
-	struct TrivialResourceCreationHandler : ResourceCreationHandler<ResourceType> {
-		ResourceType& Construct(std::in_place_type_t<ResourceType>, std::byte* memory, Resources::Initializer& init) override {
-			return *std::construct_at<ResourceType>(memory, init);
-		}
-		ResourceType& Load(std::in_place_type_t<ResourceType>, std::byte* memory, std::span<std::byte const> buffer, Resources::Initializer& init) override {
-			return *std::construct_at<ResourceType>(memory, init);
-		}
-		void PreDestroy(ResourceType&) override {}
+	struct Observer {
+		virtual void OnCreated(Handle<ResourceType> const& handle) = 0;
+		virtual void OnDestroyed(Handle<ResourceType> const& handle) = 0;
 	};
 
 	/** A cache that manages a specific type of resource */
 	template<typename ResourceType>
-	struct Cache : public ICache {
+	struct TCache : public Cache {
 	public:
-		/** Broadcast just after a resource is created */
-		TEvent<Handle<ResourceType> const&> Created;
-		/** Broadcast just before a resource is destroyed */
-		TEvent<Handle<ResourceType> const&> Destroyed;
+		/** Add an observer that will be notified when resources are modified */
+		void AddObserver(Observer<ResourceType>& observer) { observers.push_back(&observer); }
+		/** Remove an observer that was previously added */
+		void RemoveObserver(Observer<ResourceType>& observer) {
+			auto const iter = ranges::find(observers, &observer);
+			if (iter != observers.end()) observers.erase(iter);
+		}
 
-		/** Creates a new resource in the cache. Thread-safe. */
-		virtual Handle<ResourceType> Create(StringID id) {
-			std::unique_lock const lock{ mutex };
+		virtual size_t CollectGarbage(size_t limit = std::numeric_limits<size_t>::max()) override {
+			auto resources = ts_resources.LockExclusive();
 
-			//If we already have a resource with this id, it's an invalid operation to try to create another
-			auto const iter = std::find(ids.begin(), ids.end(), id);
-			if (iter != ids.end()) {
-				LOG(Resources, Error, "Cannot create new resource with id {}. There is already a resource using this id.", id);
-				return nullptr;
+			size_t count = 0;
+
+			//Pop unused back elements first, stopping if we exceed the limit.
+			while (count < limit && resources->size() > 0 && resources->back().use_count() == 1) {
+				NotifyDestroyed(resources->back());
+				resources->pop_back();
+				++count;
 			}
 
-			Initializer const init{ id, resources.size() };
+			//If we still haven't reached the limit, move on to the other elements.
+			if (count < limit) {
 
-			ids.emplace_back(id);
-			auto const handle = resources.emplace_back(std::make_shared<ResourceType>(init));
+				//Iterate backwards through the container and perform a swap-and-pop on any unused elements.
+				//Thanks to the loop above, we know that the last element is currently in-use, so we can start from the second-to-last element.
+				//We can also iterate using one larger than the index to avoid underflow issues with the index.
+				for (size_t rnum = resources->size() - 1; count < limit && rnum > 0; --rnum) {
+					const size_t rindex = rnum - 1;
+
+					auto& resource = resources->operator[](rindex);
+					if (resource.use_count() == 1) {
+						std::swap(resource, resources->back());
+						NotifyDestroyed(resources->back());
+						resources->pop_back();
+						++count;
+					}
+				}
+			}
+
+			return count;
+		}
+
+		/** Perform an operation on all resources in this cache. Stops iterating when the operation returns false. */
+		template<typename OperationType>
+			requires std::is_invocable_r_v<bool, OperationType, ResourceType&>
+		void ForEachResource(OperationType&& operation) const {
+			auto const resources = ts_resources.LockInclusive();
+
+			for (auto const& handle : *resources) {
+				if (!operation(*handle)) break;
+			}
+		}
+
+		/** Creates a new resource in the cache. Uses the initializer to potentially create it with existing values. Thread-safe. */
+		template<std::invocable<ResourceType&> InitializerType>
+		std::shared_ptr<ResourceType> Create(StringID id, stdext::shared_ref<Package> package, InitializerType&& initializer) {
+			//Create the new resource object. If we return before completing this method, then this will go out of scope and be destroyed.
+			std::shared_ptr<ResourceType> const resource = std::make_shared<ResourceType>(id);
+
+			//Attempt to add the resource to the package. This can throw if the package already contains a resource with this name.
+			ResourceUtility::MoveResource(resource, package);
+
+			//Record the new resource entry. The amount of bookkeeping needed is minimal here, so we release the lock as soon as the information is recorded.
+			//Releasing the lock also means the initializer can be recursive and potentially create other resources.
+			{
+				auto resources = ts_resources.LockExclusive();
+				resources->emplace_back(resource);
+			}
+
+			//Call the initializer to load data into the resource
+			initializer(*resource);
+			//Broadcast to external systems that the resource has been created
+			NotifyCreated(resource);
 			
-			Created(handle);
-
-			return handle;
-		}
-
-		virtual Handle<ResourceType> Load(StringID id, std::span<std::byte const> archive) { return nullptr; }
-
-		virtual Handle<ResourceType> Find(StringID id) {
-			std::shared_lock lock{ mutex };
-			auto const iter = std::find(ids.begin(), ids.end(), id);
-			if (iter != ids.end()) return resources[std::distance(ids.begin(), iter)];
-			return nullptr;
-		}
-
-		virtual bool Contains(StringID id) {
-			std::shared_lock lock{ mutex };
-			auto const iter = std::find(ids.begin(), ids.end(), id);
-			if (iter != ids.end()) return true;
-			else return false;
-		}
-
-		/** Destroys any registered state for all resources. The resources will still exist, but they should be ready to be deallocated. */
-		void Destroy() {
-			std::shared_lock lock{ mutex };
-			for (auto const& resource : resources) {
-				Destroyed(resource);
-			}
+			return resource;
 		}
 
 	protected:
-		/** Mutex which controls access to the resources in the database */
-		mutable stdext::recursive_shared_mutex mutex;
-		/** IDs for all resources in the database, indices are kept in sync with the resources collection */
-		std::deque<StringID> ids;
-		/** Resources that are currently in this cache */
-		std::deque<Handle<ResourceType>> resources;
+		ThreadSafe<std::deque<std::shared_ptr<ResourceType>>> ts_resources;
+		std::vector<Observer<ResourceType>*> observers;
+
+		void NotifyCreated(std::shared_ptr<ResourceType> const& resource) {
+			for (auto* observer : observers) { observer->OnCreated(resource); }
+		}
+		void NotifyDestroyed(std::shared_ptr<ResourceType> const& resource) {
+			for (auto* observer : observers) { observer->OnDestroyed(resource); }
+		}
 	};
 }

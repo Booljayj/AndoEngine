@@ -10,7 +10,7 @@ namespace Reflection {
 		/** Whether the number of elements in the array can be manipulated */
 		bool isFixedSize = false;
 		/** The type of the elements in the array */
-		TypeInfo const* elementType = nullptr;
+		TypeInfo const* elements = nullptr;
 
 		virtual ~ArrayTypeInfo() = default;
 
@@ -43,11 +43,11 @@ namespace Reflection {
 	struct TFixedArrayTypeInfo : public ImplementedTypeInfo<ArrayType, ArrayTypeInfo> {
 		using ImplementedTypeInfo<ArrayType, ArrayTypeInfo>::Cast;
 		using ArrayTypeInfo::isFixedSize;
-		using ArrayTypeInfo::elementType;
+		using ArrayTypeInfo::elements;
 
 		TFixedArrayTypeInfo(std::string_view inName) : ImplementedTypeInfo<ArrayType, ArrayTypeInfo>(Reflect<ArrayType>::ID, inName) {
 			isFixedSize = true;
-			elementType = Reflect<ElementType>::Get();
+			elements = Reflect<ElementType>::Get();
 		}
 
 		virtual size_t GetCount(void const* instance) const final { return Size; }
@@ -79,11 +79,11 @@ namespace Reflection {
 	struct TDynamicArrayTypeInfo : public ImplementedTypeInfo<ArrayType, ArrayTypeInfo> {
 		using ImplementedTypeInfo<ArrayType, ArrayTypeInfo>::Cast;
 		using ArrayTypeInfo::isFixedSize;
-		using ArrayTypeInfo::elementType;
+		using ArrayTypeInfo::elements;
 
 		TDynamicArrayTypeInfo(std::string_view inName) : ImplementedTypeInfo<ArrayType, ArrayTypeInfo>(Reflect<ArrayType>::ID, inName) {
 			isFixedSize = false;
-			elementType = Reflect<ElementType>::Get();
+			elements = &Reflect<ElementType>::Get();
 		}
 
 		static constexpr ElementType const& CastElement(void const* element) { return *static_cast<ElementType const*>(element); }
@@ -126,42 +126,44 @@ namespace Reflection {
 
 		TYPEINFO_BUILDER_METHODS(ArrayType)
 	};
+
+	//============================================================
+	// Standard fixed array reflection
+
+	template<typename ElementType, size_t Size>
+	struct Reflect<std::array<ElementType, Size>> {
+		static ArrayTypeInfo const& Get() { return info; }
+		static constexpr Hash128 ID = Hash128{ "std::array"sv } + Reflect<ElementType>::GetID() + Hash128{ static_cast<uint64_t>(Size), 0 };
+	private:
+		using ThisTypeInfo = TFixedArrayTypeInfo<std::array<ElementType, Size>, ElementType, Size>;
+		static ThisTypeInfo const info;
+	};
+	template<typename ElementType, size_t Size>
+	typename Reflect<std::array<ElementType, Size>>::ThisTypeInfo const Reflect<std::array<ElementType, Size>>::info =
+		Reflect<std::array<ElementType, Size>>::ThisTypeInfo{ "std::array"sv }
+		.Description("fixed array");
+
+	//============================================================
+	// Standard dynamic array reflection
+
+	#define L_REFLECT_DYNAMICARRAY(ArrayTemplate, DescriptionString)\
+	template<typename ElementType>\
+	struct Reflect<ArrayTemplate<ElementType>> {\
+		static ArrayTypeInfo const& Get() { return info; }\
+		static constexpr Hash128 ID = Hash128{ #ArrayTemplate } + Reflect<ElementType>::ID;\
+	private:\
+		using ThisTypeInfo = TDynamicArrayTypeInfo<ArrayTemplate<ElementType>, ElementType>;\
+		static ThisTypeInfo const info;\
+	};\
+	template<typename ElementType>\
+	typename Reflect<ArrayTemplate<ElementType>>::ThisTypeInfo const Reflect<ArrayTemplate<ElementType>>::info =\
+		Reflect<ArrayTemplate<ElementType>>::ThisTypeInfo{ #ArrayTemplate }\
+		.Description(DescriptionString)
+
+	L_REFLECT_DYNAMICARRAY(std::vector, "dynamic array"sv);
+	L_REFLECT_DYNAMICARRAY(std::forward_list, "singly-linked list"sv);
+	L_REFLECT_DYNAMICARRAY(std::list, "doubly-linked list"sv);
+	L_REFLECT_DYNAMICARRAY(std::deque, "double-ended queue"sv);
+
+	#undef L_REFLECT_DYNAMICARRAY
 }
-
-TYPEINFO_REFLECT(Array);
-
-//============================================================
-// Standard fixed array reflection
-
-template<typename ElementType, size_t Size>
-struct Reflect<std::array<ElementType, Size>> {
-	using ThisTypeInfo = ::Reflection::TFixedArrayTypeInfo<std::array<ElementType, Size>, ElementType, Size>;
-	static ThisTypeInfo const info;
-	static ::Reflection::ArrayTypeInfo const* Get() { return &info; }
-	static constexpr Hash128 ID = Hash128{ "std::array"sv } + Reflect<ElementType>::GetID() + Hash128{ static_cast<uint64_t>( Size ), 0 };
-};
-template<typename ElementType, size_t Size>
-typename Reflect<std::array<ElementType, Size>>::ThisTypeInfo const Reflect<std::array<ElementType, Size>>::info = Reflect<std::array<ElementType, Size>>::ThisTypeInfo{ "std::array"sv }
-	.Description("fixed array");
-
-//============================================================
-// Standard dynamic array reflection
-
-#define L_REFLECT_DYNAMICARRAY(ArrayTemplate, DescriptionString)\
-template<typename ElementType>\
-struct Reflect<ArrayTemplate<ElementType>> {\
-	using ThisTypeInfo = ::Reflection::TDynamicArrayTypeInfo<ArrayTemplate<ElementType>, ElementType>;\
-	static ThisTypeInfo const info;\
-	static ::Reflection::ArrayTypeInfo const* Get() { return &info; }\
-	static constexpr Hash128 ID = Hash128{ #ArrayTemplate } + Reflect<ElementType>::ID;\
-};\
-template<typename ElementType>\
-typename Reflect<ArrayTemplate<ElementType>>::ThisTypeInfo const Reflect<ArrayTemplate<ElementType>>::info = Reflect<ArrayTemplate<ElementType>>::ThisTypeInfo{ #ArrayTemplate }\
-	.Description(DescriptionString)
-
-L_REFLECT_DYNAMICARRAY(std::vector, "dynamic array"sv);
-L_REFLECT_DYNAMICARRAY(std::forward_list, "singly-linked list"sv);
-L_REFLECT_DYNAMICARRAY(std::list, "doubly-linked list"sv);
-L_REFLECT_DYNAMICARRAY(std::deque, "double-ended queue"sv);
-
-#undef L_REFLECT_DYNAMICARRAY

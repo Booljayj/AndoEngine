@@ -26,7 +26,7 @@ namespace Reflection {
 		using ImplementedTypeInfo<TupleType, TupleTypeInfo>::Cast;
 		using TupleTypeInfo::types;
 
-		TTupleTypeInfo(std::string_view inName) : ImplementedTypeInfo<TupleType, TupleTypeInfo>(Reflect<TupleType>::ID, inName) {
+		TTupleTypeInfo(std::string_view name) : ImplementedTypeInfo<TupleType, TupleTypeInfo>(Reflect<TupleType>::ID, name) {
 			types = { Reflect<ElementTypes>::Get() ... };
 		}
 
@@ -39,21 +39,20 @@ namespace Reflection {
 
 		TYPEINFO_BUILDER_METHODS(TupleType);
 	};
+
+	//============================================================
+	// Standard tuple reflection
+
+	template<typename... ElementTypes>
+	struct Reflect<std::tuple<ElementTypes...>> {
+		static TupleTypeInfo const& Get() { return info; }
+		static constexpr Hash128 ID = Hash128{ "std::tuple"sv } + (... + Reflect<ElementTypes>::ID);
+	private:
+		using ThisTypeInfo = TTupleTypeInfo<std::tuple<ElementTypes...>, ElementTypes...>;
+		static ThisTypeInfo const info;
+	};
+	template<typename ...ElementTypes>
+	typename Reflect<std::tuple<ElementTypes...>>::ThisTypeInfo const Reflect<std::tuple<ElementTypes...>>::info =\
+		Reflect<std::tuple<ElementTypes...>>::ThisTypeInfo{ "std::tuple"sv }
+		.Description("tuple");
 }
-
-TYPEINFO_REFLECT(Tuple);
-
-//============================================================
-// Standard tuple reflection
-
-template<typename... ElementTypes>
-struct Reflect<std::tuple<ElementTypes...>> {
-	using TupleType = std::tuple<ElementTypes...>;
-	using ThisTypeInfo = ::Reflection::TTupleTypeInfo<TupleType, ElementTypes...>;
-	static ThisTypeInfo const info;
-	static ::Reflection::TupleTypeInfo const* Get() { return &info; }
-	static constexpr Hash128 ID = Hash128{ "std::tuple"sv } + (... + Reflect<ElementTypes>::ID);
-};
-template<typename ...ElementTypes>
-typename Reflect<std::tuple<ElementTypes...>>::ThisTypeInfo const Reflect<std::tuple<ElementTypes...>>::info = Reflect<std::tuple<ElementTypes...>>::ThisTypeInfo{ "std::tuple"sv }
-	.Description("tuple");

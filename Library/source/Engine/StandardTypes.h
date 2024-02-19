@@ -20,7 +20,8 @@
 #include <string_view>
 using namespace std::string_view_literals;
 
-//Array types
+//Container types
+//Array
 #include <array>
 #include <deque>
 #include <forward_list>
@@ -28,14 +29,18 @@ using namespace std::string_view_literals;
 #include <queue>
 #include <stack>
 #include <vector>
-
-//Map types
+//Map
 #include <map>
 #include <unordered_map>
-
-//Set types
+//Set
 #include <set>
 #include <unordered_set>
+
+//Container operations
+#include <algorithm>
+#include <iterator>
+#include <ranges>
+#include <span>
 
 //Utility types
 #include <tuple>
@@ -53,6 +58,7 @@ using namespace std::string_view_literals;
 
 //Threading
 #include <atomic>
+#include <future>
 #include <mutex>
 #include <shared_mutex>
 #include <thread>
@@ -61,22 +67,23 @@ using namespace std::string_view_literals;
 #include <locale>
 #include <codecvt>
 
-//Misc
-#include <algorithm>
-#include <chrono>
-#include <cmath>
-#include <cstdarg>
-#include <cstdlib>
-#include <cstring>
+//Files
 #include <filesystem>
-#include <initializer_list>
-#include <iterator>
+#include <source_location>
+
+//Mathematical
+#include <cmath>
 #include <limits>
 #include <numbers>
 #include <numeric>
-#include <ranges>
-#include <source_location>
-#include <span>
+
+//Misc
+#include <chrono>
+#include <cstdarg>
+#include <cstdlib>
+#include <cstring>
+#include <concepts>
+#include <initializer_list>
 #include <typeinfo>
 #include <utility>
 
@@ -99,6 +106,12 @@ namespace stdext {
 		!std::is_null_pointer_v<T>;
 
 	constexpr inline size_t hash_combine(size_t a, size_t b) { return a ^ (b + 0x9e3779b9 + (a << 6) + (a >> 2)); }
+
+	/** A template callable which takes some parameters and does nothing. Can be used as a default argument for methods that take a callable. */
+	template<typename T>
+	struct no_op {
+		void operator()(T) {}
+	};
 
 	template<typename SourceType, std::constructible_from<SourceType const&> TargetType, typename TargetAllocatorType>
 	constexpr void append(std::vector<TargetType, TargetAllocatorType>& target, std::span<SourceType const> const& source) {

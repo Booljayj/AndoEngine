@@ -11,7 +11,7 @@ namespace Reflection {
 		virtual ~EnumTypeInfo() = default;
 
 		/** The underlying type of the values in the enumeration */
-		TypeInfo const* underlyingType = nullptr;
+		TypeInfo const* underlying = nullptr;
 
 		/** Get the number of values that the enumeration defines */
 		virtual size_t GetCount() const = 0;
@@ -35,13 +35,13 @@ namespace Reflection {
 		using EnumPairType = std::pair<std::string_view, EnumType>;
 		using UnderlyingType = typename std::underlying_type<EnumType>::type;
 		using ImplementedTypeInfo<EnumType, EnumTypeInfo>::Cast;
-		using EnumTypeInfo::underlyingType;
+		using EnumTypeInfo::underlying;
 
 		/** The elements in this enumeration */
 		std::span<EnumPairType> elementView;
 
 		TStandardEnumTypeInfo(std::string_view inName) : ImplementedTypeInfo<EnumType, EnumTypeInfo>(Reflect<EnumType>::ID, inName) {
-			underlyingType = Reflect<UnderlyingType>::Get();
+			underlying = Reflect<UnderlyingType>::Get();
 		}
 
 		virtual size_t GetCount() const final { elementView.size(); }
@@ -73,13 +73,13 @@ namespace Reflection {
 	struct TGenericEnumTypeInfo : public ImplementedTypeInfo<UnderlyingType, EnumTypeInfo> {
 		using EnumPairType = std::pair<std::string_view, UnderlyingType>;
 		using ImplementedTypeInfo<UnderlyingType, EnumTypeInfo>::Cast;
-		using EnumTypeInfo::underlyingType;
+		using EnumTypeInfo::underlying;
 
 		/** The elements in this enumeration */
 		std::span<EnumPairType> elementView;
 
 		TGenericEnumTypeInfo(Hash128 inID, std::string_view inName) : ImplementedTypeInfo<UnderlyingType, EnumTypeInfo>(inID, inName) {
-			underlyingType = Reflect<UnderlyingType>::Get();
+			underlying = Reflect<UnderlyingType>::Get();
 		}
 
 		virtual size_t GetCount() const final { elementView.size(); }
@@ -106,5 +106,3 @@ namespace Reflection {
 		decltype(auto) ElementView(std::span<EnumPairType> inElementView) { elementView = inElementView; return *this; }
 	};
 }
-
-TYPEINFO_REFLECT(Enum);

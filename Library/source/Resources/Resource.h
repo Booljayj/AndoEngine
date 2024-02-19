@@ -5,54 +5,54 @@
 #include "Resources/ResourceTypes.h"
 
 namespace Resources {
+	struct Cache;
 	struct Package;
-
-	/** Initializer passed to the constructor when constructing a resource */
-	struct Initializer {
-		StringID name;
-		size_t index;
-
-		Initializer(StringID name, size_t index) : name(name), index(index) {}
-	};
 
 	/** Base class for an object that can be shared between many entities and scenes, and is tracked with reference counting */
 	struct Resource : public std::enable_shared_from_this<Resource> {
 		REFLECT_STRUCT(Resource, void);
 		
-		Resource(Initializer const& init) : name(init.name) {}
+		Resource(StringID name) : ts_description(name) {}
 		virtual ~Resource() = default;
 
-		inline StringID GetName() const { return name; }
+		StringID GetName() const;
 		std::shared_ptr<Package const> GetPackage() const;
 		Identifier GetIdentifier() const;
 
-		/** Rename this resource. Will throw if the package for this resource already contains a resource with the new name. */
-		void Rename(StringID newName);
-
 	private:
+		friend struct Database;
 		friend struct Package;
-		friend struct ScopedPackageModifier;
+		friend struct ResourceUtility;
 
-		/** The unique name for this resource */
-		StringID name;
-		/** The flags that currently apply to this resource */
-		FResourceFlags flags;
+		/** The fundamental information that describes a resource */
+		struct ResourceDescription {
+			/** The unique name for this resource */
+			StringID name;
+			/** The flags that currently apply to this resource */
+			FResourceFlags flags;
+			/** The package in which this resource is contained */
+			std::weak_ptr<Package> package;
 
-		struct {
-			/** The package that this resource is currently contained in */
-			ThreadSafe<std::shared_ptr<Package>> package;
-		} thread;
+			ResourceDescription(StringID name) : name(name) {}
+		};
+
+		/** The fundamental information that describes this resource, which must be thread-safe. */
+		ThreadSafe<ResourceDescription> ts_description;
 	};
 
-	/** A type that derives from Resource. Note this is not used for some type parameter constraints to allow them to be be forward-declared. */
-	template<typename T>
-	concept ResourceType = std::derived_from<T, Resource>;
+	namespace Concepts {
+		/** A type that derives from Resource. Note this is not used for some type parameter constraints to allow them to be be forward-declared. */
+		template<typename T>
+		concept DerivedFromResource =
+			std::derived_from<T, Resource> and
+			Reflection::Concepts::ReflectedStruct<T>;
+	}
 
 	/** A handle that may point to a Resource object */
 	template<typename T>
 	using Handle = std::shared_ptr<T>;
 
-	/** A handle that must point to a valid Resource object */
+	/** A reference that must point to a valid Resource object */
 	template<typename T>
 	using Reference = stdext::shared_ref<T>;
 }

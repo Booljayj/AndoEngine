@@ -4,7 +4,24 @@
 #include "Engine/Reflection/TypeInfo.h"
 
 namespace Reflection {
-	struct IStructRoot;
+	struct StructTypeInfo;
+
+	namespace Concepts {
+		template<typename T>
+		concept ReflectedStruct = ReflectedType<T> and requires (T a) {
+			{ ::Reflection::Reflect<T>::Get() } -> std::convertible_to<StructTypeInfo const&>;
+		};
+
+		template<typename T>
+		concept ReflectedHierarchicalStruct = ReflectedStruct<T> and requires(T a) {
+			{ a.GetTypeInfo() } -> std::convertible_to<StructTypeInfo const&>;
+		};
+
+		template<typename T, typename StructType>
+		concept ReflectedStructBase =
+			std::is_same_v<T, void> or
+			(std::derived_from<StructType, T> and std::is_class_v<T>);
+	}
 
 	/** Info for a struct type, which contains various fields and supports inheritance */
 	struct StructTypeInfo : public TypeInfo {
@@ -12,29 +29,24 @@ namespace Reflection {
 		static constexpr ETypeClassification Classification = ETypeClassification::Struct;
 
 		/** The type that this type inherits from. Only single-inheritance from another object type is supported. */
-		StructTypeInfo const* baseType = nullptr;
+		StructTypeInfo const* base = nullptr;
 		/** A default-constructed instance of this struct type, used to find default values for variables */
 		void const* defaults = nullptr;
 		/** The variables that are contained in this type */
 		std::vector<VariableInfo> variables;
 
-		/** Returns true if base and derived are both structs, and if derived derives from base */
-		static bool IsDerivedFrom(TypeInfo const& base, TypeInfo const& derived) {
-			StructTypeInfo const* baseStruct = base.As<StructTypeInfo>();
-			StructTypeInfo const* derivedStruct = derived.As<StructTypeInfo>();
-			if (baseStruct && derivedStruct && IsDerivedFrom(*baseStruct, *derivedStruct)) return true;
-			else return false;
-		}
-		/** Returns true if derived derives from base */
-		static bool IsDerivedFrom(StructTypeInfo const& base, StructTypeInfo const& derived) {
-			//Walk up the chain of parents until we encounter base or nullptr
-			for (StructTypeInfo const* parent = &derived; parent; parent = parent->baseType) {
-				if (parent == &base) return true;
+		virtual ~StructTypeInfo() = default;
+
+		bool IsChildOf(StructTypeInfo const& target) const {
+			//Walk up the chain of parents until we encounter the provided type
+			for (StructTypeInfo const* current = this; current; current = current->base) {
+				if (current == &target) return true;
 			}
 			return false;
 		}
 
-		virtual ~StructTypeInfo() = default;
+		template<Concepts::ReflectedStruct T>
+		bool IsChildOf() const { return IsChildOf(Reflect<T>::Get()); }
 
 		/** Finds a variable with the given id */
 		VariableInfo const* FindVariable(Hash32 id) const {
@@ -47,43 +59,35 @@ namespace Reflection {
 		virtual StructTypeInfo const* GetDerivedTypeInfo(void const* instance) const = 0;
 	};
 
-	HAS_METHOD_TRAIT(GetTypeInfo, StructTypeInfo const&());
-
 	//============================================================
 	// Templates
 
 	template<typename StructType_>
+		requires std::is_class_v<StructType_>
 	struct TStructTypeInfo : public ImplementedTypeInfo<StructType_, StructTypeInfo> {
 		using StructType = StructType_;
-		using StructTypeInfo::baseType;
+		using StructTypeInfo::base;
 		using StructTypeInfo::defaults;
 		using StructTypeInfo::variables;
-		using ImplementedTypeInfo<StructType_, StructTypeInfo>::Cast;
+		using ImplementedTypeInfo<StructType, StructTypeInfo>::Cast;
 
-		TStructTypeInfo(std::string_view inName)
-		: ImplementedTypeInfo<StructType_, StructTypeInfo>(Reflect<StructType>::ID, inName)
-		{}
+		TStructTypeInfo(std::string_view name) : ImplementedTypeInfo<StructType, StructTypeInfo>(::Reflection::Reflect<StructType>::ID, name) {}
 
 		virtual StructTypeInfo const* GetDerivedTypeInfo(void const* instance) const final {
-			if constexpr (Has_GetTypeInfo_V<StructType>) return &Cast(instance).GetTypeInfo();
+			if constexpr (Concepts::ReflectedHierarchicalStruct<StructType>) return &Cast(instance).GetTypeInfo();
 			else return this;
 		}
 
 		TYPEINFO_BUILDER_METHODS(StructType)
-
-		template<typename Type>
-		inline decltype(auto) BaseType() {
-			static_assert(std::is_same_v<Type, void> || std::is_base_of_v<Type, StructType>, "invalid inheritance for StructTypeInfo, Type is not a base of T");
-			static_assert(std::is_same_v<Type, void> || std::is_class_v<Type>, "invalid inheritance for StructTypeInfo, Type is not a class");
-			if constexpr (!std::is_same_v<Type, void>) baseType = ::Reflection::Cast<StructTypeInfo>(Reflect<Type>::Get());
+		template<Concepts::ReflectedStructBase<StructType> BaseType>
+		inline decltype(auto) Base() {
+			if constexpr (!std::is_same_v<BaseType, void>) base = &Reflect<BaseType>::Get();
 			return *this;
 		}
 		inline decltype(auto) Defaults(void const* inDefaults) { defaults = inDefaults; return *this; }
 		inline decltype(auto) Variables(std::initializer_list<VariableInfo>&& inVariables) { variables = inVariables; return *this; }
 	};
 }
-
-TYPEINFO_REFLECT(Struct);
 
 //============================================================
 // Standard struct reflection

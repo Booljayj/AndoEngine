@@ -1,8 +1,8 @@
 #include "Engine/Reflection/TypeUtility.h"
 
 namespace Reflection {
-	#define CASE_ENUM(Value, Display) case ETypeClassification::Value: return #Display;
 	std::string_view GetClassificationIdentifier(ETypeClassification classification) {
+		#define CASE_ENUM(Value, Display) case ETypeClassification::Value: return #Display;
 		switch (classification) {
 			default:
 			CASE_ENUM(Unknown, XXXX);
@@ -19,8 +19,8 @@ namespace Reflection {
 			CASE_ENUM(Tuple, TUPL);
 			CASE_ENUM(Variant, VARI);
 		}
+		#undef CASE_ENUM
 	}
-	#undef CASE_ENUM
 
 	void DebugPrint(TypeInfo const* type, std::ostream& stream, FDebugPrintFlags flags) {
 		if (!type) {
@@ -39,7 +39,7 @@ namespace Reflection {
 
 		//Print detailed info for this type, depending on the kind
 		if (flags.Has(EDebugPrintFlags::DetailedInfo)) {
-			if (StructTypeInfo const* structType = type->As<StructTypeInfo>()) {
+			if (StructTypeInfo const* structType = Cast<StructTypeInfo>(type)) {
 				//Print variables
 				if (structType->variables.size() > 0) {
 					std::format_to(out, " variables:\n");

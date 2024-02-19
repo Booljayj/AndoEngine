@@ -81,11 +81,11 @@ namespace Reflection {
 		static constexpr ValueType const& CastValue(void const* value) { return *static_cast<ValueType const*>(value); };
 
 		virtual bool CanContain(TypeInfo const* type) const final {
-			return type == Reflect<void>::Get() || type == Reflect<ValueType>::Get();
+			return type == &Reflect<void>::Get() || type == &Reflect<ValueType>::Get();
 		}
 
 		virtual TypeInfo const* GetType(void const* instance) const {
-			if (Cast(instance)) return Reflect<ValueType>::Get();
+			if (Cast(instance)) return &Reflect<ValueType>::Get();
 			else return Reflect<void>::Get();
 		}
 
@@ -101,11 +101,11 @@ namespace Reflection {
 		};
 
 		virtual bool Assign(void* instance, TypeInfo const* type, void const* source) const final {
-			if (type == Reflect<ValueType>::Get()) {
+			if (type == &Reflect<ValueType>::Get()) {
 				if (source) Cast(instance).emplace(CastValue(source));
 				else Cast(instance).emplace();
 				return true;
-			} else if (type == Reflect<void>::Get()) {
+			} else if (type == &Reflect<void>::Get()) {
 				Cast(instance).reset();
 				return true;
 			} else {
@@ -115,20 +115,20 @@ namespace Reflection {
 
 		TYPEINFO_BUILDER_METHODS(OptionalType)
 	};
+
+	//============================================================
+	// Standard variant reflection
+
+	template<typename BaseType>
+	struct Reflect<std::optional<BaseType>> {
+		static VariantTypeInfo const& Get() { return info; }
+		static constexpr Hash128 ID = Hash128{ "std::optional"sv } + Reflect<BaseType>::ID;
+	private:
+		using ThisTypeInfo = TOptionalTypeInfo<std::optional<BaseType>, BaseType>;
+		static ThisTypeInfo const info;
+	};
+	template<typename BaseType>
+	typename Reflect<std::optional<BaseType>>::ThisTypeInfo const Reflect<std::optional<BaseType>>::info =
+		Reflect<std::optional<BaseType>>::ThisTypeInfo{ "std::optional"sv }
+		.Description("optional type");
 }
-
-TYPEINFO_REFLECT(Variant);
-
-//============================================================
-// Standard variant reflection
-
-template<typename BaseType>
-struct Reflect<std::optional<BaseType>> {
-	using ThisTypeInfo = ::Reflection::TOptionalTypeInfo<std::optional<BaseType>, BaseType>;
-	static ThisTypeInfo const info;
-	static ::Reflection::VariantTypeInfo const* Get() { return &info; }
-	static constexpr Hash128 ID = Hash128{ "std::optional"sv } + Reflect<BaseType>::ID;
-};
-template<typename BaseType>
-typename Reflect<std::optional<BaseType>>::ThisTypeInfo const Reflect<std::optional<BaseType>>::info = Reflect<std::optional<BaseType>>::ThisTypeInfo{ "std::optional"sv }
-	.Description("optional type");

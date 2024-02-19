@@ -8,11 +8,13 @@
 #include "Rendering/StaticMesh.h"
 #include "Rendering/Vulkan/Buffers.h"
 #include "Rendering/Vulkan/RenderPasses.h"
+#include "Resources/Database.h"
+#include "Resources/Cache.h"
 
 DEFINE_LOG_CATEGORY(Rendering, Info);
 
 namespace Rendering {
-	bool RenderingSystem::Startup(HAL::WindowingSystem& windowing, Resources::Cache<Material>& materials, Resources::Cache<StaticMesh>& staticMeshes) {
+	bool RenderingSystem::Startup(HAL::WindowingSystem& windowing, Resources::Database& database) {
 		windowing.destroying.Add(this, &RenderingSystem::OnDestroyingWindow);
 
 		//The primary window must exist in order to start the rendering system
@@ -32,31 +34,37 @@ namespace Rendering {
 		}
 
 		//Listen for when rendering-relevant resource types are created or destroyed
-		materials.Created.Add(this, &RenderingSystem::MaterialCreated);
-		materials.Destroyed.Add(this, &RenderingSystem::MaterialDestroyed);
-		staticMeshes.Created.Add(this, &RenderingSystem::StaticMeshCreated);
-		staticMeshes.Destroyed.Add(this, &RenderingSystem::StaticMeshDestroyed);
-
+		database.FindOrCreateCache<Material>()->AddObserver(*this);
+		database.FindOrCreateCache<StaticMesh>()->AddObserver(*this);
+		
 		//@todo Create a group for renderable entities, once we have more than one component to include in the group (i.e. renderer and transform).
 
 		return true;
 	}
 
-	bool RenderingSystem::Shutdown(Resources::Cache<Material>& materials, Resources::Cache<StaticMesh>& staticMeshes) {
+	bool RenderingSystem::Shutdown(Resources::Database& database) {
 		if (device) {
+			//Wait until all current rendering operations finish
 			vkDeviceWaitIdle(*device);
 
+			//Destroy the surfaces
 			surfaces.clear();
-
-			materials.Destroy();
-			staticMeshes.Destroy();
+			//Destroy objects in all active resources
+			auto const materials = database.FindOrCreateCache<Material>();
+			materials->RemoveObserver(*this);
+			materials->ForEachResource([](Material& material) { material.objects.reset(); return true; });
+			auto const staticMeshes = database.FindOrCreateCache<StaticMesh>();
+			staticMeshes->RemoveObserver(*this);
+			staticMeshes->ForEachResource([](StaticMesh& mesh) { mesh.objects.reset(); return true; });
+			//Destroy stale objects
 			staleGraphicsPipelineResources.clear();
 			staleMeshResources.clear();
-
+			//Destroy objects owned by the system
 			transferCommandPool.reset();
 			uniformLayouts.reset();
 			passes.reset();
 			
+			//Destroy the device itself
 			device.reset();
 		}
 
@@ -238,19 +246,19 @@ namespace Rendering {
 		}
 	}
 
-	void RenderingSystem::MaterialCreated(Resources::Handle<Material> const& material) {
+	void RenderingSystem::OnCreated(Resources::Handle<Material> const& material) {
 		MarkMaterialDirty(material);
 	}
 	
-	void RenderingSystem::MaterialDestroyed(Resources::Handle<Material> const& material) {
+	void RenderingSystem::OnDestroyed(Resources::Handle<Material> const& material) {
 		MarkMaterialStale(material);
 	}
 
-	void RenderingSystem::StaticMeshCreated(Resources::Handle<StaticMesh> const& mesh) {
+	void RenderingSystem::OnCreated(Resources::Handle<StaticMesh> const& mesh) {
 		MarkStaticMeshDirty(mesh);
 	}
 
-	void RenderingSystem::StaticMeshDestroyed(Resources::Handle<StaticMesh> const& mesh) {
+	void RenderingSystem::OnDestroyed(Resources::Handle<StaticMesh> const& mesh) {
 		MarkStaticMeshStale(mesh);
 	}
 

@@ -38,7 +38,7 @@ namespace Reflection {
 		/** Construct variable info for a static variable */
 		template<typename ValueType>
 		VariableInfo(ValueType* pointer, std::string_view inName, std::string_view inDescription, FVariableFlags inFlags)
-		: id(inName), type(Reflect<std::decay_t<ValueType>>::Get()), name(inName), description(inDescription), flags(inFlags + EVariableFlags::Static)
+		: id(inName), type(&Reflect<std::decay_t<ValueType>>::Get()), name(inName), description(inDescription), flags(inFlags + EVariableFlags::Static)
 		{
 			using PointerType = decltype(pointer);
 			CastUntypedStorage<PointerType>(storage) = pointer;
@@ -48,7 +48,7 @@ namespace Reflection {
 		/** Construct variable info for a const static variable */
 		template<typename ValueType>
 		VariableInfo(const ValueType* pointer, std::string_view inName, std::string_view inDescription, FVariableFlags inFlags)
-		: id(inName), type(Reflect<std::decay_t<ValueType>>::Get()), name(inName), description(inDescription), flags(inFlags + EVariableFlags::Const + EVariableFlags::Static)
+		: id(inName), type(&Reflect<std::decay_t<ValueType>>::Get()), name(inName), description(inDescription), flags(inFlags + EVariableFlags::Const + EVariableFlags::Static)
 		{
 			using PointerType = decltype(pointer);
 			CastUntypedStorage<PointerType>(storage) = pointer;
@@ -59,7 +59,7 @@ namespace Reflection {
 		/** Construct variable info for a member variable */
 		template<typename ClassType, typename ValueType>
 		VariableInfo(ValueType ClassType::* pointer, std::string_view inName, std::string_view inDescription, FVariableFlags inFlags)
-		: id(inName), type(Reflect<std::decay_t<ValueType>>::Get()), name(inName), description(inDescription), flags(inFlags)
+		: id(inName), type(&Reflect<std::decay_t<ValueType>>::Get()), name(inName), description(inDescription), flags(inFlags)
 		{
 			using PointerType = decltype(pointer);
 			CastUntypedStorage<PointerType>(storage) = pointer;
@@ -75,7 +75,7 @@ namespace Reflection {
 		/** Construct variable info for a const member variable */
 		template<typename ClassType, typename ValueType>
 		VariableInfo(const ValueType ClassType::* pointer, std::string_view inName, std::string_view inDescription, FVariableFlags inFlags)
-		: id(inName), type(Reflect<std::decay_t<ValueType>>::Get()), name(inName), description(inDescription), flags(inFlags + EVariableFlags::Const)
+		: id(inName), type(&Reflect<std::decay_t<ValueType>>::Get()), name(inName), description(inDescription), flags(inFlags + EVariableFlags::Const)
 		{
 			using PointerType = decltype(pointer);
 			CastUntypedStorage<PointerType>(storage) = pointer;
@@ -89,7 +89,7 @@ namespace Reflection {
 		/** Construct variable info for a variable that is accessed using an indexing operator at a specific index */
 		template<typename ClassType, typename ReturnType, typename IndexType>
 		VariableInfo(TTypeList<ClassType, ReturnType, IndexType>, size_t index, std::string_view inName, std::string_view inDescription, FVariableFlags inFlags)
-		: id(inName, static_cast<uint32_t>(index)), type(Reflect<std::decay_t<ReturnType>>::Get()), name(inName), description(inDescription), flags(inFlags)
+		: id(inName, static_cast<uint32_t>(index)), type(&Reflect<std::decay_t<ReturnType>>::Get()), name(inName), description(inDescription), flags(inFlags)
 		{
 			CastUntypedStorage<IndexType>(storage) = static_cast<IndexType>(index);
 			immutableGetter = [](StorageType const& storage, void const* instance) -> void const* {

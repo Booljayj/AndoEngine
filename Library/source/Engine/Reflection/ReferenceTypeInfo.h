@@ -28,7 +28,7 @@ namespace Reflection {
 		static constexpr ETypeClassification Classification = ETypeClassification::Reference;
 
 		/** The type of the referenced object. The actual reference may be a derived type. */
-		TypeInfo const* baseType = nullptr;
+		TypeInfo const* base = nullptr;
 		/** The ownership type used by this reference */
 		EOwnershipType ownership = EOwnershipType::Raw;
 		/** True if the referenced object is immutable when accessed through this reference */
@@ -47,7 +47,7 @@ namespace Reflection {
 	protected:
 		template<bool IsImmutable>
 		bool CopyImpl(void* instance, void const* other, ReferenceTypeInfo const* otherType) const {
-			if (ownership == otherType->ownership && (baseType == otherType->baseType || StructTypeInfo::IsDerivedStruct(this, otherType))) {
+			if (ownership == otherType->ownership && base == otherType->base) {
 				if constexpr (IsImmutable) {
 					CopyImmutable(instance, other, otherType);
 					return true;
@@ -97,12 +97,12 @@ namespace Reflection {
 		static_assert(!std::is_void_v<BaseType>, "Reference of void is not supported for reflection. Internal value reflection is unsafe.");
 
 		using ImplementedTypeInfo<PointerType, RawPointerTypeInfo>::Cast;
-		using ReferenceTypeInfo::baseType;
+		using ReferenceTypeInfo::base;
 		using ReferenceTypeInfo::ownership;
 		using ReferenceTypeInfo::isImmutable;
 
-		TSharedPointerTypeInfo(std::string_view inName) : ImplementedTypeInfo<PointerType, RawPointerTypeInfo>(Reflect<PointerType>::ID, inName) {
-			baseType = Reflect<BaseType>::Get();
+		TSharedPointerTypeInfo(std::string_view name) : ImplementedTypeInfo<PointerType, RawPointerTypeInfo>(Reflect<PointerType>::ID, name) {
+			base = Reflect<BaseType>::Get();
 			ownership = EOwnershipType::SharedWeak;
 			isImmutable = IsImmutable;
 		}
@@ -157,12 +157,12 @@ namespace Reflection {
 		static_assert(!std::is_void_v<BaseType>, "Reference of void is not supported for reflection. Internal value reflection is unsafe.");
 
 		using ImplementedTypeInfo<PointerType, SharedWeakPointerTypeInfo>::Cast;
-		using ReferenceTypeInfo::baseType;
+		using ReferenceTypeInfo::base;
 		using ReferenceTypeInfo::ownership;
 		using ReferenceTypeInfo::isImmutable;
 
-		TSharedPointerTypeInfo(std::string_view inName) : ImplementedTypeInfo<PointerType, SharedWeakPointerTypeInfo>(Reflect<PointerType>::ID, inName) {
-			baseType = Reflect<BaseType>::Get();
+		TSharedPointerTypeInfo(std::string_view name) : ImplementedTypeInfo<PointerType, SharedWeakPointerTypeInfo>(Reflect<PointerType>::ID, name) {
+			base = Reflect<BaseType>::Get();
 			ownership = EOwnershipType::SharedWeak;
 			isImmutable = IsImmutable;
 		}
@@ -172,7 +172,7 @@ namespace Reflection {
 		}
 
 		virtual bool Copy(void* instance, ReferenceTypeInfo const* otherType, void const* other) const final {
-			if (ownership == otherType->ownership && (baseType == otherType->baseType || IsDerivedStruct(this, otherType))) {
+			if (ownership == otherType->ownership && (base == otherType->base || IsDerivedStruct(this, otherType))) {
 				if constexpr (IsImmutable) {
 					Cast(instance) = std::static_pointer_cast<QualifiedBaseType>(static_cast<SharedWeakPointerTypeInfo const*>(otherType)->GetErasedImmutable(other));
 					return true;
@@ -204,12 +204,12 @@ namespace Reflection {
 		static_assert(!std::is_void_v<BaseType>, "Reference of void is not supported for reflection. Internal value reflection is unsafe.");
 
 		using ImplementedTypeInfo<PointerType, SharedWeakPointerTypeInfo>::Cast;
-		using ReferenceTypeInfo::baseType;
+		using ReferenceTypeInfo::base;
 		using ReferenceTypeInfo::ownership;
 		using ReferenceTypeInfo::isImmutable;
 
 		TWeakPointerTypeInfo(std::string_view inName) : ImplementedTypeInfo<PointerType, SharedWeakPointerTypeInfo>(Reflect<PointerType>::ID, inName) {
-			baseType = Reflect<BaseType>::Get();
+			base = Reflect<BaseType>::Get();
 			ownership = EOwnershipType::SharedWeak;
 			isImmutable = IsImmutable;
 		}
@@ -219,7 +219,7 @@ namespace Reflection {
 		}
 
 		virtual bool Copy(void* instance, ReferenceTypeInfo const* otherType, void const* other) const final {
-			if (ownership == otherType->ownership && (baseType == otherType->baseType || IsDerivedStruct(this, otherType))) {
+			if (ownership == otherType->ownership && (base == otherType->base || IsDerivedStruct(this, otherType))) {
 				if constexpr (IsImmutable) {
 					Cast(instance) = std::static_pointer_cast<QualifiedBaseType>(static_cast<SharedWeakPointerTypeInfo const*>(otherType)->GetErasedImmutable(other));
 					return true;

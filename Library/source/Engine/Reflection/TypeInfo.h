@@ -29,7 +29,7 @@ namespace Reflection {
 		Tuple,
 		Variant,
 	};
-
+	
 	/** flags that describe aspects of a particular type */
 	enum class ETypeFlags : uint16_t {
 		/** This type can be constructed with a default constructor */
@@ -94,53 +94,19 @@ namespace Reflection {
 	/** A pointer to an arbitrary type instance created through the reflection system */
 	using TypeUniquePointer = std::unique_ptr<std::byte[], TypeUniquePointerDeleter>;
 
-	/** A library which contains types. Corresponds to a particular DLL or EXE created by the linker. */
-	struct TypeLibrary {
-	public:
-		friend class TypeInfo;
-		using TypeInfoCollectionType = std::deque<TypeInfo const*>;
-		using value_type = TypeInfoCollectionType::value_type;
-
-		/** The name of the libraries, which should correspond to the DLL or EXE name */
-		std::string_view name;
-
-		static inline TypeLibrary const& Local() { return LocalMutable(); }
-
-		TypeInfoCollectionType::const_iterator cbegin() const { return types.cbegin(); }
-		TypeInfoCollectionType::const_iterator cend() const { return types.cend(); }
-
-	private:
-		/** Types that are defined within this library */
-		TypeInfoCollectionType types;
-
-		TypeLibrary(std::string_view inName) : name(inName) {}
-
-		static inline TypeLibrary& LocalMutable() {
-			static TypeLibrary library{ std::string_view{ STRINGIFY(TARGET_NAME) } };
-			return library;
-		}
-
-		static inline void Register(TypeInfo const* type) { LocalMutable().types.push_back(type); }
-	};
-
-	template<typename T>
-	concept TypeInfoSubclass = std::is_base_of_v<struct TypeInfo, T>;
-
 	/** Provides a set of runtime information about a type */
 	struct TypeInfo {
-	public:
-		using TypeInfoCollection = std::deque<TypeInfo const*>;
-
 		static constexpr ETypeClassification Classification = ETypeClassification::Unknown;
 
 		/** The classification of this TypeInfo, defining what kinds of type information it contains */
 		ETypeClassification classification = ETypeClassification::Primitive;
-		/** The identifier for this type. Always unique and stable. */
-		Hash128 id;
-		/** The base name of this type, without template parameters but including scopes */
-		std::string_view name;
 		/** Flags that provide additional information about this type */
 		FTypeFlags flags;
+
+		/** The identifier for this type. Always unique and stable. */
+		Hash128 id;
+		/** The fully-qualified name of this type. If this is a template, does not include template parameters. */
+		std::string_view name;
 		/** The memory parameters for this type */
 		MemoryParams memory;
 
@@ -167,30 +133,56 @@ namespace Reflection {
 		/** Compare two instances of this type and return true if they should be considered equal */
 		virtual bool Equal(void const* a, void const* b) const = 0;
 
-		/** Convert this TypeInfo to a specific kind of TypeInfo. Will return nullptr if the conversion is not possible */
-		template<TypeInfoSubclass T>
-		T const* As() const {
-			if (T::Classification == classification) return static_cast<T const*>(this);
-			else return nullptr;
-		}
-
 	protected:
-		inline TypeInfo(ETypeClassification inClassification, Hash128 inID, std::string_view inName, FTypeFlags inFlags, MemoryParams inMemory)
-			: classification(inClassification), id(inID), name(inName), flags(inFlags), memory(inMemory)
-		{
-			//The library and the contained types will always be loaded together, so we don't need to remove these types from the container when destroying
-			TypeLibrary::Register(this);
-		}
+		inline TypeInfo(ETypeClassification classification, FTypeFlags flags, Hash128 id, std::string_view name, MemoryParams memory)
+			: classification(classification), flags(flags), id(id), name(name), memory(memory)
+		{}
+	};
+
+	/** Struct which provides reflection information for a type. Must be specialized for all reflected types. Non-reflected types fail to compile if this is used. */
+	template<typename Type>
+	struct Reflect {
+		//static ::Reflection::TypeInfo const& Get() { return Type::info; }
+		//static constexpr Hash128 ID = Hash128{};
+	};
+
+	namespace Concepts {
+		/** A struct deriving from TypeInfo, implementing behavior and data for a specific classification of types */
+		template<typename T>
+		concept DerivedFromTypeInfo = std::derived_from<T, TypeInfo> and requires {
+			{ T::Classification } -> std::convertible_to<ETypeClassification>;
+		};
+
+		/** A type which implements reflection via the Reflect struct template */
+		template<typename T>
+		concept ReflectedType = requires (T a) {
+			{ ::Reflection::Reflect<T>::Get() } -> std::convertible_to<TypeInfo const&>;
+			{ ::Reflection::Reflect<T>::ID } -> std::convertible_to<Hash128>;
+		};
+	}
+
+	/** Registers a TypeInfo instance so it can be found statically. Used for concrete known types, or types that need to be dynamically instanced. */
+	struct RegisteredTypeInfo {
+		static std::deque<TypeInfo const*> const& GetInfos() { return infos; }
+		
+		RegisteredTypeInfo(TypeInfo const& info);
+		RegisteredTypeInfo(RegisteredTypeInfo const&) = delete;
+		RegisteredTypeInfo(RegisteredTypeInfo&&) = delete;
+		~RegisteredTypeInfo();
+
+	private:
+		static std::deque<TypeInfo const*> infos;
+		TypeInfo const* cached;
 	};
 
 	/** Implements type-specific operation overrides for a particular TypeInfo instance. */
-	template<std::destructible Type, TypeInfoSubclass BaseType>
+	template<std::destructible Type, Concepts::DerivedFromTypeInfo BaseType>
 	struct ImplementedTypeInfo : public BaseType {
 		static constexpr Type const& Cast(void const* pointer) { return *static_cast<Type const*>(pointer); }
 		static constexpr Type& Cast(void* pointer) { return *static_cast<Type*>(pointer); }
 
 		ImplementedTypeInfo(Hash128 id, std::string_view name)
-			: BaseType(BaseType::Classification, id, name, FTypeFlags::Create<Type>(), MemoryParams::Create<Type>())
+			: BaseType(BaseType::Classification, FTypeFlags::Create<Type>(), id, name, MemoryParams::Create<Type>())
 		{}
 
 		virtual void Destruct(void* instance) const final {
@@ -211,27 +203,41 @@ namespace Reflection {
 			else return false;
 		}
 	};
-
-	/** Convert a TypeInfo pointer to a specific kind of TypeInfo. Will return nullptr if the conversion is not possible */
-	template<TypeInfoSubclass T>
-	T const* Cast(TypeInfo const* info) {
-		if (info) return info->As<T>();
-		else return nullptr;
-	}
 }
 
-/** Struct which provides reflection information for a type. Must be specialized for all reflected types. Non-reflected types return default values. */
-template<typename Type>
-struct Reflect {
-	//static ::Reflection::TypeInfo const* Get() { return nullptr; }
-	//static constexpr Hash128 ID = Hash128{};
-};
+//============================================================
+// Utility methods and aliases added to the global namespace for convenience
+
+inline bool operator==(::Reflection::TypeInfo const& a, ::Reflection::TypeInfo const& b) { return a.id == b.id; }
+
+template<typename T>
+using Reflect = ::Reflection::Reflect<T>;
+
+/** Convert a TypeInfo pointer to a specific kind of TypeInfo. Will return nullptr if the conversion is not possible */
+template<Reflection::Concepts::DerivedFromTypeInfo TargetType, Reflection::Concepts::DerivedFromTypeInfo OriginalType>
+TargetType const* Cast(OriginalType const* info) {
+	//Upcasting or the same type does not need any special logic, so we can return the type directly
+	if constexpr (std::derived_from<OriginalType, TargetType>) return static_cast<TargetType const*>(info);
+	//Otherwise, check if the type's classification value matches the classification of TargetType
+	if (info && info->classification == TargetType::Classification) return static_cast<TargetType const*>(info);
+	else return nullptr;
+}
+
+/** Convert a TypeInfo pointer to a specific kind of TypeInfo. Will return nullptr if the conversion is not possible */
+template<Reflection::Concepts::DerivedFromTypeInfo TargetType, Reflection::Concepts::DerivedFromTypeInfo OriginalType>
+TargetType const* Cast(OriginalType const& info) {
+	//Upcasting or the same type does not need any special logic, so we can return the type directly
+	if constexpr (std::derived_from<OriginalType, TargetType>) return static_cast<TargetType const*>(&info);
+	//Otherwise, check if the type's classification value matches the classification of TargetType
+	if (info.classification == TargetType::Classification) return static_cast<TargetType const*>(&info);
+	else return nullptr;
+}
 
 /** Define a Reflect implementation that only resolves if the type uses {Name}TypeInfo. Equal in behavior to calling Cast<{Name}TypeInfo>(Reflect<Type>::Get()). */
 #define TYPEINFO_REFLECT(Name)\
 template<typename Type>\
 struct Reflect ## Name {\
-	static ::Reflection::Name ## TypeInfo const* Get() {\
+	static ::Reflection::Name ## TypeInfo const& Get() {\
 		if constexpr (std::is_base_of_v<::Reflection::Name ## TypeInfo, std::remove_pointer_t<decltype(Reflect<Type>::Get())>>) return Reflect<Type>::Get();\
 		else return nullptr;\
 	}\

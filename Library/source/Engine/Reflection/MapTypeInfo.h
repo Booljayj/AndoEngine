@@ -8,9 +8,9 @@ namespace Reflection {
 		static constexpr ETypeClassification Classification = ETypeClassification::Map;
 
 		/** The type of the keys in the map */
-		TypeInfo const* keyType = nullptr;
+		TypeInfo const* keys = nullptr;
 		/** The type of the values in the map */
-		TypeInfo const* valueType = nullptr;
+		TypeInfo const* values = nullptr;
 
 		virtual ~MapTypeInfo() = default;
 
@@ -40,12 +40,12 @@ namespace Reflection {
 	template<typename MapType, typename KeyType, typename ValueType>
 	struct TMapTypeInfo : public ImplementedTypeInfo<MapType, MapTypeInfo> {
 		using ImplementedTypeInfo<MapType, MapTypeInfo>::Cast;
-		using MapTypeInfo::keyType;
-		using MapTypeInfo::valueType;
+		using MapTypeInfo::keys;
+		using MapTypeInfo::values;
 
 		TMapTypeInfo(std::string_view inName) : ImplementedTypeInfo<MapType, MapTypeInfo> (Reflect<MapType>::ID, inName) {
-			keyType = Reflect<KeyType>::Get();
-			valueType = Reflect<ValueType>::Get();
+			keys = Reflect<KeyType>::Get();
+			values = Reflect<ValueType>::Get();
 		}
 
 		static constexpr KeyType const& CastKey(void const* key) { return *static_cast<KeyType const*>(key); }
@@ -90,27 +90,26 @@ namespace Reflection {
 
 		TYPEINFO_BUILDER_METHODS(MapType)
 	};
+
+	//============================================================
+	// Standard map reflection
+
+	#define L_REFLECT_MAP(MapTemplate, DescriptionString)\
+	template<typename KeyType, typename ValueType>\
+	struct Reflect<MapTemplate<KeyType, ValueType>> {\
+		static MapTypeInfo const& Get() { return info; }\
+		static constexpr Hash128 ID = Hash128{ #MapTemplate } + Reflect<KeyType>::ID + Reflect<ValueType>::ID;\
+	private:\
+		using ThisTypeInfo = TMapTypeInfo<MapTemplate<KeyType, ValueType>, KeyType, ValueType>;\
+		static ThisTypeInfo const info;\
+	};\
+	template<typename KeyType, typename ValueType>\
+	typename Reflect<MapTemplate<KeyType, ValueType>>::ThisTypeInfo const Reflect<MapTemplate<KeyType, ValueType>>::info =\
+		Reflect<MapTemplate<KeyType, ValueType>>::ThisTypeInfo{ #MapTemplate }\
+		.Description(DescriptionString)
+
+	L_REFLECT_MAP(std::map, "ordered map");
+	L_REFLECT_MAP(std::unordered_map, "unordered map");
+
+	#undef L_REFLECT_MAP
 }
-
-TYPEINFO_REFLECT(Map);
-
-//============================================================
-// Standard map reflection
-
-#define L_REFLECT_MAP(MapTemplate, DescriptionString)\
-template<typename KeyType, typename ValueType>\
-struct Reflect<MapTemplate<KeyType, ValueType>> {\
-	using ThisTypeInfo = ::Reflection::TMapTypeInfo<MapTemplate<KeyType, ValueType>, KeyType, ValueType>;\
-	static ThisTypeInfo const info;\
-	static ::Reflection::MapTypeInfo const* Get() { return &info; }\
-	static constexpr Hash128 ID = Hash128{ #MapTemplate } + Reflect<KeyType>::ID + Reflect<ValueType>::ID;\
-};\
-template<typename KeyType, typename ValueType>\
-typename Reflect<MapTemplate<KeyType, ValueType>>::ThisTypeInfo const Reflect<MapTemplate<KeyType, ValueType>>::info = Reflect<MapTemplate<KeyType, ValueType>>::ThisTypeInfo{ #MapTemplate }\
-	.Description(DescriptionString)
-
-
-L_REFLECT_MAP(std::map, "ordered map");
-L_REFLECT_MAP(std::unordered_map, "unordered map");
-
-#undef L_REFLECT_MAP

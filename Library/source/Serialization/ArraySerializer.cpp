@@ -5,7 +5,7 @@
 
 namespace Serialization {
 	bool ArraySerializer::SerializeBinary(Reflection::TypeInfo const& type, void const* data, std::ostream& stream) const {
-		Reflection::ArrayTypeInfo const* const arrayType = type.As<Reflection::ArrayTypeInfo>();
+		Reflection::ArrayTypeInfo const* const arrayType = Cast<Reflection::ArrayTypeInfo>(type);
 		if (!arrayType) return false;
 
 		size_t const rawArraySize = arrayType->GetCount(data);
@@ -23,13 +23,13 @@ namespace Serialization {
 
 		//Write a data block for each element to the stream
 		for (uint32_t index = 0; index < elements.size(); ++index) {
-			SerializeTypeBinary(*arrayType->elementType, elements[index], stream);
+			SerializeTypeBinary(*arrayType->elements, elements[index], stream);
 		}
 		return stream.good();
 	}
 
 	bool ArraySerializer::DeserializeBinary(Reflection::TypeInfo const& type, void* data, std::istream& stream) const {
-		Reflection::ArrayTypeInfo const* const arrayType = type.As<Reflection::ArrayTypeInfo>();
+		Reflection::ArrayTypeInfo const* const arrayType = Cast<Reflection::ArrayTypeInfo>(type);
 		if (!arrayType) return false;
 
 		constexpr uint8_t nestedBlockHeaderSize = sizeof(BlockSizeType);
@@ -51,7 +51,7 @@ namespace Serialization {
 		bool arrayReadSuccessful = true;
 		for (uint32_t index = 0; index < elements.size(); ++index) {
 			if (index < serializedArraySize && scopedRead.GetRemainingSize() >= nestedBlockHeaderSize) {
-				bool const elementReadSuccessful = DeserializeTypeBinary(*arrayType->elementType, elements[index], stream);
+				bool const elementReadSuccessful = DeserializeTypeBinary(*arrayType->elements, elements[index], stream);
 				arrayReadSuccessful &= elementReadSuccessful;
 			} else {
 				break;

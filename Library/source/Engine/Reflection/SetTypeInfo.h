@@ -7,7 +7,7 @@ namespace Reflection {
 		static constexpr ETypeClassification Classification = ETypeClassification::Set;
 
 		/** The type of the values in the set */
-		TypeInfo const* valueType = nullptr;
+		TypeInfo const* values = nullptr;
 
 		virtual ~SetTypeInfo() = default;
 
@@ -34,10 +34,10 @@ namespace Reflection {
 	template<typename SetType, typename ValueType>
 	struct TSetTypeInfo : public ImplementedTypeInfo<SetType, SetTypeInfo> {
 		using ImplementedTypeInfo<SetType, SetTypeInfo>::Cast;
-		using SetTypeInfo::valueType;
+		using SetTypeInfo::values;
 
 		TSetTypeInfo(std::string_view inName) : ImplementedTypeInfo<SetType, SetTypeInfo>(Reflect<SetType>::ID, inName) {
-			valueType = Reflect<ValueType>::Get();
+			values = Reflect<ValueType>::Get();
 		}
 
 		static constexpr ValueType const& CastValue(void const* value) { return *static_cast<ValueType const*>(value); }
@@ -61,27 +61,26 @@ namespace Reflection {
 
 		TYPEINFO_BUILDER_METHODS(SetType)
 	};
+
+	//============================================================
+	// Standard set reflection
+
+	#define L_REFLECT_SET(SetTemplate, DescriptionString)\
+	template<typename ValueType>\
+	struct Reflect<SetTemplate<ValueType>> {\
+		static SetTypeInfo const* Get() { return &info; }\
+		static constexpr Hash128 ID = Hash128{ #SetTemplate } + Reflect<ValueType>::ID;\
+	private:\
+		using ThisTypeInfo = TSetTypeInfo<SetTemplate<ValueType>, ValueType>;\
+		static ThisTypeInfo const info;\
+	};\
+	template<typename ValueType>\
+	typename Reflect<SetTemplate<ValueType>>::ThisTypeInfo const Reflect<SetTemplate<ValueType>>::info =\
+		Reflect<SetTemplate<ValueType>>::ThisTypeInfo{ #SetTemplate }\
+		.Description(DescriptionString)
+
+	L_REFLECT_SET(std::set, "ordered set");
+	L_REFLECT_SET(std::unordered_set, "unordered set");
+
+	#undef L_REFLECT_SET
 }
-
-TYPEINFO_REFLECT(Set);
-
-//============================================================
-// Standard set reflection
-
-#define L_REFLECT_SET(SetTemplate, DescriptionString)\
-template<typename ValueType>\
-struct Reflect<SetTemplate<ValueType>> {\
-	using ThisTypeInfo = ::Reflection::TSetTypeInfo<SetTemplate<ValueType>, ValueType>;\
-	static ThisTypeInfo const info;\
-	static ::Reflection::SetTypeInfo const* Get() { return &info; }\
-	static constexpr Hash128 ID = Hash128{ #SetTemplate } + Reflect<ValueType>::ID;\
-};\
-template<typename ValueType>\
-typename Reflect<SetTemplate<ValueType>>::ThisTypeInfo const Reflect<SetTemplate<ValueType>>::info = Reflect<SetTemplate<ValueType>>::ThisTypeInfo{ #SetTemplate }\
-	.Description(DescriptionString)
-
-
-L_REFLECT_SET(std::set, "ordered set");
-L_REFLECT_SET(std::unordered_set, "unordered set");
-
-#undef L_REFLECT_SET

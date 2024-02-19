@@ -13,6 +13,8 @@
 #include "Rendering/Shader.h"
 #include "Rendering/StaticMesh.h"
 
+#include "Resources/MemoryDatabase.h"
+
 #include "ThirdParty/EnTT.h"
 
 #include "Importers/RenderingImporters.h"
@@ -29,13 +31,8 @@ LOG_CATEGORY(Main, Debug);
 DEFINE_PROFILE_CATEGORY(Main);
 
 struct Application {
-	Resources::Database<
-		Rendering::StaticMesh,
-		Rendering::Material,
-		Rendering::VertexShader,
-		Rendering::FragmentShader
-	> database;
-
+	Resources::MemoryDatabase database;
+	
 	entt::registry registry;
 
 	HAL::FrameworkSystem framework;
@@ -54,7 +51,7 @@ struct Application {
 		STARTUP_SYSTEM(Main, framework);
 		STARTUP_SYSTEM(Main, events);
 		STARTUP_SYSTEM(Main, windowing);
-		STARTUP_SYSTEM(Main, rendering, windowing, database.GetCache<Rendering::Material>(), database.GetCache<Rendering::StaticMesh>());
+		STARTUP_SYSTEM(Main, rendering, windowing, database);
 		return true;
 	}
 
@@ -63,7 +60,7 @@ struct Application {
 		ScopedThreadBufferMark mark;
 		LOG(Main, Info, "Shutting down all systems...");
 
-		SHUTDOWN_SYSTEM(Main, rendering, database.GetCache<Rendering::Material>(), database.GetCache<Rendering::StaticMesh>());
+		SHUTDOWN_SYSTEM(Main, rendering, database);
 		SHUTDOWN_SYSTEM(Main, windowing);
 		SHUTDOWN_SYSTEM(Main, events);
 		SHUTDOWN_SYSTEM(Main, framework);
@@ -113,14 +110,34 @@ int main(int argc, char** argv) {
 	Application application;
 
 	if (application.Startup()) {
-		//Create default built-in vertex and fragment shaders
-		Handle<VertexShader> const vertex = application.database.GetCache<VertexShader>().Create("SH_DefaultVertex"_sid);
-		Handle<FragmentShader> const fragment = application.database.GetCache<FragmentShader>().Create("SH_DefaultFragment"_sid);
-		{
-			Importers::ShaderImporter shaderImporter;
-			shaderImporter.Import(
-				*vertex,
-				R"(
+		//Create the default plane mesh. This demonstrates the process of assining raw vertex and index information for a mesh.
+		Handle<StaticMesh> const plane = application.database.Create<StaticMesh>(
+			"SM_Plane"_sid, Database::GetTransient(),
+			[](StaticMesh& mesh) {
+				mesh.vertices.emplace<Vertices_Simple>() = {
+					{ vec3{ -0.5f, -0.5f, 0.0f }, Color{ 255, 0, 0, 255 }, vec3{ 0, 0, 1 }, vec2{ 0, 0 } },
+					{ vec3{ 0.5f, -0.5f, 0.0f }, Color{ 0, 255, 0, 255 }, vec3{ 0, 0, 1 }, vec2{ 0, 0 } },
+					{ vec3{ 0.5f, 0.5f, 0.0f }, Color{ 0, 0, 255, 255 }, vec3{ 0, 0, 1 }, vec2{ 0, 0 } },
+					{ vec3{ -0.5f, 0.5f, 0.0f }, Color{ 255, 255, 255, 255 }, vec3{ 0, 0, 1 }, vec2{ 0, 0 } },
+				};
+
+				mesh.indices.emplace<Indices_Short>() = { 0, 1, 2, 2, 3, 0 };
+			}
+		);
+
+		//Create the default material. This demonstrates recursive resource creation that is thread-safe without deadlocks.
+		Handle<Material> const material = application.database.Create<Material>(
+			"M_Default"_sid, Database::GetTransient(),
+			[&](Material& material) {
+				//Shaders are imported from raw text strings. This demonstrates the use of an importer object to initialize resources from raw data.
+				Importers::ShaderImporter importer;
+
+				material.shaders.vertex = application.database.Create<VertexShader>(
+					"SH_DefaultVertex"_sid, Database::GetTransient(),
+					[&](VertexShader& shader) {
+						importer.Import(
+							shader,
+							R"(
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
@@ -131,13 +148,18 @@ void main() {
 	gl_Position = object.modelViewProjection * vec4(inPosition, 1.0);
 	outFragColor = inColor;
 }
-				)"sv,
-				"default.vert"sv
-			);
+					)"sv,
+							"default.vert"sv
+						);
+					}
+				);
 
-			shaderImporter.Import(
-				*fragment,
-				R"(
+				material.shaders.fragment = application.database.Create<FragmentShader>(
+					"SH_DefaultFragment"_sid, Database::GetTransient(),
+					[&](FragmentShader& shader) {
+						importer.Import(
+							shader,
+							R"(
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
@@ -147,26 +169,15 @@ void main() {
 void main() {
     outColor = inFragColor;
 }
-				)"sv,
-				"default.frag"sv
-			);
-		}
+					)"sv,
+							"default.frag"sv
+						);
+					}
+				);
+			}
+		);
 
-		Handle<Material> const material = application.database.GetCache<Material>().Create("M_Default"_sid);
-		material->shaders.vertex = vertex;
-		material->shaders.fragment = fragment;
-
-		Handle<StaticMesh> const plane = application.database.GetCache<StaticMesh>().Create("SM_Plane"_sid);
-		Vertices_Simple& vertices = plane->vertices.emplace<Vertices_Simple>();
-		vertices = {
-			{ vec3{ -0.5f, -0.5f, 0.0f }, Color{ 255, 0, 0, 255 }, vec3{ 0, 0, 1 }, vec2{ 0, 0 } },
-			{ vec3{ 0.5f, -0.5f, 0.0f }, Color{ 0, 255, 0, 255 }, vec3{ 0, 0, 1 }, vec2{ 0, 0 } },
-			{ vec3{ 0.5f, 0.5f, 0.0f }, Color{ 0, 0, 255, 255 }, vec3{ 0, 0, 1 }, vec2{ 0, 0 } },
-			{ vec3{ -0.5f, 0.5f, 0.0f }, Color{ 255, 255, 255, 255 }, vec3{ 0, 0, 1 }, vec2{ 0, 0 } },
-		};
-		Indices_Short& indices = plane->indices.emplace<Indices_Short>();
-		indices = { 0, 1, 2, 2, 3, 0 };
-
+		//Create a renderer that will show the default plane with the default material. This demonstrates the creation and initialization of entities.
 		entt::entity const testEntity = application.registry.create();
 		MeshRenderer& renderer = application.registry.emplace<MeshRenderer>(testEntity);
 		renderer.material = material;

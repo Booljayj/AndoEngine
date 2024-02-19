@@ -109,7 +109,7 @@ struct std::formatter<StringID> : std::formatter<std::string_view> {
 };
 
 template<>
-struct Reflect<StringID> {
-	static Reflection::PrimitiveTypeInfo const* Get() { return &StringID::info_StringID; }
+struct ::Reflection::Reflect<StringID> {
+	static Reflection::PrimitiveTypeInfo const& Get() { return StringID::info_StringID; }
 	static constexpr Hash128 ID = Hash128{ std::string_view{ STRINGIFY(StringID) } };
 };

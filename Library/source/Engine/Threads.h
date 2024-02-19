@@ -5,37 +5,44 @@
  * Wraps a type to require mutex-based locking before it can be accessed, ensuring thread-safety.
  * Access is neither copyable nor movable. It is specific to the scope in which it is created.
  */
-template<typename T>
+template<typename ValueType, typename MutexType = std::shared_mutex>
 struct ThreadSafe {
 	struct Inclusive {
-		inline T const* operator->() const { return &value; }
-		inline T const& operator*() const { return value; }
+		inline ValueType const* operator->() const { return &value; }
+		inline ValueType const& operator*() const { return value; }
 
 	private:
 		friend ThreadSafe;
-		Inclusive(T const& value, std::shared_mutex& mutex) : value(value), lock(mutex) {}
+		Inclusive(ValueType const& value, MutexType& mutex) : value(value), lock(mutex) {}
 		Inclusive(Inclusive const&) = delete;
 		Inclusive(Inclusive&&) = delete;
 
-		T const& value;
-		std::shared_lock<std::shared_mutex> lock;
+		ValueType const& value;
+		std::shared_lock<MutexType> lock;
 	};
 
 	struct Exclusive {
-		inline T* operator->() { return &value; }
-		inline T& operator*() { return value; }
-		inline T const* operator->() const { return &value; }
-		inline T const& operator*() const { return value; }
+		inline ValueType* operator->() { return &value; }
+		inline ValueType& operator*() { return value; }
+		inline ValueType const* operator->() const { return &value; }
+		inline ValueType const& operator*() const { return value; }
 
 	private:
 		friend ThreadSafe;
-		Exclusive(T& value, std::shared_mutex& mutex) : value(value), lock(mutex) {}
+		Exclusive(ValueType& value, MutexType& mutex) : value(value), lock(mutex) {}
 		Exclusive(Exclusive const&) = delete;
 		Exclusive(Exclusive&&) = delete;
 
-		T& value;
-		std::unique_lock<std::shared_mutex> lock;
+		ValueType& value;
+		std::unique_lock<MutexType> lock;
 	};
+
+	ThreadSafe() = default;
+	ThreadSafe(const ValueType& value) : value(value) {}
+	ThreadSafe(ValueType&& value) : value(std::move(value)) {}
+
+	template<typename... ArgTypes>
+	ThreadSafe(ArgTypes&&... arguments) : value(std::forward<ArgTypes>(arguments)...) {}
 
 	/** Get an inclusive lock, allowing read-only access to the value which may be shared by other threads. */
 	[[nodiscard]] inline Inclusive LockInclusive() const { return Inclusive{ value, mutex }; }
@@ -43,6 +50,6 @@ struct ThreadSafe {
 	[[nodiscard]] inline Exclusive LockExclusive() { return Exclusive{ value, mutex }; }
 
 private:
-	T value;
-	mutable std::shared_mutex mutex;
+	ValueType value;
+	mutable MutexType mutex;
 };

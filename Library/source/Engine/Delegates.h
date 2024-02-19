@@ -359,7 +359,7 @@ TDelegate<ReturnType, ParamTypes...> TDelegate<ReturnType, ParamTypes...>::Creat
 template<typename ReturnType, typename... ParamTypes>
 template<typename ObjectType>
 TDelegate<ReturnType, ParamTypes...> TDelegate<ReturnType, ParamTypes...>::Create(ObjectType* instance, ReturnType(*function)(ObjectType*, ParamTypes...)) {
-	using ContextSemanticsImplType = TContextSemanticsImpl<typename std::conditional<std::is_const<ObjectType>::value, void const*, void*>::type>;
+	using ContextSemanticsImplType = TContextSemanticsImpl<typename std::conditional_t<std::is_const_v<ObjectType>, void const*, void*>>;
 	using StorageSemanticsImplType = TStorageSemanticsImpl<decltype(function)>;
 
 	TDelegate newDelegate;
@@ -377,7 +377,7 @@ TDelegate<ReturnType, ParamTypes...> TDelegate<ReturnType, ParamTypes...>::Creat
 template<typename ReturnType, typename... ParamTypes>
 template<typename ObjectType>
 TDelegate<ReturnType, ParamTypes...> TDelegate<ReturnType, ParamTypes...>::Create(std::shared_ptr<ObjectType>&& instance, ReturnType(*function)(ObjectType*, ParamTypes...)) {
-	using ContextSemanticsImplType = TContextSemanticsImpl<typename std::conditional<std::is_const<ObjectType>::value, std::weak_ptr<void const>, std::weak_ptr<void>>::type>;
+	using ContextSemanticsImplType = TContextSemanticsImpl<typename std::conditional_t<std::is_const_v<ObjectType>, std::weak_ptr<void const>, std::weak_ptr<void>>>;
 	using StorageSemanticsImplType = TStorageSemanticsImpl<decltype(function)>;
 
 	TDelegate newDelegate;
@@ -400,7 +400,7 @@ TDelegate<ReturnType, ParamTypes...> TDelegate<ReturnType, ParamTypes...>::Creat
 template<typename ReturnType, typename... ParamTypes>
 template<typename ObjectType>
 TDelegate<ReturnType, ParamTypes...> TDelegate<ReturnType, ParamTypes...>::Create(ObjectType* instance, ReturnType(ObjectType::* method)(ParamTypes...)) {
-	using ContextSemanticsImplType = TContextSemanticsImpl<typename std::conditional<std::is_const<ObjectType>::value, void const*, void*>::type>;
+	using ContextSemanticsImplType = TContextSemanticsImpl<typename std::conditional_t<std::is_const_v<ObjectType>, void const*, void*>>;
 	using StorageSemanticsImplType = TStorageSemanticsImpl<decltype(method)>;
 
 	TDelegate newDelegate;
@@ -418,7 +418,7 @@ TDelegate<ReturnType, ParamTypes...> TDelegate<ReturnType, ParamTypes...>::Creat
 template<typename ReturnType, typename... ParamTypes>
 template<typename ObjectType>
 TDelegate<ReturnType, ParamTypes...> TDelegate<ReturnType, ParamTypes...>::Create(std::shared_ptr<ObjectType>&& instance, ReturnType(ObjectType::* method)(ParamTypes...)) {
-	using ContextSemanticsImplType = TContextSemanticsImpl<typename std::conditional<std::is_const<ObjectType>::value, std::weak_ptr<void const>, std::weak_ptr<void>>::type>;
+	using ContextSemanticsImplType = TContextSemanticsImpl<typename std::conditional_t<std::is_const_v<ObjectType>, std::weak_ptr<void const>, std::weak_ptr<void>>>;
 	using StorageSemanticsImplType = TStorageSemanticsImpl<decltype(method)>;
 
 	TDelegate newDelegate;
@@ -442,7 +442,7 @@ template<typename ReturnType, typename... ParamTypes>
 template<typename LambdaType>
 TDelegate<ReturnType, ParamTypes...> TDelegate<ReturnType, ParamTypes...>::Create(LambdaType&& lambda) {
 	using ContextSemanticsImplType = TContextSemanticsImpl<void>;
-	using StorageSemanticsImplType = TStorageSemanticsImpl<typename std::decay<decltype(lambda)>::type>;
+	using StorageSemanticsImplType = TStorageSemanticsImpl<typename std::decay_t<decltype(lambda)>>;
 
 	TDelegate newDelegate;
 	newDelegate.semantics.Construct<TWrappedSemantics<ContextSemanticsImplType, StorageSemanticsImplType>>();
@@ -458,8 +458,8 @@ TDelegate<ReturnType, ParamTypes...> TDelegate<ReturnType, ParamTypes...>::Creat
 template<typename ReturnType, typename... ParamTypes>
 template<typename ObjectType, typename LambdaType>
 TDelegate<ReturnType, ParamTypes...> TDelegate<ReturnType, ParamTypes...>::Create(ObjectType* instance, LambdaType&& lambda) {
-	using ContextSemanticsImplType = TContextSemanticsImpl<typename std::conditional<std::is_const<ObjectType>::value, void const*, void*>::type>;
-	using StorageSemanticsImplType = TStorageSemanticsImpl<typename std::decay<decltype(lambda)>::type>;
+	using ContextSemanticsImplType = TContextSemanticsImpl<typename std::conditional_t<std::is_const_v<ObjectType>, void const*, void*>>;
+	using StorageSemanticsImplType = TStorageSemanticsImpl<typename std::decay_t<decltype(lambda)>>;
 
 	TDelegate newDelegate;
 	newDelegate.semantics.Construct<TWrappedSemantics<ContextSemanticsImplType, StorageSemanticsImplType>>();
@@ -476,8 +476,8 @@ TDelegate<ReturnType, ParamTypes...> TDelegate<ReturnType, ParamTypes...>::Creat
 template<typename ReturnType, typename... ParamTypes>
 template<typename ObjectType, typename LambdaType>
 TDelegate<ReturnType, ParamTypes...> TDelegate<ReturnType, ParamTypes...>::Create(std::shared_ptr<ObjectType>&& instance, LambdaType&& lambda) {
-	using ContextSemanticsImplType = TContextSemanticsImpl<typename std::conditional<std::is_const<ObjectType>::value, std::weak_ptr<void const>, std::weak_ptr<void>>::type>;
-	using StorageSemanticsImplType = TStorageSemanticsImpl<typename std::decay<decltype(lambda)>::type>;
+	using ContextSemanticsImplType = TContextSemanticsImpl<typename std::conditional_t<std::is_const_v<ObjectType>, std::weak_ptr<void const>, std::weak_ptr<void>>>;
+	using StorageSemanticsImplType = TStorageSemanticsImpl<typename std::decay_t<decltype(lambda)>>;
 
 	TDelegate newDelegate;
 	newDelegate.semantics.Construct<TWrappedSemantics<ContextSemanticsImplType, StorageSemanticsImplType>>();

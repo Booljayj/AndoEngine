@@ -17,7 +17,7 @@ namespace Reflection {
 
 		virtual ~FlagsTypeInfo() = default;
 
-		TypeInfo const* underlyingType = nullptr;
+		TypeInfo const* underlying = nullptr;
 
 		/** Get the number of components that the flags have */
 		virtual size_t GetComponentCount() const = 0;
@@ -68,7 +68,7 @@ namespace Reflection {
 		using FlagsPairType = std::pair<std::string_view, FlagsType>;
 		using UnderlyingType = typename std::underlying_type<FlagsType>::type;
 		using ImplementedTypeInfo<FlagsType, FlagsTypeInfo>::Cast;
-		using FlagsTypeInfo::underlyingType;
+		using FlagsTypeInfo::underlying;
 
 		/** The components for the flags */
 		std::span<FlagsPairType> componentsView;
@@ -79,7 +79,7 @@ namespace Reflection {
 		FlagsPairType const* empty = nullptr;
 
 		TStandardFlagsTypeInfo(std::string_view inName) : ImplementedTypeInfo<FlagsType, FlagsTypeInfo>(Reflect<FlagsType>::ID, inName) {
-			underlyingType = Reflect<UnderlyingType>::Get();
+			underlying = Reflect<UnderlyingType>::Get();
 		}
 
 		virtual size_t GetComponentCount() const final { return componentsView.size(); };
@@ -142,5 +142,3 @@ namespace Reflection {
 		TStandardFlagsTypeInfo& Empty(FlagsPairType const* inEmpty) { empty = inEmpty; return *this; }
 	};
 }
-
-TYPEINFO_REFLECT(Flags);

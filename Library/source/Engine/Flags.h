@@ -78,6 +78,87 @@ protected:
 	UnderlyingType flags = 0;
 };
 
+
+template<stdext::enumeration InEnumType>
+struct TAtomicFlags {
+public:
+	using EnumType = InEnumType;
+	using UnderlyingType = typename std::underlying_type_t<EnumType>;
+
+	constexpr inline TAtomicFlags() noexcept = default;
+	constexpr inline TAtomicFlags(TAtomicFlags const& other) noexcept = default;
+	constexpr inline TAtomicFlags(TAtomicFlags&& other) noexcept = default;
+
+	constexpr inline TAtomicFlags(UnderlyingType flags) : flags(flags) {}
+	constexpr inline TAtomicFlags(EnumType flag) : flags(1 << static_cast<UnderlyingType>(flag)) {}
+	constexpr inline TAtomicFlags(std::initializer_list<EnumType> inFlags) {
+		UnderlyingType combined = 0;
+		for (EnumType flag : inFlags) combined |= (1 << (UnderlyingType)flag);
+		flags.store(combined);
+	}
+
+	template<typename... FlagTypes>
+		requires std::conjunction_v<std::is_same<FlagTypes, EnumType>...>
+	static constexpr inline TAtomicFlags Make(FlagTypes... flags) {
+		return TAtomicFlags{ static_cast<UnderlyingType>((... | (1 << static_cast<UnderlyingType>(flags)))) };
+	}
+
+	static constexpr inline TAtomicFlags None() { return TAtomicFlags{}; }
+
+	constexpr inline TAtomicFlags& operator=(TAtomicFlags const& other) noexcept = default;
+	constexpr inline TAtomicFlags& operator=(TAtomicFlags&& other) noexcept = default;
+
+	constexpr inline bool operator==(TAtomicFlags other) const noexcept { return flags == other.flags; }
+	constexpr inline bool operator!=(TAtomicFlags other) const noexcept { return flags != other.flags; }
+
+	/** Get the underlying integer value for this set of flags */
+	constexpr inline UnderlyingType operator+() noexcept { return flags; }
+
+	/** Add a value to the set of flags */
+	constexpr inline TAtomicFlags operator+(EnumType flag) const { return flags | (1 << (UnderlyingType)flag); }
+	constexpr inline TAtomicFlags& operator+=(EnumType flag) {
+		UnderlyingType expected = flags.load();
+		while (!flags.compare_exchange_weak(expected, expected | (1 << (UnderlyingType)flag))) {}
+		return *this;
+	}
+	/** Remove a value from the set of flags */
+	constexpr inline TAtomicFlags operator-(EnumType flag) const { return flags & ~(1 << (UnderlyingType)flag); }
+	constexpr inline TAtomicFlags& operator-=(EnumType flag) {
+		UnderlyingType expected = flags.load();
+		while (!flags.compare_exchange_weak(expected, expected & ~(1 << (UnderlyingType)flag))) {}
+		return *this;
+	}
+
+	/** True if this set of flags contains no values */
+	constexpr inline bool IsEmpty() const noexcept { return !!flags; }
+
+	/** Returns the set of flags in this or the other */
+	constexpr inline TAtomicFlags Union(TAtomicFlags other) const noexcept { return flags | other.flags; }
+	/** Returns the set of flags in this but without the flags in other */
+	constexpr inline TAtomicFlags Subtraction(TAtomicFlags other) const noexcept { return flags & ~other.flags; }
+	/** Returns the set of flags in both this and other */
+	constexpr inline TAtomicFlags Intersection(TAtomicFlags other) const noexcept { return flags & other.flags; }
+	/** Returns the set of flags that are different in this and other */
+	constexpr inline TAtomicFlags Difference(TAtomicFlags other) const noexcept { return flags ^ other.flags; }
+
+	/** True if this set of flags contains the value */
+	constexpr inline bool Has(EnumType flag) const noexcept { return (flags & (1 << (UnderlyingType)flag)) != 0; }
+	/** True if this set of flags contains all of the values in the other set */
+	constexpr inline bool HasAll(TAtomicFlags other) const noexcept { return (flags & other.flags) == other.flags; }
+	/** True if this set of flags contains any of the values in the other set */
+	constexpr inline bool HasAny(TAtomicFlags other) const noexcept { return (flags & other.flags) != 0; }
+
+	/** True if this set of flags contains all of the values */
+	template<typename... FlagTypes>
+	constexpr inline bool HasAll(EnumType flag, FlagTypes... other) { return HasAll(Make(flag, other...)); }
+	/** True if this set of flags contains any of the values */
+	template<typename... FlagTypes>
+	constexpr inline bool HasAny(EnumType flag, FlagTypes... other) { return HasAny(Make(flag, other...)); }
+
+protected:
+	std::atomic<UnderlyingType> flags = 0;
+};
+
 #define TFLAGS_METHODS(DerivedType)\
 	using TFlags<EnumType>::TFlags;\
 	DerivedType(TFlags<EnumType> const& other) : TFlags<EnumType>(other) {}\
