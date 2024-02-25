@@ -38,12 +38,6 @@ namespace Rendering {
 		}
 	}
 
-	UniformLayouts::UniformLayouts(UniformLayouts&& other) noexcept
-		: global(other.global), object(other.object), device(other.device)
-	{
-		other.device = nullptr;
-	}
-
 	UniformLayouts::~UniformLayouts() {
 		if (device) {
 			vkDestroyDescriptorSetLayout(device, global, nullptr);

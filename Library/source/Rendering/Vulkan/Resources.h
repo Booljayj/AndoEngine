@@ -33,11 +33,11 @@ namespace Rendering {
 
 		GraphicsPipelineResources(VkDevice device, ShaderModules const& modules, UniformLayouts const& uniforms, VertexInformationViews const& vertex, VkRenderPass pass);
 		GraphicsPipelineResources(GraphicsPipelineResources const&) = delete;
-		GraphicsPipelineResources(GraphicsPipelineResources&&) noexcept;
+		GraphicsPipelineResources(GraphicsPipelineResources&&) noexcept = default;
 		~GraphicsPipelineResources();
 
 	private:
-		VkDevice device = nullptr;
+		stdext::move_only<VkDevice> device;
 	};
 
 	/** Stores resources related to a mesh */

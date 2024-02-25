@@ -29,12 +29,6 @@ namespace Rendering {
 		renderFinished = renderFinishedHandle.Release();
 	}
 
-	FrameSynchronization::FrameSynchronization(FrameSynchronization&& other) noexcept
-		: imageAvailable(other.imageAvailable), renderFinished(other.renderFinished), fence(std::move(other.fence)), device(other.device)
-	{
-		other.device = nullptr;
-	}
-
 	FrameSynchronization::~FrameSynchronization() {
 		if (device) {
 			fence.WaitUntilSignalled(std::chrono::nanoseconds(std::numeric_limits<uint64_t>::max()));
@@ -95,15 +89,6 @@ namespace Rendering {
 			frames.emplace_back(device, graphicsQueueFamilyIndex, uniformLayouts, descriptorPool, allocator);
 		}
 		imageFences.resize(swapchain.GetNumImages(), nullptr);
-	}
-
-	FrameOrganizer::FrameOrganizer(FrameOrganizer&& other) noexcept
-		: device(other.device), swapchain(other.swapchain), queue({ other.queue.graphics, other.queue.present }), graphicsQueueFamilyIndex(other.graphicsQueueFamilyIndex)
-		, descriptorPool(std::move(other.descriptorPool))
-		, frames(std::move(other.frames)), imageFences(std::move(other.imageFences))
-		, currentFrameIndex(other.currentFrameIndex), currentImageIndex(other.currentImageIndex)
-	{
-		other.device = nullptr;
 	}
 
 	std::optional<RecordingContext> FrameOrganizer::CreateRecordingContext(size_t numObjects, size_t numThreads) {

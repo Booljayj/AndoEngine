@@ -16,12 +16,6 @@ namespace Rendering {
 		}
 	}
 
-	CommandPool::CommandPool(CommandPool&& other) noexcept
-		: device(other.device), pool(other.pool)
-	{
-		other.device = nullptr;
-	}
-
 	CommandPool::~CommandPool() {
 		if (device) vkDestroyCommandPool(device, pool, nullptr);
 	}

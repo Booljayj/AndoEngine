@@ -4,7 +4,7 @@
 
 namespace Rendering {
 	Device::Device(Framework const& framework, PhysicalDeviceDescription const& physical, VkPhysicalDeviceFeatures features, ExtensionsView extensions, QueueRequests const& requests)
-		: physical(physical)
+		: physical(physical), device(nullptr)
 	{
 		ScopedThreadBufferMark mark;
 
@@ -38,7 +38,7 @@ namespace Rendering {
 			.pEnabledFeatures = &features,
 		};
 
-		if (vkCreateDevice(physical, &deviceCI, nullptr, &device) != VK_SUCCESS || !device) {
+		if (vkCreateDevice(physical, &deviceCI, nullptr, &device.get()) != VK_SUCCESS || !device) {
 			throw std::runtime_error{ "Failed to create command pool for logical device" };
 		}
 
@@ -60,15 +60,6 @@ namespace Rendering {
 #if VULKAN_DEBUG
 		functionSetDebugName = framework.GetFunction<PFN_vkSetDebugUtilsObjectNameEXT>("vkSetDebugUtilsObjectNameEXT");
 #endif
-	}
-
-	Device::Device(Device&& other) noexcept
-		: queues(std::move(other.queues)), physical(other.physical), device(other.device), allocator(other.allocator)
-#if VULKAN_DEBUG
-		, functionSetDebugName(other.functionSetDebugName)
-#endif
-	{
-		other.device = nullptr;
 	}
 
 	Device::~Device() {

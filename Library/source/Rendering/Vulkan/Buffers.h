@@ -55,7 +55,7 @@ namespace Rendering {
 
 		Buffer(VmaAllocator allocator, size_t size, VkBufferUsageFlags bufferUsage, VmaMemoryUsage allocationUsage);
 		Buffer(Buffer const&) = delete;
-		Buffer(Buffer&&) noexcept;
+		Buffer(Buffer&&) noexcept = default;
 		~Buffer();
 
 		inline operator VkBuffer() const { return buffer; }
@@ -69,7 +69,7 @@ namespace Rendering {
 		Writer CreateWriter() const { return Writer(*this); }
 
 	private:
-		VmaAllocator allocator = nullptr;
+		stdext::move_only<VmaAllocator> allocator;
 		VkDeviceSize size = 0;
 		VkBufferUsageFlags bufferUsage = 0;
 		VmaMemoryUsage allocationUsage = VmaMemoryUsage::VMA_MEMORY_USAGE_UNKNOWN;
@@ -82,7 +82,7 @@ namespace Rendering {
 	struct MappedBuffer {
 		MappedBuffer(VmaAllocator allocator, size_t size, VkBufferUsageFlags bufferUsage, VmaMemoryUsage allocationUsage);
 		MappedBuffer(MappedBuffer const&) = delete;
-		MappedBuffer(MappedBuffer&&) noexcept;
+		MappedBuffer(MappedBuffer&&) noexcept = default;
 		~MappedBuffer();
 
 		inline operator VkBuffer() const { return buffer; }
@@ -106,7 +106,7 @@ namespace Rendering {
 		}
 
 	private:
-		VmaAllocator allocator = nullptr;
+		stdext::move_only<VmaAllocator> allocator;
 		VkDeviceSize size = 0;
 		VkBufferUsageFlags bufferUsage = 0;
 		VmaMemoryUsage allocationUsage = VmaMemoryUsage::VMA_MEMORY_USAGE_UNKNOWN;

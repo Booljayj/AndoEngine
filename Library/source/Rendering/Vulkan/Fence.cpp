@@ -14,12 +14,6 @@ namespace Rendering {
 		}
 	}
 
-	Fence::Fence(Fence&& other) noexcept
-		: device(other.device), fence(other.fence)
-	{
-		other.device = nullptr;
-	}
-
 	Fence::~Fence() {
 		if (device) {
 			vkWaitForFences(device, 1, &fence, VK_TRUE, std::numeric_limits<uint64_t>::max());

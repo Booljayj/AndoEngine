@@ -6,7 +6,7 @@ namespace Rendering {
 	public:
 		CommandPool(VkDevice inDevice, uint32_t queueFamilyIndex);
 		CommandPool(CommandPool const&) = delete;
-		CommandPool(CommandPool&&) noexcept;
+		CommandPool(CommandPool&&) noexcept = default;
 		~CommandPool();
 
 		inline operator VkCommandPool() const { return pool; }
@@ -21,7 +21,7 @@ namespace Rendering {
 		void DestroyBuffers(std::span<VkCommandBuffer const> buffers);
 
 	private:
-		VkDevice device = nullptr;
+		stdext::move_only<VkDevice> device;
 		VkCommandPool pool = nullptr;
 	};
 

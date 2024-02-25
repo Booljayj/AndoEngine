@@ -44,11 +44,11 @@ namespace Rendering {
 		
 		FrameSynchronization(VkDevice inDevice);
 		FrameSynchronization(FrameSynchronization const&) = delete;
-		FrameSynchronization(FrameSynchronization&&) noexcept;
+		FrameSynchronization(FrameSynchronization&&) noexcept = default;
 		~FrameSynchronization();
 
 	private:
-		VkDevice device = nullptr;
+		stdext::move_only<VkDevice> device;
 	};
 
 	/** Resources used for a single frame of rendering */
@@ -94,7 +94,7 @@ namespace Rendering {
 	struct FrameOrganizer {
 		FrameOrganizer(VkDevice device, VmaAllocator allocator, SurfaceQueues const& queues, Swapchain const& swapchain, UniformLayouts const& uniformLayouts, EBuffering buffering);
 		FrameOrganizer(FrameOrganizer const&) = delete;
-		FrameOrganizer(FrameOrganizer&&) noexcept;
+		FrameOrganizer(FrameOrganizer&&) noexcept = default;
 
 		friend RenderObjectsHandleCollection& operator<<(RenderObjectsHandleCollection& collection, FrameOrganizer& organizer);
 
@@ -110,7 +110,7 @@ namespace Rendering {
 	private:
 		using PoolSizesType = std::array<VkDescriptorPoolSize, 3>;
 
-		VkDevice device = nullptr;
+		stdext::move_only<VkDevice> device;
 		VkSwapchainKHR swapchain = nullptr;
 		struct {
 			VkQueue graphics = nullptr;

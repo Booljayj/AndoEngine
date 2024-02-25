@@ -157,12 +157,6 @@ namespace Rendering {
 		}
 	}
 
-	GraphicsPipelineResources::GraphicsPipelineResources(GraphicsPipelineResources&& other) noexcept
-		: pipeline(other.pipeline), layouts({ other.layouts.set, other.layouts.pipeline }), device(other.device)
-	{
-		other.device = nullptr;
-	}
-
 	GraphicsPipelineResources::~GraphicsPipelineResources() {
 		if (device) {
 			vkDestroyPipeline(device, pipeline, nullptr);

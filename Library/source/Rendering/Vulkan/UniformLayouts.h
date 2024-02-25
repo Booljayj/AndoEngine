@@ -8,10 +8,10 @@ namespace Rendering {
 
 		UniformLayouts(VkDevice device);
 		UniformLayouts(UniformLayouts const&) = delete;
-		UniformLayouts(UniformLayouts&&) noexcept;
+		UniformLayouts(UniformLayouts&&) noexcept = default;
 		~UniformLayouts();
 
 	private:
-		VkDevice device = nullptr;
+		stdext::move_only<VkDevice> device;
 	};
 }

@@ -8,12 +8,6 @@ namespace Rendering {
 		: device(device), view(view), framebuffer(framebuffer)
 	{}
 
-	Framebuffer::Framebuffer(Framebuffer&& other) noexcept
-		: device(other.device), view(other.view), framebuffer(other.framebuffer)
-	{
-		other.device = nullptr;
-	}
-
 	Framebuffer::~Framebuffer() {
 		if (device) {
 			vkDestroyFramebuffer(device, framebuffer, nullptr);
@@ -76,12 +70,6 @@ namespace Rendering {
 
 			framebuffers.emplace_back(device, imageViewHandle.Release(), framebuffer);
 		}
-	}
-
-	SurfaceRenderPass::FramebufferResources::FramebufferResources(FramebufferResources&& other) noexcept
-		: device(other.device), sharedImageViews(other.sharedImageViews), framebuffers(std::move(other.framebuffers))
-	{
-		other.device = nullptr;
 	}
 
 	SurfaceRenderPass::FramebufferResources::~FramebufferResources() {
@@ -186,12 +174,6 @@ namespace Rendering {
 			LOG(Vulkan, Error, "Failed to create main render pass");
 			throw FormatType<std::runtime_error>("Failed to create surface render pass");
 		}
-	}
-
-	SurfaceRenderPass::SurfaceRenderPass(SurfaceRenderPass&& other) noexcept
-		: device(other.device), pass(other.pass)
-	{
-		other.device = nullptr;
 	}
 
 	SurfaceRenderPass::~SurfaceRenderPass() {

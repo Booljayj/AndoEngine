@@ -35,13 +35,6 @@ namespace Rendering {
 		}
 	}
 
-	Buffer::Buffer(Buffer&& other) noexcept
-		: allocator(other.allocator), size(other.size), bufferUsage(other.bufferUsage), allocationUsage(other.allocationUsage)
-		, allocation(other.allocation), buffer(other.buffer)
-	{
-		other.allocator = nullptr;
-	}
-
 	Buffer::~Buffer() {
 		if (allocator) vmaDestroyBuffer(allocator, buffer, allocation);
 	}
@@ -96,13 +89,6 @@ namespace Rendering {
 			vmaDestroyBuffer(allocator, buffer, allocation);
 			throw FormatType<std::runtime_error>("Unable to map memory allocated for MappedBuffer. This may mean the wrong VmaMemoryUsage was provided.");
 		}
-	}
-
-	MappedBuffer::MappedBuffer(MappedBuffer&& other) noexcept
-		: allocator(other.allocator), size(other.size), bufferUsage(other.bufferUsage), allocationUsage(other.allocationUsage)
-		, allocation(other.allocation), buffer(other.buffer), mapped(other.mapped)
-	{
-		other.allocator = nullptr;
 	}
 
 	MappedBuffer::~MappedBuffer() {

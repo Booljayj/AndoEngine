@@ -16,12 +16,6 @@ namespace Rendering {
 		}
 	}
 
-	DescriptorPool::DescriptorPool(DescriptorPool&& other) noexcept
-		: device(other.device), pool(other.pool)
-	{
-		other.device = nullptr;
-	}
-
 	DescriptorPool::~DescriptorPool() {
 		if (device) vkDestroyDescriptorPool(device, pool, nullptr);
 	}

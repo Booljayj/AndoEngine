@@ -5,7 +5,7 @@ namespace Rendering {
 	struct Fence {
 		Fence(VkDevice device);
 		Fence(Fence const&) = delete;
-		Fence(Fence&&) noexcept;
+		Fence(Fence&&) noexcept = default;
 		~Fence();
 
 		inline operator VkFence() const { return fence; }
@@ -23,7 +23,7 @@ namespace Rendering {
 		void Reset() const;
 
 	private:
-		VkDevice device = nullptr;
+		stdext::move_only<VkDevice> device;
 		VkFence fence = nullptr;
 	};
 }

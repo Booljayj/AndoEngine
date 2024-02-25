@@ -18,11 +18,11 @@ namespace Rendering {
 
 		Framebuffer(VkDevice device, VkImageView view, VkFramebuffer framebuffer);
 		Framebuffer(Framebuffer const&) = delete;
-		Framebuffer(Framebuffer&& other) noexcept;
+		Framebuffer(Framebuffer&& other) noexcept = default;
 		~Framebuffer();
 
 	private:
-		VkDevice device = nullptr;
+		stdext::move_only<VkDevice> device;
 		VkImageView view = nullptr;
 		VkFramebuffer framebuffer = nullptr;
 	};
@@ -49,11 +49,11 @@ namespace Rendering {
 
 			FramebufferResources(VkDevice device, Swapchain const& swapchain, SurfaceRenderPass const& pass);
 			FramebufferResources(FramebufferResources const&) = delete;
-			FramebufferResources(FramebufferResources&& other) noexcept;
+			FramebufferResources(FramebufferResources&& other) noexcept = default;
 			~FramebufferResources();
 
 		private:
-			VkDevice device = nullptr;
+			stdext::move_only<VkDevice> device;
 			SharedAttachmentImageViews sharedImageViews;
 			std::vector<Framebuffer> framebuffers;
 		};
@@ -71,11 +71,11 @@ namespace Rendering {
 
 		SurfaceRenderPass(Device const& inDevice, VkFormat format);
 		SurfaceRenderPass(const SurfaceRenderPass&) = delete;
-		SurfaceRenderPass(SurfaceRenderPass&&) noexcept;
+		SurfaceRenderPass(SurfaceRenderPass&&) noexcept = default;
 		~SurfaceRenderPass();
 
 	private:
-		VkDevice device = nullptr;
+		stdext::move_only<VkDevice> device;
 		VkRenderPass pass = nullptr;
 		stdext::enum_array<VkClearValue, EAttachments> clearValues;
 	};

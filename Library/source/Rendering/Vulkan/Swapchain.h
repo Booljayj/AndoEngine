@@ -15,7 +15,7 @@ namespace Rendering {
 	public:
 		Swapchain(VkDevice device, Swapchain* previous, PhysicalDevicePresentation const& presentation, PhysicalDeviceCapabilities const& capabilities, Surface const& surface);
 		Swapchain(Swapchain const&) = delete;
-		Swapchain(Swapchain&&) noexcept;
+		Swapchain(Swapchain&&) noexcept = default;
 		~Swapchain();
 
 		inline operator VkSwapchainKHR() const { return swapchain; }
@@ -42,7 +42,7 @@ namespace Rendering {
 		}
 
 	private:
-		VkDevice device = nullptr;
+		stdext::move_only<VkDevice> device;
 		VkSwapchainKHR swapchain = nullptr;
 
 		/** The images in the swapchain */

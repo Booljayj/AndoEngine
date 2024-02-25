@@ -7,13 +7,13 @@ namespace Rendering {
 	public:
 		DescriptorPool(VkDevice device, std::span<VkDescriptorPoolSize const> sizes, uint32_t maxNumSets);
 		DescriptorPool(DescriptorPool const&) = delete;
-		DescriptorPool(DescriptorPool&&) noexcept;
+		DescriptorPool(DescriptorPool&&) noexcept = default;
 		~DescriptorPool();
 
 		inline operator VkDescriptorPool() const { return pool; }
 
 	private:
-		VkDevice device = nullptr;
+		stdext::move_only<VkDevice> device;
 		VkDescriptorPool pool = nullptr;
 	};
 

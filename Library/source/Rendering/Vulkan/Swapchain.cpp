@@ -99,13 +99,6 @@ namespace Rendering {
 		vkGetSwapchainImagesKHR(device, swapchain, &numImages, images.data());
 	}
 
-	Swapchain::Swapchain(Swapchain&& other) noexcept
-		: device(other.device), swapchain(other.swapchain), images(std::move(other.images))
-		, surfaceFormat(other.surfaceFormat), presentMode(other.presentMode), extent(other.extent), preTransform(other.preTransform)
-	{
-		other.device = nullptr;
-	}
-
 	Swapchain::~Swapchain() {
 		if (device) {
 			vkDeviceWaitIdle(device);

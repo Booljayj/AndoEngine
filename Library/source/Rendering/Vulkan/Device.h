@@ -17,7 +17,7 @@ namespace Rendering {
 
 		Device(Framework const& framework, PhysicalDeviceDescription const& physical, VkPhysicalDeviceFeatures features, ExtensionsView extensions, QueueRequests const& requests);
 		Device(Device const&) = delete;
-		Device(Device&&) noexcept;
+		Device(Device&&) noexcept = default;
 		~Device();
 
 		inline operator VkDevice() const { return device; }
@@ -36,7 +36,7 @@ namespace Rendering {
 
 	private:
 		PhysicalDeviceDescription const& physical;
-		VkDevice device = nullptr;
+		stdext::move_only<VkDevice> device;
 		VmaAllocator allocator = nullptr;
 #ifdef VULKAN_DEBUG
 		PFN_vkSetDebugUtilsObjectNameEXT functionSetDebugName = nullptr;
