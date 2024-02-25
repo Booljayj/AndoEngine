@@ -5,7 +5,7 @@
 namespace Rendering {
 	struct DescriptorPool {
 	public:
-		DescriptorPool(VkDevice inDevice, std::span<VkDescriptorPoolSize const> sizes, size_t maxNumSets);
+		DescriptorPool(VkDevice device, std::span<VkDescriptorPoolSize const> sizes, uint32_t maxNumSets);
 		DescriptorPool(DescriptorPool const&) = delete;
 		DescriptorPool(DescriptorPool&&) noexcept;
 		~DescriptorPool();

@@ -1,13 +1,14 @@
 #include "Rendering/Vulkan/Commands.h"
 
 namespace Rendering {
-	CommandPool::CommandPool(VkDevice inDevice, uint32_t queueFamilyIndex)
-		: device(inDevice)
+	CommandPool::CommandPool(VkDevice device, uint32_t queueFamilyIndex)
+		: device(device)
 	{
-		VkCommandPoolCreateInfo poolInfo{};
-		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		poolInfo.queueFamilyIndex = queueFamilyIndex;
-		poolInfo.flags = 0; // Optional
+		VkCommandPoolCreateInfo const poolInfo{
+			.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+			.flags = 0, // Optional
+			.queueFamilyIndex = queueFamilyIndex,
+		};
 
 		if (vkCreateCommandPool(device, &poolInfo, nullptr, &pool) != VK_SUCCESS || !pool) {
 			LOG(Vulkan, Error, "Failed to create command pool");
@@ -34,11 +35,12 @@ namespace Rendering {
 	}
 
 	VkCommandBuffer CommandPool::CreateBuffer(VkCommandBufferLevel level) {
-		VkCommandBufferAllocateInfo bufferAllocationInfo{};
-		bufferAllocationInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		bufferAllocationInfo.commandPool = pool;
-		bufferAllocationInfo.level = level;
-		bufferAllocationInfo.commandBufferCount = 1;
+		VkCommandBufferAllocateInfo const bufferAllocationInfo{
+			.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+			.commandPool = pool,
+			.level = level,
+			.commandBufferCount = 1,
+		};
 
 		VkCommandBuffer buffer = nullptr;
 		if (vkAllocateCommandBuffers(device, &bufferAllocationInfo, &buffer) != VK_SUCCESS || !buffer) {
@@ -52,15 +54,16 @@ namespace Rendering {
 		vkFreeCommandBuffers(device, pool, 1, &buffer);
 	}
 
-	std::vector<VkCommandBuffer> CommandPool::CreateBuffers(size_t numBuffers, VkCommandBufferLevel level) {
+	std::vector<VkCommandBuffer> CommandPool::CreateBuffers(uint32_t numBuffers, VkCommandBufferLevel level) {
 		if (numBuffers < 1) throw std::runtime_error{ "Cannot create a nonzero number of buffers" };
 
-		VkCommandBufferAllocateInfo bufferAllocationInfo{};
-		bufferAllocationInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		bufferAllocationInfo.commandPool = pool;
-		bufferAllocationInfo.level = level;
-		bufferAllocationInfo.commandBufferCount = numBuffers;
-
+		VkCommandBufferAllocateInfo const bufferAllocationInfo{
+			.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+			.commandPool = pool,
+			.level = level,
+			.commandBufferCount = numBuffers,
+		};
+		
 		std::vector<VkCommandBuffer> buffers;
 		buffers.resize(numBuffers, nullptr);
 
@@ -75,14 +78,15 @@ namespace Rendering {
 		vkFreeCommandBuffers(device, pool, buffers.size(), buffers.data());
 	}
 
-	ScopedCommands::ScopedCommands(VkCommandBuffer inBuffer, VkCommandBufferUsageFlags flags, VkCommandBufferInheritanceInfo const* inheritance)
-		: buffer(inBuffer)
+	ScopedCommands::ScopedCommands(VkCommandBuffer buffer, VkCommandBufferUsageFlags flags, VkCommandBufferInheritanceInfo const* inheritance)
+		: buffer(buffer)
 	{
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.flags = flags;
-		beginInfo.pInheritanceInfo = inheritance;
-
+		VkCommandBufferBeginInfo const beginInfo{
+			.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+			.flags = flags,
+			.pInheritanceInfo = inheritance,
+		};
+		
 		if (vkBeginCommandBuffer(buffer, &beginInfo) != VK_SUCCESS) {
 			throw std::runtime_error{ "Failed to begin recording command buffer" };
 		}

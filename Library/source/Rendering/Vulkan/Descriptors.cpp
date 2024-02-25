@@ -1,15 +1,16 @@
 #include "Rendering/Vulkan/Descriptors.h"
 
 namespace Rendering {
-	DescriptorPool::DescriptorPool(VkDevice inDevice, std::span<VkDescriptorPoolSize const> sizes, size_t maxNumSets)
-		: device(inDevice)
+	DescriptorPool::DescriptorPool(VkDevice device, std::span<VkDescriptorPoolSize const> sizes, uint32_t maxNumSets)
+		: device(device)
 	{
-		VkDescriptorPoolCreateInfo descriptorPoolCI{};
-		descriptorPoolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		descriptorPoolCI.poolSizeCount = static_cast<uint32_t>(sizes.size());
-		descriptorPoolCI.pPoolSizes = sizes.data();
-		descriptorPoolCI.maxSets = maxNumSets;
-
+		VkDescriptorPoolCreateInfo const descriptorPoolCI{
+			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+			.maxSets = maxNumSets,
+			.poolSizeCount = static_cast<uint32_t>(sizes.size()),
+			.pPoolSizes = sizes.data(),
+		};
+		
 		if (vkCreateDescriptorPool(device, &descriptorPoolCI, nullptr, &pool) != VK_SUCCESS || !pool) {
 			throw std::runtime_error{ "Failed to create descriptor pool for resources" };
 		}

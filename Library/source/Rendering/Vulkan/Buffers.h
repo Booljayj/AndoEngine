@@ -12,6 +12,22 @@ namespace Rendering {
 		constexpr VkBufferUsageFlagBits Vertex = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 	}
 
+	/** Aliases for values in the VmaMemoryUsage enum */
+	namespace MemoryUsage {
+		constexpr VmaMemoryUsage Unknown = VMA_MEMORY_USAGE_UNKNOWN;
+		constexpr VmaMemoryUsage GPU_Only = VMA_MEMORY_USAGE_GPU_ONLY;
+		constexpr VmaMemoryUsage CPU_Only = VMA_MEMORY_USAGE_CPU_ONLY;
+		constexpr VmaMemoryUsage CPU_to_GPU = VMA_MEMORY_USAGE_CPU_TO_GPU;
+		constexpr VmaMemoryUsage GPU_to_CPU = VMA_MEMORY_USAGE_GPU_TO_CPU;
+		constexpr VmaMemoryUsage CPU_Copy = VMA_MEMORY_USAGE_CPU_COPY;
+		constexpr VmaMemoryUsage LazilyAllocated = VMA_MEMORY_USAGE_GPU_LAZILY_ALLOCATED;
+	}
+
+	namespace Concepts {
+		template<typename T>
+		concept BufferWritable = std::is_trivially_copyable_v<T> and std::is_trivially_destructible_v<T>;
+	}
+
 	/** A buffer and the memory allocation for it */
 	struct Buffer {
 		/** A scoped writing context for a vulkan buffer. Memory is mapped for CPU access while this exists. */
@@ -21,11 +37,11 @@ namespace Rendering {
 			~Writer();
 
 			/** Write a value at a specific offset in the buffer */
-			inline void Write(void const* begin, size_t size, size_t offset) const { memcpy(mapped + offset, begin, size); }
-			template<typename T>
-			inline void WriteValue(T const& value, size_t offset) const { Write(&value, sizeof(T), offset); }
-			template<typename T>
-			inline void WriteArray(std::span<T> values, size_t offset) const { Write(values.begin(), values.size() * sizeof(T), offset); }
+			template<Concepts::BufferWritable T>
+			inline void WriteSingle(T const& value, size_t offset) const { memcpy(mapped + offset, &value, sizeof(T)); }
+			/** Write a collection of values at a specific offset in the buffer */
+			template<Concepts::BufferWritable T>
+			inline void WriteMultiple(std::span<T const> values, size_t offset) const { memcpy(mapped + offset, values.begin(), values.size() * sizeof(T)); }
 
 		private:
 			friend struct Buffer;
@@ -37,7 +53,7 @@ namespace Rendering {
 			Writer(Buffer const&);
 		};
 
-		Buffer(VmaAllocator inAllocator, size_t inSize, VkBufferUsageFlags inBufferUsage, VmaMemoryUsage inAllocationUsage);
+		Buffer(VmaAllocator allocator, size_t size, VkBufferUsageFlags bufferUsage, VmaMemoryUsage allocationUsage);
 		Buffer(Buffer const&) = delete;
 		Buffer(Buffer&&) noexcept;
 		~Buffer();
@@ -64,7 +80,7 @@ namespace Rendering {
 
 	/** A buffer and the memory allocation for it. Memory is persistently mapped for CPU access. */
 	struct MappedBuffer {
-		MappedBuffer(VmaAllocator inAllocator, size_t inSize, VkBufferUsageFlags inBufferUsage, VmaMemoryUsage inAllocationUsage);
+		MappedBuffer(VmaAllocator allocator, size_t size, VkBufferUsageFlags bufferUsage, VmaMemoryUsage allocationUsage);
 		MappedBuffer(MappedBuffer const&) = delete;
 		MappedBuffer(MappedBuffer&&) noexcept;
 		~MappedBuffer();
@@ -80,11 +96,14 @@ namespace Rendering {
 		void Flush() const;
 
 		/** Write a value at a specific offset in the buffer */
-		inline void Write(void const* begin, size_t size, size_t offset) const { memcpy(mapped + offset, begin, size); }
-		template<typename T>
-		inline void WriteValue(T const& value, size_t offset) const { Write(&value, sizeof(T), offset); }
-		template<typename T>
-		inline void WriteArray(std::span<T> values, size_t offset) const { Write(values.begin(), values.size() * sizeof(T), offset); }
+		template<Concepts::BufferWritable T>
+		inline void WriteSingle(T const& value, size_t offset) const { memcpy(mapped + offset, &value, sizeof(T)); }
+		/** Write a collection of values at a specific offset in the buffer */
+		template<Concepts::BufferWritable T>
+		inline void WriteMultiple(std::span<T const> values, size_t offset) const {
+			auto const bytes = std::as_bytes(values);
+			memcpy(mapped + offset, bytes.data(), bytes.size());
+		}
 
 	private:
 		VmaAllocator allocator = nullptr;

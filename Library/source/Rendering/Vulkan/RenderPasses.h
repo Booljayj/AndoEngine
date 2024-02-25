@@ -3,7 +3,6 @@
 #include "Geometry/ScreenRect.h"
 #include "Rendering/Vulkan/Device.h"
 #include "Rendering/Vulkan/Swapchain.h"
-#include "Rendering/Vulkan/Utility.h"
 #include "Rendering/Vulkan/Vulkan.h"
 
 /**
@@ -17,7 +16,7 @@ namespace Rendering {
 	public:
 		inline operator VkFramebuffer() const { return framebuffer; }
 
-		Framebuffer(VkDevice inDevice, VkImageView inView, VkFramebuffer inFramebuffer);
+		Framebuffer(VkDevice device, VkImageView view, VkFramebuffer framebuffer);
 		Framebuffer(Framebuffer const&) = delete;
 		Framebuffer(Framebuffer&& other) noexcept;
 		~Framebuffer();
@@ -42,7 +41,7 @@ namespace Rendering {
 			Depth,
 			MAX
 		};
-		using SharedAttachmentImageViews = EnumBackedContainer<VkImageView, ESharedAttachments>;
+		using SharedAttachmentImageViews = stdext::enum_array<VkImageView, ESharedAttachments>;
 
 		struct FramebufferResources {
 		public:
@@ -78,7 +77,7 @@ namespace Rendering {
 	private:
 		VkDevice device = nullptr;
 		VkRenderPass pass = nullptr;
-		EnumBackedContainer<VkClearValue, EAttachments> clearValues;
+		stdext::enum_array<VkClearValue, EAttachments> clearValues;
 	};
 
 	// struct PostProcessRenderPass {
@@ -109,7 +108,7 @@ namespace Rendering {
 		SurfaceRenderPass surface;
 		//PostProcessRenderPass postProcess;
 
-		RenderPasses(Device const& inDevice, VkFormat format);
+		RenderPasses(Device const& device, VkFormat format);
 		RenderPasses(RenderPasses const&) = delete;
 		RenderPasses(RenderPasses&&) = default;
 	};

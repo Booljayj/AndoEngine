@@ -34,7 +34,7 @@ namespace Rendering {
 
 	/** A specific queue that was created on a device */
 	struct Queue : public QueueReference {
-		Queue(VkQueue inQueue, QueueReference inReference) : QueueReference(inReference), queue(inQueue) {}
+		Queue(VkQueue queue, QueueReference reference) : QueueReference(reference), queue(queue) {}
 
 		inline operator VkQueue() const { return queue; }
 

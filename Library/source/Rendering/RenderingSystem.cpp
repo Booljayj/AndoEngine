@@ -7,6 +7,7 @@
 #include "Rendering/Shader.h"
 #include "Rendering/StaticMesh.h"
 #include "Rendering/Vulkan/Buffers.h"
+#include "Rendering/Vulkan/Handles.h"
 #include "Rendering/Vulkan/RenderPasses.h"
 #include "Resources/Database.h"
 #include "Resources/Cache.h"
@@ -332,42 +333,39 @@ namespace Rendering {
 		size_t const indexOffset = vertexBytes;
 
 		//Create the staging buffer used to upload data to the GPU-only buffer
-		MappedBuffer staging{ *device, totalBytes, BufferUsage::TransferSrc, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_ONLY };
+		MappedBuffer staging{ *device, totalBytes, BufferUsage::TransferSrc, MemoryUsage::CPU_Only };
 
 		//Fill the staging buffer with the source data
-		const auto VertexWriteVisitor = [&](auto const& v) { staging.Write(v.data(), v.size() * sizeof(typename std::remove_reference_t<decltype(v)>::value_type), vertexOffset); };
-		std::visit(VertexWriteVisitor, mesh.vertices);
-		const auto IndexWriteVisitor = [&](auto const& v) { staging.Write(v.data(), v.size() * sizeof(typename std::remove_reference_t<decltype(v)>::value_type), indexOffset); };
-		std::visit(IndexWriteVisitor, mesh.indices);
+		std::visit([&](auto const& v) { staging.WriteMultiple(std::span{ v }, vertexOffset); }, mesh.vertices);
+		std::visit([&](auto const& v) { staging.WriteMultiple(std::span{ v }, indexOffset); }, mesh.indices);
 
 		//Create the final resources that will be used for this mesh
-		std::shared_ptr<MeshResources> resources = std::make_shared<MeshResources>(*device, totalBytes);
+		std::shared_ptr<MeshResources> const resources = std::make_shared<MeshResources>(*device, totalBytes);
 
 		//Allocate a command buffer for the transfer from the staging to the target buffer
-		VkCommandBufferAllocateInfo bufferAI{};
-		bufferAI.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		bufferAI.commandPool = pool;
-		bufferAI.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		bufferAI.commandBufferCount = 1;
+		VkCommandBufferAllocateInfo const bufferAI{
+			.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+			.commandPool = pool,
+			.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+			.commandBufferCount = 1,
+		};
 
-		TUniquePoolHandles<1, &vkFreeCommandBuffers> tempCommands{ *device, pool };
-		if (vkAllocateCommandBuffers(*device, &bufferAI, *tempCommands) != VK_SUCCESS) {
-			throw FormatType<std::runtime_error>("Failed to allocate command buffer for staging commands");
-		}
-
+		auto commandHandles = CommandBuffers::Create<1>(device->operator VkDevice(), pool, bufferAI, "Failed to allocate command buffer for staging commands");
+		
 		{
-			ScopedCommands const scope{ tempCommands[0], VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, nullptr };
+			ScopedCommands const scope{ commandHandles[0], VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, nullptr };
 
 			//Record the command to transfer from the staging buffer to the target buffer
-			VkBufferCopy copy{};
-			copy.srcOffset = 0; // Optional
-			copy.dstOffset = 0; // Optional
-			copy.size = totalBytes;
-			vkCmdCopyBuffer(tempCommands[0], staging, resources->buffer, 1, &copy);
+			VkBufferCopy const copy{
+				.srcOffset = 0, // Optional
+				.dstOffset = 0, // Optional
+				.size = totalBytes,
+			};
+			vkCmdCopyBuffer(commandHandles[0], staging, resources->buffer, 1, &copy);
 		}
 
 		//Submit the buffer and commands. We've successfully created everything
-		helper.Submit(tempCommands.Release()[0], std::move(staging));
+		helper.Submit(commandHandles.Release()[0], std::move(staging));
 
 		//Record the size and offset information. This is the primary way we'll know that the resources are valid
 		const auto CountVisitor = [](const auto& v) { return static_cast<uint32_t>(v.size()); };

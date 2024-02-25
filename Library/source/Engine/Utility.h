@@ -48,9 +48,6 @@ namespace Utility {
 	}
 }
 
-template<stdext::enumeration T>
-std::underlying_type_t<T> IndexOfEnum(T value) { return static_cast<std::underlying_type_t<T>>(value); }
-
 /** A size value in bytes. Used as a wrapper to distinguish a byte size from a raw number. */
 struct ByteSize {
 	uint64_t size = 0;

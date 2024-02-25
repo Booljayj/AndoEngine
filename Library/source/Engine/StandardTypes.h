@@ -210,6 +210,23 @@ namespace stdext {
 
 	template<typename T>
 	using shared_ref = not_null<std::shared_ptr<T>>;
+
+	/** An array that is indexed with a enum class type, typically with a size that matches the number of elements in the enum */
+	template<typename ValueType, enumeration EnumType, size_t Size = static_cast<size_t>(EnumType::MAX)>
+	struct enum_array {
+	public:
+		enum_array() { array.fill(ValueType{}); }
+		enum_array(EnumType value) { array.fill(static_cast<EnumType>(value)); }
+
+		ValueType& operator[](EnumType value) { return array[std::to_underlying(value)]; }
+		ValueType const& operator[](EnumType value) const { return array[std::to_underlying(value)]; }
+
+		uint32_t size() const { return static_cast<uint32_t>(EnumType::MAX); }
+		ValueType const* data() const { return array.data(); }
+
+	private:
+		std::array<ValueType, Size> array;
+	};
 }
 
 //============================================================

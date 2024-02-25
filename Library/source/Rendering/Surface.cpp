@@ -102,26 +102,32 @@ namespace Rendering {
 				SurfaceRenderPass::ScopedRecord const scopedRecord{ commands, passes.surface, surfaceFramebuffer, rect };
 
 				//Set the viewport and scissor that we are currently rendering for.
-				VkViewport viewport{};
-				viewport.x = 0.0f;
-				viewport.y = 0.0f;
-				swapchain->GetExtent(viewport.width, viewport.height);
-				viewport.minDepth = 0.0f;
-				viewport.maxDepth = 1.0f;
-
-				VkRect2D scissor{};
-				scissor.offset = { 0, 0 };
-				swapchain->GetExtent(scissor.extent.width, scissor.extent.height);
-
-				vkCmdSetViewport(commands, 0, 1, &viewport);
-				vkCmdSetScissor(commands, 0, 1, &scissor);
+				{
+					glm::u32vec2 const extent = swapchain->GetExtent();
+					VkViewport const viewport{
+						.x = 0.0f,
+						.y = 0.0f,
+						.width = static_cast<float>(extent.x),
+						.height = static_cast<float>(extent.y),
+						.minDepth = 0.0f,
+						.maxDepth = 1.0f,
+					};
+					VkRect2D const scissor{
+						.offset = { 0, 0 },
+						.extent = { extent.x, extent.y },
+					};
+					vkCmdSetViewport(commands, 0, 1, &viewport);
+					vkCmdSetScissor(commands, 0, 1, &scissor);
+				}
 
 				//Write global uniform values that can be accessed by shaders
-				GlobalUniforms global;
-				global.viewProjection = glm::identity<glm::mat4>();
-				global.viewProjectionInverse = glm::inverse(global.viewProjection);
-				global.time = 0;
-				uniforms.global.Write(global, 0);
+				uniforms.global.Write(
+					GlobalUniforms{
+						.viewProjection = glm::identity<glm::mat4>(),
+						.viewProjectionInverse = glm::inverse(glm::identity<glm::mat4>()),
+						.time = 0,
+					}
+				);
 
 				uint32_t objectIndex = 0;
 				for (const auto id : renderables) {
@@ -138,19 +144,21 @@ namespace Rendering {
 							Object,
 							MAX
 						};
-						EnumBackedContainer<uint32_t, EDynamicOffsets> offsets;
-						offsets[EDynamicOffsets::Object] = static_cast<uint32_t>(sizeof(ObjectUniforms) * objectIndex);
-
+						stdext::enum_array<uint32_t, EDynamicOffsets> offsets;
+						
 						//Write to the part of the object uniform buffer designated for this object
-						ObjectUniforms object;
-						object.modelViewProjection = glm::identity<glm::mat4>();
-						uniforms.object.Write(object, objectIndex);
+						offsets[EDynamicOffsets::Object] = uniforms.object.Write(
+							ObjectUniforms{
+								.modelViewProjection = glm::identity<glm::mat4>(),
+							},
+							objectIndex
+						);
 
 						//Bind the pipeline that will be used for rendering
 						vkCmdBindPipeline(commands, VK_PIPELINE_BIND_POINT_GRAPHICS, material->objects->pipeline);
 
 						//Bind the descriptor sets to use for this draw command
-						EnumBackedContainer<VkDescriptorSet, EGraphicsLayouts> sets;
+						stdext::enum_array<VkDescriptorSet, EGraphicsLayouts> sets;
 						sets[EGraphicsLayouts::Global] = uniforms.global;
 						sets[EGraphicsLayouts::Object] = uniforms.object;
 						//sets[EGraphicsLayouts::Material] = material->gpuResources->set;

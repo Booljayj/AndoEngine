@@ -16,20 +16,21 @@ namespace Rendering {
 		mapped = nullptr;
 	}
 
-	Buffer::Buffer(VmaAllocator inAllocator, size_t inSize, VkBufferUsageFlags inBufferUsage, VmaMemoryUsage inAllocationUsage)
-		: allocator(inAllocator), size(inSize), bufferUsage(inBufferUsage), allocationUsage(inAllocationUsage)
+	Buffer::Buffer(VmaAllocator allocator, size_t size, VkBufferUsageFlags bufferUsage, VmaMemoryUsage allocationUsage)
+		: allocator(allocator), size(size), bufferUsage(bufferUsage), allocationUsage(allocationUsage)
 	{
-		VkBufferCreateInfo bufferCI{};
-		bufferCI.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		bufferCI.size = size;
-		bufferCI.usage = bufferUsage;
-		bufferCI.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		VmaAllocationCreateInfo allocCI{};
-		allocCI.usage = allocationUsage;
-
-		VmaAllocationInfo info{};
-		if (vmaCreateBuffer(allocator, &bufferCI, &allocCI, &buffer, &allocation, &info) != VK_SUCCESS || !buffer || !allocation) {
+		VkBufferCreateInfo const bufferCI{
+			.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+			.size = size,
+			.usage = bufferUsage,
+			.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+		};
+		
+		VmaAllocationCreateInfo const allocCI{
+			.usage = allocationUsage,
+		};
+		
+		if (vmaCreateBuffer(allocator, &bufferCI, &allocCI, &buffer, &allocation, nullptr) != VK_SUCCESS || !buffer || !allocation) {
 			throw FormatType<std::runtime_error>("Unable to allocate {} bytes for buffer", size);
 		}
 	}
@@ -53,34 +54,38 @@ namespace Rendering {
 
 			vmaDestroyBuffer(allocator, buffer, allocation);
 
-			VkBufferCreateInfo bufferCI{};
-			bufferCI.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-			bufferCI.size = size;
-			bufferCI.usage = bufferUsage;
-			bufferCI.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			VkBufferCreateInfo const bufferCI{
+				.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+				.size = size,
+				.usage = bufferUsage,
+				.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+			};
 
-			VmaAllocationCreateInfo allocCI{};
-			allocCI.usage = allocationUsage;
-
+			VmaAllocationCreateInfo const allocCI{
+				.usage = allocationUsage,
+			};
+			
 			if (vmaCreateBuffer(allocator, &bufferCI, &allocCI, &buffer, &allocation, nullptr) != VK_SUCCESS || !buffer || !allocation) {
 				throw FormatType<std::runtime_error>("Unable to allocate {} bytes for buffer", size);
 			}
 		}
 	}
 
-	MappedBuffer::MappedBuffer(VmaAllocator inAllocator, size_t inSize, VkBufferUsageFlags inBufferUsage, VmaMemoryUsage inAllocationUsage)
-		: allocator(inAllocator), size(inSize), bufferUsage(inBufferUsage), allocationUsage(inAllocationUsage)
+	MappedBuffer::MappedBuffer(VmaAllocator allocator, size_t size, VkBufferUsageFlags bufferUsage, VmaMemoryUsage allocationUsage)
+		: allocator(allocator), size(size), bufferUsage(bufferUsage), allocationUsage(allocationUsage)
 	{
-		VkBufferCreateInfo bufferCI{};
-		bufferCI.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		bufferCI.size = size;
-		bufferCI.usage = bufferUsage;
-		bufferCI.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		VmaAllocationCreateInfo allocCI{};
-		allocCI.usage = allocationUsage;
-		allocCI.flags = VmaAllocationCreateFlagBits::VMA_ALLOCATION_CREATE_MAPPED_BIT;
-
+		VkBufferCreateInfo const bufferCI{
+			.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+			.size = size,
+			.usage = bufferUsage,
+			.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+		};
+		
+		VmaAllocationCreateInfo const allocCI{
+			.flags = VmaAllocationCreateFlagBits::VMA_ALLOCATION_CREATE_MAPPED_BIT,
+			.usage = allocationUsage,
+		};
+		
 		VmaAllocationInfo info{};
 		if (vmaCreateBuffer(allocator, &bufferCI, &allocCI, &buffer, &allocation, &info) != VK_SUCCESS || !buffer || !allocation) {
 			throw FormatType<std::runtime_error>("Unable to allocate {} bytes for buffer", size);
@@ -112,16 +117,18 @@ namespace Rendering {
 
 			vmaDestroyBuffer(allocator, buffer, allocation);
 
-			VkBufferCreateInfo bufferCI{};
-			bufferCI.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-			bufferCI.size = size;
-			bufferCI.usage = bufferUsage;
-			bufferCI.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-			VmaAllocationCreateInfo allocCI{};
-			allocCI.usage = allocationUsage;
-			allocCI.flags = VmaAllocationCreateFlagBits::VMA_ALLOCATION_CREATE_MAPPED_BIT;
-
+			VkBufferCreateInfo const bufferCI{
+				.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+				.size = size,
+				.usage = bufferUsage,
+				.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+			};
+			
+			VmaAllocationCreateInfo const allocCI{
+				.flags = VmaAllocationCreateFlagBits::VMA_ALLOCATION_CREATE_MAPPED_BIT,
+				.usage = allocationUsage,
+			};
+			
 			VmaAllocationInfo info{};
 			if (vmaCreateBuffer(allocator, &bufferCI, &allocCI, &buffer, &allocation, &info) != VK_SUCCESS || !buffer || !allocation) {
 				throw FormatType<std::runtime_error>("Unable to allocate {0} bytes for buffer", size);

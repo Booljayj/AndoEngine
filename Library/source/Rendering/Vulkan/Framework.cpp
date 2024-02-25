@@ -36,32 +36,34 @@ namespace Rendering {
 			}
 
 			//Application info
-			VkApplicationInfo appInfo{};
-			appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-			//@todo Get this information from a common, configurable location
-			appInfo.pApplicationName = "DefaultProject";
-			appInfo.applicationVersion = VK_MAKE_VERSION(0, 1, 0);
-			//Engine info
-			//@todo Get this information from a common location
-			appInfo.pEngineName = "AndoEngine";
-			appInfo.engineVersion = VK_MAKE_VERSION(0, 1, 0);
-			//Vulkan info
-			appInfo.apiVersion = GetMinVersion();
-
-			VkInstanceCreateInfo instanceCI{};
-			instanceCI.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-			instanceCI.pApplicationInfo = &appInfo;
-			//Extensions
-			instanceCI.enabledExtensionCount = static_cast<uint32_t>(requiredExtensions.size());
-			instanceCI.ppEnabledExtensionNames = requiredExtensions.data();
-			//Validation layers
-			instanceCI.enabledLayerCount = static_cast<uint32_t>(requiredLayers.size());
-			instanceCI.ppEnabledLayerNames = requiredLayers.data();
+			VkApplicationInfo const appInfo{
+				.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+				//@todo Get this information from a common, configurable location
+				.pApplicationName = "DefaultProject",
+				.applicationVersion = VK_MAKE_VERSION(0, 1, 0),
+				//Engine info
+				//@todo Get this information from a common location
+				.pEngineName = "AndoEngine",
+				.engineVersion = VK_MAKE_VERSION(0, 1, 0),
+				//Vulkan info
+				.apiVersion = GetMinVersion(),
+			};
+			
+			VkInstanceCreateInfo const instanceCI{
+				.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
 #ifdef VULKAN_DEBUG
-			//Debug messenger for messages that are sent during instance creation
-			instanceCI.pNext = &messengerCI;
+				//Debug messenger for messages that are sent during instance creation
+				.pNext = &messengerCI,
 #endif
-
+				.pApplicationInfo = &appInfo,
+				//Validation layers
+				.enabledLayerCount = static_cast<uint32_t>(requiredLayers.size()),
+				.ppEnabledLayerNames = requiredLayers.data(),
+				//Extensions
+				.enabledExtensionCount = static_cast<uint32_t>(requiredExtensions.size()),
+				.ppEnabledExtensionNames = requiredExtensions.data(),
+			};
+			
 			if (vkCreateInstance(&instanceCI, nullptr, &instance) != VK_SUCCESS || !instance) {
 				throw FormatType<std::runtime_error>("Failed to create Vulkan instance");
 			}
@@ -235,20 +237,19 @@ namespace Rendering {
 	}
 
 	VkDebugUtilsMessengerCreateInfoEXT Framework::GetDebugUtilsMessengerCreateInfo() {
-		VkDebugUtilsMessengerCreateInfoEXT messengerCI = {};
-		messengerCI.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-		messengerCI.messageSeverity =
-			//VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-			//VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
-			VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-			VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-		messengerCI.messageType =
-			//VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-			VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-			VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-		messengerCI.pfnUserCallback = &Framework::VulkanDebugCallback;
-
-		return messengerCI;
+		return VkDebugUtilsMessengerCreateInfoEXT{
+			.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
+			.messageSeverity =
+				//VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+				//VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
+				VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+				VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
+			.messageType =
+				//VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+				VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+				VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
+			.pfnUserCallback = &Framework::VulkanDebugCallback,
+		};
 	}
 #endif
 }

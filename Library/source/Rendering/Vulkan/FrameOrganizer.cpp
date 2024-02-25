@@ -1,11 +1,12 @@
 #include "Rendering/Vulkan/FrameOrganizer.h"
+#include "Rendering/Vulkan/Handles.h"
 #include "Rendering/UniformTypes.h"
 
 namespace Rendering {
-	FrameUniforms::FrameUniforms(VkDevice inDevice, UniformLayouts const& uniformLayouts, VkDescriptorPool pool, VmaAllocator allocator)
-		: sets(inDevice, pool, { uniformLayouts.global, uniformLayouts.object })
-		, global(inDevice, sets[0], 1, allocator)
-		, object(inDevice, sets[1], 512, allocator)
+	FrameUniforms::FrameUniforms(VkDevice device, UniformLayouts const& uniformLayouts, VkDescriptorPool pool, VmaAllocator allocator)
+		: sets(device, pool, { uniformLayouts.global, uniformLayouts.object })
+		, global(device, sets[0], 1, allocator)
+		, object(device, sets[1], 512, allocator)
 	{}
 
 	FrameUniforms::FrameUniforms(FrameUniforms&& other) noexcept
@@ -17,20 +18,15 @@ namespace Rendering {
 		, fence(inDevice)
 	{
 		//Create the semaphores
-		VkSemaphoreCreateInfo semaphoreInfo{};
-		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+		VkSemaphoreCreateInfo const semaphoreInfo{
+			.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+		};
 
-		TUniqueHandle<vkDestroySemaphore> tempImageAvailable{ device };
-		if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, *tempImageAvailable) != VK_SUCCESS || !tempImageAvailable) {
-			throw FormatType<std::runtime_error>("Failed to create image available semaphore");
-		}
-		TUniqueHandle<vkDestroySemaphore> tempRenderFinished{ device };
-		if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, *tempRenderFinished) != VK_SUCCESS || !tempRenderFinished) {
-			throw FormatType<std::runtime_error>("Failed to create render finished semaphore");
-		}
+		auto imageAvailableHandle = Semaphore::Create(device, semaphoreInfo, "Failed to create image available semaphore");
+		auto renderFinishedHandle = Semaphore::Create(device, semaphoreInfo, "Failed to create render finished semaphore");
 
-		imageAvailable = tempImageAvailable.Release();
-		renderFinished = tempRenderFinished.Release();
+		imageAvailable = imageAvailableHandle.Release();
+		renderFinished = renderFinishedHandle.Release();
 	}
 
 	FrameSynchronization::FrameSynchronization(FrameSynchronization&& other) noexcept
@@ -161,42 +157,46 @@ namespace Rendering {
 		//Reset the fence for this frame, so we can start another rendering process that it will track
 		frame.sync.fence.Reset();
 
-		VkSubmitInfo submitInfo{};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
+		//Set up information for how commands should be process when submitted to the queue
 		VkSemaphore const waitSemaphores[] = { frame.sync.imageAvailable };
 		VkPipelineStageFlags const waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 		static_assert(std::size(waitSemaphores) == std::size(waitStages), "Number of semaphores must equal number of stages");
-		submitInfo.waitSemaphoreCount = static_cast<uint32_t>(std::size(waitSemaphores));
-		submitInfo.pWaitSemaphores = waitSemaphores;
-		submitInfo.pWaitDstStageMask = waitStages;
-
-		submitInfo.commandBufferCount = static_cast<uint32_t>(commands.size());
-		submitInfo.pCommandBuffers = commands.data();
 
 		VkSemaphore const signalSemaphores[] = { frame.sync.renderFinished };
-		submitInfo.signalSemaphoreCount = static_cast<uint32_t>(std::size(signalSemaphores));
-		submitInfo.pSignalSemaphores = signalSemaphores;
+
+		VkSubmitInfo const submitInfo{
+			.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+			.waitSemaphoreCount = static_cast<uint32_t>(std::size(waitSemaphores)),
+			.pWaitSemaphores = waitSemaphores,
+			.pWaitDstStageMask = waitStages,
+
+			.commandBufferCount = static_cast<uint32_t>(commands.size()),
+			.pCommandBuffers = commands.data(),
+			
+			.signalSemaphoreCount = static_cast<uint32_t>(std::size(signalSemaphores)),
+			.pSignalSemaphores = signalSemaphores,
+		};
 
 		//Submit the actual command buffer
 		if (vkQueueSubmit(queue.graphics, 1, &submitInfo, frame.sync.fence) != VK_SUCCESS) {
 			throw FormatType<std::runtime_error>("Failed to submit command buffer to qraphics queue");
 		}
 
-		//Set up information for how to present the rendered image
-		VkPresentInfoKHR presentInfo{};
-		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
-		presentInfo.waitSemaphoreCount = 1;
-		presentInfo.pWaitSemaphores = signalSemaphores;
-
+		//Set up information for how to present the rendered image once commands are finished on the queue
 		VkSwapchainKHR const swapchains[] = { swapchain };
-		presentInfo.swapchainCount = static_cast<uint32_t>(std::size(swapchains));
-		presentInfo.pSwapchains = swapchains;
-		presentInfo.pImageIndices = &currentImageIndex;
+		
+		VkPresentInfoKHR const presentInfo{
+			.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+			.waitSemaphoreCount = 1,
+			.pWaitSemaphores = signalSemaphores,
 
-		presentInfo.pResults = nullptr; //Optional
+			.swapchainCount = static_cast<uint32_t>(std::size(swapchains)),
+			.pSwapchains = swapchains,
+			.pImageIndices = &currentImageIndex,
 
+			.pResults = nullptr, //Optional
+		};
+		
 		if (vkQueuePresentKHR(queue.present, &presentInfo) != VK_SUCCESS) {
 			throw FormatType<std::runtime_error>("Failed to present image");
 		}

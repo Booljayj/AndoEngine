@@ -17,7 +17,7 @@ namespace Rendering {
 		/** Queue families on this device that can be used for graphics operations */
 		std::vector<QueueFamilyDescription> families;
 
-		PhysicalDeviceDescription(VkPhysicalDevice inDevice);
+		PhysicalDeviceDescription(VkPhysicalDevice device);
 		inline operator VkPhysicalDevice() const { return device; }
 		inline bool operator==(VkPhysicalDevice other) const { return device == other; }
 

@@ -17,7 +17,7 @@ namespace Rendering {
 		VkCommandBuffer CreateBuffer(VkCommandBufferLevel level);
 		void DestroyBuffer(VkCommandBuffer buffer);
 
-		std::vector<VkCommandBuffer> CreateBuffers(size_t numBuffers, VkCommandBufferLevel level);
+		std::vector<VkCommandBuffer> CreateBuffers(uint32_t numBuffers, VkCommandBufferLevel level);
 		void DestroyBuffers(std::span<VkCommandBuffer const> buffers);
 
 	private:
@@ -27,7 +27,7 @@ namespace Rendering {
 
 	/** A scope within which commands can be written to the provided buffer */
 	struct ScopedCommands {
-		ScopedCommands(VkCommandBuffer inBuffer, VkCommandBufferUsageFlags flags, VkCommandBufferInheritanceInfo const* inheritance);
+		ScopedCommands(VkCommandBuffer buffer, VkCommandBufferUsageFlags flags, VkCommandBufferInheritanceInfo const* inheritance);
 		ScopedCommands(ScopedCommands const&) = delete;
 		ScopedCommands(ScopedCommands&&) = delete;
 		~ScopedCommands();

@@ -56,8 +56,8 @@ namespace Rendering {
 
 		VkIndexType indexType = VK_INDEX_TYPE_MAX_ENUM;
 
-		MeshResources(VmaAllocator inAllocator, size_t inCapacity);
+		MeshResources(VmaAllocator allocator, size_t capacity);
 		MeshResources(MeshResources const&) = delete;
-		MeshResources(MeshResources&&) noexcept;
+		MeshResources(MeshResources&&) noexcept = default;
 	};
 }

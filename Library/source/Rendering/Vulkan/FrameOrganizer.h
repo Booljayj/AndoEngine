@@ -31,7 +31,7 @@ namespace Rendering {
 		GlobalUniformsType global;
 		ObjectUniformsType object;
 
-		FrameUniforms(VkDevice inDevice, UniformLayouts const& uniformLayouts, VkDescriptorPool pool, VmaAllocator allocator);
+		FrameUniforms(VkDevice device, UniformLayouts const& uniformLayouts, VkDescriptorPool pool, VmaAllocator allocator);
 		FrameUniforms(FrameUniforms const&) = delete;
 		FrameUniforms(FrameUniforms&&) noexcept;
 	};
@@ -65,7 +65,7 @@ namespace Rendering {
 
 		RenderObjectsHandleCollection objects;
 
-		FrameResources(VkDevice inDevice, uint32_t graphicsQueueFamilyIndex, UniformLayouts const& uniformLayouts, VkDescriptorPool descriptorPool, VmaAllocator allocator);
+		FrameResources(VkDevice device, uint32_t graphicsQueueFamilyIndex, UniformLayouts const& uniformLayouts, VkDescriptorPool descriptorPool, VmaAllocator allocator);
 		FrameResources(FrameResources const&) = delete;
 		FrameResources(FrameResources&&) noexcept;
 

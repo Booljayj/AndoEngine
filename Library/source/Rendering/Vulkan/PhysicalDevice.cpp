@@ -3,8 +3,8 @@
 #include "Engine/Utility.h"
 
 namespace Rendering {
-	PhysicalDeviceDescription::PhysicalDeviceDescription(VkPhysicalDevice inDevice)
-		: device(inDevice)
+	PhysicalDeviceDescription::PhysicalDeviceDescription(VkPhysicalDevice device)
+		: device(device)
 	{
 		vkGetPhysicalDeviceProperties(device, &properties);
 		vkGetPhysicalDeviceFeatures(device, &features);

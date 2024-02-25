@@ -8,7 +8,7 @@ namespace Rendering {
 
 		UniformLayouts(VkDevice device);
 		UniformLayouts(UniformLayouts const&) = delete;
-		UniformLayouts(UniformLayouts&&);
+		UniformLayouts(UniformLayouts&&) noexcept;
 		~UniformLayouts();
 
 	private:

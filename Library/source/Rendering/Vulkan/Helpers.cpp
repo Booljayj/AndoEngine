@@ -23,11 +23,12 @@ namespace Rendering {
 		auto& entry = entries.emplace_back(shader->GetName());
 
 		if (shader->bytecode.size() > 0) {
-			VkShaderModuleCreateInfo moduleCI{};
-			moduleCI.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-			moduleCI.codeSize = shader->bytecode.size() * sizeof(decltype(shader->bytecode)::value_type);
-			moduleCI.pCode = shader->bytecode.data();
-
+			VkShaderModuleCreateInfo const moduleCI{
+				.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+				.codeSize = shader->bytecode.size() * sizeof(decltype(shader->bytecode)::value_type),
+				.pCode = shader->bytecode.data(),
+			};
+			
 			if (vkCreateShaderModule(device, &moduleCI, nullptr, &entry.module) != VK_SUCCESS || !entry.module) {
 				LOG(Vulkan, Error, "Failed to create shader module for shader {}", shader->GetName());
 			}
@@ -39,10 +40,11 @@ namespace Rendering {
 	MeshCreationHelper::MeshCreationHelper(VkDevice device, VkQueue queue, VkCommandPool pool)
 		: device(device), queue(queue), pool(pool)
 	{
-		VkFenceCreateInfo fenceCI{};
-		fenceCI.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-		fenceCI.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
+		VkFenceCreateInfo const fenceCI{
+			.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+			.flags = VK_FENCE_CREATE_SIGNALED_BIT,
+		};
+		
 		if (vkCreateFence(device, &fenceCI, nullptr, &fence) != VK_SUCCESS || !fence) {
 			throw std::runtime_error{ "Failed to create fence" };
 		}
@@ -75,10 +77,11 @@ namespace Rendering {
 		std::swap(pendingStagingBuffers, submittedStagingBuffers);
 
 		//Submit the current commands
-		VkSubmitInfo submitInfo{};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.commandBufferCount = submittedCommands.size();
-		submitInfo.pCommandBuffers = submittedCommands.data();
+		VkSubmitInfo const submitInfo{
+			.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+			.commandBufferCount = static_cast<uint32_t>(submittedCommands.size()),
+			.pCommandBuffers = submittedCommands.data(),
+		};
 		vkQueueSubmit(queue, 1, &submitInfo, fence);
 	}
 
@@ -88,7 +91,7 @@ namespace Rendering {
 
 		//Clean up the temporary resources from the previous flush
 		if (submittedCommands.size() > 0) {
-			vkFreeCommandBuffers(device, pool, submittedCommands.size(), submittedCommands.data());
+			vkFreeCommandBuffers(device, pool, static_cast<uint32_t>(submittedCommands.size()), submittedCommands.data());
 			submittedCommands.clear();
 			submittedStagingBuffers.clear();
 		}

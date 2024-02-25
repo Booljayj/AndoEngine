@@ -68,4 +68,12 @@ namespace TupleUtility {
 		template<typename T>
 		void const* operator()(T const& element) const { return static_cast<void const*>(&element); }
 	};
+
+	template<typename... Tuples>
+	struct TupleJoin {
+		using Type = decltype(std::tuple_cat(std::declval<Tuples>()...));
+	};
+
+	template<typename... Tuples>
+	using TupleJoin_T = TupleJoin<Tuples...>::Type;
 }

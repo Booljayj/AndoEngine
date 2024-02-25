@@ -4,9 +4,10 @@ namespace Rendering {
 	Fence::Fence(VkDevice device)
 		: device(device)
 	{
-		VkFenceCreateInfo fenceInfo{};
-		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+		VkFenceCreateInfo const fenceInfo{
+			.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+			.flags = VK_FENCE_CREATE_SIGNALED_BIT,
+		};
 
 		if (vkCreateFence(device, &fenceInfo, nullptr, &fence) != VK_SUCCESS || !fence) {
 			throw std::runtime_error{ "Failed to create fence" };
