@@ -18,6 +18,11 @@ add_subdirectory(modules/imgui-docking)
 target_include_directories(Library PUBLIC ${IMGUI_INCLUDE_DIR})
 target_link_libraries(Library PUBLIC IMGUI)
 
+#YAML module
+add_subdirectory(modules/yaml-cpp)
+target_include_directories(Library PUBLIC ${YAML_CPP_INCLUDE_DIR})
+target_link_libraries(Library PUBLIC yaml-cpp::yaml-cpp)
+
 #Optick module
 set(OPTICK_INSTALL_TARGETS OFF CACHE BOOL "" FORCE)
 set(OPTICK_USE_VULKAN ON CACHE BOOL "" FORCE)
@@ -33,6 +38,10 @@ target_include_directories(Library PRIVATE ${Boost_INCLUDE_DIR})
 #GLM library
 find_package(glm REQUIRED)
 target_link_libraries(Library PUBLIC glm::glm)
+
+#Abseil library
+find_package(absl CONFIG REQUIRED)
+target_link_libraries(Library PUBLIC absl::base)
 
 #EnTT library
 find_package(EnTT REQUIRED)

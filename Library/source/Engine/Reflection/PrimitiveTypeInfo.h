@@ -28,6 +28,7 @@ namespace Reflection {
 	}
 
 	L_REFLECT_PRIMITIVE(void);
+	L_REFLECT_PRIMITIVE(std::byte);
 	L_REFLECT_PRIMITIVE(bool);
 
 	L_REFLECT_PRIMITIVE(int8_t);

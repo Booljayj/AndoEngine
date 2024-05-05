@@ -25,8 +25,8 @@ namespace Resources {
 		 */
 		virtual size_t CollectGarbage(size_t limit = std::numeric_limits<size_t>::max()) = 0;
 
-	protected:
-
+		/** Create a resource, using the initializer function to assign values before notifying external systems about the new resource */
+		virtual std::shared_ptr<Resource> Create(StringID name, absl::FunctionRef<void(Resource&)> initializer) = 0;
 	};
 
 	/** An observer that can listen for when resources are created or destroyed by a specific cache */
@@ -69,7 +69,7 @@ namespace Resources {
 				for (size_t rnum = resources->size() - 1; count < limit && rnum > 0; --rnum) {
 					const size_t rindex = rnum - 1;
 
-					auto& resource = resources->operator[](rindex);
+					auto& resource = resources[rindex];
 					if (resource.use_count() == 1) {
 						std::swap(resource, resources->back());
 						NotifyDestroyed(resources->back());
@@ -82,25 +82,9 @@ namespace Resources {
 			return count;
 		}
 
-		/** Perform an operation on all resources in this cache. Stops iterating when the operation returns false. */
-		template<typename OperationType>
-			requires std::is_invocable_r_v<bool, OperationType, ResourceType&>
-		void ForEachResource(OperationType&& operation) const {
-			auto const resources = ts_resources.LockInclusive();
-
-			for (auto const& handle : *resources) {
-				if (!operation(*handle)) break;
-			}
-		}
-
-		/** Creates a new resource in the cache. Uses the initializer to potentially create it with existing values. Thread-safe. */
-		template<std::invocable<ResourceType&> InitializerType>
-		std::shared_ptr<ResourceType> Create(StringID id, stdext::shared_ref<Package> package, InitializerType&& initializer) {
-			//Create the new resource object. If we return before completing this method, then this will go out of scope and be destroyed.
-			std::shared_ptr<ResourceType> const resource = std::make_shared<ResourceType>(id);
-
-			//Attempt to add the resource to the package. This can throw if the package already contains a resource with this name.
-			ResourceUtility::MoveResource(resource, package);
+		virtual std::shared_ptr<Resource> Create(StringID name, absl::FunctionRef<void(Resource&)> initializer) override final {
+			//Create the new resource object.
+			std::shared_ptr<ResourceType> const resource = std::make_shared<ResourceType>(name);
 
 			//Record the new resource entry. The amount of bookkeeping needed is minimal here, so we release the lock as soon as the information is recorded.
 			//Releasing the lock also means the initializer can be recursive and potentially create other resources.
@@ -113,8 +97,19 @@ namespace Resources {
 			initializer(*resource);
 			//Broadcast to external systems that the resource has been created
 			NotifyCreated(resource);
-			
+
 			return resource;
+		}
+
+		/** Perform an operation on all resources in this cache. Stops iterating when the operation returns false. */
+		template<typename OperationType>
+			requires std::is_invocable_r_v<bool, OperationType, ResourceType&>
+		void ForEachResource(OperationType&& operation) const {
+			auto const resources = ts_resources.LockInclusive();
+
+			for (auto const& handle : *resources) {
+				if (!operation(*handle)) break;
+			}
 		}
 
 	protected:

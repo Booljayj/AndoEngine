@@ -106,6 +106,11 @@ namespace Reflection {
 
 		inline void const* GetImmutable(void const* instance) const { return immutableGetter(storage, instance); }
 		inline void* GetMutable(void* instance) const { return mutableGetter(storage, instance); }
+		
+		/** Returns true if it's possible to serialize this value */
+		inline bool CanSerialize() const { return !flags.HasAny(EVariableFlags::Const, EVariableFlags::Deprecated); }
+		/** Returns true if it's possible to deserialize this value */
+		inline bool CanDeserialize() const { return !flags.HasAny(EVariableFlags::Const); }
 
 	private:
 		static constexpr size_t StorageSize = std::max(sizeof(size_t), PointerTraits::VariablePointerSize);

@@ -1,8 +1,10 @@
 #pragma once
+#include "Engine/Archive.h"
 #include "Engine/Flags.h"
 #include "Engine/Hash.h"
 #include "Engine/StandardTypes.h"
 #include "Engine/TypeTraits.h"
+#include "ThirdParty/yaml.h"
 
 #ifndef TARGET_NAME
 #define TARGET_NAME Unknown
@@ -47,11 +49,6 @@ namespace Reflection {
 		Abstract,
 		/** This type is an implementation of a template */
 		Template,
-
-		/** This type can be serialized to disk (binary or text) */
-		Serializable,
-		/** This type can be serialized over the network (fast binary) */
-		NetSerializable,
 	};
 
 	/** flags that describe aspects of a particular type */
@@ -99,16 +96,16 @@ namespace Reflection {
 		static constexpr ETypeClassification Classification = ETypeClassification::Unknown;
 
 		/** The classification of this TypeInfo, defining what kinds of type information it contains */
-		ETypeClassification classification = ETypeClassification::Primitive;
+		ETypeClassification const classification = ETypeClassification::Primitive;
 		/** Flags that provide additional information about this type */
-		FTypeFlags flags;
+		FTypeFlags const flags;
 
 		/** The identifier for this type. Always unique and stable. */
-		Hash128 id;
+		Hash128 const id;
 		/** The fully-qualified name of this type. If this is a template, does not include template parameters. */
-		std::string_view name;
+		std::string_view const name;
 		/** The memory parameters for this type */
-		MemoryParams memory;
+		MemoryParams const memory;
 
 		/** Human-readable description of this type */
 		std::string_view description;
@@ -133,6 +130,16 @@ namespace Reflection {
 		/** Compare two instances of this type and return true if they should be considered equal */
 		virtual bool Equal(void const* a, void const* b) const = 0;
 
+		/** Serialize an instance of this type in binary format */
+		virtual void Serialize(Archive::Output& archive, void const* instance) const {}
+		/** Deserialize an instance of this type in binary format */
+		virtual void Deserialize(Archive::Input& archive, void const* instance) const {}
+
+		/** Serialize an instance of this type in YAML format */
+		virtual YAML::Node Serialize(void const* instance) const = 0;
+		/** Deserialize an instance of this type in YAML format */
+		virtual void Deserialize(YAML::Node const& node, void* instance) const = 0;
+		
 	protected:
 		inline TypeInfo(ETypeClassification classification, FTypeFlags flags, Hash128 id, std::string_view name, MemoryParams memory)
 			: classification(classification), flags(flags), id(id), name(name), memory(memory)
@@ -161,20 +168,6 @@ namespace Reflection {
 		};
 	}
 
-	/** Registers a TypeInfo instance so it can be found statically. Used for concrete known types, or types that need to be dynamically instanced. */
-	struct RegisteredTypeInfo {
-		static std::deque<TypeInfo const*> const& GetInfos() { return infos; }
-		
-		RegisteredTypeInfo(TypeInfo const& info);
-		RegisteredTypeInfo(RegisteredTypeInfo const&) = delete;
-		RegisteredTypeInfo(RegisteredTypeInfo&&) = delete;
-		~RegisteredTypeInfo();
-
-	private:
-		static std::deque<TypeInfo const*> infos;
-		TypeInfo const* cached;
-	};
-
 	/** Implements type-specific operation overrides for a particular TypeInfo instance. */
 	template<std::destructible Type, Concepts::DerivedFromTypeInfo BaseType>
 	struct ImplementedTypeInfo : public BaseType {
@@ -202,6 +195,9 @@ namespace Reflection {
 			if constexpr (std::equality_comparable<Type>) return Cast(a) == Cast(b);
 			else return false;
 		}
+
+		virtual YAML::Node Serialize(void const* instance) const { return YAML::convert<Type>::encode(Cast(instance)); }
+		virtual void Deserialize(YAML::Node const& node, void* instance) const { YAML::convert<Type>::decode(node, Cast(instance)); }
 	};
 }
 
@@ -231,16 +227,6 @@ TargetType const* Cast(OriginalType const& info) {
 	//Otherwise, check if the type's classification value matches the classification of TargetType
 	if (info.classification == TargetType::Classification) return static_cast<TargetType const*>(&info);
 	else return nullptr;
-}
-
-/** Define a Reflect implementation that only resolves if the type uses {Name}TypeInfo. Equal in behavior to calling Cast<{Name}TypeInfo>(Reflect<Type>::Get()). */
-#define TYPEINFO_REFLECT(Name)\
-template<typename Type>\
-struct Reflect ## Name {\
-	static ::Reflection::Name ## TypeInfo const& Get() {\
-		if constexpr (std::is_base_of_v<::Reflection::Name ## TypeInfo, std::remove_pointer_t<decltype(Reflect<Type>::Get())>>) return Reflect<Type>::Get();\
-		else return nullptr;\
-	}\
 }
 
 /** Define standard chained member functions used to build a TypeInfo instance */

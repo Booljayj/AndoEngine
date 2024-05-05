@@ -187,3 +187,25 @@ uint16_t StringID::EmplaceString(uint16_t hash, std::string_view string) {
 	locators.emplace_back(storage.Store(string));
 	return locators.size() - 1;
 }
+
+namespace Archive {
+	void Serializer<StringID>::Write(Output& archive, StringID const sid) {
+		Serializer<std::string_view>::Write(archive, sid.ToStringView());
+	}
+	void Serializer<StringID>::Read(Input& archive, StringID& sid) {
+		std::string string;
+		Serializer<std::string>::Read(archive, string);
+		sid = StringID{ string };
+	}
+}
+
+namespace YAML {
+	Node convert<StringID>::encode(StringID id) {
+		return Node{ id.ToStringView() };
+	}
+	bool convert<StringID>::decode(Node const& node, StringID& id) {
+		if (!node.IsScalar()) return false;
+		id = node.as<std::string>();
+		return true;
+	}
+}

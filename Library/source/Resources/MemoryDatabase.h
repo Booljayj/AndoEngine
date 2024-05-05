@@ -16,9 +16,6 @@ namespace Resources {
 		std::shared_ptr<Package const> FindPackage(StringID name) const { return Database::FindPackage(name); }
 		std::shared_ptr<Package> FindPackage(StringID name) { return Database::FindPackage(name); }
 
-		/** Save changes to a package. Memory packages don't have an on-disk representation, but this will remove the Dirty flag as through changes were saved */
-		void Save(stdext::not_null<std::shared_ptr<Package>> package);
-
 		/** Create a new resource in the provided package. Will throw if the resource cannot be created. */
 		template<Concepts::DerivedFromResource T, std::invocable<T&> InitializerType = stdext::no_op<T&>>
 		stdext::shared_ref<T> Create(StringID name, stdext::shared_ref<Package> package, InitializerType&& initializer = stdext::no_op<T&>{}) { return Database::Create<T>(name, package, std::forward<InitializerType>(initializer)); }

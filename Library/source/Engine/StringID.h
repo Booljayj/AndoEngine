@@ -1,4 +1,5 @@
 #pragma once
+#include "Engine/Archive.h"
 #include "Engine/Hash.h"
 #include "Engine/Reflection.h"
 #include "Engine/StandardTypes.h"
@@ -72,12 +73,16 @@ struct StringID {
 private:
 	friend struct std::hash<StringID>;
 	friend struct StringStorage;
+	friend struct YAML::as_if<StringID, void>;
 
 	static constexpr uint16_t CreateHash(std::string_view string) {
 		uint32_t const full = Hash32{ string }.ToValue();
 		return static_cast<uint16_t>(full) ^ static_cast<uint16_t>(full >> 16);
 	}
 	static uint16_t EmplaceString(uint16_t hash, std::string_view string);
+
+	//Default construction is only available in specific contexts where a library requires a default constructor. In those cases, it's equivalent to constructing from StringID::None.
+	StringID() : StringID(StringID::None) {}
 
 	StringID(const StringUtils::DecomposedString& source);
 	StringID(uint16_t hash, uint16_t collision, uint32_t var) : hash(hash), collision(collision), var(var) {}
@@ -113,3 +118,19 @@ struct ::Reflection::Reflect<StringID> {
 	static Reflection::PrimitiveTypeInfo const& Get() { return StringID::info_StringID; }
 	static constexpr Hash128 ID = Hash128{ std::string_view{ STRINGIFY(StringID) } };
 };
+
+namespace Archive {
+	template<>
+	struct Serializer<StringID> {
+		static void Write(Output& archive, StringID const sid);
+		static void Read(Input& archive, StringID& sid);
+	};
+}
+
+namespace YAML {
+	template<>
+	struct convert<StringID> {
+		static Node encode(StringID id);
+		static bool decode(Node const& node, StringID& id);
+	};
+}

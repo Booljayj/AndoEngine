@@ -13,6 +13,9 @@ namespace Reflection {
 		/** The underlying type of the values in the enumeration */
 		TypeInfo const* underlying = nullptr;
 
+		virtual void Serialize(YAML::Node& node, void const* instance) const final { node = GetName(GetIndexOfValue(instance)); }
+		virtual void Deserialize(YAML::Node const& node, void* instance) const final { underlying->Copy(instance, GetValue(GetIndexOfName(node.as<std::string>()))); }
+
 		/** Get the number of values that the enumeration defines */
 		virtual size_t GetCount() const = 0;
 
@@ -26,6 +29,13 @@ namespace Reflection {
 		/** Get the index of the first element with the specified name */
 		virtual size_t GetIndexOfName(std::string_view name) const = 0;
 	};
+
+	namespace Concepts {
+		template<typename T>
+		concept ReflectedEnum = ReflectedType<T> and requires (T a) {
+			{ ::Reflection::Reflect<T>::Get() } -> std::convertible_to<EnumTypeInfo const&>;
+		};
+	}
 
 	//============================================================
 	// Templates
@@ -104,5 +114,23 @@ namespace Reflection {
 
 		TYPEINFO_BUILDER_METHODS(UnderlyingType)
 		decltype(auto) ElementView(std::span<EnumPairType> inElementView) { elementView = inElementView; return *this; }
+	};
+}
+
+namespace YAML {
+	template<Reflection::Concepts::ReflectedEnum Type>
+	struct convert<Type> {
+		static Node encode(const Type& instance) {
+			Reflection::EnumTypeInfo const& type = Reflect<Type>::Get();
+
+			return Node{ type.GetName(type.GetIndexOfValue(&instance)) };
+		}
+
+		static bool decode(const Node& node, Type& instance) {
+			Reflection::EnumTypeInfo const& type = Reflect<Type>::Get();
+
+			type.underlying->Copy(&instance, type.GetValue(type.GetIndexOfName(node.as<std::string>())));
+			return true;
+		}
 	};
 }

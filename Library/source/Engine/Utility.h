@@ -1,5 +1,4 @@
 #pragma once
-#include <boost/endian/conversion.hpp>
 #include "Engine/StandardTypes.h"
 
 /** Utility to convert a symbol to a string */
@@ -29,22 +28,37 @@ namespace Utility {
 		return max == 1 ? 0 : FloorLog2(max - 1) + 1;
 	}
 
-	/** Load a value from a char array. Char array is assumed to be in little-endian order, and must be large enought to contain the value */
-	template<std::integral T>
-	constexpr inline T Load(char const* data, size_t offset = 0) {
-		T value = 0;
-		if constexpr (boost::endian::order::native == boost::endian::order::little) {
-			for (size_t index = 0; index < sizeof(T); ++index) {
-				T const byte = static_cast<T>(*(data + offset + index));
-				value |= (byte << (index * 8));
-			}
-		} else {
-			for (size_t index = 0; index < sizeof(T); ++index) {
-				T const byte = static_cast<T>(*(data + offset + index));
-				value |= (byte << ((sizeof(T) - index - 1) * 8));
-			}
+	/** Load a value from a byte array. The byte array is assumed to be in little-endian order. */
+	template<stdext::numeric T>
+	constexpr inline void LoadOrdered(std::span<std::byte const, sizeof(T)> source, T& value) {
+		for (size_t index = 0; index < sizeof(T); ++index) {
+			T const byte = static_cast<T>(std::to_integer<uint8_t>(source[index]));
+			value |= (byte << (CHAR_BIT * index));
 		}
-		return value;
+	}
+	/** Save a value to a byte array. The byte array is assumed to be in little-endian order. */
+	template<stdext::numeric T>
+	constexpr inline void SaveOrdered(T value, std::span<std::byte, sizeof(T)> target) {
+		for (size_t index = 0; index < sizeof(T); ++index) {
+			uint8_t const byte = static_cast<uint8_t>(value >> (CHAR_BIT * index));
+			target[index] = std::byte{ byte };
+		}
+	}
+
+	/** Load a value from a character array. The character array is assumed to be in little-endian order. */
+	template<stdext::numeric T>
+	constexpr inline void LoadOrdered(std::span<char const, sizeof(T)> source, T& value) {
+		for (size_t index = 0; index < sizeof(T); ++index) {
+			value |= (static_cast<T>(source[index]) << (CHAR_BIT * index));
+		}
+	}
+
+	/** Save a value to a character array. The character array is assumed to be in little-endian order. */
+	template<stdext::numeric T>
+	constexpr inline void SaveOrdered(T value, std::span<char, sizeof(T)> target) {
+		for (size_t index = 0; index < sizeof(T); ++index) {
+			target[index] = static_cast<uint8_t>(value >> (CHAR_BIT * index));
+		}
 	}
 }
 

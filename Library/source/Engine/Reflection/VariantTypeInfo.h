@@ -26,7 +26,7 @@ namespace Reflection {
 		virtual void const* GetValue(void const* instance) const = 0;
 
 		/** Assign the value inside the variant. Returns true if the new value was successfully assigned. Value is optional, if provided the newly assigned value will be a copy */
-		virtual bool Assign(void* instance, const TypeInfo* type, void const* source) = 0;
+		virtual bool Assign(void* instance, const TypeInfo* type, void const* source) const = 0;
 	};
 
 	//============================================================

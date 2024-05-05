@@ -2,20 +2,26 @@
 
 /** Special definition for void, which is the only primitive type that cannot hold values. This exists for cases where void is a valid template parameter, and we want to display that */
 namespace Reflection {
-	struct VoidTypeInfo : public PrimitiveTypeInfo {
-		VoidTypeInfo() : PrimitiveTypeInfo(PrimitiveTypeInfo::Classification, FTypeFlags::None(), "void"_h128, "void"sv, MemoryParams{ 0, 0 }) {
-			description = "void type"sv;
+	struct EmptyPrimitiveTypeInfo : public PrimitiveTypeInfo {
+		EmptyPrimitiveTypeInfo(Hash128 id, std::string_view name, std::string_view desc) : PrimitiveTypeInfo(PrimitiveTypeInfo::Classification, FTypeFlags::None(), id, name, MemoryParams{ 0, 0 }) {
+			description = desc;
 		}
 
 		virtual void Destruct(void* instance) const final {}
 		virtual void Construct(void* instance) const final {}
 		virtual void Construct(void* instance, void const* other) const final {}
 		virtual void Copy(void* instance, void const* other) const final {}
-		virtual bool Equal(void const* instanceA, void const* instanceB) const final { return false; }
+		virtual bool Equal(void const* instanceA, void const* instanceB) const final { return true; }
+
+		virtual YAML::Node Serialize(void const* instance) const final { return YAML::Node{}; }
+		virtual void Deserialize(YAML::Node const& node, void* instance) const final {}
 	};
-	VoidTypeInfo const info_void;
+
+	EmptyPrimitiveTypeInfo const info_void{ "void"_h128, "void"sv, "Void type, used for missing type values"sv };
+	EmptyPrimitiveTypeInfo const info_monostate{ "std::monostate"_h128, "std::monostate"sv, "Variant monostate type, used to indicate the variant can have a 'stateless' or 'default constructed' option"sv };
 
 	PrimitiveTypeInfo const& Reflect<void>::Get() { return info_void; }
+	PrimitiveTypeInfo const& Reflect<std::monostate>::Get() { return info_monostate; }
 
 	#define L_DEFINE_REFLECT_PRIMITIVE(Type, TypeDescription)\
 	TPrimitiveTypeInfo<Type> const info_##Type =\
@@ -29,6 +35,7 @@ namespace Reflection {
 		.Description(TypeDescription);\
 	PrimitiveTypeInfo const& Reflect<Namespace::Type>::Get() { return info_ ## Type; }
 
+	L_DEFINE_REFLECT_NSPRIMITIVE(std, byte, "a byte of memory");
 	L_DEFINE_REFLECT_PRIMITIVE(bool, "boolean");
 
 	L_DEFINE_REFLECT_PRIMITIVE(int8_t, "signed 8-bit integer");
@@ -54,8 +61,6 @@ namespace Reflection {
 	L_DEFINE_REFLECT_NSPRIMITIVE(std, u8string, "UTF-8 string");
 	L_DEFINE_REFLECT_NSPRIMITIVE(std, u16string, "UTF-16 string");
 	L_DEFINE_REFLECT_NSPRIMITIVE(std, u32string, "UTF-32 string");
-
-	L_DEFINE_REFLECT_NSPRIMITIVE(std, monostate, "variant monostate");
 
 	#undef L_DEFINE_REFLECT_PRIMITIVE
 	#undef L_DEFINE_REFLECT_NSPRIMITIVE

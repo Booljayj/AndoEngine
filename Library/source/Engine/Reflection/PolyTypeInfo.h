@@ -1,6 +1,7 @@
 #pragma once
 #include "Engine/Reflection/StructTypeInfo.h"
 #include "Engine/Reflection/TypeInfo.h"
+#include "Engine/Reflection/TypeInfoReference.h"
 
 namespace Reflection {
 	/** TypeInfo for a poly type. "Poly" is short for Polymorphic Interface. A poly owns a pointer to an optional instance that can be cast to a base type. */
@@ -22,6 +23,9 @@ namespace Reflection {
 		/** Get the current value of the poly. Can be nullptr if the poly is unassigned */
 		virtual void* GetValue(void* instance) const = 0;
 		virtual void const* GetValue(void const* instance) const = 0;
+
+		/** Get the current type of the poly. Can be nullptr if the poly is unassigned, otherwise can be anything deriving from base. */
+		virtual StructTypeInfo const* GetType(void const* instance) const = 0;
 
 		/** Assign a new value to a poly */
 		virtual bool Assign(void* instance, TypeInfo const& type, void const* value) const = 0;
@@ -75,4 +79,45 @@ namespace Reflection {
 	typename Reflect<std::unique_ptr<BaseType>>::ThisTypeInfo const Reflect<std::unique_ptr<BaseType>>::info =
 		Reflect<std::unique_ptr<BaseType>>{ "std::unique_ptr"sv }
 		.Description("unique pointer"sv);
+}
+
+namespace YAML {
+	template<typename T>
+	struct convert<std::unique_ptr<T>> {
+		static Node encode(const std::unique_ptr<T>& instance) {
+			Reflection::PolyTypeInfo const& type = Reflect<std::unique_ptr<T>>::Get();
+			
+			Node node{ NodeType::Map };
+
+			if (Reflection::StructTypeInfo const* actual = type.GetType(&instance)) {
+				node["type"] = Reflection::TypeInfoReference{ *actual };
+
+				if (Node const value = actual->Serialize(type.GetValue(&instance))) {
+					node["value"] = value;
+				}
+
+			} else {
+				node["type"] = Reflection::TypeInfoReference{};
+			}
+
+			return node;
+		}
+
+		static bool decode(const Node& node, std::unique_ptr<T>& instance) {
+			Reflection::PolyTypeInfo const& type = Reflect<std::unique_ptr<T>>::Get();
+
+			if (!node.IsMap()) return false;
+
+			Reflection::TypeInfoReference const reference = node["type"].as<Reflection::TypeInfoReference>();
+			if (Reflection::StructTypeInfo const* actual = reference.Resolve<Reflection::StructTypeInfo>()) {
+				if (!type.Assign(&instance, *actual, nullptr)) return false;
+
+				if (Node const value = node["value"]) actual->Deserialize(value, type.GetValue(&instance));
+
+			}
+			else {
+				type.Unassign(&instance);
+			}
+		}
+	};
 }

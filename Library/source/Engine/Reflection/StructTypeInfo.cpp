@@ -2,6 +2,109 @@
 #include "Engine/Reflection/PrimitiveTypeInfo.h"
 
 namespace Reflection {
+	StructVariableRange::Iterator::Iterator(StructTypeInfo const& type) : current(&type) {
+		while (current && current->variables.size() == 0) current = current->base;
+	}
+
+	StructVariableRange::Iterator& StructVariableRange::Iterator::operator++() {
+		++index;
+
+		//Move up the hierarchy if we've run out of variables in the current struct
+		if (index > current->variables.size()) {
+			//Seek to the next base class that has new variables. If we don't find one, current will be set to nullptr.
+			current = current->base;
+			while (current && current->variables.size() == 0) current = current->base;
+
+			//Reset the index
+			index = 0;
+		}
+
+		return *this;
+	}
+
+	VariableInfo const& StructVariableRange::Iterator::operator*() const { return current->variables[index]; }
+	VariableInfo const* StructVariableRange::Iterator::operator->() const { return &current->variables[index]; }
+
+	VariableInfo const* StructVariableRange::FindVariable(std::string_view name) const {
+		const auto iter = ranges::find(*this, name, [](VariableInfo const& info) { return info.name; });
+		if (iter != end()) return &(*iter);
+		return nullptr;
+	}
+
+	VariableInfo const* StructVariableRange::FindVariable(Hash32 id) const {
+		const auto iter = ranges::find(*this, id, [](VariableInfo const& info) { return info.id; });
+		if (iter != end()) return &(*iter);
+		return nullptr;
+	}
+
+	void StructTypeInfo::SerializeVariables(StructTypeInfo const& type, Archive::Output& archive, void const* instance) {
+		std::vector<std::byte> buffer;
+		
+		//Serialize each variable as a name-buffer pair
+		for (VariableInfo const& variable : type.GetVariableRange()) {
+			if (variable.CanSerialize()) {
+				Archive::Output subarchive{ buffer };
+				variable.type->Serialize(subarchive, variable.GetImmutable(&instance));
+
+				//If data was actually serialized for this variable, then write it to the output.
+				if (buffer.size() > 0) {
+					archive << type.name;
+					archive << buffer;
+
+					buffer.clear();
+				}
+			}
+		}
+
+		//Serialize an "empty" variable as a sentinel value to indicate the end of the variables.
+		archive << ""sv;
+		archive << buffer;
+	}
+	void StructTypeInfo::DeserializeVariables(StructTypeInfo const& type, Archive::Input& archive, void* instance) {
+		std::string name;
+		std::span<std::byte const> buffer;
+
+		auto const variables = type.GetVariableRange();
+
+		while (true) {
+			//First read the information from the archive, then interpret it. This ensures we read all the information that was originally written.
+			archive >> name;
+			archive >> buffer;
+
+			//If this is the sentinel value that indicates the end of the variables, then we can stop reading
+			if (name.size() == 0 || buffer.size() == 0) break;
+
+			VariableInfo const* variable = variables.FindVariable(name);
+			if (variable && variable->CanDeserialize()) {
+				Archive::Input subarchive{ buffer };
+				variable->type->Deserialize(subarchive, variable->GetMutable(instance));
+			}
+		}
+	}
+
+	void StructTypeInfo::SerializeVariables(StructTypeInfo const& type, YAML::Node& node, void const* instance) {
+		for (VariableInfo const& variable : type.GetVariableRange()) {
+			if (variable.CanSerialize()) {
+				YAML::Node const value = variable.type->Serialize(variable.GetImmutable(&instance));
+
+				//If we've serialized any contents for this node, add it to the map using the name of the variable.
+				if (value) node[variable.name] = value;
+			}
+		}
+	}
+	void StructTypeInfo::DeserializeVariables(StructTypeInfo const& type, YAML::Node const& node, void* instance) {
+		auto const variables = type.GetVariableRange();
+
+		for (YAML::const_iterator it = node.begin(); it != node.end(); ++it) {
+			std::string const name = it->first.as<std::string>();
+
+			Reflection::VariableInfo const* variable = variables.FindVariable(name);
+			if (variable && variable->CanDeserialize()) {
+				variable->type->Deserialize(it->second, variable->GetMutable(&instance));
+			}
+		}
+	}
+
 	const std::string_view name_x = "x"sv;
 	const std::string_view name_y = "y"sv;
 	const std::string_view name_z = "z"sv;

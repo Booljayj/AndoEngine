@@ -1,6 +1,5 @@
 #include "Rendering/Vulkan/Framework.h"
 #include "Engine/Logging.h"
-#include "Engine/StringBuilding.h"
 
 namespace Rendering {
 	Framework::Framework(HAL::Window const& window) {
@@ -185,52 +184,42 @@ namespace Rendering {
 		}
 
 		//Create a string that provides additional contextual information
-		TemporaryStringBuilder contextBuilder;
-		const auto SafeGetName = [](char const* name){
-			if (name == nullptr) return "UNKNOWN";
-			else return name;
-		};
+		std::string context;
+		context.reserve(64);
+
+		const auto SafeGetName = [](char const* name) { return (name == nullptr) ? "Unknown" : name; };
 
 		//Add a list of object names referenced by this message. The first object is already part of the message.
 		if (pCallbackData->objectCount > 1) {
-			contextBuilder << "; Objects: "sv;
-
-			contextBuilder << SafeGetName(pCallbackData->pObjects[1].pObjectName);
+			std::format_to(std::back_inserter(context), "; Objects: {}", SafeGetName(pCallbackData->pObjects[1].pObjectName));
 			for (size_t index = 2; index < pCallbackData->objectCount; ++index) {
-				contextBuilder << ", "sv;
-				contextBuilder << SafeGetName(pCallbackData->pObjects[index].pObjectName);
+				std::format_to(std::back_inserter(context), ", {}", SafeGetName(pCallbackData->pObjects[index].pObjectName));
 			}
 		}
 		//Add a list of queue labels referenced by this message
 		if (pCallbackData->queueLabelCount > 0) {
-			contextBuilder << "; Queues: "sv;
-
-			contextBuilder << SafeGetName(pCallbackData->pQueueLabels[0].pLabelName);
+			std::format_to(std::back_inserter(context), "; Queues: {}", SafeGetName(pCallbackData->pQueueLabels[0].pLabelName));
 			for (size_t index = 1; index < pCallbackData->queueLabelCount; ++index) {
-				contextBuilder << ", "sv;
-				contextBuilder << SafeGetName(pCallbackData->pQueueLabels[index].pLabelName);
+				std::format_to(std::back_inserter(context), ", {}", SafeGetName(pCallbackData->pQueueLabels[index].pLabelName));
 			}
 		}
 		//Add a list of command labels referenced by this message
 		if (pCallbackData->cmdBufLabelCount > 0) {
-			contextBuilder << "; Command Buffers: "sv;
-
-			contextBuilder << SafeGetName(pCallbackData->pCmdBufLabels[0].pLabelName);
+			std::format_to(std::back_inserter(context), "; Command Buffers: {}", SafeGetName(pCallbackData->pCmdBufLabels[0].pLabelName));
 			for (size_t index = 1; index < pCallbackData->cmdBufLabelCount; ++index) {
-				contextBuilder << ", "sv;
-				contextBuilder << SafeGetName(pCallbackData->pCmdBufLabels[index].pLabelName);
+				std::format_to(std::back_inserter(context), ", {}", SafeGetName(pCallbackData->pCmdBufLabels[index].pLabelName));
 			}
 		}
 
 		//Log the message
 		if (messageSeverity & VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
-			LOG(VulkanMessage, Error, "{}{} {}{}", prefix, pCallbackData->messageIdNumber, pCallbackData->pMessage, contextBuilder.Get());
+			LOG(VulkanMessage, Error, "{}{} {}{}", prefix, pCallbackData->messageIdNumber, pCallbackData->pMessage, context);
 		} else if (messageSeverity & VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
-			LOG(VulkanMessage, Warning, "{}{} {}{}", prefix, pCallbackData->messageIdNumber, pCallbackData->pMessage, contextBuilder.Get());
+			LOG(VulkanMessage, Warning, "{}{} {}{}", prefix, pCallbackData->messageIdNumber, pCallbackData->pMessage, context);
 		} else if (messageSeverity & VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {
-			LOG(VulkanMessage, Info, "{}{} {}{}", prefix, pCallbackData->messageIdNumber, pCallbackData->pMessage, contextBuilder.Get());
+			LOG(VulkanMessage, Info, "{}{} {}{}", prefix, pCallbackData->messageIdNumber, pCallbackData->pMessage, context);
 		} else {
-			LOG(VulkanMessage, Debug, "{}{} {}{}", prefix, pCallbackData->messageIdNumber, pCallbackData->pMessage, contextBuilder.Get());
+			LOG(VulkanMessage, Debug, "{}{} {}{}", prefix, pCallbackData->messageIdNumber, pCallbackData->pMessage, context);
 		}
 
 		return VK_FALSE;

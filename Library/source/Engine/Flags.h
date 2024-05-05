@@ -69,10 +69,10 @@ public:
 
 	/** True if this set of flags contains all of the values */
 	template<typename... FlagTypes>
-	constexpr inline bool HasAll(EnumType flag, FlagTypes... other) { return HasAll(Make(flag, other...)); }
+	constexpr inline bool HasAll(EnumType flag, FlagTypes... other) const { return HasAll(Make(flag, other...)); }
 	/** True if this set of flags contains any of the values */
 	template<typename... FlagTypes>
-	constexpr inline bool HasAny(EnumType flag, FlagTypes... other) { return HasAny(Make(flag, other...)); }
+	constexpr inline bool HasAny(EnumType flag, FlagTypes... other) const { return HasAny(Make(flag, other...)); }
 
 protected:
 	UnderlyingType flags = 0;

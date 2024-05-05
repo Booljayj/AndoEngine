@@ -36,6 +36,9 @@ namespace Reflection {
 
 		virtual ~ReferenceTypeInfo() = default;
 
+		virtual void Serialize(YAML::Node& node, void const* instance) const final { throw std::runtime_error{ "Not implemented" }; }
+		virtual void Deserialize(YAML::Node const& node, void* instance) const final { throw std::runtime_error{ "Not implemented" }; }
+
 		/** Get an accessor for the object an instance is referencing */
 		virtual ScopedReferenceAccessor GetAccessor(void const* instance) const = 0;
 

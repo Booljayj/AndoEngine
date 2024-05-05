@@ -10,6 +10,7 @@
 #include "Engine/Reflection/StructTypeInfo.h"
 #include "Engine/Reflection/TupleTypeInfo.h"
 #include "Engine/Reflection/TypeInfo.h"
+#include "Engine/Reflection/TypeInfoReference.h"
 #include "Engine/Reflection/VariantTypeInfo.h"
 
 #include "Engine/Reflection/Components/VariableInfo.h"

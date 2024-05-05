@@ -47,6 +47,8 @@ namespace Reflection {
 		/** Get the value of the special "empty" aggregate, which contains no components */
 		virtual void const* GetEmptyValue() const = 0;
 
+		/** Remove all components from the aggregate value */
+		virtual void Reset(void* aggregate) const = 0;
 		/** Add the component or aggregate value to the aggregate */
 		virtual void Add(void* aggregate, void const* value) const = 0;
 		/** Subtract the component or aggregate value from the aggregate */
@@ -59,6 +61,13 @@ namespace Reflection {
 		/** Fills the output vector with the indices of any components in the aggregate */
 		virtual void GetComponents(void const* aggregate, std::vector<size_t>& componentIndices) const = 0;
 	};
+
+	namespace Concepts {
+		template<typename T>
+		concept ReflectedFlags = ReflectedType<T> and requires (T a) {
+			{ ::Reflection::Reflect<T>::Get() } -> std::convertible_to<FlagsTypeInfo const&>;
+		};
+	}
 
 	//============================================================
 	// Templates
@@ -122,6 +131,7 @@ namespace Reflection {
 		virtual std::string_view GetEmptyName() const final { return empty->first; }
 		virtual void const* GetEmptyValue() const final { return &empty->second; }
 
+		virtual void Reset(void* aggregate) const final { Cast(aggregate) = static_cast<FlagsType>(0); }
 		virtual void Add(void* aggregate, void const* value) const final { Cast(aggregate) |= Cast(value); }
 		virtual void Subtract(void* aggregate, void const* value) const final { Cast(aggregate) &= ~Cast(value); }
 		virtual bool Contains(void const* aggregate, void const* value) const final { return (Cast(aggregate) & Cast(value)) == Cast(value); }
@@ -140,5 +150,33 @@ namespace Reflection {
 		TStandardFlagsTypeInfo& ComponentsView(std::span<FlagsPairType> inComponentsView) { componentsView = inComponentsView; return *this; }
 		TStandardFlagsTypeInfo& AggregatesView(std::span<FlagsPairType> inAggregatesView) { aggregatesView = inAggregatesView; return *this; }
 		TStandardFlagsTypeInfo& Empty(FlagsPairType const* inEmpty) { empty = inEmpty; return *this; }
+	};
+}
+
+namespace YAML {
+	template<Reflection::Concepts::ReflectedFlags Type>
+	struct convert<Type> {
+		static Node encode(const Type& instance) {
+			Reflection::FlagsTypeInfo const& type = Reflect<Type>::Get();
+
+			Node node{ NodeType::Sequence };
+
+			std::vector<size_t> indices;
+			type.GetComponents(&instance, indices);
+			for (size_t index : indices) node.push_back(type.GetComponentName(index));
+
+			return node;
+		}
+
+		static bool decode(const Node& node, Type& instance) {
+			if (!node.IsSequence()) return false;
+
+			Reflection::FlagsTypeInfo const& type = Reflect<Type>::Get();
+
+			type.Reset(&instance);
+			for (YAML::const_iterator it = node.begin(); it != node.end(); ++it) {
+				type.Add(&instance, type.GetComponentValue(type.GetIndexOfComponentName(it->as<std::string>())));
+			}
+		}
 	};
 }

@@ -1,4 +1,5 @@
 #pragma once
+#include "Engine/Reflection.h"
 #include "Engine/StandardTypes.h"
 #include "Engine/StringID.h"
 #include "Engine/Threads.h"
@@ -22,28 +23,29 @@ namespace Resources {
 	 * Each package must have a unique name, and each resource within a package must have a unique name.
 	 */
 	struct Package final : public std::enable_shared_from_this<Package> {
-		struct PrivateToken;
+		using ContentsContainerType = std::unordered_map<StringID, std::shared_ptr<Resource>>;
 
 		FPackageFlags flags;
 
-		Package() = delete;
-		explicit Package(PrivateToken, std::shared_ptr<Database> owner, StringID name) : owner(owner), name(name) {}
+		Package(std::shared_ptr<Database> owner, StringID name) : owner(owner), name(name) {}
+		Package(std::shared_ptr<Database> owner, StringID name, ContentsContainerType const& contents);
 
 		/** Get the unique name of this package */
 		inline StringID GetName() const { return name; }
 		
 		/** Return the resource with the provided id that is within this package, or nullptr if it cannot be found */
-		std::shared_ptr<Resource> Find(StringID id) const;
-
-		/** Return the resource of a specific type with the provided id that is within this package, or nullptr if it cannot be found */
-		template<std::derived_from<Resource> T>
+		template<std::derived_from<Resource> T = Resource>
 		std::shared_ptr<T> Find(StringID id) const {
-			if constexpr (std::is_same_v<T, Resource>) return Find(id);
-			else {
-				auto const resource = Find(id);
-				if (resource && resource->GetTypeInfo().IsChildOf(Reflect<T>::Get())) return std::static_pointer_cast<T>(resource);
-				else return nullptr;
+			auto const contents = ts_contents.LockInclusive();
+			auto const iter = contents->find(id);
+			if (iter != contents->end()) {
+				if constexpr (std::is_same_v<T, Resource>) {
+					return iter->second;
+				} else {
+					if (iter->second->GetTypeInfo().IsChildOf(Reflect<T>::Get())) return std::static_pointer_cast<T>(iter->second);
+				}
 			}
+			return nullptr;
 		}
 
 		/** Get a read-only thread-safe view that allows the contents of the package to be inspected. Used to optimize bulk search operations on a package's contents. */
@@ -54,12 +56,8 @@ namespace Resources {
 		friend struct Resource;
 		friend struct ResourceUtility;
 
-		using ContentsContainerType = std::unordered_map<StringID, std::shared_ptr<Resource>>;
-		struct PrivateToken {};
-
 		std::weak_ptr<Database> const owner;
 		StringID name;
-
 		ThreadSafe<ContentsContainerType> ts_contents;
 	};
 }

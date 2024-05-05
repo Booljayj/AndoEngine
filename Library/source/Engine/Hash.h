@@ -1,7 +1,9 @@
 #pragma once
+#include "Engine/Archive.h"
 #include "Engine/Math.h"
 #include "Engine/StandardTypes.h"
 #include "Engine/Utility.h"
+#include "ThirdParty/yaml.h"
 
 //String hash types. These store hashes in specialized types which encapsulate constructing, combining, and
 //storing hashes of various lengths.
@@ -20,7 +22,7 @@
 //Hashes can be default-constructed, but the default internal values may match a hash created from a string.
 //Do not assume that a hash was default-constructed because it has any particular internal value.
 
-/** A 32-bit string hash */
+/** A 32-bit stable string hash */
 struct Hash32 {
 	constexpr Hash32() = default;
 	constexpr Hash32(std::string_view string, uint32_t seed = 0);
@@ -45,23 +47,7 @@ private:
 	static constexpr uint32_t Mix(uint32_t k);
 };
 
-constexpr Hash32 operator ""_h32(char const* p, size_t s) { return Hash32{ std::string_view{ p, s }, 0 }; };
-
-template<>
-struct std::hash<Hash32> {
-	constexpr size_t operator()(Hash32 hash) const { return hash.ToValue(); }
-};
-
-template<>
-struct std::formatter<Hash32> : std::formatter<std::string_view> {
-	auto format(const Hash32& hash, format_context& ctx) const {
-		char scratch[20] = { 0 };
-		auto const result = format_to_n(scratch, sizeof(scratch), "{:08x}"sv, hash.ToValue());
-		return formatter<string_view>::format(string_view{ scratch, result.out }, ctx);
-	}
-};
-
-/** A 64-bit string hash */
+/** A 64-bit stable string hash */
 struct Hash64 {
 	constexpr Hash64() = default;
 	constexpr Hash64(std::string_view string, uint64_t seed = 0);
@@ -86,23 +72,7 @@ private:
 	static constexpr uint64_t Mix(uint64_t k);
 };
 
-constexpr Hash64 operator ""_h64(char const* p, size_t s) { return Hash64{ std::string_view{ p, s }, 0 }; };
-
-template<>
-struct std::hash<Hash64> {
-	constexpr size_t operator()(Hash64 hash) const { return hash.ToValue(); }
-};
-
-template<>
-struct std::formatter<Hash64> : std::formatter<std::string_view> {
-	auto format(const Hash64& hash, format_context& ctx) const {
-		char scratch[20] = { 0 };
-		auto const result = format_to_n(scratch, sizeof(scratch), "{:016x}"sv, hash.ToValue());
-		return formatter<string_view>::format(string_view{ scratch, result.out }, ctx);
-	}
-};
-
-/** A 128-bit string hash */
+/** A 128-bit stable string hash */
 struct Hash128 {
 	constexpr Hash128() = default;
 	constexpr Hash128(std::string_view string, uint64_t lowSeed = 0, uint64_t highSeed = 0);
@@ -129,24 +99,83 @@ private:
 	static constexpr uint64_t Mix(uint64_t k);
 };
 
+constexpr Hash32 operator ""_h32(char const* p, size_t s) { return Hash32{ std::string_view{ p, s }, 0 }; };
+constexpr Hash64 operator ""_h64(char const* p, size_t s) { return Hash64{ std::string_view{ p, s }, 0 }; };
 constexpr Hash128 operator ""_h128(char const* p, size_t s) { return Hash128{ std::string_view{ p, s }, 0, 0 }; };
 
+//=============================================================================
+// Standard library support
+
+template<>
+struct std::hash<Hash32> {
+	constexpr size_t operator()(Hash32 hash) const { return hash.ToValue(); }
+};
+template<>
+struct std::hash<Hash64> {
+	constexpr size_t operator()(Hash64 hash) const { return hash.ToValue(); }
+};
 template<>
 struct std::hash<Hash128> {
 	constexpr size_t operator()(Hash128 const& hash) const { return hash.ToLowValue() ^ hash.ToHighValue(); }
 };
 
+//=============================================================================
+// Serialization support
+
+namespace Archive {
+	template<>
+	struct Serializer<Hash32> {
+		static void Write(Output& archive, Hash32 const hash);
+		static void Read(Input& archive, Hash32& hash);
+	};
+	template<>
+	struct Serializer<Hash64> {
+		static void Write(Output& archive, Hash64 const hash);
+		static void Read(Input& archive, Hash64& hash);
+	};
+	template<>
+	struct Serializer<Hash128> {
+		static void Write(Output& archive, Hash128 const& hash);
+		static void Read(Input& archive, Hash128& hash);
+	};
+}
+
+namespace YAML {
+	template<>
+	struct convert<Hash32> {
+		static Node encode(Hash32 hash);
+		static bool decode(Node const& node, Hash32& hash);
+	};
+	template<>
+	struct convert<Hash64> {
+		static Node encode(Hash64 hash);
+		static bool decode(Node const& node, Hash64& hash);
+	};
+	template<>
+	struct convert<Hash128> {
+		static Node encode(Hash128 hash);
+		static bool decode(Node const& node, Hash128& hash);
+	};
+}
+
+//=============================================================================
+// String formatting support
+
+template<>
+struct std::formatter<Hash32> : std::formatter<std::string_view> {
+	std::format_context::iterator format(const Hash32& hash, format_context& ctx) const;
+};
+template<>
+struct std::formatter<Hash64> : std::formatter<std::string_view> {
+	std::format_context::iterator format(const Hash64& hash, format_context& ctx) const;
+};
 template<>
 struct std::formatter<Hash128> : std::formatter<std::string_view> {
-	auto format(const Hash128& hash, format_context& ctx) const {
-		char scratch[40] = { 0 };
-		auto const result = format_to_n(scratch, sizeof(scratch), "{:016x}-{:016x}"sv, hash.ToHighValue(), hash.ToLowValue());
-		return formatter<string_view>::format(string_view{ scratch, result.out }, ctx);
-	}
+	std::format_context::iterator format(const Hash128& hash, format_context& ctx) const;
 };
 
-//============================================================================================
-// Implementations
+//=============================================================================
+// Constexpr method implementations
 
 #define L_CASE_TAIL_SHIFT(Value, Size, Offset) case Size: Value ^= static_cast<decltype(Value)>(tail[Size - 1]) << (8 * (Size - Offset - 1))
 
@@ -160,7 +189,9 @@ constexpr Hash32::Hash32(std::string_view string, uint32_t seed) : hash(seed) {
 		//Body
 		for (size_t index = 0; index < count; ++index) {
 			char const* block = blocks + (index * BlockSize);
-			uint32_t value = Utility::Load<uint32_t>(block);
+			uint32_t value = 0;
+			Utility::LoadOrdered(std::span<char const, sizeof(uint32_t)>{ block, sizeof(uint32_t) }, value);
+
 			value *= C1; value = Math::RotateLeft(value, 15); value *= C2;
 			hash ^= value; hash = Math::RotateLeft(hash, 13); hash = hash * 5 + 0xe6546b64;
 		}
@@ -207,7 +238,9 @@ constexpr Hash64::Hash64(std::string_view string, uint64_t seed) : hash(seed) {
 		//Body
 		for (size_t index = 0; index < count; index++) {
 			char const* block = blocks + (index * BlockSize);
-			uint64_t value = Utility::Load<uint64_t>(block);
+			uint64_t value = 0;
+			Utility::LoadOrdered(std::span<char const, sizeof(uint64_t)>{ block, sizeof(uint64_t) }, value);
+			
 			value *= C1; value = Math::RotateLeft(value, 31); value *= C2;
 			hash ^= value; hash = Math::RotateLeft(hash, 27); hash = hash * 5 + 0x52dce729;
 		}
@@ -257,8 +290,10 @@ constexpr Hash128::Hash128(std::string_view string, uint64_t lowSeed, uint64_t h
 		// Body
 		for (size_t index = 0; index < count; index++) {
 			char const* block = blocks + (index * BlockSize);
-			uint64_t value1 = Utility::Load<uint64_t>(block);
-			uint64_t value2 = Utility::Load<uint64_t>(block, sizeof(uint64_t));
+			uint64_t value1 = 0;
+			Utility::LoadOrdered(std::span<char const, sizeof(uint64_t)>{ block, sizeof(uint64_t) }, value1);
+			uint64_t value2 = 0;
+			Utility::LoadOrdered(std::span<char const, sizeof(uint64_t)>{ block + sizeof(uint64_t), sizeof(uint64_t) }, value1);
 
 			value1 *= C1; value1 = Math::RotateLeft(value1, 31); value1 *= C2;
 			value2 *= C2; value2 = Math::RotateLeft(value2, 33); value2 *= C1;

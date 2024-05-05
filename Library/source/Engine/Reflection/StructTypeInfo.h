@@ -23,6 +23,48 @@ namespace Reflection {
 			(std::derived_from<StructType, T> and std::is_class_v<T>);
 	}
 
+	struct StructVariableRange {
+		struct Iterator {
+			using difference_type = std::ptrdiff_t;
+			using value_type = VariableInfo const;
+
+			constexpr Iterator() = default;
+			Iterator(Iterator const&) = default;
+			Iterator(Iterator&&) = default;
+			Iterator(StructTypeInfo const& type);
+
+			Iterator& operator=(Iterator const&) = default;
+			Iterator& operator=(Iterator&&) = default;
+
+			friend inline bool operator==(const Iterator& a, const Iterator& b) { return a.current == b.current && a.index == b.index; };
+			friend inline bool operator!=(const Iterator& a, const Iterator& b) { return !(a == b); };
+
+			inline operator bool() const { return current != nullptr; }
+			Iterator& operator++();
+			Iterator operator++(int) { Iterator tmp = *this; ++(*this); return tmp; }
+
+			VariableInfo const& operator*() const;
+			VariableInfo const* operator->() const;
+
+		private:
+			size_t index = 0;
+			StructTypeInfo const* current = nullptr;
+		};
+
+		StructVariableRange(StructTypeInfo const& type) : type(type) {}
+
+		inline Iterator begin() const noexcept { return Iterator{ type }; }
+		inline constexpr Iterator end() const noexcept { return Iterator{}; }
+
+		/** Finds a variable with the given name */
+		VariableInfo const* FindVariable(std::string_view name) const;
+		/** Finds a variable with the given id */
+		VariableInfo const* FindVariable(Hash32 id) const;
+
+	private:
+		StructTypeInfo const& type;
+	};
+	
 	/** Info for a struct type, which contains various fields and supports inheritance */
 	struct StructTypeInfo : public TypeInfo {
 		using TypeInfo::TypeInfo;
@@ -37,6 +79,12 @@ namespace Reflection {
 
 		virtual ~StructTypeInfo() = default;
 
+		static void SerializeVariables(StructTypeInfo const& type, YAML::Node& node, void const* instance);
+		static void DeserializeVariables(StructTypeInfo const& type, YAML::Node const& node, void* instance);
+
+		static void SerializeVariables(StructTypeInfo const& type, Archive::Output& archive, void const* instance);
+		static void DeserializeVariables(StructTypeInfo const& type, Archive::Input& archive, void* instance);
+
 		bool IsChildOf(StructTypeInfo const& target) const {
 			//Walk up the chain of parents until we encounter the provided type
 			for (StructTypeInfo const* current = this; current; current = current->base) {
@@ -48,12 +96,8 @@ namespace Reflection {
 		template<Concepts::ReflectedStruct T>
 		bool IsChildOf() const { return IsChildOf(Reflect<T>::Get()); }
 
-		/** Finds a variable with the given id */
-		VariableInfo const* FindVariable(Hash32 id) const {
-			const auto iter = std::find_if(variables.begin(), variables.end(), [id](VariableInfo const& info) { return info.id == id; });
-			if (iter != variables.end()) return &(*iter);
-			return nullptr;
-		}
+		/** Create a range object used to iterate through or search the variables on this type */
+		StructVariableRange GetVariableRange() const { return StructVariableRange{ *this }; }
 
 		/** Returns the known specific type of an instance deriving from this type, to our best determination. */
 		virtual StructTypeInfo const* GetDerivedTypeInfo(void const* instance) const = 0;
@@ -116,3 +160,32 @@ REFLECT(glm::mat3x4, Struct);
 REFLECT(glm::mat4x2, Struct);
 REFLECT(glm::mat4x3, Struct);
 REFLECT(glm::mat4x4, Struct);
+
+namespace Archive {
+	template<Reflection::Concepts::ReflectedStruct Type>
+	struct Serializer<Type> {
+		void Write(Output& archive, Type const& instance) {
+			Reflection::StructTypeInfo::SerializeVariables(Reflect<Type>::Get(), archive, &instance);
+		}
+		void Read(Input& archive, Type& instance) {
+			Reflection::StructTypeInfo::DeserializeVariables(Reflect<Type>::Get(), archive, &instance);
+		}
+	};
+}
+
+namespace YAML {
+	/** Default converter for struct types. If a more explicit converter is available, that should be used instead of this. */
+	template<Reflection::Concepts::ReflectedStruct Type>
+	struct convert<Type> {
+		static Node encode(const Type& instance) {
+			Node node{ NodeType::Map };
+			Reflection::StructTypeInfo::SerializeVariables(Reflect<Type>::Get(), node, &instance);
+			return node;
+		}
+		static bool decode(const Node& node, Type& instance) {
+			if (!node.IsMap()) return false;
+			Reflection::StructTypeInfo::DeserializeVariables(Reflect<Type>::Get(), node, &instance);
+			return true;
+		}
+	};
+}

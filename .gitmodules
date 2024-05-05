@@ -1,3 +1,6 @@
 [submodule "Library/modules/Optick"]
 	path = Library/modules/Optick
 	url = https://github.com/bombomby/optick.git
+[submodule "Library/modules/yaml-cpp"]
+	path = Library/modules/yaml-cpp
+	url = https://github.com/jbeder/yaml-cpp

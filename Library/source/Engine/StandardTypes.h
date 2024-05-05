@@ -43,6 +43,7 @@ using namespace std::string_view_literals;
 #include <span>
 
 //Utility types
+#include <expected>
 #include <tuple>
 #include <optional>
 #include <variant>
@@ -89,6 +90,8 @@ using namespace std::string_view_literals;
 
 //Third-party and upcoming
 #include "ThirdParty/uuid.h"
+#include <absl/functional/function_ref.h>
+#include <boost/endian.hpp>
 
 namespace ranges = std::ranges;
 
@@ -98,6 +101,14 @@ namespace stdext {
 	template<typename T>
 	concept enumeration = std::is_enum_v<T>;
 
+	/** An integral or numeric type */
+	template<typename T>
+	concept numeric = std::integral<T> || std::floating_point<T>;
+
+	/** A type of character which can be used to create a string */
+	template<typename T>
+	concept character = std::is_same_v<T, char> || std::is_same_v<T, wchar_t> || std::is_same_v<T, char8_t> || std::is_same_v<T, char16_t> || std::is_same_v<T, char32_t>;
+
 	/** A type which can be compared to nullptr, but is not literally nullptr */
 	template<typename T>
 	concept null_comparable =
@@ -105,7 +116,37 @@ namespace stdext {
 		std::copyable<T> and
 		!std::is_null_pointer_v<T>;
 
+	template<typename T, typename IndexType = size_t>
+	concept indexible = requires(T t, IndexType i) {
+		t[i];
+	};
+
 	constexpr inline size_t hash_combine(size_t a, size_t b) { return a ^ (b + 0x9e3779b9 + (a << 6) + (a >> 2)); }
+
+	/** Convert a byte span into a span of objects. The byte span must be divisible into a whole number of objects */
+	template<typename T>
+	constexpr std::span<T const> from_bytes(std::span<std::byte const> bytes) {
+		if (bytes.size() % sizeof(T) != 0) throw std::runtime_error{ "invalid conversion, source byte span cannot be converted into a whole number of objects of the target type" };
+		return std::span<T const>{ reinterpret_cast<T const*>(bytes.data()), bytes.size() / sizeof(T) };
+	}
+	/** Convert a byte span into a span of objects. The byte span must be divisible into a whole number of objects */
+	template<typename T, size_t NumBytes>
+		requires (NumBytes % sizeof(T) == 0)
+	constexpr std::span<T const, NumBytes / sizeof(T)> from_bytes(std::span<std::byte const, NumBytes> bytes) {
+		return std::span<T const, NumBytes / sizeof(T)>{ reinterpret_cast<T const*>(bytes.data()), bytes.size() / sizeof(T) };
+	}
+	/** Convert a writable byte span into a span of objects. The byte span must be divisible into a whole number of objects */
+	template<typename T>
+	constexpr std::span<T> from_writable_bytes(std::span<std::byte> bytes) {
+		if (bytes.size() % sizeof(T) != 0) throw std::runtime_error{ "invalid conversion, source byte span cannot be converted into a whole number of objects of the target type" };
+		return std::span<T>{ reinterpret_cast<T*>(bytes.data()), bytes.size() / sizeof(T) };
+	}
+	/** Convert a writable byte span into a span of objects. The byte span must be divisible into a whole number of objects */
+	template<typename T, size_t NumBytes>
+		requires (NumBytes % sizeof(T) == 0)
+	constexpr std::span<T, NumBytes / sizeof(T)> from_writable_bytes(std::span<std::byte, NumBytes> bytes) {
+		return std::span<T, NumBytes / sizeof(T)>{ reinterpret_cast<T*>(bytes.data()), bytes.size() / sizeof(T) };
+	}
 
 	/** A template callable which takes some parameters and does nothing. Can be used as a default argument for methods that take a callable. */
 	template<typename T>
@@ -113,8 +154,8 @@ namespace stdext {
 		void operator()(T) {}
 	};
 
-	template<typename SourceType, std::constructible_from<SourceType const&> TargetType, typename TargetAllocatorType>
-	constexpr void append(std::vector<TargetType, TargetAllocatorType>& target, std::span<SourceType const> const& source) {
+	template<typename SourceType, std::constructible_from<SourceType const&> TargetType, typename TargetAllocatorType, size_t SpanExtent>
+	constexpr void append(std::vector<TargetType, TargetAllocatorType>& target, std::span<SourceType const, SpanExtent> const& source) {
 		target.reserve(target.size() + source.size());
 		for (SourceType const& element : source) target.emplace_back(element);
 	}
@@ -157,6 +198,9 @@ namespace stdext {
 		std::atomic<std::thread::id> owner;
 		uint32_t count;
 	};
+
+	template<typename T>
+	using function_ref = absl::FunctionRef<T>;
 
 	/** Determines whether a return value should be a copy or a reference, in the context of returning a const value of type T */
 	template<typename T>
@@ -255,6 +299,27 @@ namespace stdext {
 	private:
 		T value = T{};
 	};
+
+	template<typename T>
+	size_t get_remaining(std::basic_istream<T>& stream) {
+		auto const position = stream.tellg();
+		stream.ignore(std::numeric_limits<std::streamsize>::max());
+		auto const remaining = stream.gcount();
+		stream.clear();
+		stream.seekg(position);
+		return remaining;
+	}
+
+	template<typename T>
+	size_t get_total(std::basic_istream<T>& stream) {
+		auto const position = stream.tellg();
+		stream.seekg(std::ios::beg);
+		stream.ignore(std::numeric_limits<std::streamsize>::max());
+		auto const total = stream.gcount();
+		stream.clear();
+		stream.seekg(position);
+		return total;
+	}
 }
 
 //============================================================
