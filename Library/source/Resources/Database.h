@@ -11,8 +11,8 @@ namespace Resources {
 	/** Base class for databases, which manage a set of packages and their resources. Protected methods can be exposed by derived type as needed. */
 	struct Database : std::enable_shared_from_this<Database> {
 	public:
-		/** Get the global transient package, which is named "None". */
-		static std::shared_ptr<Package> const& GetTransient() noexcept { return transient; }
+		/** Get the global temporary package */
+		static std::shared_ptr<Package> const& GetTemporary() noexcept { return temporary; }
 
 		/** Returns true if the database contains an existing package with the provided name */
 		bool ContainsPackage(StringID name) const noexcept;
@@ -50,8 +50,8 @@ namespace Resources {
 		friend Package;
 		friend ResourceUtility;
 
-		//The global transient package, which contains resources that don't belong to another package and will not be ever saved to disk.
-		static std::shared_ptr<Package> const transient;
+		//The global temporary package, which contains resources that don't belong to another package and will not be ever saved to disk.
+		static std::shared_ptr<Package> const temporary;
 
 		ThreadSafe<std::unordered_map<StringID, std::shared_ptr<Package>>> ts_packages;
 		ThreadSafe<std::unordered_map<Hash128, std::shared_ptr<Cache>>> ts_caches;

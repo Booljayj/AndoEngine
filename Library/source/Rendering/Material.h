@@ -23,3 +23,4 @@ namespace Rendering {
 }
 
 REFLECT(Rendering::Material, Struct);
+DEFINE_REFLECTED_SERIALIZATION(Rendering::Material);

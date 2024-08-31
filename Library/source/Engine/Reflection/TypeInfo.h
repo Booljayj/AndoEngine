@@ -139,6 +139,13 @@ namespace Reflection {
 		virtual YAML::Node Serialize(void const* instance) const = 0;
 		/** Deserialize an instance of this type in YAML format */
 		virtual void Deserialize(YAML::Node const& node, void* instance) const = 0;
+
+		/** Builder method to add a description to a type */
+		template<typename Self>
+		inline auto& Description(this Self&& self, std::string_view inDescription) { self.description = inDescription; return self; }
+		/** Builder method to add flags to a type */
+		template<typename Self>
+		inline auto& Flags(this Self&& self, Reflection::FTypeFlags inFlags) { self.flags += inFlags; return self; }
 		
 	protected:
 		inline TypeInfo(ETypeClassification classification, FTypeFlags flags, Hash128 id, std::string_view name, MemoryParams memory)
@@ -228,9 +235,3 @@ TargetType const* Cast(OriginalType const& info) {
 	if (info.classification == TargetType::Classification) return static_cast<TargetType const*>(&info);
 	else return nullptr;
 }
-
-/** Define standard chained member functions used to build a TypeInfo instance */
-#define TYPEINFO_BUILDER_METHODS(Type)\
-using TypeInfo::description; using TypeInfo::flags;\
-inline decltype(auto) Description(std::string_view inDescription) { description = inDescription; return *this; }\
-inline decltype(auto) Flags(Reflection::FTypeFlags inFlags) { flags += inFlags; return *this; }\

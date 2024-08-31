@@ -3,27 +3,47 @@
 #include "Engine/StringID.h"
 #include "Resources/Database.h"
 #include "Resources/Package.h"
+#include "Resources/PackageIO.h"
 
 namespace Resources {
+	using RequestPriority = uint16_t;
+	constexpr RequestPriority DefaultRequestPriority = 1000;
+	constexpr RequestPriority LowestRequestPriority = 0;
+	constexpr RequestPriority HighestRequestPriority = std::numeric_limits<RequestPriority>::max();
+
 	/** A request to load a specific package. Used internally as part of the streaming process. */
 	struct PackageRequest {
 		using Result = std::expected<std::shared_ptr<Package>, std::string>;
-
+		
+		/** The name of the package being requested. Cannot change after the request is made, each request may only refer to a single package. */
 		StringID const name;
+
+		/** The priority at which the package is being requested. The priority can increase if a higher-priority request is made, but cannot decrease. */
+		std::atomic<RequestPriority> priority = DefaultRequestPriority;
+		/** An approximation of the progress of loading this package. Does not include the progress of loading dependencies. */
 		std::atomic<float> progress = 0.0f;
+
+		/** The source information being read to create the package. Available once the package has started the process of loading. */
+		std::optional<PackageInput> source;
+		/** The set of first-level dependencies that must be loaded before this package can be loaded */
+		std::vector<std::shared_ptr<PackageRequest>> dependencies;
+		/** The final result of this request, which is created only when it is finished. Some requests are created in an already-finished state, and this will be immediately available. */
 		TriggeredThreadSafe<std::optional<Result>> ts_result;
 
-		PackageRequest(StringID name) : name(name) {}
-		PackageRequest(stdext::shared_ref<Package> package) : name(package->GetName()), progress(1.0f), ts_result(package.get()) {}
+		PackageRequest(StringID name, RequestPriority priority) : name(name), priority(priority) {}
+		PackageRequest(std::shared_ptr<Package> package) : name(package->GetName()), progress(1.0f), ts_result(package.get()) {}
+
+		/** True if this request is still pending and does not have a result yet */
+		inline bool IsPending() const { return !ts_result.LockInclusive()->has_value(); }
 	};
 
 	/**
 	 * A handle that allows external access to a particular package request.
 	 * Handles can be copied or moved, and are equal if they both refer to the same requested package.
-	 * They do not have a default state, a handle will always refer to a request that was made.
+	 * They do not have a default state, a handle instance will always refer to a request that was made.
 	 */
 	struct PackageRequestHandle {
-		PackageRequestHandle(stdext::shared_ref<PackageRequest> request) : request(request) {}
+		PackageRequestHandle(std::shared_ptr<PackageRequest> request) : request(request) {}
 		PackageRequestHandle(PackageRequestHandle const&) = default;
 		PackageRequestHandle(PackageRequestHandle&&) = default;
 
@@ -56,50 +76,44 @@ namespace Resources {
 		static inline bool IsResultReady(std::optional<PackageRequest::Result> const& result) { return result.has_value(); }
 	};
 
-	/** The source data for a package, in binary format */
-	struct PackageSource_Binary {
-		/** The bytes that contain serialized data for the package */
-		std::vector<std::byte> bytes;
-
-		PackageSource_Binary(std::istream& stream);
-		PackageSource_Binary(Package const& package);
-	};
-	/** The source data for a package, in YAML format */
-	struct PackageSource_YAML {
-		/** The root YAML node for the package */
-		YAML::Node root;
-
-		PackageSource_YAML(std::istream& stream);
-		PackageSource_YAML(Package const& package);
-	};
-
-	/** The on-disk source for a package, in a specific known format. */
-	using PackageSource = std::variant<PackageSource_Binary, PackageSource_YAML>;
-
 	/** A database which supports streaming operations to load and save packages. Loading and saving is asynchronous. */
 	struct StreamingDatabase : public Database {
 		StreamingDatabase();
-		~StreamingDatabase();
 
 	protected:
 		/** Save a known package. The location of the saved source and the format in which it is saved is determined by the implementer. */
 		virtual bool SavePackage(Package const& package) = 0;
 		/** Load the source for a known package. The location of the source and the format in which it is returned is determined by the implementer. */
-		virtual PackageSource LoadPackageSource(StringID name) = 0;
+		virtual PackageInput LoadPackageSource(StringID name) = 0;
 
 		/** Save an existing package that has the provided name. If the package does not exist, an exception will be thrown. */
 		bool SavePackage(StringID name);
 		/** Load an existing package that has the provided name. If the package is already loaded, a handle to the loaded package will be returned instead. */
-		PackageRequestHandle LoadPackage(StringID name);
+		PackageRequestHandle LoadPackage(StringID name, RequestPriority priority = DefaultRequestPriority);
 
 	private:
-		TriggeredThreadSafe<std::unordered_map<StringID, std::shared_ptr<PackageRequest>>> ts_requests;
-		
+		struct AsyncRequestThread {
+			AsyncRequestThread(StreamingDatabase& database);
+
+			void operator()(std::stop_token token);
+
+			PackageRequestHandle CreateRequest(StringID name, RequestPriority priority);
+
+		private:
+			using ThreadSafeRequestsContainer = TriggeredThreadSafe<std::unordered_map<StringID, std::shared_ptr<PackageRequest>>>;
+
+			StreamingDatabase& database;
+			ThreadSafeRequestsContainer ts_requests;
+
+			std::shared_ptr<PackageRequest> GetHighestPriorityRequest(std::stop_token& token) const;
+			std::vector<std::shared_ptr<PackageRequest>> CreateDependencyRequests(std::unordered_set<StringID> const& dependencies);
+		};
+
+		AsyncRequestThread async_request_thread;
 		std::jthread thread;
-		
+
 		std::shared_ptr<Resource> CreateResource(StringID id, Reflection::StructTypeInfo const& type, absl::FunctionRef<void(Resource&)> initializer);
-		
-		void AsyncProcessRequests(std::stop_token token);
-		std::shared_ptr<PackageRequest> AsyncGetHighestPriorityRequest(std::stop_token& token) const;
+		std::unordered_map<StringID, std::shared_ptr<Resource>> CreateContents(PackageInput_Binary& source);
+		std::unordered_map<StringID, std::shared_ptr<Resource>> CreateContents(PackageInput_YAML& source);
 	};
 }

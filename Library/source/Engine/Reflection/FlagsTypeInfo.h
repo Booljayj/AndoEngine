@@ -146,7 +146,6 @@ namespace Reflection {
 			}
 		}
 
-		TYPEINFO_BUILDER_METHODS(FlagsType)
 		TStandardFlagsTypeInfo& ComponentsView(std::span<FlagsPairType> inComponentsView) { componentsView = inComponentsView; return *this; }
 		TStandardFlagsTypeInfo& AggregatesView(std::span<FlagsPairType> inAggregatesView) { aggregatesView = inAggregatesView; return *this; }
 		TStandardFlagsTypeInfo& Empty(FlagsPairType const* inEmpty) { empty = inEmpty; return *this; }

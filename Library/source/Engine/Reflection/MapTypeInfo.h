@@ -87,8 +87,6 @@ namespace Reflection {
 			if (value) return Cast(instance).insert(std::make_pair(CastKey(key), CastValue(value))).second;
 			else return Cast(instance).insert(std::make_pair(CastKey(key), ValueType{})).second;
 		}
-
-		TYPEINFO_BUILDER_METHODS(MapType)
 	};
 
 	//============================================================

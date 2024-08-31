@@ -17,6 +17,7 @@ private:
 	bool BooleanValue = true;
 };
 REFLECT(ReflectedType, Struct);
+DEFINE_REFLECTED_SERIALIZATION(ReflectedType);
 
 struct SecondReflectedType : public ReflectedType {
 	REFLECT_STRUCT(SecondReflectedType, ReflectedType);
@@ -25,6 +26,7 @@ struct SecondReflectedType : public ReflectedType {
 	std::vector<int32_t> VectorValue;
 };
 REFLECT(SecondReflectedType, Struct);
+DEFINE_REFLECTED_SERIALIZATION(SecondReflectedType);
 
 /*
 struct RecursiveType {

@@ -36,8 +36,6 @@ namespace Reflection {
 		virtual void const* GetValue(void const* instance, size_t index) const final {
 			return TupleUtility::VisitAt<void const*>(Cast(instance), index, TupleUtility::PointerVisitor{});
 		}
-
-		TYPEINFO_BUILDER_METHODS(TupleType);
 	};
 
 	//============================================================

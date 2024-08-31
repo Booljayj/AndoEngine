@@ -70,8 +70,6 @@ namespace Reflection {
 		virtual void AddElement(void* instance, void const* value) const final {}
 		virtual void RemoveElement(void* instance, void const* element) const final {}
 		virtual void InsertElement(void* instance, void const* element, void const* value) const final {}
-
-		TYPEINFO_BUILDER_METHODS(ArrayType)
 	};
 
 	/** Template that implements the ArrayTypeInfo interface for dynamic array types (std::vector, std::list, etc) */
@@ -123,8 +121,6 @@ namespace Reflection {
 			);
 			Cast(instance).insert(position, value ? CastElement(value) : ElementType{});
 		}
-
-		TYPEINFO_BUILDER_METHODS(ArrayType)
 	};
 
 	//============================================================

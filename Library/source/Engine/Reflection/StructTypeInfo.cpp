@@ -10,7 +10,7 @@ namespace Reflection {
 		++index;
 
 		//Move up the hierarchy if we've run out of variables in the current struct
-		if (index > current->variables.size()) {
+		if (index >= current->variables.size()) {
 			//Seek to the next base class that has new variables. If we don't find one, current will be set to nullptr.
 			current = current->base;
 			while (current && current->variables.size() == 0) current = current->base;
@@ -44,7 +44,7 @@ namespace Reflection {
 		for (VariableInfo const& variable : type.GetVariableRange()) {
 			if (variable.CanSerialize()) {
 				Archive::Output subarchive{ buffer };
-				variable.type->Serialize(subarchive, variable.GetImmutable(&instance));
+				variable.type->Serialize(subarchive, variable.GetImmutable(instance));
 
 				//If data was actually serialized for this variable, then write it to the output.
 				if (buffer.size() > 0) {
@@ -85,7 +85,7 @@ namespace Reflection {
 	void StructTypeInfo::SerializeVariables(StructTypeInfo const& type, YAML::Node& node, void const* instance) {
 		for (VariableInfo const& variable : type.GetVariableRange()) {
 			if (variable.CanSerialize()) {
-				YAML::Node const value = variable.type->Serialize(variable.GetImmutable(&instance));
+				YAML::Node const value = variable.type->Serialize(variable.GetImmutable(instance));
 
 				//If we've serialized any contents for this node, add it to the map using the name of the variable.
 				if (value) node[variable.name] = value;
@@ -100,7 +100,7 @@ namespace Reflection {
 
 			Reflection::VariableInfo const* variable = variables.FindVariable(name);
 			if (variable && variable->CanDeserialize()) {
-				variable->type->Deserialize(it->second, variable->GetMutable(&instance));
+				variable->type->Deserialize(it->second, variable->GetMutable(instance));
 			}
 		}
 	}

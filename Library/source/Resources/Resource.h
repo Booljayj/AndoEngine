@@ -1,8 +1,10 @@
 #pragma once
+#include "Engine/Archive.h"
 #include "Engine/Reflection.h"
 #include "Engine/StandardTypes.h"
 #include "Engine/Threads.h"
 #include "Resources/ResourceTypes.h"
+#include "ThirdParty/yaml.h"
 
 namespace Resources {
 	struct Cache;
@@ -58,6 +60,23 @@ namespace Resources {
 }
 
 REFLECT(Resources::Resource, Struct);
+DEFINE_REFLECTED_SERIALIZATION(Resources::Resource);
 
 inline bool operator==(Resources::Resource const& resource, StringID name) { return resource.GetName() == name; }
 inline bool operator==(std::shared_ptr<Resources::Resource> const& resource, StringID name) { return resource && resource->GetName() == name; }
+
+namespace Archive {
+	template<>
+	struct Serializer<std::shared_ptr<Resources::Resource>> {
+		static void Write(Output& archive, std::shared_ptr<Resources::Resource> const& handle);
+		static void Read(Input& archive, std::shared_ptr<Resources::Resource>& handle);
+	};
+}
+
+namespace YAML {
+	template<>
+	struct convert<std::shared_ptr<Resources::Resource>> {
+		static Node encode(std::shared_ptr<Resources::Resource> const& handle);
+		static bool decode(Node const& node, std::shared_ptr<Resources::Resource>& handle);
+	};
+}

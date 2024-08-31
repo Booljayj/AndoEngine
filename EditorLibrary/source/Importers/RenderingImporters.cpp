@@ -5,7 +5,7 @@ namespace Importers {
 	shaderc_include_result* ShaderImporter::Includer::GetInclude(const char* requested_source, shaderc_include_type type, const char* requesting_source, size_t include_depth) {
 		shaderc_include_result* result = new shaderc_include_result;
 
-		std::filesystem::path const path = std::filesystem::current_path() / "content" / "shaders" / requested_source;
+		std::filesystem::path const path = std::filesystem::current_path() / "content"sv / "shaders"sv / requested_source;
 		if (std::fstream file{ path, std::ios::in | std::ios::ate}) {
 			size_t const size = file.tellg();
 			file.seekg(0);

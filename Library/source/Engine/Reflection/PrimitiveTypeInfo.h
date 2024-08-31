@@ -15,7 +15,6 @@ namespace Reflection {
 	template<typename Type>
 	struct TPrimitiveTypeInfo : public ImplementedTypeInfo<Type, PrimitiveTypeInfo> {
 		TPrimitiveTypeInfo(std::string_view name) : ImplementedTypeInfo<Type, PrimitiveTypeInfo>(Reflect<Type>::ID, name) {}
-		TYPEINFO_BUILDER_METHODS(Type);
 	};
 
 	//============================================================

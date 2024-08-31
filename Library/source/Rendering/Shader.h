@@ -39,3 +39,17 @@ namespace Rendering {
 REFLECT(Rendering::Shader, Struct);
 REFLECT(Rendering::VertexShader, Struct);
 REFLECT(Rendering::FragmentShader, Struct);
+
+//Custom YAML serialization for shader bytecode
+namespace YAML {
+	template<>
+	struct convert<Rendering::Shader> {
+		static Node encode(Rendering::Shader const& shader);
+		static bool decode(Node const& node, Rendering::Shader& shader);
+	};
+
+	template<>
+	struct convert<Rendering::VertexShader> : public convert<Rendering::Shader> {};
+	template<>
+	struct convert<Rendering::FragmentShader> : public convert<Rendering::Shader> {};
+}

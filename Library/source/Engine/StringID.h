@@ -74,6 +74,7 @@ private:
 	friend struct std::hash<StringID>;
 	friend struct StringStorage;
 	friend struct YAML::as_if<StringID, void>;
+	template<typename T> friend struct Archive::Serializer;
 
 	static constexpr uint16_t CreateHash(std::string_view string) {
 		uint32_t const full = Hash32{ string }.ToValue();

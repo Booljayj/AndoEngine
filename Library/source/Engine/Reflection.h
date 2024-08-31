@@ -6,6 +6,7 @@
 #include "Engine/Reflection/MapTypeInfo.h"
 #include "Engine/Reflection/PolyTypeInfo.h"
 #include "Engine/Reflection/PrimitiveTypeInfo.h"
+#include "Engine/Reflection/ReferenceTypeInfo.h"
 #include "Engine/Reflection/SetTypeInfo.h"
 #include "Engine/Reflection/StructTypeInfo.h"
 #include "Engine/Reflection/TupleTypeInfo.h"

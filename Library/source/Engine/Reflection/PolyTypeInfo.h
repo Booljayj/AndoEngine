@@ -60,8 +60,6 @@ namespace Reflection {
 			}
 		}
 		virtual void Unassign(void* instance) const final { Cast(instance).reset(); }
-
-		TYPEINFO_BUILDER_METHODS(PointerType)
 	};
 
 	//============================================================

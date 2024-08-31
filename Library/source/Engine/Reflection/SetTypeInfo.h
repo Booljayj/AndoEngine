@@ -58,8 +58,6 @@ namespace Reflection {
 		virtual void Clear(void* instance) const final { Cast(instance).clear(); }
 		virtual bool Add(void* instance, void const* value) const final { return Cast(instance).insert(CastValue(value)).second; }
 		virtual bool Remove(void* instance, void const* value) const final { return Cast(instance).erase(CastValue(value)) > 0; }
-
-		TYPEINFO_BUILDER_METHODS(SetType)
 	};
 
 	//============================================================

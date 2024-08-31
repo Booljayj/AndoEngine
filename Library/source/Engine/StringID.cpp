@@ -193,8 +193,8 @@ namespace Archive {
 		Serializer<std::string_view>::Write(archive, sid.ToStringView());
 	}
 	void Serializer<StringID>::Read(Input& archive, StringID& sid) {
-		std::string string;
-		Serializer<std::string>::Read(archive, string);
+		std::string_view string;
+		Serializer<std::string_view>::Read(archive, string);
 		sid = StringID{ string };
 	}
 }

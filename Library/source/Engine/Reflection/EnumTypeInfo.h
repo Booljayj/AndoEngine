@@ -74,7 +74,6 @@ namespace Reflection {
 			return iter - elementView.begin();
 		}
 
-		TYPEINFO_BUILDER_METHODS(EnumType)
 		decltype(auto) ElementView(std::span<EnumPairType> inElementView) { elementView = inElementView; return *this; }
 	};
 
@@ -112,7 +111,6 @@ namespace Reflection {
 			return iter - elementView.begin();
 		}
 
-		TYPEINFO_BUILDER_METHODS(UnderlyingType)
 		decltype(auto) ElementView(std::span<EnumPairType> inElementView) { elementView = inElementView; return *this; }
 	};
 }

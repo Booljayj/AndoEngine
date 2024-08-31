@@ -12,6 +12,9 @@ namespace Reflection {
 
 		/** The variable that contains the type being aliased */
 		VariableInfo variable;
+
+		template<typename Self>
+		inline auto& Variable(this Self& self, VariableInfo const& inVariable) { variable = inVariable; return self; }
 	};
 
 	namespace Concepts {
@@ -30,7 +33,6 @@ namespace Reflection {
 
 		TAliasTypeInfo(std::string_view inName) : ImplementedTypeInfo<Type, AliasTypeInfo>(Reflect<Type>::ID, inName) {}
 
-		TYPEINFO_BUILDER_METHODS(Type);
 		inline decltype(auto) Variable(VariableInfo const& inVariable) { variable = inVariable; return *this; }
 	};
 }

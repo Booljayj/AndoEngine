@@ -60,6 +60,21 @@ namespace Utility {
 			target[index] = static_cast<uint8_t>(value >> (CHAR_BIT * index));
 		}
 	}
+
+	/** Extract the raw bytes from a stream. Does not limit the number of bytes that will be read, should not be used on infinite streams. */
+	inline void ExtractBytes(std::istream& stream, std::vector<std::byte>& output) {
+		std::for_each(
+			std::istream_iterator<char>{ stream }, std::istream_iterator<char>{},
+			[&output](char c) { output.push_back(std::byte{ static_cast<unsigned char>(c) }); }
+		);
+	}
+
+	/** Extract the raw bytes from a stream. Does not limit the number of bytes that will be read, should not be used on infinite streams. */
+	inline std::vector<std::byte> ExtractBytes(std::istream& stream) {
+		std::vector<std::byte> result;
+		ExtractBytes(stream, result);
+		return result;
+	}
 }
 
 /** A size value in bytes. Used as a wrapper to distinguish a byte size from a raw number. */

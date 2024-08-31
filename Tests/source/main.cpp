@@ -14,6 +14,7 @@
 #include "Rendering/StaticMesh.h"
 
 #include "Resources/MemoryDatabase.h"
+#include "Resources/Text.h"
 
 #include "ThirdParty/EnTT.h"
 
@@ -112,7 +113,7 @@ int main(int argc, char** argv) {
 	if (application.Startup()) {
 		//Create the default plane mesh. This demonstrates the process of assining raw vertex and index information for a mesh.
 		Handle<StaticMesh> const plane = application.database.Create<StaticMesh>(
-			"SM_Plane"_sid, Database::GetTransient(),
+			"SM_Plane"_sid, Database::GetTemporary(),
 			[](StaticMesh& mesh) {
 				mesh.vertices.emplace<Vertices_Simple>() = {
 					{ vec3{ -0.5f, -0.5f, 0.0f }, Color{ 255, 0, 0, 255 }, vec3{ 0, 0, 1 }, vec2{ 0, 0 } },
@@ -127,13 +128,13 @@ int main(int argc, char** argv) {
 
 		//Create the default material. This demonstrates recursive resource creation that is thread-safe without deadlocks.
 		Handle<Material> const material = application.database.Create<Material>(
-			"M_Default"_sid, Database::GetTransient(),
+			"M_Default"_sid, Database::GetTemporary(),
 			[&](Material& material) {
 				//Shaders are imported from raw text strings. This demonstrates the use of an importer object to initialize resources from raw data.
 				Importers::ShaderImporter importer;
 
 				material.shaders.vertex = application.database.Create<VertexShader>(
-					"SH_DefaultVertex"_sid, Database::GetTransient(),
+					"SH_DefaultVertex"_sid, Database::GetTemporary(),
 					[&](VertexShader& shader) {
 						importer.Import(
 							shader,
@@ -155,7 +156,7 @@ void main() {
 				);
 
 				material.shaders.fragment = application.database.Create<FragmentShader>(
-					"SH_DefaultFragment"_sid, Database::GetTransient(),
+					"SH_DefaultFragment"_sid, Database::GetTemporary(),
 					[&](FragmentShader& shader) {
 						importer.Import(
 							shader,
@@ -182,6 +183,34 @@ void main() {
 		MeshRenderer& renderer = application.registry.emplace<MeshRenderer>(testEntity);
 		renderer.material = material;
 		renderer.mesh = plane;
+
+		Handle<Text> text = application.database.Create<Text>(
+			"T_Test"_sid, Database::GetTemporary(),
+			[](Text& text) {
+				text.string = "This is a test string. It should have exactly eleven words.";
+			}
+		);
+
+		Reflection::StructTypeInfo const& type = Reflect<Text>::Get();
+		LOG(Temp, Warning, "Name: {}, ID: {}, Vars: {}", type.name, type.id, type.variables.size());
+
+		/*if (Reflection::VariableInfo const* variable = type.GetVariableRange().FindVariable("string"sv))
+		{
+			LOG(Temp, Warning, "Variable -- Name: {}, ID: {}, Type: {}", variable->name, variable->id, variable->type->name);
+			void const* instance = variable->GetImmutable(text.get());
+
+			LOG(Temp, Warning, "Address: {}, Expected: {}", reinterpret_cast<uintptr_t>(instance), reinterpret_cast<uintptr_t>(text.get()) + offsetof(Text, string));
+		}*/
+
+
+		{
+			//Serialization test - convert resource objects to YAML to determine if the output is formatted the right way
+			YAML::Node shaderNode = Reflect<VertexShader>::Get().Serialize(material->shaders.vertex.get());
+			LOG(Temp, Warning, "Shader: {}", YAML::Dump(shaderNode));
+
+			YAML::Node textNode = Reflect<Text>::Get().Serialize(text.get());
+			LOG(Temp, Warning, "Text: {}", YAML::Dump(textNode));
+		}
 
 		application.MainLoop();
 	}

@@ -1,28 +1,30 @@
 #pragma once
 #include "Engine/StandardTypes.h"
-#include "Resources/Database.h"
+#include "Resources/Streaming.h"
 
 namespace Resources {
 	/** Packages correspond to files on disk. They can be modified arbitrarily. */
-	struct FileDatabase : public Database {
-		/** Create a new empty package with the provided name. If a package with this name already exists, that will be returned instead. Throws if this package exists but is not loaded. */
+	struct FileDatabase : public StreamingDatabase {
+		/** Create a new empty package with the provided name. If the package cannot be created, an exception will be thrown. */
 		std::shared_ptr<Package> CreatePackage(StringID name) { return Database::CreatePackage(name); }
-		/** Load an existing package from disk. Will throw if the package does not exist. If the package is already loaded, that will be returned instead. */
-		std::shared_ptr<StreamingPackage> LoadPackage(StringID name) { return Database::LoadPackage(name); }
-		/** Destroy an existing package by name. Will throw if the package cannot be destroyed because it is being used. */
+		/** Destroy an existing package by name. If the package is being used and cannot be destroyed, an exception will be thrown. */
 		void DestroyPackage(StringID name) { return Database::DestroyPackage(name); }
 
 		/** Find an existing package by name */
 		std::shared_ptr<Package const> FindPackage(StringID name) const { return Database::FindPackage(name); }
+		/** Find an existing package by name */
 		std::shared_ptr<Package> FindPackage(StringID name) { return Database::FindPackage(name); }
 
-		/** Returns true if the package has saved data on the filesystem. Does not check if the package is loaded or dirty. */
-		bool IsPackageSaved(StringID name) const;
-
+		/** Create a new resource in the provided package. Will throw if the resource cannot be created. */
+		template<Concepts::DerivedFromResource T, std::invocable<T&> InitializerType>
+		stdext::shared_ref<T> Create(StringID name, stdext::shared_ref<Package> package, InitializerType&& initializer) { return Database::Create<T>(name, package, std::forward<InitializerType>(initializer)); }
+		
 		/** Save changes to a package to disk. Will create a file for the package if it doesn't already exist. */
-		void SavePackage(stdext::shared_ref<Package> package);
+		void SavePackage(StringID name) { StreamingDatabase::SavePackage(name); }
+
 		/** Reload the package from disk, discarding any unsaved changes that were made to the package. Does nothing if the package has no on-disk representation. */
-		void ReloadPackage(stdext::shared_ref<Package> package);
+		void ReloadPackage(StringID name);
+
 		/**
 		 * Delete the on-disk representation for a package.
 		 * If the package is loaded, this will not affect the actual package, but after calling this the package cannot be loaded again until it is recreated.
@@ -30,15 +32,14 @@ namespace Resources {
 		 */
 		void DeletePackage(StringID name);
 
-		/** Create a new resource in the provided package. Will throw if the resource cannot be created. */
-		template<Concepts::DerivedFromResource T, std::invocable<T&> InitializerType = stdext::no_op<T&>>
-		stdext::shared_ref<T> Create(StringID name, stdext::shared_ref<Package> package, InitializerType&& initializer = stdext::no_op<T&>{}) { return Database::Create<T>(name, package, std::forward<InitializerType>(initializer)); }
-	
-	protected:
-		virtual PackageSource LoadPackageSource(StringID name) final;
+		/** Returns true if the package has saved data on the filesystem. Does not check if the package is loaded or dirty. */
+		bool IsPackageSaved(StringID name) const;
 
-		virtual bool CanCreatePackage(StringID name) final;
-		
+	protected:
+		virtual bool CanCreatePackage(StringID name) const override final;
+		virtual bool SavePackage(Package const& package) override final;
+		virtual PackageInput LoadPackageSource(StringID name) override final;
+
 	private:
 		/** Convert a package name to a filesystem path where the package can be found */
 		static std::filesystem::path GetPath(StringID name);

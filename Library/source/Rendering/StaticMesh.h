@@ -26,3 +26,4 @@ namespace Rendering {
 }
 
 REFLECT(Rendering::StaticMesh, Struct);
+DEFINE_REFLECTED_SERIALIZATION(Rendering::StaticMesh);

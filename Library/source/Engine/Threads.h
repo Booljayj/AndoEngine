@@ -1,6 +1,13 @@
 #pragma once
 #include "Engine/StandardTypes.h"
 
+/** Create a thread that will execute the callable object */
+template<typename Callable>
+std::jthread CreateThread(Callable& callable) {
+	if constexpr (std::invocable<Callable, std::stop_token>) return std::jthread{ std::bind_front(&Callable::operator(), &callable) };
+	else return std::jthread{ &Callable::operator(), &callable };
+}
+
 /** Helper type that allows access to a variable that has be locked by a mutex in an inclusive way, so other threads can also access it at the same time. */
 template<typename ValueType_, typename MutexType = std::shared_mutex>
 struct InclusiveLockedValue {
@@ -84,6 +91,11 @@ struct TriggeredThreadSafe : public ThreadSafe<ValueType, MutexType> {
 	using ThreadSafe<ValueType, MutexType>::ThreadSafe;
 	using Inclusive = ThreadSafe<ValueType, MutexType>::Inclusive;
 	using Exclusive = ThreadSafe<ValueType, MutexType>::Exclusive;
+
+	~TriggeredThreadSafe() {
+		//Always notify during destruction so that waiting threads can update and see that they are finished.
+		Notify();
+	}
 
 	/** Notify waiting threads that the value has been modified. Can be called while a lock is held. */
 	inline void Notify() { cv.notify_all(); }

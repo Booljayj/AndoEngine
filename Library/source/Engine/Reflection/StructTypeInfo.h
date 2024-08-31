@@ -85,10 +85,10 @@ namespace Reflection {
 		static void SerializeVariables(StructTypeInfo const& type, Archive::Output& archive, void const* instance);
 		static void DeserializeVariables(StructTypeInfo const& type, Archive::Input& archive, void* instance);
 
-		bool IsChildOf(StructTypeInfo const& target) const {
+		bool IsChildOf(StructTypeInfo const& parent) const {
 			//Walk up the chain of parents until we encounter the provided type
 			for (StructTypeInfo const* current = this; current; current = current->base) {
-				if (current == &target) return true;
+				if (current == &parent) return true;
 			}
 			return false;
 		}
@@ -101,6 +101,13 @@ namespace Reflection {
 
 		/** Returns the known specific type of an instance deriving from this type, to our best determination. */
 		virtual StructTypeInfo const* GetDerivedTypeInfo(void const* instance) const = 0;
+
+		/** Builder method to add a defaults instance to a struct type */
+		template<typename Self>
+		inline auto& Defaults(this Self&& self, void const* inDefaults) { self.defaults = inDefaults; return self; }
+		/** Builder method to add variables to a struct type */
+		template<typename Self>
+		inline auto& Variables(this Self&& self, std::initializer_list<VariableInfo>&& inVariables) { self.variables = inVariables; return self; }
 	};
 
 	//============================================================
@@ -122,70 +129,122 @@ namespace Reflection {
 			else return this;
 		}
 
-		TYPEINFO_BUILDER_METHODS(StructType)
 		template<Concepts::ReflectedStructBase<StructType> BaseType>
 		inline decltype(auto) Base() {
 			if constexpr (!std::is_same_v<BaseType, void>) base = &Reflect<BaseType>::Get();
 			return *this;
 		}
-		inline decltype(auto) Defaults(void const* inDefaults) { defaults = inDefaults; return *this; }
-		inline decltype(auto) Variables(std::initializer_list<VariableInfo>&& inVariables) { variables = inVariables; return *this; }
 	};
 }
 
 //============================================================
 // Standard struct reflection
 
+/** Define serialization methods for a type which are based on the reflection system */
+#define DEFINE_REFLECTED_SERIALIZATION(StructType) \
+namespace Archive {\
+	template<> struct Serializer<StructType> {\
+		void Write(Output& archive, StructType const& instance) { Reflection::StructTypeInfo::SerializeVariables(::Reflection::Reflect<StructType>::Get(), archive, &instance); }\
+		void Read(Input& archive, StructType& instance) { Reflection::StructTypeInfo::DeserializeVariables(::Reflection::Reflect<StructType>::Get(), archive, &instance); }\
+	};\
+}\
+namespace YAML {\
+	template<> struct convert<StructType> {\
+		static Node encode(const StructType& instance) {\
+			Node node{ NodeType::Map }; Reflection::StructTypeInfo::SerializeVariables(::Reflection::Reflect<StructType>::Get(), node, &instance); return node;\
+		}\
+		static bool decode(const Node& node, StructType& instance) {\
+			if (!node.IsMap()) return false;\
+			Reflection::StructTypeInfo::DeserializeVariables(::Reflection::Reflect<StructType>::Get(), node, &instance); return true;\
+		}\
+	};\
+}
+
+namespace Reflection {
+	template<typename FirstType, typename SecondType>
+	struct Reflect<std::pair<FirstType, SecondType>> {
+		static StructTypeInfo const& Get() { return info; }
+		static constexpr Hash128 ID = Hash128{ "std::pair"sv } + Reflect<FirstType>::ID + Reflect<SecondType>::ID;
+	private:
+		using ThisTypeInfo = TStructTypeInfo<std::pair<FirstType, SecondType>>;
+		static ThisTypeInfo const info;
+
+		static void const* GetDefaults() {
+			if constexpr (std::is_default_constructible_v<FirstType> && std::is_default_constructible_v<SecondType>) {
+				static std::pair<FirstType, SecondType> const defaults;
+				return &defaults;
+			} else {
+				return nullptr;
+			}
+		}
+	};
+
+	template<typename FirstType, typename SecondType>
+	typename Reflect<std::pair<FirstType, SecondType>>::ThisTypeInfo const Reflect<std::pair<FirstType, SecondType>>::info =
+		typename Reflect<std::pair<FirstType, SecondType>>::ThisTypeInfo{ "std::pair"sv }
+		.Description("pair"sv)
+		.Defaults(Reflect<std::pair<FirstType, SecondType>>::GetDefaults())
+		.Variables({
+			{ &std::pair<FirstType, SecondType>::first, "first"sv, "first value in pair"sv, FVariableFlags::None() },
+			{ &std::pair<FirstType, SecondType>::second, "second"sv, "second value in pair"sv, FVariableFlags::None() },
+		});
+}
+
+namespace Archive {
+	template<typename FirstType, typename SecondType>
+	struct Serializer<std::pair<FirstType, SecondType>> {
+		void Write(Output& archive, std::pair<FirstType, SecondType> const& instance) {
+			Serializer<FirstType>::Write(archive, instance.first);
+			Serializer<FirstType>::Write(archive, instance.second);
+		}
+		void Read(Input& archive, std::pair<FirstType, SecondType>& instance) {
+			Serializer<FirstType>::Read(archive, instance.first);
+			Serializer<FirstType>::Read(archive, instance.second);
+		}
+	};
+}
+//YAML serialization methods for std::pair are already defined in the YAML library
+
 REFLECT(glm::vec2, Struct);
 REFLECT(glm::vec3, Struct);
 REFLECT(glm::vec4, Struct);
+DEFINE_REFLECTED_SERIALIZATION(glm::vec2);
+DEFINE_REFLECTED_SERIALIZATION(glm::vec3);
+DEFINE_REFLECTED_SERIALIZATION(glm::vec4);
 
 REFLECT(glm::u32vec2, Struct);
 REFLECT(glm::u32vec3, Struct);
+DEFINE_REFLECTED_SERIALIZATION(glm::u32vec2);
+DEFINE_REFLECTED_SERIALIZATION(glm::u32vec3);
 
 REFLECT(glm::i32vec2, Struct);
 REFLECT(glm::i32vec3, Struct);
+DEFINE_REFLECTED_SERIALIZATION(glm::i32vec2);
+DEFINE_REFLECTED_SERIALIZATION(glm::i32vec3);
 
 REFLECT(glm::u8vec3, Struct);
 REFLECT(glm::u8vec4, Struct);
+DEFINE_REFLECTED_SERIALIZATION(glm::u8vec3);
+DEFINE_REFLECTED_SERIALIZATION(glm::u8vec4);
 
 REFLECT(glm::mat2x2, Struct);
 REFLECT(glm::mat2x3, Struct);
 REFLECT(glm::mat2x4, Struct);
+DEFINE_REFLECTED_SERIALIZATION(glm::mat2x2);
+DEFINE_REFLECTED_SERIALIZATION(glm::mat2x3);
+DEFINE_REFLECTED_SERIALIZATION(glm::mat2x4);
 
 REFLECT(glm::mat3x2, Struct);
 REFLECT(glm::mat3x3, Struct);
 REFLECT(glm::mat3x4, Struct);
+DEFINE_REFLECTED_SERIALIZATION(glm::mat3x2);
+DEFINE_REFLECTED_SERIALIZATION(glm::mat3x3);
+DEFINE_REFLECTED_SERIALIZATION(glm::mat3x4);
 
 REFLECT(glm::mat4x2, Struct);
 REFLECT(glm::mat4x3, Struct);
 REFLECT(glm::mat4x4, Struct);
+DEFINE_REFLECTED_SERIALIZATION(glm::mat4x2);
+DEFINE_REFLECTED_SERIALIZATION(glm::mat4x3);
+DEFINE_REFLECTED_SERIALIZATION(glm::mat4x4);
 
-namespace Archive {
-	template<Reflection::Concepts::ReflectedStruct Type>
-	struct Serializer<Type> {
-		void Write(Output& archive, Type const& instance) {
-			Reflection::StructTypeInfo::SerializeVariables(Reflect<Type>::Get(), archive, &instance);
-		}
-		void Read(Input& archive, Type& instance) {
-			Reflection::StructTypeInfo::DeserializeVariables(Reflect<Type>::Get(), archive, &instance);
-		}
-	};
-}
-
-namespace YAML {
-	/** Default converter for struct types. If a more explicit converter is available, that should be used instead of this. */
-	template<Reflection::Concepts::ReflectedStruct Type>
-	struct convert<Type> {
-		static Node encode(const Type& instance) {
-			Node node{ NodeType::Map };
-			Reflection::StructTypeInfo::SerializeVariables(Reflect<Type>::Get(), node, &instance);
-			return node;
-		}
-		static bool decode(const Node& node, Type& instance) {
-			if (!node.IsMap()) return false;
-			Reflection::StructTypeInfo::DeserializeVariables(Reflect<Type>::Get(), node, &instance);
-			return true;
-		}
-	};
-}

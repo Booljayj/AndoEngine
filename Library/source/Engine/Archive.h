@@ -95,15 +95,24 @@ namespace Archive {
 
 	namespace Concepts {
 		template<typename T>
-		concept Writable = requires (T const& t, Output & archive) {
+		concept Writable = requires (T const& t, Output& archive) {
 			{ Serializer<T>::Write(archive, t) };
 		};
 		template<typename T>
-		concept Readable = requires (T & t, Input & archive) {
+		concept Readable = requires (T & t, Input& archive) {
 			{ Serializer<T>::Read(archive, t) };
 		};
 		template<typename T>
 		concept ReadWritable = Writable<T> and Readable<T>;
+
+		template<typename T, typename E>
+		concept RangeOf = ranges::sized_range<T> && std::same_as<ranges::range_reference_t<T>, E>;
+
+		template<typename T, typename E>
+		concept ReadableRangeOf = RangeOf<T, E> && requires (T& t, size_t integer) {
+			{ t.resize(integer) };
+			{ t.operator[](integer) };
+		};
 	}
 
 	//=============================================================================
@@ -182,50 +191,81 @@ namespace Archive {
 			Serializer<size_t>::Write(archive, string.size());
 			for (T const character : string) Serializer<T>::Write(archive, character);
 		}
+		static void Read(Input& archive, std::basic_string_view<T>& string) {
+			size_t num = 0;
+			Serializer<size_t>::Read(archive, num);
+
+			std::span<std::byte const> const bytes = archive.Read(num * sizeof(T));
+			string = std::basic_string_view<T>{ reinterpret_cast<T const*>(bytes.data()), num };
+		}
 	};
 
 	//=============================================================================
-	// Array types
+	// Range types
 
-	template<Concepts::ReadWritable T, typename AllocatorType>
-	struct Serializer<std::vector<T, AllocatorType>> {
-		static void Write(Output& archive, std::vector<T, AllocatorType> const& vector) {
-			Serializer<size_t>::Write(archive, vector.size());
-			if constexpr (std::is_same_v<std::remove_const_t<T>, std::byte>) {
-				archive.Write(std::span<std::byte const>{ vector });
+	template<typename T>
+	concept ReadWritableDynamicRange =
+		ranges::sized_range<T> &&
+		ranges::forward_range<T> &&
+		Concepts::ReadWritable<ranges::range_value_t<T>> &&
+		requires (T& t) {
+			{ t.clear() };
+			{ std::inserter<T> };
+		};
+
+	template<ReadWritableDynamicRange RangeType>
+	struct Serializer<RangeType> {
+		using ElementType = ranges::range_value_t<RangeType>;
+
+		static void Write(Output& archive, RangeType const& range) {
+			size_t const num = range.size();
+			Serializer<size_t>::Write(archive, num);
+
+			if constexpr (std::is_same_v<std::remove_const_t<ElementType>, std::byte>) {
+				archive.Write(std::span<std::byte const>{ range });
 			} else {
-				for (const T& element : vector) Serializer<T>::Write(archive, element);
+				for (const ElementType& element : range) Serializer<ElementType>::Write(archive, element);
 			}
 		}
-		static void Read(Input& archive, std::vector<T, AllocatorType>& vector) {
+
+		static void Read(Input& archive, RangeType& range) {
+			range.clear();
+
 			size_t num = 0;
 			Serializer<size_t>::Read(archive, num);
-			vector.resize(num);
-
-			if constexpr (std::is_same_v<std::remove_const_t<T>, std::byte>) {
+			
+			if constexpr (std::is_same_v<std::remove_const_t<ElementType>, std::byte>) {
 				auto const span = archive.Read(num);
-				for (size_t index = 0; index < num; ++index) vector[index] = span[index];
+				auto inserter = std::inserter(range, range.end());
+				for (size_t index = 0; index < num; ++index) inserter = span[index];
 			} else {
-				for (const T& element : vector) Serializer<T>::Read(archive, element);
+				auto inserter = std::inserter(range, range.end());
+
+				for (size_t index = 0; index < num; ++index) {
+					ElementType element;
+					Serializer<ElementType>::Read(archive, element);
+
+					inserter = std::move(element);
+				}
 			}
 		}
 	};
 
 	template<Concepts::ReadWritable T, size_t N>
 	struct Serializer<std::array<T, N>> {
-		static void Write(Output& archive, std::array<T, N> const& array) {
+		static void Write(Output& archive, std::array<T, N> const& container) {
 			if constexpr (std::is_same_v<std::remove_const_t<T>, std::byte>) {
-				archive.Write(std::span<std::byte const>{ array });
+				archive.Write(std::span<std::byte const>{ container });
 			} else {
-				for (const T& element : array) Serializer<T>::Write(archive, element);
+				for (const T& element : container) Serializer<T>::Write(archive, element);
 			}
 		}
-		static void Read(Input& archive, std::array<T, N>& array) {
+		static void Read(Input& archive, std::array<T, N>& container) {
 			if constexpr (std::is_same_v<std::remove_const_t<T>, std::byte>) {
 				auto const span = archive.Read<N>();
-				for (size_t index = 0; index < N; ++index) array[index] = span[index];
+				for (size_t index = 0; index < N; ++index) container[index] = span[index];
 			} else {
-				for (T& element : array) Serializer<T>::Read(archive, element);
+				for (const T& element : container) Serializer<T>::Read(archive, element);
 			}
 		}
 	};
@@ -234,114 +274,25 @@ namespace Archive {
 	struct Serializer<std::span<T, Extent>> {
 		static void Write(Output& archive, std::span<T, Extent> const& span) {
 			if constexpr (Extent == std::dynamic_extent) {
-				Serializer<size_t>::Write(archive, span.size());
+				size_t const num = span.size();
+				Serializer<size_t>::Write(archive, num);
 			}
-			if constexpr (std::is_same_v<std::remove_const_t<T>, std::byte>) {	
+
+			if constexpr (std::is_same_v<std::remove_const_t<T>, std::byte>) {
 				archive.Write(span);
 			} else {
-				for (T const& element : span) Serializer<T>::Write(archive, element);
+				for (const T& element : span) Serializer<T>::Write(archive, element);
 			}
 		}
 		static void Read(Input& archive, std::span<T, Extent>& span) {
-			static_assert(std::is_same_v<std::remove_const_t<T>, std::byte>, "Cannot read to a span except for a span of bytes");
+			static_assert(std::is_trivial_v<T> && std::is_const_v<T>, "Only constant trivial types can be read from an archive as a span");
 
 			if constexpr (Extent == std::dynamic_extent) {
 				size_t num = 0;
 				Serializer<size_t>::Read(archive, num);
-				span = archive.Read(num);
+				span = stdext::from_bytes<T>(archive.Read(num * sizeof(T)));
 			} else {
-				span = archive.Read<Extent>();
-			}
-		}
-	};
-
-	//=============================================================================
-	// Map and set types
-	
-	template<Concepts::ReadWritable K, Concepts::ReadWritable V, typename KeyLessType, typename AllocatorType>
-	struct Serializer<std::map<K, V, KeyLessType, AllocatorType>> {
-		using MapType = std::map<K, V, KeyLessType, AllocatorType>;
-
-		static void Write(Output& archive, MapType const& map) {
-			Serializer<size_t>::Write(archive, map.size());
-			for (const auto& pair : map) {
-				Serializer<K>::Write(archive, pair.first);
-				Serializer<V>::Write(archive, pair.second);
-			}
-		}
-		static void Read(Input& archive, MapType& map) {
-			size_t num = 0;
-			Serializer<size_t>::Read(archive, num);
-			
-			for (size_t index = 0; index < num; ++index) {
-				std::pair<K, V> pair;
-				Serializer<K>::Read(archive, pair.first);
-				Serializer<V>::Read(archive, pair.second);
-				map.emplace(std::move(pair));
-			}
-		}
-	};
-
-	template<Concepts::ReadWritable K, Concepts::ReadWritable V, typename KeyLessType, typename AllocatorType>
-	struct Serializer<std::unordered_map<K, V, KeyLessType, AllocatorType>> {
-		using MapType = std::unordered_map<K, V, KeyLessType, AllocatorType>;
-
-		static void Write(Output& archive, MapType const& map) {
-			Serializer<size_t>::Write(archive, map.size());
-			for (const auto& pair : map) {
-				Serializer<K>::Write(archive, pair.first);
-				Serializer<V>::Write(archive, pair.second);
-			}
-		}
-		static void Read(Input& archive, MapType& map) {
-			size_t num = 0;
-			Serializer<size_t>::Read(archive, num);
-			
-			for (size_t index = 0; index < num; ++index) {
-				std::pair<K, V> pair;
-				Serializer<K>::Read(archive, pair.first);
-				Serializer<V>::Read(archive, pair.second);
-				map.emplace(std::move(pair));
-			}
-		}
-	};
-
-	template<Concepts::ReadWritable T, typename LessType, typename AllocatorType>
-	struct Serializer<std::set<T, LessType, AllocatorType>> {
-		using SetType = std::set<T, LessType, AllocatorType>;
-
-		static void Write(Output& archive, SetType const& set) {
-			Serializer<size_t>::Write(archive, set.size());
-			for (const auto& element : set) Serializer<T>::Write(archive, element);
-		}
-		static void Read(Input& archive, SetType& set) {
-			size_t num = 0;
-			Serializer<size_t>::Read(archive, num);
-			
-			for (size_t index = 0; index < num; ++index) {
-				T element;
-				Serializer<T>::Read(archive, element);
-				set.element(std::move(element));
-			}
-		}
-	};
-
-	template<Concepts::ReadWritable T, typename LessType, typename AllocatorType>
-	struct Serializer<std::unordered_set<T, LessType, AllocatorType>> {
-		using SetType = std::unordered_set<T, LessType, AllocatorType>;
-
-		static void Write(Output& archive, SetType const& set) {
-			Serializer<size_t>::Write(archive, set.size());
-			for (const auto& element : set) Serializer<T>::Write(archive, element);
-		}
-		static void Read(Input& archive, SetType& set) {
-			size_t num = 0;
-			Serializer<size_t>::Read(archive, num);
-
-			for (size_t index = 0; index < num; ++index) {
-				T element;
-				Serializer<T>::Read(archive, element);
-				set.element(std::move(element));
+				span = stdext::from_bytes<T>(archive.Read<Extent * sizeof(T)>());
 			}
 		}
 	};

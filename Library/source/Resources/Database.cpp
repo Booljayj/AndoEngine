@@ -4,7 +4,7 @@
 #include "Resources/Resource.h"
 
 namespace Resources {
-	std::shared_ptr<Package> const Database::transient = std::make_shared<Package>(nullptr, StringID::None);
+	std::shared_ptr<Package> const Database::temporary = std::make_shared<Package>(nullptr, StringID::Temporary);
 
 	bool Database::ContainsPackage(StringID name) const noexcept {
 		auto const packages = ts_packages.LockInclusive();
@@ -23,7 +23,7 @@ namespace Resources {
 	}
 
 	std::shared_ptr<Package> Database::FindPackage(StringID name) const noexcept {
-		if (name == StringID::None) return GetTransient();
+		if (name == StringID::None || name == StringID::Temporary) return GetTemporary();
 
 		auto const packages = ts_packages.LockInclusive();
 		if (auto const iter = packages->find(name); iter != packages->end()) return iter->second;
@@ -45,7 +45,7 @@ namespace Resources {
 	}
 
 	std::shared_ptr<Package> Database::FindOrCreatePackage(StringID name) {
-		if (name == StringID::None) return GetTransient();
+		if (name == StringID::None || name == StringID::Temporary) return GetTemporary();
 
 		auto packages = ts_packages.LockExclusive();
 		if (auto const iter = packages->find(name); iter != packages->end()) return iter->second;

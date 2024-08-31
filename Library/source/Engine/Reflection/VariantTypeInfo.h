@@ -112,8 +112,6 @@ namespace Reflection {
 				return false;
 			}
 		}
-
-		TYPEINFO_BUILDER_METHODS(OptionalType)
 	};
 
 	//============================================================

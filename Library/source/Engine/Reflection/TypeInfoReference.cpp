@@ -1,4 +1,5 @@
 #include "Engine/Reflection/TypeInfoReference.h"
+#include "Engine/Logging.h"
 
 namespace Reflection {
 	std::deque<TypeInfo const*> TypeInfoReference::infos;
@@ -21,6 +22,14 @@ namespace Reflection {
 				infos.pop_back();
 			}
 		}
+	}
+
+	TypeInfo const* TypeInfoReference::Resolve() const {
+		const auto hash_iter = ranges::find_if(infos, [this](TypeInfo const* info) { return info->id == id; });
+		if (hash_iter != infos.end()) return *hash_iter;
+
+		LOG(Temp, Error, "Unable to resolve type '{}' with id {}. This type may have been removed or changed since a reference to it was created.", name, id);
+		return nullptr;
 	}
 }
 
