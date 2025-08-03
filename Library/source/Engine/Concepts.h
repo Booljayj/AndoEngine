@@ -1,5 +1,33 @@
 #pragma once
-#include "Engine/StandardTypes.h"
+#include <concepts>
+#include <type_traits>
+#include <utility>
+
+namespace Concepts {
+	/** A type that is an enum */
+	template<typename T>
+	concept Enumeration = std::is_enum_v<T>;
+
+	/** An integral or numeric type */
+	template<typename T>
+	concept Arithmetic = std::integral<T> || std::floating_point<T>;
+
+	/** A type of character which can be used to create a string */
+	template<typename T>
+	concept Character = std::is_same_v<T, char> || std::is_same_v<T, wchar_t> || std::is_same_v<T, char8_t> || std::is_same_v<T, char16_t> || std::is_same_v<T, char32_t>;
+
+	/** A type which can be compared to nullptr, but is not literally nullptr */
+	template<typename T>
+	concept NullComparable =
+		std::equality_comparable_with<std::nullptr_t, T> and
+		std::copyable<T> and
+		!std::is_null_pointer_v<T>;
+
+	template<typename T, typename IndexType = size_t>
+	concept Indexible = requires(T t, IndexType i) {
+		t[i];
+	};
+}
 
 /** Helper template struct that is created from a list of types */
 template<typename... Types>

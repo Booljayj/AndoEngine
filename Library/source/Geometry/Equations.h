@@ -1,5 +1,5 @@
 #pragma once
-#include "Engine/StandardTypes.h"
+#include "Engine/Core.h"
 
 namespace Geometry {
 	/** Solve the equation in the form Ax^2+Bx+c=0, returns the number of solutions from 0-2 */

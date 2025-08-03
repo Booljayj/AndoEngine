@@ -1,5 +1,6 @@
 #pragma once
-#include "Engine/StandardTypes.h"
+#include "Engine/Core.h"
+#include "Engine/Vector.h"
 #include "Geometry/Rect.h"
 
 namespace Geometry {

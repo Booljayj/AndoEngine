@@ -1,4 +1,6 @@
 #pragma once
+#include "Engine/Core.h"
+#include "Engine/MoveOnly.h"
 #include "Rendering/Vulkan/Vulkan.h"
 
 namespace Rendering {
@@ -21,7 +23,7 @@ namespace Rendering {
 		void DestroyBuffers(std::span<VkCommandBuffer const> buffers);
 
 	private:
-		stdext::move_only<VkDevice> device;
+		MoveOnly<VkDevice> device;
 		VkCommandPool pool = nullptr;
 	};
 

@@ -1,6 +1,6 @@
 #include "Resources/Package.h"
-#include "Engine/StandardTypes.h"
-#include "Engine/Temporary.h"
+#include "Engine/Core.h"
+#include "Engine/TemporaryStrings.h"
 #include "Resources/Database.h"
 #include "Resources/Resource.h"
 

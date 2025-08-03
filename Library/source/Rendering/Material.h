@@ -10,7 +10,7 @@ namespace Rendering {
 
 	/** Describes a method of rendering geometry, also called a GraphicsPipeline */
 	struct Material : public Resources::Resource {
-		REFLECT_STRUCT(Material, Resources::Resource);
+		DECLARE_STRUCT_REFLECTION_MEMBERS(Material, Resources::Resource);
 		using Resources::Resource::Resource;
 
 		struct {
@@ -23,4 +23,5 @@ namespace Rendering {
 }
 
 REFLECT(Rendering::Material, Struct);
-DEFINE_REFLECTED_SERIALIZATION(Rendering::Material);
+DEFINE_DEFAULT_ARCHIVE_SERIALIZATION(Rendering::Material);
+DEFINE_DEFAULT_YAML_SERIALIZATION(Rendering::Material);

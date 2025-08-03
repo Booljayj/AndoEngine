@@ -1,7 +1,7 @@
 #include "Engine/Logging/LogDevice.h"
+#include "Engine/Core.h"
 #include "Engine/Logging/LogMessage.h"
 #include "Engine/Logging/LogUtility.h"
-#include "Engine/StandardTypes.h"
 #include "Engine/TerminalColors.h"
 
 #if defined(_MSC_VER)

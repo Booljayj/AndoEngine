@@ -1,5 +1,5 @@
 #include "Engine/Logging.h"
-#include "Engine/Temporary.h"
+#include "Engine/Ranges.h"
 #include "Rendering/Shader.h"
 #include "Rendering/Vulkan/Helpers.h"
 
@@ -16,7 +16,7 @@ namespace Rendering {
 
 	VkShaderModule PipelineCreationHelper::GetModule(Resources::Handle<Shader> shader) {
 		//Try to find an existing loaded shader entry
-		auto const iter = std::find_if(entries.begin(), entries.end(), [&](auto const& entry) { return entry.id == shader->GetName(); });
+		auto const iter = ranges::find_if(entries, [&](auto const& entry) { return entry.id == shader->GetName(); });
 		if (iter != entries.end()) return iter->module;
 
 		//No existing entry was found, so make a new one. Even if we fail to actually create this shader, this entry should always be returned for this id.

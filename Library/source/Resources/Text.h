@@ -5,7 +5,7 @@
 namespace Resources {
 	/** A generic text string resource */
 	struct Text : public Resources::Resource {
-		REFLECT_STRUCT(Text, Resources::Resource);
+		DECLARE_STRUCT_REFLECTION_MEMBERS(Text, Resources::Resource);
 		using Resources::Resource::Resource;
 
 		std::string string;
@@ -13,4 +13,5 @@ namespace Resources {
 }
 
 REFLECT(Resources::Text, Struct);
-DEFINE_REFLECTED_SERIALIZATION(Resources::Text);
+DEFINE_DEFAULT_ARCHIVE_SERIALIZATION(Resources::Text);
+DEFINE_DEFAULT_YAML_SERIALIZATION(Resources::Text);

@@ -1,6 +1,9 @@
 #pragma once
+#include "Engine/Array.h"
+#include "Engine/Core.h"
 #include "Engine/Logging/LogVerbosity.h"
-#include "Engine/StandardTypes.h"
+#include "Engine/StringView.h"
+#include "Engine/Threads.h"
 
 /** A category used to group log output that is related. Output always belongs to a single category */
 struct LogCategory {

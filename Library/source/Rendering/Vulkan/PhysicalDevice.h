@@ -1,6 +1,8 @@
 #pragma once
-#include "Engine/StandardTypes.h"
-#include "Engine/Temporary.h"
+#include "Engine/Core.h"
+#include "Engine/GLM.h"
+#include "Engine/TemporaryContainers.h"
+#include "Engine/Vector.h"
 #include "Rendering/Vulkan/Vulkan.h"
 #include "Rendering/Vulkan/Queues.h"
 

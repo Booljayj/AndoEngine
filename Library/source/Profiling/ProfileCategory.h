@@ -1,5 +1,5 @@
 #pragma once
-#include "Engine/StandardTypes.h"
+#include "Engine/StringView.h"
 
 struct ProfileCategory {
 private:

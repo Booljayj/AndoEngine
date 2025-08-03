@@ -1,9 +1,9 @@
 #pragma once
-#include "Engine/Archive.h"
+#include "Engine/Array.h"
+#include "Engine/Core.h"
 #include "Engine/Hash.h"
+#include "Engine/String.h"
 #include "Engine/Reflection/TypeInfo.h"
-#include "Engine/StandardTypes.h"
-#include "ThirdParty/yaml.h"
 
 namespace Reflection {
 	/** A reference to a registered TypeInfo object, used to help look up the corresponding instance */
@@ -16,7 +16,7 @@ namespace Reflection {
 			TypeInfo const* cached;
 		};
 
-		std::string name;
+		std::u16string name;
 		Hash128 id;
 
 		TypeInfoReference() = default;
@@ -26,7 +26,7 @@ namespace Reflection {
 		TypeInfo const* Resolve() const;
 
 		/** Find the TypeInfo object that matches this reference with the expected type */
-		template<Concepts::DerivedFromTypeInfo Type>
+		template<std::derived_from<TypeInfo> Type>
 		Type const* Resolve() const { return Cast<Type>(Resolve()); }
 
 	private:
@@ -48,6 +48,13 @@ namespace YAML {
 		static Node encode(Reflection::TypeInfoReference const& value);
 		static bool decode(Node const& node, Reflection::TypeInfoReference& value);
 	};
+}
+
+int Test()
+{
+	std::u16string s = u"something";
+	Hash128 h = "something"_h128;
+	std::cout << std::format("{0}", s);
 }
 
 template<>

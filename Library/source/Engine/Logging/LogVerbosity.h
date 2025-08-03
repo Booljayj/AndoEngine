@@ -1,5 +1,5 @@
 #pragma once
-#include "Engine/StandardTypes.h"
+#include "Engine/Core.h"
 
 /** The verbosity levels for log output */
 enum class ELogVerbosity : uint8_t {

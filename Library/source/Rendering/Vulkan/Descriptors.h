@@ -1,5 +1,7 @@
 #pragma once
-#include "Engine/StandardTypes.h"
+#include "Engine/Array.h"
+#include "Engine/Core.h"
+#include "Engine/MoveOnly.h"
 #include "Rendering/Vulkan/Vulkan.h"
 
 namespace Rendering {
@@ -13,7 +15,7 @@ namespace Rendering {
 		inline operator VkDescriptorPool() const { return pool; }
 
 	private:
-		stdext::move_only<VkDevice> device;
+		MoveOnly<VkDevice> device;
 		VkDescriptorPool pool = nullptr;
 	};
 

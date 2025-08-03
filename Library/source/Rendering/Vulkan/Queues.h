@@ -1,6 +1,8 @@
 #pragma once
+#include "Engine/Core.h"
 #include "Engine/Flags.h"
-#include "Engine/StandardTypes.h"
+#include "Engine/Optional.h"
+#include "Engine/Vector.h"
 #include "Rendering/Vulkan/Vulkan.h"
 
 namespace Rendering {

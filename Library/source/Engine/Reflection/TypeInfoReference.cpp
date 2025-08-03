@@ -1,5 +1,6 @@
 #include "Engine/Reflection/TypeInfoReference.h"
 #include "Engine/Logging.h"
+#include "Engine/Ranges.h"
 
 namespace Reflection {
 	std::deque<TypeInfo const*> TypeInfoReference::infos;
@@ -28,7 +29,9 @@ namespace Reflection {
 		const auto hash_iter = ranges::find_if(infos, [this](TypeInfo const* info) { return info->id == id; });
 		if (hash_iter != infos.end()) return *hash_iter;
 
-		LOG(Temp, Error, "Unable to resolve type '{}' with id {}. This type may have been removed or changed since a reference to it was created.", name, id);
+		if constexpr (LogConfig::IsCompiled(ELogVerbosity::Error)) {
+			Logger::Get().Push(LogTemp, ELogVerbosity::Error, LogUtility::GetSourceLocation(), "Unable to resolve type '{}' with id {}. This type may have been removed or changed since a reference to it was created.", name, id);
+		};
 		return nullptr;
 	}
 }
@@ -54,7 +57,7 @@ namespace YAML {
 	bool convert<Reflection::TypeInfoReference>::decode(Node const& node, Reflection::TypeInfoReference& value) {
 		if (!node.IsSequence() || node.size() != 2) return false;
 
-		value.name = node[0].as<std::string>();
+		value.name = node[0].as<std::u16string>();
 		value.id = node[1].as<Hash128>();
 		return true;
 	}

@@ -1,7 +1,8 @@
 #pragma once
 #include "Engine/Logging.h"
-#include "Engine/StandardTypes.h"
+#include "Engine/Core.h"
 #include "Engine/Reflection.h"
+#include "Engine/StringView.h"
 #include "Resources/Resource.h"
 
 namespace Importers {

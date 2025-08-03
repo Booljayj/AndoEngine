@@ -1,5 +1,8 @@
 #pragma once
-#include "Engine/StandardTypes.h"
+#include "Engine/Core.h"
+#include "Engine/EnumArray.h"
+#include "Engine/MoveOnly.h"
+#include "Engine/Vector.h"
 #include "Geometry/ScreenRect.h"
 #include "Rendering/Vulkan/Device.h"
 #include "Rendering/Vulkan/Swapchain.h"
@@ -22,7 +25,7 @@ namespace Rendering {
 		~Framebuffer();
 
 	private:
-		stdext::move_only<VkDevice> device;
+		MoveOnly<VkDevice> device;
 		VkImageView view = nullptr;
 		VkFramebuffer framebuffer = nullptr;
 	};
@@ -41,7 +44,7 @@ namespace Rendering {
 			Depth,
 			MAX
 		};
-		using SharedAttachmentImageViews = stdext::enum_array<VkImageView, ESharedAttachments>;
+		using SharedAttachmentImageViews = EnumArray<VkImageView, ESharedAttachments>;
 
 		struct FramebufferResources {
 		public:
@@ -53,7 +56,7 @@ namespace Rendering {
 			~FramebufferResources();
 
 		private:
-			stdext::move_only<VkDevice> device;
+			MoveOnly<VkDevice> device;
 			SharedAttachmentImageViews sharedImageViews;
 			std::vector<Framebuffer> framebuffers;
 		};
@@ -75,9 +78,9 @@ namespace Rendering {
 		~SurfaceRenderPass();
 
 	private:
-		stdext::move_only<VkDevice> device;
+		MoveOnly<VkDevice> device;
 		VkRenderPass pass = nullptr;
-		stdext::enum_array<VkClearValue, EAttachments> clearValues;
+		EnumArray<VkClearValue, EAttachments> clearValues;
 	};
 
 	// struct PostProcessRenderPass {

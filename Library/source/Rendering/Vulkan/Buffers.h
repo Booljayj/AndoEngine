@@ -1,5 +1,6 @@
 #pragma once
-#include "Engine/StandardTypes.h"
+#include "Engine/Core.h"
+#include "Engine/MoveOnly.h"
 #include "Rendering/Vulkan/Vulkan.h"
 
 namespace Rendering {
@@ -69,7 +70,7 @@ namespace Rendering {
 		Writer CreateWriter() const { return Writer(*this); }
 
 	private:
-		stdext::move_only<VmaAllocator> allocator;
+		MoveOnly<VmaAllocator> allocator;
 		VkDeviceSize size = 0;
 		VkBufferUsageFlags bufferUsage = 0;
 		VmaMemoryUsage allocationUsage = VmaMemoryUsage::VMA_MEMORY_USAGE_UNKNOWN;
@@ -106,7 +107,7 @@ namespace Rendering {
 		}
 
 	private:
-		stdext::move_only<VmaAllocator> allocator;
+		MoveOnly<VmaAllocator> allocator;
 		VkDeviceSize size = 0;
 		VkBufferUsageFlags bufferUsage = 0;
 		VmaMemoryUsage allocationUsage = VmaMemoryUsage::VMA_MEMORY_USAGE_UNKNOWN;

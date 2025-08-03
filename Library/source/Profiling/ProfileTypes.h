@@ -1,5 +1,5 @@
 #pragma once
-#include "Engine/StandardTypes.h"
+#include "Engine/Core.h"
 
 namespace Profiling {
 	using DurationType = std::chrono::duration<uint64_t, std::micro>;

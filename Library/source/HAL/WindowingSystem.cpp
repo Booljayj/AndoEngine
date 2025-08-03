@@ -1,6 +1,7 @@
 #include "HAL/WindowingSystem.h"
 #include "Engine/Logging.h"
-#include "Engine/Temporary.h"
+#include "Engine/Ranges.h"
+#include "Engine/TemporaryStrings.h"
 #include "HAL/SDL2.h"
 #include "imgui.h"
 #include "backends/imgui_impl_sdl.h"
@@ -28,17 +29,17 @@ namespace HAL {
 	}
 
 	Window* WindowingSystem::FindWindow(Window::IdType id) const {
-		auto const iter = std::find_if(windows.begin(), windows.end(), [&](auto const& window) { return window->id == id; });
+		auto const iter = ranges::find_if(windows, [&](auto const& window) { return window->id == id; });
 		if (iter != windows.end()) return iter->get();
 		else return nullptr;
 	}
 
 	Window* WindowingSystem::CreateWindow(WindowCreationParams const& params) {
-		return windows.emplace_back(std::unique_ptr<Window>{ new Window(params) }).get();
+		return windows.emplace_back(new Window(params)).get();
 	}
 
 	bool WindowingSystem::DestroyWindow(Window::IdType id) {
-		auto const iter = std::find_if(windows.begin(), windows.end(), [&](auto const& window) { return window->id == id; });
+		auto const iter = ranges::find_if(windows, [&](auto const& window) { return window->id == id; });
 		if (iter != windows.end() && iter != windows.begin()) {
 			destroying.Broadcast((*iter)->id);
 			windows.erase(iter);

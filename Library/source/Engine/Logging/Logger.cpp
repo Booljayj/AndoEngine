@@ -1,7 +1,7 @@
 #include "Engine/Logging/Logger.h"
-#include "Engine/Algo.h"
 #include "Engine/Logging/LogDevice.h"
 #include "Engine/Logging/LogMessage.h"
+#include "Engine/Ranges.h"
 
 /** Allows log devices to process log messages on a separate thread */
 struct LogWorker {
@@ -64,7 +64,7 @@ Logger::~Logger() {
 void Logger::AddDevices(std::span<std::shared_ptr<ILogDevice> const> view) {
 	std::lock_guard const lock{ mutex.thread };
 
-	stdext::append(devices, view);
+	devices.append_range(view);
 	RestartWorkerThread();
 }
 

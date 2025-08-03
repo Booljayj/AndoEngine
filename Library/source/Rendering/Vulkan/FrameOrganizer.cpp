@@ -1,4 +1,5 @@
 #include "Rendering/Vulkan/FrameOrganizer.h"
+#include "Engine/TemporaryStrings.h"
 #include "Rendering/Vulkan/Handles.h"
 #include "Rendering/UniformTypes.h"
 

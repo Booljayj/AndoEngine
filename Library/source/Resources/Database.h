@@ -1,5 +1,7 @@
 #pragma once
-#include "Engine/StandardTypes.h"
+#include "Engine/Core.h"
+#include "Engine/Map.h"
+#include "Engine/SmartPointers.h"
 #include "Engine/StringID.h"
 #include "Engine/Threads.h"
 #include "Resources/Cache.h"
@@ -9,7 +11,7 @@ namespace Resources {
 	struct Package;
 
 	/** Base class for databases, which manage a set of packages and their resources. Protected methods can be exposed by derived type as needed. */
-	struct Database : std::enable_shared_from_this<Database> {
+	struct Database : std::enable_shared_from_this<Database>, public IResourceProvider {
 	public:
 		/** Get the global temporary package */
 		static std::shared_ptr<Package> const& GetTemporary() noexcept { return temporary; }
@@ -18,7 +20,7 @@ namespace Resources {
 		bool ContainsPackage(StringID name) const noexcept;
 
 		/** Find a specific named resource of any type using an identifier */
-		std::shared_ptr<Resource> FindResource(Identifier id) const noexcept;
+		virtual std::shared_ptr<Resource> FindResource(Identifier id) const noexcept override final;
 
 		/** Find a specific named resource of the provided type using an identifier */
 		template<Concepts::DerivedFromResource T>
@@ -41,9 +43,8 @@ namespace Resources {
 
 		/** Find the cache that stores all resources of the provided type. Creates the cache if it doesn't already exist. */
 		template<Concepts::DerivedFromResource T>
-		stdext::shared_ref<TCache<T>> FindOrCreateCache() noexcept {
-			stdext::shared_ref<Cache> const cache = FindOrCreateCache(Reflect<T>::Get());
-			return std::static_pointer_cast<TCache<T>>(cache.get());
+		std::shared_ptr<TCache<T>> FindOrCreateCache() noexcept {
+			return std::static_pointer_cast<TCache<T>>(FindOrCreateCache(Reflect<T>::Get()));
 		}
 
 	protected:
@@ -75,12 +76,12 @@ namespace Resources {
 		/** Find an existing generic cache using a type */
 		std::shared_ptr<Cache> FindCache(Reflection::StructTypeInfo const& type);
 		/** Find or create a generic cache using a type */
-		stdext::shared_ref<Cache> FindOrCreateCache(Reflection::StructTypeInfo const& type);
+		std::shared_ptr<Cache> FindOrCreateCache(Reflection::StructTypeInfo const& type);
 		
 		/** Create a new empty resource of the specified type in the provided package. Will throw if the resource already exists or cannot be created. */
 		template<Concepts::DerivedFromResource T, std::invocable<T&> InitializerType>
-		std::shared_ptr<T> Create(StringID name, stdext::shared_ref<Package> package, InitializerType&& initializer) {
-			stdext::shared_ref<TCache<T>> const cache = FindOrCreateCache<T>();
+		std::shared_ptr<T> Create(StringID name, std::shared_ptr<Package> package, InitializerType&& initializer) {
+			std::shared_ptr<TCache<T>> const cache = FindOrCreateCache<T>();
 
 			const auto wrapped_initializer = [&initializer, &package](Resource& resource) {
 				initializer(static_cast<T&>(resource));

@@ -9,7 +9,7 @@ file(GLOB_RECURSE GeneratedFiles LIST_DIRECTORIES false RELATIVE ${PROJECT_SOURC
 
 add_library(Library STATIC ${SourceFiles} ${GeneratedFiles})
 target_include_directories(Library PUBLIC ${PROJECT_SOURCE_DIR}/source)
-target_precompile_headers(Library PRIVATE source/Engine/StandardTypes.h)
+target_precompile_headers(Library PRIVATE source/Engine/Core.h)
 target_compile_definitions(Library PUBLIC "$<$<CONFIG:DEBUG>:VULKAN_DEBUG>")
 target_compile_features(Library PUBLIC cxx_std_23)
 

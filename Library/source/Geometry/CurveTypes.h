@@ -1,5 +1,6 @@
 #pragma once
-#include "Engine/StandardTypes.h"
+#include "Engine/Core.h"
+#include "Engine/GLM.h"
 #include "Geometry/Rect.h"
 #include "Geometry/ColorChannel.h"
 #include "Geometry/SignedDistance.h"
@@ -35,7 +36,7 @@ namespace Geometry {
 		glm::vec2 p2 = glm::vec2{0.0f, 0.0f};
 		FColorChannel colorChannels = FColorChannel::White;
 
-		QuadraticCurve();
+		QuadraticCurve() = default;
 		QuadraticCurve(glm::vec2 const& inP0, glm::vec2 const& inP1, glm::vec2 const& inP2, FColorChannel inColorChannels = FColorChannel::White);
 
 		glm::vec2 Position(float alpha) const;
@@ -55,7 +56,7 @@ namespace Geometry {
 		glm::vec2 p3 = glm::vec2{0.0f, 0.0f};
 		FColorChannel colorChannels = FColorChannel::White;
 
-		CubicCurve();
+		CubicCurve() = default;
 		CubicCurve(glm::vec2 const& inP0, glm::vec2 const& inP1, glm::vec2 const& inP2, glm::vec2 const& inP3, FColorChannel inColorChannels = FColorChannel::White);
 
 		glm::vec2 Position(float alpha) const;

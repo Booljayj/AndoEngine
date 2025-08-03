@@ -1,6 +1,9 @@
 #pragma once
+#include "Engine/Core.h"
 #include "Engine/Logging.h"
-#include "Engine/StandardTypes.h"
+#include "Engine/MoveOnly.h"
+#include "Engine/Optional.h"
+#include "Engine/Vector.h"
 #include "Rendering/UniformTypes.h"
 #include "Rendering/Vulkan/Commands.h"
 #include "Rendering/Vulkan/Descriptors.h"
@@ -48,7 +51,7 @@ namespace Rendering {
 		~FrameSynchronization();
 
 	private:
-		stdext::move_only<VkDevice> device;
+		MoveOnly<VkDevice> device;
 	};
 
 	/** Resources used for a single frame of rendering */
@@ -110,7 +113,7 @@ namespace Rendering {
 	private:
 		using PoolSizesType = std::array<VkDescriptorPoolSize, 3>;
 
-		stdext::move_only<VkDevice> device;
+		MoveOnly<VkDevice> device;
 		VkSwapchainKHR swapchain = nullptr;
 		struct {
 			VkQueue graphics = nullptr;

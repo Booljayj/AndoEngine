@@ -1,4 +1,5 @@
 #include "Engine/Hash.h"
+#include "ThirdParty/yaml.h"
 
 namespace Archive {
 	void Serializer<Hash32>::Write(Output& archive, Hash32 const hash) {
@@ -22,8 +23,8 @@ namespace Archive {
 	}
 
 	void Serializer<Hash128>::Write(Output& archive, Hash128 const& hash) {
-		Serializer<uint64_t>::Write(archive, hash.ToLowValue());
-		Serializer<uint64_t>::Write(archive, hash.ToHighValue());
+		Serializer<uint64_t>::Write(archive, hash.ToValue().low);
+		Serializer<uint64_t>::Write(archive, hash.ToValue().high);
 	}
 
 	void Serializer<Hash128>::Read(Input& archive, Hash128& hash) {
@@ -31,7 +32,7 @@ namespace Archive {
 		uint64_t high = 0;
 		Serializer<uint64_t>::Read(archive, low);
 		Serializer<uint64_t>::Read(archive, high);
-		hash = Hash128{ low, high };
+		hash = Hash128{ { low, high } };
 	}
 }
 
@@ -54,14 +55,14 @@ namespace YAML {
 	
 	Node convert<Hash128>::encode(Hash128 hash) {
 		Node node{ NodeType::Sequence };
-		node.push_back(hash.ToLowValue());
-		node.push_back(hash.ToHighValue());
+		node.push_back(hash.ToValue().low);
+		node.push_back(hash.ToValue().high);
 		return node;
 	}
 	bool convert<Hash128>::decode(Node const& node, Hash128& hash) {
 		if (!node.IsSequence() || node.size() != 2) return false;
 
-		hash = Hash128{ node[0].as<uint64_t>(), node[1].as<uint64_t>() };
+		hash = Hash128{ { node[0].as<uint64_t>(), node[1].as<uint64_t>() } };
 		return true;
 	}
 }
@@ -81,6 +82,6 @@ std::format_context::iterator std::formatter<Hash64>::format(const Hash64& hash,
 
 std::format_context::iterator std::formatter<Hash128>::format(const Hash128& hash, format_context& ctx) const {
 	char scratch[40] = { 0 };
-	auto const result = format_to_n(scratch, sizeof(scratch), "{:016x}-{:016x}"sv, hash.ToHighValue(), hash.ToLowValue());
+	auto const result = format_to_n(scratch, sizeof(scratch), "{:016x}-{:016x}"sv, hash.ToValue().high, hash.ToValue().low);
 	return formatter<string_view>::format(string_view{ scratch, result.out }, ctx);
 }

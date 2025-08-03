@@ -1,5 +1,6 @@
 #pragma once
-#include "Engine/StandardTypes.h"
+#include "Engine/SmartPointers.h"
+#include "Engine/Vector.h"
 
 namespace Rendering {
 	struct RenderObjectsBase {
@@ -12,7 +13,7 @@ namespace Rendering {
 	/** Collect RenderObjectsHandle types together into a single collection */
 	template<std::derived_from<RenderObjectsBase> OtherType, typename AllocatorType>
 	RenderObjectsHandleCollection& operator<<(RenderObjectsHandleCollection& collection, std::vector<std::shared_ptr<OtherType>, AllocatorType>&& other) {
-		stdext::append(collection, std::move(other));
+		collection.append_range(other);
 		return collection;
 	}
 }

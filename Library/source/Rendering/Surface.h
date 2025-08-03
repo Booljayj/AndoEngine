@@ -1,5 +1,7 @@
 #pragma once
-#include "Engine/StandardTypes.h"
+#include "Engine/Core.h"
+#include "Engine/GLM.h"
+#include "Engine/Optional.h"
 #include "HAL/WindowingSystem.h"
 #include "Rendering/Vulkan/FrameOrganizer.h"
 #include "Rendering/Vulkan/RenderPasses.h"

@@ -1,6 +1,6 @@
 #pragma once
 #include "Engine/Buffers.h"
-#include "Engine/StandardTypes.h"
+#include "Engine/Core.h"
 
 /** Allocator which holds space for a number of elements on the stack */
 template<typename T, size_t N>

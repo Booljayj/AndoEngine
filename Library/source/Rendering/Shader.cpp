@@ -1,15 +1,25 @@
 #include "Rendering/Shader.h"
+#include "Engine/Utility.h"
 #include "Resources/RegisteredResource.h"
 
-DEFINE_REFLECT_STRUCT(Rendering, Shader);
-DEFINE_REFLECT_STRUCT(Rendering, VertexShader);
-DEFINE_REFLECT_STRUCT(Rendering, FragmentShader);
+DEFINE_STRUCT_REFLECTION_MEMBERS(Rendering, Shader);
+DEFINE_STRUCT_REFLECTION_MEMBERS(Rendering, VertexShader);
+DEFINE_STRUCT_REFLECTION_MEMBERS(Rendering, FragmentShader);
 
 REGISTER_RESOURCE(Rendering, VertexShader);
 REGISTER_RESOURCE(Rendering, FragmentShader);
 
+namespace Archive {
+	void ShaderSerializer::Write(Output& archive, Rendering::Shader const& shader) {
+		archive << shader.bytecode;
+	}
+	void ShaderSerializer::Read(Input& archive, Rendering::Shader& shader) {
+		archive >> shader.bytecode;
+	}
+}
+
 namespace YAML {
-	Node convert<Rendering::Shader>::encode(Rendering::Shader const& shader) {
+	Node ShaderConverter::encode(Rendering::Shader const& shader) {
 		constexpr size_t WordSize = sizeof(decltype(Rendering::Shader::bytecode)::value_type);
 
 		std::vector<unsigned char> characters;
@@ -28,7 +38,7 @@ namespace YAML {
 		node["bytecode"] = Node{ EncodeBase64(characters.data(), characters.size()) };
 		return node;
 	}
-	bool convert<Rendering::Shader>::decode(Node const& node, Rendering::Shader& shader) {
+	bool ShaderConverter::decode(Node const& node, Rendering::Shader& shader) {
 		constexpr size_t WordSize = sizeof(decltype(Rendering::Shader::bytecode)::value_type);
 
 		if (!node.IsMap()) return false;

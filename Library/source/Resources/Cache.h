@@ -1,6 +1,12 @@
 #pragma once
 #include "Engine/Events.h"
-#include "Engine/StandardTypes.h"
+#include "Engine/Core.h"
+#include "Engine/FunctionRef.h"
+#include "Engine/Queue.h"
+#include "Engine/Ranges.h"
+#include "Engine/SmartPointers.h"
+#include "Engine/Threads.h"
+#include "Engine/Vector.h"
 #include "Resources/Package.h"
 #include "Resources/Resource.h"
 #include "Resources/ResourceTypes.h"
@@ -15,7 +21,7 @@ namespace Resources {
 	 * Systems can also listen for events that are broadcast whenever a resource is created or destroyed, which allows them to perform
 	 * bookkeeping related to the resource (such as uploading mesh data to a GPU for a static mesh resource).
 	 */
-	struct Cache : std::enable_shared_from_this<Cache> {
+	struct Cache : public std::enable_shared_from_this<Cache> {
 		virtual ~Cache() = default;
 
 		/**
@@ -26,7 +32,7 @@ namespace Resources {
 		virtual size_t CollectGarbage(size_t limit = std::numeric_limits<size_t>::max()) = 0;
 
 		/** Create a resource, using the initializer function to assign values before notifying external systems about the new resource */
-		virtual std::shared_ptr<Resource> Create(StringID name, absl::FunctionRef<void(Resource&)> initializer) = 0;
+		virtual std::shared_ptr<Resource> Create(StringID name, FunctionRef<void(Resource&)> initializer) = 0;
 	};
 
 	/** An observer that can listen for when resources are created or destroyed by a specific cache */
@@ -48,7 +54,7 @@ namespace Resources {
 			if (iter != observers.end()) observers.erase(iter);
 		}
 
-		virtual size_t CollectGarbage(size_t limit = std::numeric_limits<size_t>::max()) override {
+		virtual size_t CollectGarbage(size_t limit) override {
 			auto resources = ts_resources.LockExclusive();
 
 			size_t count = 0;
@@ -82,7 +88,7 @@ namespace Resources {
 			return count;
 		}
 
-		virtual std::shared_ptr<Resource> Create(StringID name, absl::FunctionRef<void(Resource&)> initializer) override final {
+		virtual std::shared_ptr<Resource> Create(StringID name, FunctionRef<void(Resource&)> initializer) override final {
 			//Create the new resource object.
 			std::shared_ptr<ResourceType> const resource = std::make_shared<ResourceType>(name);
 

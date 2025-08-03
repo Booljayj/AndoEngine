@@ -1,5 +1,5 @@
 #pragma once
-#include "Engine/StandardTypes.h"
+#include "Engine/Core.h"
 
 /**
  * A deleter object that can delete a resource owned by a TUniqueResource instance.

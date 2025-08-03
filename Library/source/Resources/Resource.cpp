@@ -1,11 +1,11 @@
 #include "Resources/Resource.h"
-#include "Engine/StandardTypes.h"
+#include "Engine/Core.h"
 #include "Resources/Package.h"
 #include "Resources/Streaming.h"
 using namespace Reflection;
 
-DEFINE_REFLECT_STRUCT(Resources, Resource)
-	.Description("An object which can be shared between several other objects");
+DEFINE_STRUCT_REFLECTION_MEMBERS(Resources, Resource)
+	.Description("An object which can be shared between several other objects"sv);
 
 namespace Resources {
 	StringID Resource::GetName() const {
@@ -23,32 +23,65 @@ namespace Resources {
 		auto const pinned = description->package.lock();
 		return Identifier{ pinned ? pinned->GetName() : StringID::None, description->name };
 	}
+
+	IResourceProvider const* IResourceProvider::scoped_provider = nullptr;
 }
 
 namespace Archive {
-	void Serializer<std::shared_ptr<Resources::Resource>>::Write(Output& archive, std::shared_ptr<Resources::Resource> const& handle) {
+	void ResourcePointerSerializer::WriteHandle(Output& archive, std::shared_ptr<Resources::Resource> const& handle) {
 		Serializer<Resources::Identifier>::Write(archive, handle ? handle->GetIdentifier() : Resources::Identifier{});
 	}
-	void Serializer<std::shared_ptr<Resources::Resource>>::Read(Input& archive, std::shared_ptr<Resources::Resource>& handle) {
-		Resources::Identifier identifier;
-		Serializer<Resources::Identifier>::Read(archive, identifier);
+	std::shared_ptr<Resources::Resource> ResourcePointerSerializer::ReadHandle(Input& archive) {
+		using namespace Resources;
+		Identifier identifier;
+		Serializer<Identifier>::Read(archive, identifier);
 
-		//@todo Use some kind of static scoped context to find the database and find the resource in the database.
-		//      Unfortunately the design of the convert struct doesn't allow this to be naturally provided.
-		handle = nullptr;
+		if (identifier == Identifier{}) {
+			return nullptr;
+		}
+
+		//Reading a resource this way does not load the resource, it can only find it if it's currently loaded.
+		//The resource is a dependency, and dependencies should be loaded before getting to this point by separate means.
+		if (auto const* provider = IResourceProvider::GetResourceProvider()) {
+			if (std::shared_ptr<Resources::Resource> resource = provider->FindResource(identifier)) {
+				return resource;
+			} else {
+				LOG(Resources, Warning, "Could not find resource for identifier %s. The handle will be empty.", identifier);
+				return nullptr;
+			}
+		} else {
+			LOG(Resources, Warning, "Attempted to deserialize a resource handle from an archive, but the current scope has no resource provider. The handle will be empty.");
+			return nullptr;
+		}
 	}
 }
 
 namespace YAML {
-	Node convert<std::shared_ptr<Resources::Resource>>::encode(std::shared_ptr<Resources::Resource> const& handle) {
+	Node ResourcePointerConverter::EncodeHandle(std::shared_ptr<Resources::Resource> const& handle) {
 		return convert<Resources::Identifier>::encode(handle ? handle->GetIdentifier() : Resources::Identifier{});
 	}
-	bool convert<std::shared_ptr<Resources::Resource>>::decode(Node const& node, std::shared_ptr<Resources::Resource>& handle) {
-		const Resources::Identifier identifier = node.as<Resources::Identifier>();
+	std::shared_ptr<Resources::Resource> ResourcePointerConverter::DecodeHandle(Node const& node) {
+		using namespace Resources;
+		const Identifier identifier = node.as<Identifier>();
 
-		//@todo Use some kind of static scoped context to find the database and find the resource in the database.
-		//      Unfortunately the design of the convert struct doesn't allow this to be naturally provided.
-		handle = nullptr;
-		return true;
+		if (identifier == Identifier{}) {
+			return nullptr;
+		}
+
+		//Reading a resource this way does not load the resource, it can only find it if it's currently loaded.
+		//The resource is a dependency, and dependencies should be loaded before getting to this point by separate means.
+		if (auto const* provider = IResourceProvider::GetResourceProvider()) {
+			if (std::shared_ptr<Resources::Resource> resource = provider->FindResource(identifier)) {
+				return resource;
+			}
+			else {
+				LOG(Resources, Warning, "Could not find resource for identifier %s. The handle will be empty.", identifier);
+				return nullptr;
+			}
+		}
+		else {
+			LOG(Resources, Warning, "Attempted to deserialize a resource handle from an archive, but the current scope has no resource provider. The handle will be empty.");
+			return nullptr;
+		}
 	}
 }

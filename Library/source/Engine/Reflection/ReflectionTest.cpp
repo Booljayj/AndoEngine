@@ -3,22 +3,16 @@
 
 using namespace Reflection;
 
-ReflectedType const defaults_ReflectedType;
-DEFINE_REFLECT_STRUCT(,ReflectedType)
-	.Description("Reflection test type"sv)
-	.Defaults(&defaults_ReflectedType)
-	.Variables({
-		{ &ReflectedType::IntegerValue, "IntegerValue"sv, ""sv, FVariableFlags::None() },
-		{ &ReflectedType::BooleanValue, "BooleanValue"sv, ""sv, FVariableFlags::None() },
-	});
+DEFINE_STRUCT_REFLECTION_MEMBERS(,ReflectedType, "Reflected Type")
+	.Variables(
+		MakeMember(&ReflectedType::IntegerValue, "IntegerValue"_h32, u"IntegerValue"sv, u""sv),
+		MakeMember(&ReflectedType::BooleanValue, "BooleanValue"_h32, u"BooleanValue"sv, u""sv)
+	);
 
-SecondReflectedType const defaults_SecondReflectedType;
-DEFINE_REFLECT_STRUCT(,SecondReflectedType)
-	.Description("Reflection test type"sv)
-	.Defaults(&defaults_SecondReflectedType)
-	.Variables({
-		{ &SecondReflectedType::VectorValue, "VectorValue"sv, ""sv, FVariableFlags::None() }
-	});
+DEFINE_STRUCT_REFLECTION_MEMBERS(,SecondReflectedType, "Second Reflected Type")
+	.Variables(
+		MakeMember(&SecondReflectedType::VectorValue, "VectorValue"_h32, u"VectorValue"sv, u""sv)
+	);
 
 /*
 int16_t ReflectedType::StaticShortValue = 4;
@@ -50,7 +44,7 @@ REFLECTED_STRUCT_BEGIN( ReflectedType )
 	REFLECT_MEMBER_VARIABLE( BooleanValue, "A boolean value" );
 	DEFINE_MEMBER_VARIABLE_FIELDS( &IntegerValue, &BooleanValue );
 REFLECTED_STRUCT_END()
-DEFINE_REFLECT_STRUCT( ReflectedType, "A simple struct to test reflection" );
+DEFINE_STRUCT_REFLECTION_MEMBERS( ReflectedType, "A simple struct to test reflection" );
 */
 
 /*

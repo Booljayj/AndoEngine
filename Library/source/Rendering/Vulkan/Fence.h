@@ -1,4 +1,5 @@
 #pragma once
+#include "Engine/MoveOnly.h"
 #include "Rendering/Vulkan/Vulkan.h"
 
 namespace Rendering {
@@ -23,7 +24,7 @@ namespace Rendering {
 		void Reset() const;
 
 	private:
-		stdext::move_only<VkDevice> device;
+		MoveOnly<VkDevice> device;
 		VkFence fence = nullptr;
 	};
 }

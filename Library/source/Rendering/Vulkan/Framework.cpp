@@ -1,5 +1,6 @@
 #include "Rendering/Vulkan/Framework.h"
 #include "Engine/Logging.h"
+#include "Engine/TemporaryStrings.h"
 
 namespace Rendering {
 	Framework::Framework(HAL::Window const& window) {

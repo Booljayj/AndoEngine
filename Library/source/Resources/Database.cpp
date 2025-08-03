@@ -100,7 +100,7 @@ namespace Resources {
 		return nullptr;
 	}
 
-	stdext::shared_ref<Cache> Database::FindOrCreateCache(Reflection::StructTypeInfo const& type) {
+	std::shared_ptr<Cache> Database::FindOrCreateCache(Reflection::StructTypeInfo const& type) {
 		auto caches = ts_caches.LockExclusive();
 
 		auto iter = caches->find(type.id);
@@ -109,7 +109,7 @@ namespace Resources {
 		auto const* utility = RegisteredResource::FindUtilities(type.id);
 		if (!utility) throw FormatType<std::runtime_error>("Unable to create unknown resource {}, this is not a registered resource type.", type.name);
 
-		stdext::shared_ref<Cache> cache = utility->CreateCache();
+		std::shared_ptr<Cache> cache = utility->CreateCache();
 		caches->emplace(std::make_pair(type.id, cache));
 		return cache;
 	}

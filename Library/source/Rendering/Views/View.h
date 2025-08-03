@@ -1,5 +1,6 @@
 #pragma once
-#include "Engine/StandardTypes.h"
+#include "Engine/Core.h"
+#include "Engine/GLM.h"
 #include "Geometry/ScreenRect.h"
 #include "Rendering/Vulkan/Device.h"
 #include "Rendering/Vulkan/FrameOrganizer.h"
@@ -25,7 +26,7 @@ namespace Rendering {
 
 	/** A view renders things within a region, using some configuration of viewports and render passes */
 	struct View {
-		View(Geometry::ScreenRect const& inRect);
+		View(Geometry::ScreenRect const& rect);
 		virtual ~View() = default;
 
 		/** Prepare to render commands for this view for a single frame */

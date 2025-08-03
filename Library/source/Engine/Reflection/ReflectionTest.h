@@ -1,9 +1,10 @@
 #pragma once
-#include "Engine/StandardTypes.h"
+
 #include "Engine/Reflection.h"
+#include "Engine/Vector.h"
 
 struct ReflectedType {
-	REFLECT_STRUCT(ReflectedType, void);
+	DECLARE_STRUCT_REFLECTION_MEMBERS(ReflectedType, void);
 
 	ReflectedType() = default;
 	ReflectedType(const ReflectedType&) = default;
@@ -17,20 +18,22 @@ private:
 	bool BooleanValue = true;
 };
 REFLECT(ReflectedType, Struct);
-DEFINE_REFLECTED_SERIALIZATION(ReflectedType);
+DEFINE_DEFAULT_ARCHIVE_SERIALIZATION(ReflectedType);
+DEFINE_DEFAULT_YAML_SERIALIZATION(ReflectedType);
 
 struct SecondReflectedType : public ReflectedType {
-	REFLECT_STRUCT(SecondReflectedType, ReflectedType);
+	DECLARE_STRUCT_REFLECTION_MEMBERS(SecondReflectedType, ReflectedType);
 	virtual ~SecondReflectedType() = default;
 
 	std::vector<int32_t> VectorValue;
 };
 REFLECT(SecondReflectedType, Struct);
-DEFINE_REFLECTED_SERIALIZATION(SecondReflectedType);
+DEFINE_DEFAULT_ARCHIVE_SERIALIZATION(SecondReflectedType);
+DEFINE_DEFAULT_YAML_SERIALIZATION(SecondReflectedType);
 
 /*
 struct RecursiveType {
-	REFLECT_STRUCT( RecursiveType, void );
+	DECLARE_STRUCT_REFLECTION_MEMBERS( RecursiveType, void );
 
 	size_t Data;
 	std::list<std::array<RecursiveType,5>> Nodes;
@@ -38,7 +41,7 @@ struct RecursiveType {
 REFLECT( RecursiveType );
 
 struct SerializedTypeA {
-	REFLECT_STRUCT( SerializedTypeA, void );
+	DECLARE_STRUCT_REFLECTION_MEMBERS( SerializedTypeA, void );
 
 	char CharValue = 'a';
 	int8_t ByteValue = 12;
@@ -63,7 +66,7 @@ struct SerializedTypeA {
 REFLECT( SerializedTypeA );
 
 struct SerializedTypeB {
-	REFLECT_STRUCT( SerializedTypeB, void );
+	DECLARE_STRUCT_REFLECTION_MEMBERS( SerializedTypeB, void );
 
 	char CharValue = 'b';
 	//int8_t ByteValue = 23;

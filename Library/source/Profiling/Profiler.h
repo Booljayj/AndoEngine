@@ -1,6 +1,9 @@
 #pragma once
+#include "Engine/Core.h"
 #include "Engine/Logging.h"
-#include "Engine/StandardTypes.h"
+#include "Engine/SmartPointers.h"
+#include "Engine/String.h"
+#include "Engine/Threads.h"
 #include "Profiling/ProfileCategory.h"
 #include "Profiling/ProfileTypes.h"
 

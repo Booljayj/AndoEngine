@@ -1,6 +1,9 @@
 #pragma once
-#include "Engine/StandardTypes.h"
-#include "Engine/TupleUtility.h"
+#include "Engine/Core.h"
+#include "Engine/GLM.h"
+#include "Engine/Ranges.h"
+#include "Engine/Tuple.h"
+#include "Engine/Variant.h"
 #include "Rendering/Color.h"
 #include "Rendering/CompressedVec.h"
 #include "Rendering/Vulkan/Vulkan.h"

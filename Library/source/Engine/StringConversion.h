@@ -1,5 +1,5 @@
 #pragma once
-#include "Engine/StandardTypes.h"
+#include "Engine/String.h"
 
 /** Convert a string in one encoding to a string in a different encoding, possibly expanding or contracting multi-byte encodings */
 template<typename ToType, typename FromType>

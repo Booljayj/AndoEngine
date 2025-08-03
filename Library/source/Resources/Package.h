@@ -1,6 +1,8 @@
 #pragma once
 #include "Engine/Reflection.h"
-#include "Engine/StandardTypes.h"
+#include "Engine/Core.h"
+#include "Engine/Flags.h"
+#include "Engine/SmartPointers.h"
 #include "Engine/StringID.h"
 #include "Engine/Threads.h"
 #include "Resources/Resource.h"

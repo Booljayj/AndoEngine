@@ -1,11 +1,9 @@
 #include "Engine/StringID.h"
-#include "Engine/StandardTypes.h"
-#include "Engine/Temporary.h"
 
 /*
 Given a string input:
 1. create a hash from the string
-2. modulo the hash to get the index for the string (define max possible number of strings)
+2. modulo the hash to get the index for the string (define max possible number of hashes)
 3. index is used to find a std::vector of locators. Locators point to where the string is stored in an pooled allocator.
 4. iterate through locations and check them to see if they match the string
 5. If so, we have the string stored already. If not and we need to store it, use the pooled allocator to store the string and put the location in the vector
@@ -14,9 +12,9 @@ Given a string input:
 Pooled allocator has the following requirements:
 - Allocations are forward-only, deallocation will never happen
 - Allocation should be for blocks that hold a certain number of maximumal-length strings
-- Blocks hold as many strings as possible given their size
+- Blocks hold as many strings as possible within the available space
 - Allocations are first-come, first-serve, and do not depend on the content of the strings
-- Allocations should be indentifiable using a locator, which identifies the block and the offset within the block where a string is located.
+- Allocations should be indentifiable using a locator, which identifies the block and the offset within the block where a string starts. Strings are always null-terminated.
 */
 
 struct StringStorage {
@@ -70,7 +68,7 @@ struct StringStorage {
 		using CharacterBuffer = std::array<char, PoolCapacity>;
 
 		Pool() : buffer(std::make_unique<CharacterBuffer>()) {
-			std::fill(buffer->begin(), buffer->end(), '\0');
+			buffer->fill('\0');
 		}
 		Pool(Pool const&) = delete;
 		Pool(Pool&&) = default;
@@ -193,8 +191,8 @@ namespace Archive {
 		Serializer<std::string_view>::Write(archive, sid.ToStringView());
 	}
 	void Serializer<StringID>::Read(Input& archive, StringID& sid) {
-		std::string_view string;
-		Serializer<std::string_view>::Read(archive, string);
+		t_string string;
+		Serializer<t_string>::Read(archive, string);
 		sid = StringID{ string };
 	}
 }

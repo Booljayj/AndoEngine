@@ -1,6 +1,6 @@
 #pragma once
-#include "Engine/StandardTypes.h"
-#include "Engine/Utility.h"
+#include "Engine/Core.h"
+#include "Engine/Math.h"
 
 /** A broken-down time point used for displaying year-month-day calendar information */
 struct CalendarTimeStamp {
@@ -17,11 +17,11 @@ struct CalendarTimeStamp {
 	static constexpr uint16_t DayMax = 31;
 
 	/** [0-9999] the gregorian calendar year */
-	StorageType year : Utility::GetMinimumNumBits(YearMax) = 0;
+	StorageType year : Math::GetMinimumNumBits(YearMax) = 0;
 	/** [0-11] the month index */
-	StorageType month : Utility::GetMinimumNumBits(MonthMax) = 0;
+	StorageType month : Math::GetMinimumNumBits(MonthMax) = 0;
 	/** [0-30] the day index in the current month */
-	StorageType day : Utility::GetMinimumNumBits(DayMax) = 0;
+	StorageType day : Math::GetMinimumNumBits(DayMax) = 0;
 
 	static CalendarTimeStamp Now();
 
@@ -31,9 +31,9 @@ struct CalendarTimeStamp {
 	CalendarTimeStamp(TimePointType const& timepoint) noexcept : CalendarTimeStamp(GetDaysSinceEpoch(timepoint)) {}
 
 private:
-	static_assert(sizeof(YearCountType) * CHAR_BIT >= Utility::GetMinimumNumBits(YearMax));
-	static_assert(sizeof(MonthCountType) * CHAR_BIT >= Utility::GetMinimumNumBits(MonthMax));
-	static_assert(sizeof(DayCountType) * CHAR_BIT >= Utility::GetMinimumNumBits(DayMax));
+	static_assert(sizeof(YearCountType) * CHAR_BIT >= Math::GetMinimumNumBits(YearMax));
+	static_assert(sizeof(MonthCountType) * CHAR_BIT >= Math::GetMinimumNumBits(MonthMax));
+	static_assert(sizeof(DayCountType) * CHAR_BIT >= Math::GetMinimumNumBits(DayMax));
 
 	DaysType GetDaysSinceEpoch(TimePointType const& timepoint);
 };
@@ -56,13 +56,13 @@ struct ClockTimeStamp {
 	static constexpr uint16_t MillisecondMax = 999;
 
 	/** [0-23] the hour of the day */
-	StorageType hour : Utility::GetMinimumNumBits(HourMax) = 0;
+	StorageType hour : Math::GetMinimumNumBits(HourMax) = 0;
 	/** [0-59] the minute of the hour */
-	StorageType minute : Utility::GetMinimumNumBits(MinuteMax) = 0;
+	StorageType minute : Math::GetMinimumNumBits(MinuteMax) = 0;
 	/** [0-60] the second of the minute (60 is used for leap seconds in some cases) */
-	StorageType second : Utility::GetMinimumNumBits(SecondMax) = 0;
+	StorageType second : Math::GetMinimumNumBits(SecondMax) = 0;
 	/** [0-999] the milliseconds past the second */
-	StorageType millisecond : Utility::GetMinimumNumBits(MillisecondMax) = 0;
+	StorageType millisecond : Math::GetMinimumNumBits(MillisecondMax) = 0;
 
 	static ClockTimeStamp Now();
 
@@ -72,10 +72,10 @@ struct ClockTimeStamp {
 	ClockTimeStamp(TimePointType const& timepoint) noexcept : ClockTimeStamp(GetMillisecondsSinceDayStart(timepoint)) {}
 
 private:
-	static_assert(sizeof(HourCountType) * CHAR_BIT >= Utility::GetMinimumNumBits(HourMax));
-	static_assert(sizeof(MinuteCountType) * CHAR_BIT >= Utility::GetMinimumNumBits(MinuteMax));
-	static_assert(sizeof(SecondCountType) * CHAR_BIT >= Utility::GetMinimumNumBits(HourMax));
-	static_assert(sizeof(MillisecondCountType) * CHAR_BIT >= Utility::GetMinimumNumBits(HourMax));
+	static_assert(sizeof(HourCountType) * CHAR_BIT >= Math::GetMinimumNumBits(HourMax));
+	static_assert(sizeof(MinuteCountType) * CHAR_BIT >= Math::GetMinimumNumBits(MinuteMax));
+	static_assert(sizeof(SecondCountType) * CHAR_BIT >= Math::GetMinimumNumBits(HourMax));
+	static_assert(sizeof(MillisecondCountType) * CHAR_BIT >= Math::GetMinimumNumBits(HourMax));
 
 	static MillisecondsType GetMillisecondsSinceDayStart(TimePointType const& timepoint);
 };

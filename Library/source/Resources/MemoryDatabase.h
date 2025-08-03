@@ -1,5 +1,5 @@
 #pragma once
-#include "Engine/StandardTypes.h"
+#include "Engine/Core.h"
 #include "Resources/Database.h"
 #include "Resources/Package.h"
 #include "Resources/Resource.h"
@@ -19,6 +19,6 @@ namespace Resources {
 
 		/** Create a new resource in the provided package. Will throw if the resource cannot be created. */
 		template<Concepts::DerivedFromResource T, std::invocable<T&> InitializerType>
-		stdext::shared_ref<T> Create(StringID name, stdext::shared_ref<Package> package, InitializerType&& initializer) { return Database::Create<T>(name, package, std::forward<InitializerType>(initializer)); }
+		std::shared_ptr<T> Create(StringID name, std::shared_ptr<Package> package, InitializerType&& initializer) { return Database::Create<T>(name, package, std::forward<InitializerType>(initializer)); }
 	};
 }

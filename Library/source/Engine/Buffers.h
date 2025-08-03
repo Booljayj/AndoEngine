@@ -1,5 +1,5 @@
 #pragma once
-#include "Engine/StandardTypes.h"
+#include "Engine/Core.h"
 
 /** General-purpose buffer that keeps track of usage. */
 struct Buffer {

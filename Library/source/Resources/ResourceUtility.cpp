@@ -4,7 +4,7 @@
 #include "Resources/Resource.h"
 
 namespace Resources {
-	void ResourceUtility::MoveResource(stdext::shared_ref<Resource> resource, std::shared_ptr<Package> const& destination) {
+	void ResourceUtility::MoveResource(std::shared_ptr<Resource> resource, std::shared_ptr<Package> const& destination) {
 		auto description = resource->ts_description.LockExclusive();
 
 		std::shared_ptr<Package> const& current = description->package.lock();
@@ -36,7 +36,7 @@ namespace Resources {
 				VerifyResourceCanBeRemoved(resource, *description, current->name, *currentContents);
 				VerifyResourceCanBeAdded(*description, destination->name, *destinationContents);
 
-				destinationContents->emplace(std::make_pair(description->name, resource.get()));
+				destinationContents->emplace(std::make_pair(description->name, resource));
 				currentContents->erase(description->name);
 				description->package = destination;
 
@@ -49,7 +49,7 @@ namespace Resources {
 
 				VerifyResourceCanBeAdded(*description, destination->name, *destinationContents);
 
-				destinationContents->emplace(std::make_pair(description->name, resource.get()));
+				destinationContents->emplace(std::make_pair(description->name, resource));
 				description->package = destination;
 
 				destination->flags += EPackageFlags::Dirty;
@@ -57,7 +57,7 @@ namespace Resources {
 		}
 	}
 
-	void ResourceUtility::RenamePackage(stdext::shared_ref<Package> package, StringID name) {
+	void ResourceUtility::RenamePackage(std::shared_ptr<Package> package, StringID name) {
 		auto const database = package->owner.lock();
 
 		//Ensure tha the package actually belongs to a database that will allow us to ensure it's unique.
@@ -76,7 +76,7 @@ namespace Resources {
 		package->name = name;
 	}
 
-	void ResourceUtility::RenameResource(stdext::shared_ref<Resource> resource, StringID name) {
+	void ResourceUtility::RenameResource(std::shared_ptr<Resource> resource, StringID name) {
 		auto description = resource->ts_description.LockExclusive();
 
 		if (auto const package = description->package.lock()) {

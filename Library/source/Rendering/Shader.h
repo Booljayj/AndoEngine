@@ -1,5 +1,6 @@
 #pragma once
-#include "Engine/StandardTypes.h"
+#include "Engine/Core.h"
+#include "Engine/Vector.h"
 #include "Engine/Reflection.h"
 #include "Resources/Resource.h"
 
@@ -14,7 +15,7 @@ namespace Rendering {
 	};
 
 	struct Shader : public Resources::Resource {
-		REFLECT_STRUCT(Shader, Resources::Resource);
+		DECLARE_STRUCT_REFLECTION_MEMBERS(Shader, Resources::Resource);
 		using Resources::Resource::Resource;
 
 		std::vector<uint32_t> bytecode;
@@ -23,13 +24,13 @@ namespace Rendering {
 	};
 
 	struct VertexShader : public Shader {
-		REFLECT_STRUCT(VertexShader, Shader);
+		DECLARE_STRUCT_REFLECTION_MEMBERS(VertexShader, Shader);
 		using Shader::Shader;
 
 		virtual EShaderType GetShaderType() const override { return EShaderType::Vertex; }
 	};
 	struct FragmentShader : public Shader {
-		REFLECT_STRUCT(FragmentShader, Shader);
+		DECLARE_STRUCT_REFLECTION_MEMBERS(FragmentShader, Shader);
 		using Shader::Shader;
 
 		virtual EShaderType GetShaderType() const override { return EShaderType::Fragment; }
@@ -40,16 +41,24 @@ REFLECT(Rendering::Shader, Struct);
 REFLECT(Rendering::VertexShader, Struct);
 REFLECT(Rendering::FragmentShader, Struct);
 
+//Custom archive serialization for shader bytecode
+namespace Archive {
+	struct ShaderSerializer {
+		static void Write(Output& archive, Rendering::Shader const& shader);
+		static void Read(Input& archive, Rendering::Shader& shader);
+	};
+
+	template<std::derived_from<Rendering::Shader> ShaderType>
+	struct Serializer<ShaderType> : public ShaderSerializer {};
+}
+
 //Custom YAML serialization for shader bytecode
 namespace YAML {
-	template<>
-	struct convert<Rendering::Shader> {
+	struct ShaderConverter {
 		static Node encode(Rendering::Shader const& shader);
 		static bool decode(Node const& node, Rendering::Shader& shader);
 	};
 
-	template<>
-	struct convert<Rendering::VertexShader> : public convert<Rendering::Shader> {};
-	template<>
-	struct convert<Rendering::FragmentShader> : public convert<Rendering::Shader> {};
+	template<std::derived_from<Rendering::Shader> ShaderType>
+	struct convert<ShaderType> : public ShaderConverter {};
 }

@@ -1,6 +1,7 @@
 #pragma once
-#include "Engine/Reflection.h"
-#include "Engine/StandardTypes.h"
+#include "Engine/Reflection/StructTypeInfo.h"
+#include "Engine/Core.h"
+#include "Engine/SmartPointers.h"
 #include "Resources/Cache.h"
 
 namespace Resources {

@@ -1,5 +1,5 @@
 #pragma once
-#include "Engine/StandardTypes.h"
+#include "Engine/Core.h"
 #include "Engine/UniqueResource.h"
 #include "Rendering/Vulkan/Vulkan.h"
 

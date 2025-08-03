@@ -1,4 +1,5 @@
 #pragma once
+#include "Engine/MoveOnly.h"
 #include "Rendering/Vulkan/Framework.h"
 #include "Rendering/Vulkan/Vulkan.h"
 #include "Rendering/Vulkan/PhysicalDevice.h"
@@ -36,7 +37,7 @@ namespace Rendering {
 
 	private:
 		PhysicalDeviceDescription const& physical;
-		stdext::move_only<VkDevice> device;
+		MoveOnly<VkDevice> device;
 		VmaAllocator allocator = nullptr;
 #ifdef VULKAN_DEBUG
 		PFN_vkSetDebugUtilsObjectNameEXT functionSetDebugName = nullptr;

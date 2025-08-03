@@ -32,15 +32,15 @@ namespace Resources {
 	void GatherPackageDependencies(Reflection::StructTypeInfo const& type, void const* instance, std::unordered_set<StringID>& dependencies) {
 		using namespace Reflection;
 
-		for (VariableInfo const& variable : type.GetVariableRange()) {
+		for (std::shared_ptr<VariableInfo const> variable : type.GetVariableRange()) {
 			//Skip variables that are explicitly not serialized, or which are deprecated (deprecated variables can be loaded, but will not be saved)
-			if (variable.flags.HasAny(EVariableFlags::NonSerialized, EVariableFlags::Deprecated)) continue;
+			if (variable->flags.HasAny(EVariableFlags::NonSerialized, EVariableFlags::Deprecated)) continue;
 
 			//If this variable is a reference to a Resource object, record it as a dependency
-			if (auto const* reference = Cast<ReferenceTypeInfo>(variable.type)) {
-				if (reference->IsReferenceChildOf<Resource>()) {
+			if (auto const* reference = Cast<ReferenceTypeInfo>(variable->type)) {
+				if (reference->base->IsChildOf<Resource>()) {
 					//This variable appears to be a reference to a Resource object. Retrieve the reference and add it as a dependency if it is saved.
-					auto const dependency = reference->GetImmutable<Resource>(variable.GetImmutable(instance));
+					auto const dependency = reference->GetImmutable<Resource>(variable->GetImmutable(instance));
 					if (dependency) {
 						Identifier const identifier = dependency->GetIdentifier();
 						if (CanSavePackage(identifier.package)) dependencies.emplace(identifier.package);
@@ -48,8 +48,8 @@ namespace Resources {
 				}
 
 			//If this variable is a struct, recurse into the struct to check its variables for dependencies
-			} else if (auto const* struct_type = Cast<StructTypeInfo>(variable.type)) {
-				GatherPackageDependencies(*struct_type, variable.GetImmutable(instance), dependencies);
+			} else if (auto const* struct_type = Cast<StructTypeInfo>(variable->type)) {
+				GatherPackageDependencies(*struct_type, variable->GetImmutable(instance), dependencies);
 			}
 		}
 	}

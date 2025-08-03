@@ -1,9 +1,9 @@
 #pragma once
 #include "Engine/Archive.h"
+#include "Engine/Core.h"
 #include "Engine/Flags.h"
 #include "Engine/Logging.h"
 #include "Engine/Reflection.h"
-#include "Engine/StandardTypes.h"
 #include "Engine/StringID.h"
 #include "ThirdParty/yaml.h"
 
@@ -37,7 +37,14 @@ template<>
 struct std::hash<Resources::Identifier> {
 	inline size_t operator()(Resources::Identifier const& identifier) const {
 		std::hash<StringID> const hasher;
-		return stdext::hash_combine(hasher(identifier.package), hasher(identifier.resource));
+		return hash_combine(hasher(identifier.package), hasher(identifier.resource));
+	}
+};
+
+template<>
+struct std::formatter<Resources::Identifier> : std::formatter<std::string_view> {
+	auto format(const Resources::Identifier& identifier, format_context& ctx) const {
+		return std::format_to(ctx.out(), "{}::{}"sv, identifier.package, identifier.resource);
 	}
 };
 

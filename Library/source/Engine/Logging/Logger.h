@@ -1,6 +1,7 @@
 #pragma once
+#include "Engine/Core.h"
 #include "Engine/Logging/LogVerbosity.h"
-#include "Engine/StandardTypes.h"
+#include "Engine/Threads.h"
 
 struct ILogDevice;
 struct LogCategory;

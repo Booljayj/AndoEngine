@@ -1,5 +1,5 @@
 #pragma once
-#include "Engine/Reflection/Components/VariableInfo.h"
+#include "Engine/Concepts.h"
 #include "Engine/Reflection/ReflectionMacros.h"
 #include "Engine/Reflection/TypeInfo.h"
 
@@ -8,14 +8,7 @@ namespace Reflection {
 
 	namespace Concepts {
 		template<typename T>
-		concept ReflectedStruct = ReflectedType<T> and requires (T a) {
-			{ ::Reflection::Reflect<T>::Get() } -> std::convertible_to<StructTypeInfo const&>;
-		};
-
-		template<typename T>
-		concept ReflectedHierarchicalStruct = ReflectedStruct<T> and requires(T a) {
-			{ a.GetTypeInfo() } -> std::convertible_to<StructTypeInfo const&>;
-		};
+		concept Class = std::is_class_v<T>;
 
 		template<typename T, typename StructType>
 		concept ReflectedStructBase =
@@ -26,24 +19,19 @@ namespace Reflection {
 	struct StructVariableRange {
 		struct Iterator {
 			using difference_type = std::ptrdiff_t;
-			using value_type = VariableInfo const;
+			using value_type = VariableInfo const*;
 
 			constexpr Iterator() = default;
-			Iterator(Iterator const&) = default;
-			Iterator(Iterator&&) = default;
 			Iterator(StructTypeInfo const& type);
-
-			Iterator& operator=(Iterator const&) = default;
-			Iterator& operator=(Iterator&&) = default;
 
 			friend inline bool operator==(const Iterator& a, const Iterator& b) { return a.current == b.current && a.index == b.index; };
 			friend inline bool operator!=(const Iterator& a, const Iterator& b) { return !(a == b); };
+			friend inline bool operator==(const Iterator& a, const std::default_sentinel_t&) { return a.current == nullptr; }
+			friend inline bool operator!=(const Iterator& a, const std::default_sentinel_t&) { return a.current != nullptr; }
 
-			inline operator bool() const { return current != nullptr; }
 			Iterator& operator++();
-			Iterator operator++(int) { Iterator tmp = *this; ++(*this); return tmp; }
-
-			VariableInfo const& operator*() const;
+			inline void operator++(int) { ++*this; }
+			VariableInfo const* operator*() const;
 			VariableInfo const* operator->() const;
 
 		private:
@@ -54,197 +42,182 @@ namespace Reflection {
 		StructVariableRange(StructTypeInfo const& type) : type(type) {}
 
 		inline Iterator begin() const noexcept { return Iterator{ type }; }
-		inline constexpr Iterator end() const noexcept { return Iterator{}; }
+		inline constexpr std::default_sentinel_t end() const noexcept { return std::default_sentinel; }
 
 		/** Finds a variable with the given name */
-		VariableInfo const* FindVariable(std::string_view name) const;
+		VariableInfo const* FindVariable(std::u16string_view name) const;
 		/** Finds a variable with the given id */
 		VariableInfo const* FindVariable(Hash32 id) const;
 
 	private:
 		StructTypeInfo const& type;
 	};
-	
-	/** Info for a struct type, which contains various fields and supports inheritance */
-	struct StructTypeInfo : public TypeInfo {
-		using TypeInfo::TypeInfo;
-		static constexpr ETypeClassification Classification = ETypeClassification::Struct;
 
-		/** The type that this type inherits from. Only single-inheritance from another object type is supported. */
-		StructTypeInfo const* base = nullptr;
-		/** A default-constructed instance of this struct type, used to find default values for variables */
-		void const* defaults = nullptr;
-		/** The variables that are contained in this type */
-		std::vector<VariableInfo> variables;
-
-		virtual ~StructTypeInfo() = default;
-
-		static void SerializeVariables(StructTypeInfo const& type, YAML::Node& node, void const* instance);
-		static void DeserializeVariables(StructTypeInfo const& type, YAML::Node const& node, void* instance);
-
-		static void SerializeVariables(StructTypeInfo const& type, Archive::Output& archive, void const* instance);
-		static void DeserializeVariables(StructTypeInfo const& type, Archive::Input& archive, void* instance);
-
-		bool IsChildOf(StructTypeInfo const& parent) const {
-			//Walk up the chain of parents until we encounter the provided type
-			for (StructTypeInfo const* current = this; current; current = current->base) {
-				if (current == &parent) return true;
-			}
-			return false;
-		}
-
-		template<Concepts::ReflectedStruct T>
-		bool IsChildOf() const { return IsChildOf(Reflect<T>::Get()); }
-
-		/** Create a range object used to iterate through or search the variables on this type */
-		StructVariableRange GetVariableRange() const { return StructVariableRange{ *this }; }
-
-		/** Returns the known specific type of an instance deriving from this type, to our best determination. */
-		virtual StructTypeInfo const* GetDerivedTypeInfo(void const* instance) const = 0;
-
-		/** Builder method to add a defaults instance to a struct type */
-		template<typename Self>
-		inline auto& Defaults(this Self&& self, void const* inDefaults) { self.defaults = inDefaults; return self; }
-		/** Builder method to add variables to a struct type */
-		template<typename Self>
-		inline auto& Variables(this Self&& self, std::initializer_list<VariableInfo>&& inVariables) { self.variables = inVariables; return self; }
-	};
-
-	//============================================================
-	// Templates
-
-	template<typename StructType_>
-		requires std::is_class_v<StructType_>
+	template<Concepts::Class StructType_>
 	struct TStructTypeInfo : public ImplementedTypeInfo<StructType_, StructTypeInfo> {
 		using StructType = StructType_;
 		using StructTypeInfo::base;
-		using StructTypeInfo::defaults;
-		using StructTypeInfo::variables;
 		using ImplementedTypeInfo<StructType, StructTypeInfo>::Cast;
 
-		TStructTypeInfo(std::string_view name) : ImplementedTypeInfo<StructType, StructTypeInfo>(::Reflection::Reflect<StructType>::ID, name) {}
+		/** The variables that are contained in this type */
+		std::vector<std::unique_ptr<VariableInfo const>> variables;
 
-		virtual StructTypeInfo const* GetDerivedTypeInfo(void const* instance) const final {
-			if constexpr (Concepts::ReflectedHierarchicalStruct<StructType>) return &Cast(instance).GetTypeInfo();
-			else return this;
-		}
+		TStructTypeInfo(TStructTypeInfo&&) = default;
 
 		template<Concepts::ReflectedStructBase<StructType> BaseType>
-		inline decltype(auto) Base() {
+		TStructTypeInfo(std::u16string_view name, std::u16string_view description, std::in_place_type_t<BaseType>, std::initializer_list<VariableInfo const*> in_variables)
+			: ImplementedTypeInfo<StructType, StructTypeInfo>(::Reflect<StructType>::ID, name, description)
+		{
 			if constexpr (!std::is_same_v<BaseType, void>) base = &Reflect<BaseType>::Get();
-			return *this;
+
+			variables.reserve(in_variables.size());
+			for (const auto* var : in_variables) variables.emplace_back(var);
 		}
-	};
-}
 
-//============================================================
-// Standard struct reflection
+		TStructTypeInfo(std::u16string_view name, std::u16string_view description, std::initializer_list<VariableInfo const*> in_variables)
+			: TStructTypeInfo(name, description, std::in_place_type<void>, in_variables)
+		{}
 
-/** Define serialization methods for a type which are based on the reflection system */
-#define DEFINE_REFLECTED_SERIALIZATION(StructType) \
-namespace Archive {\
-	template<> struct Serializer<StructType> {\
-		void Write(Output& archive, StructType const& instance) { Reflection::StructTypeInfo::SerializeVariables(::Reflection::Reflect<StructType>::Get(), archive, &instance); }\
-		void Read(Input& archive, StructType& instance) { Reflection::StructTypeInfo::DeserializeVariables(::Reflection::Reflect<StructType>::Get(), archive, &instance); }\
-	};\
-}\
-namespace YAML {\
-	template<> struct convert<StructType> {\
-		static Node encode(const StructType& instance) {\
-			Node node{ NodeType::Map }; Reflection::StructTypeInfo::SerializeVariables(::Reflection::Reflect<StructType>::Get(), node, &instance); return node;\
-		}\
-		static bool decode(const Node& node, StructType& instance) {\
-			if (!node.IsMap()) return false;\
-			Reflection::StructTypeInfo::DeserializeVariables(::Reflection::Reflect<StructType>::Get(), node, &instance); return true;\
-		}\
-	};\
-}
+		virtual std::span<std::unique_ptr<VariableInfo const> const> GetVariables() const override final {
+			return variables;
+		}
 
-namespace Reflection {
-	template<typename FirstType, typename SecondType>
-	struct Reflect<std::pair<FirstType, SecondType>> {
-		static StructTypeInfo const& Get() { return info; }
-		static constexpr Hash128 ID = Hash128{ "std::pair"sv } + Reflect<FirstType>::ID + Reflect<SecondType>::ID;
-	private:
-		using ThisTypeInfo = TStructTypeInfo<std::pair<FirstType, SecondType>>;
-		static ThisTypeInfo const info;
-
-		static void const* GetDefaults() {
-			if constexpr (std::is_default_constructible_v<FirstType> && std::is_default_constructible_v<SecondType>) {
-				static std::pair<FirstType, SecondType> const defaults;
+		virtual void const* GetDefaults() const final {
+			if constexpr (std::default_initializable<StructType>) {
+				static StructType defaults;
 				return &defaults;
 			} else {
 				return nullptr;
 			}
 		}
-	};
 
-	template<typename FirstType, typename SecondType>
-	typename Reflect<std::pair<FirstType, SecondType>>::ThisTypeInfo const Reflect<std::pair<FirstType, SecondType>>::info =
-		typename Reflect<std::pair<FirstType, SecondType>>::ThisTypeInfo{ "std::pair"sv }
-		.Description("pair"sv)
-		.Defaults(Reflect<std::pair<FirstType, SecondType>>::GetDefaults())
-		.Variables({
-			{ &std::pair<FirstType, SecondType>::first, "first"sv, "first value in pair"sv, FVariableFlags::None() },
-			{ &std::pair<FirstType, SecondType>::second, "second"sv, "second value in pair"sv, FVariableFlags::None() },
-		});
-}
-
-namespace Archive {
-	template<typename FirstType, typename SecondType>
-	struct Serializer<std::pair<FirstType, SecondType>> {
-		void Write(Output& archive, std::pair<FirstType, SecondType> const& instance) {
-			Serializer<FirstType>::Write(archive, instance.first);
-			Serializer<FirstType>::Write(archive, instance.second);
+		virtual StructTypeInfo const& GetInstanceTypeInfo(void const* instance) const final {
+			if constexpr (Concepts::HasGetTypeInfoMethod<StructType>) return &Cast(instance).GetTypeInfo();
+			else return *this;
 		}
-		void Read(Input& archive, std::pair<FirstType, SecondType>& instance) {
-			Serializer<FirstType>::Read(archive, instance.first);
-			Serializer<FirstType>::Read(archive, instance.second);
+	
+	protected:
+		virtual void* AllocateRaw() const final {
+			if constexpr (std::is_default_constructible_v<StructType>) return new StructType();
+			else return nullptr;
 		}
 	};
+
+	template<typename ValueType>
+	struct StaticVariableInfo : public VariableInfo {
+		StaticVariableInfo(ValueType* pointer, Hash32 id, std::u16string_view name, std::u16string_view description, FVariableFlags flags)
+			: VariableInfo(&Reflect<std::decay_t<ValueType>>::Get(), id, name, description, flags + EVariableFlags::Static), pointer(pointer)
+		{}
+
+		virtual void const* GetImmutable(void const* instance) const override final { return pointer; }
+
+		virtual void* GetMutable(void* instance) const override final {
+			if constexpr (std::is_const_v<ValueType>) return nullptr;
+			else return pointer;
+		}
+
+	private:
+		ValueType* const pointer;
+	};
+
+	template<typename ClassType, typename ValueType>
+	struct MemberVariableInfo : public VariableInfo {
+		MemberVariableInfo(ValueType ClassType::* pointer, Hash32 id, std::u16string_view name, std::u16string_view description, FVariableFlags flags)
+			: VariableInfo(&Reflect<std::decay_t<ValueType>>::Get(), id, name, description, flags), pointer(pointer)
+		{}
+
+		virtual void const* GetImmutable(void const* instance) const override final { return &(static_cast<ClassType const*>(instance)->*pointer); }
+
+		virtual void* GetMutable(void* instance) const override final {
+			if constexpr (std::is_const_v<ValueType>) return nullptr;
+			else return &(static_cast<ClassType*>(instance)->*pointer);
+		}
+
+	private:
+		ValueType ClassType::* const pointer;
+	};
+
+	template<typename ClassType, typename NestedType, typename ValueType>
+	struct NestedMemberVariableInfo : public VariableInfo {
+		NestedMemberVariableInfo(NestedType ClassType::* container_pointer, ValueType NestedType::* pointer, Hash32 id, std::u16string_view name, std::u16string_view description, FVariableFlags flags)
+			: VariableInfo(&Reflect<std::decay_t<ValueType>>::Get(), id, name, description, flags), container_pointer(container_pointer), pointer(pointer)
+		{}
+
+		virtual void const* GetImmutable(void const* instance) const override final {
+			return &(static_cast<ClassType const*>(instance)->*container_pointer.*pointer);
+		}
+
+		virtual void* GetMutable(void* instance) const override final {
+			if constexpr (std::is_const_v<ValueType>) return nullptr;
+			else return &(static_cast<ClassType*>(instance)->*container_pointer.*pointer);
+		}
+
+	private:
+		NestedType ClassType::* const container_pointer;
+		ValueType NestedType::* const pointer;
+	};
+
+	template<typename ClassType, typename ValueType, typename IndexType>
+	struct IndexedVariableInfo : public VariableInfo {
+		IndexedVariableInfo(size_t index, Hash32 id, std::u16string_view name, std::u16string_view description, FVariableFlags flags)
+			: VariableInfo(&Reflect<std::decay_t<ValueType>>::Get(), id, name, description, flags), index(index)
+		{}
+
+		virtual void const* GetImmutable(void const* instance) const override final { return &(static_cast<ClassType const*>(instance)->operator[](index)); }
+
+		virtual void* GetMutable(void* instance) const override final {
+			if constexpr (std::is_const_v<ValueType>) return nullptr;
+			else return &(static_cast<ClassType*>(instance)->operator[](index));
+		}
+
+	private:
+		IndexType const index;
+	};
 }
-//YAML serialization methods for std::pair are already defined in the YAML library
 
-REFLECT(glm::vec2, Struct);
-REFLECT(glm::vec3, Struct);
-REFLECT(glm::vec4, Struct);
-DEFINE_REFLECTED_SERIALIZATION(glm::vec2);
-DEFINE_REFLECTED_SERIALIZATION(glm::vec3);
-DEFINE_REFLECTED_SERIALIZATION(glm::vec4);
+/** Define default archive serialization methods for a struct based on the reflected variables of the struct. */
+#define DEFINE_DEFAULT_ARCHIVE_SERIALIZATION(StructType)\
+namespace Archive {\
+	template<> struct Serializer<StructType> {\
+		static inline void Write(Output& archive, StructType const& instance) { ::Reflection::StructTypeInfo::SerializeVariables(::Reflect<StructType>::Get(), archive, &instance); }\
+		static inline void Read(Input& archive, StructType& instance) { ::Reflection::StructTypeInfo::DeserializeVariables(::Reflect<StructType>::Get(), archive, &instance); }\
+	};\
+}\
 
-REFLECT(glm::u32vec2, Struct);
-REFLECT(glm::u32vec3, Struct);
-DEFINE_REFLECTED_SERIALIZATION(glm::u32vec2);
-DEFINE_REFLECTED_SERIALIZATION(glm::u32vec3);
+/** Define default YAML serialization methods for a struct based on the reflected variables of the struct. */
+#define DEFINE_DEFAULT_YAML_SERIALIZATION(StructType)\
+namespace YAML {\
+	template<> struct convert<StructType> {\
+		static inline Node encode(const StructType& instance) {\
+			Node node{ NodeType::Map }; ::Reflection::StructTypeInfo::SerializeVariables(::Reflect<StructType>::Get(), node, &instance); return node;\
+		}\
+		static inline bool decode(const Node& node, StructType& instance) {\
+			if (!node.IsMap()) return false;\
+			::Reflection::StructTypeInfo::DeserializeVariables(::Reflect<StructType>::Get(), node, &instance); return true;\
+		}\
+	};\
+}
 
-REFLECT(glm::i32vec2, Struct);
-REFLECT(glm::i32vec3, Struct);
-DEFINE_REFLECTED_SERIALIZATION(glm::i32vec2);
-DEFINE_REFLECTED_SERIALIZATION(glm::i32vec3);
+/** Helper method to create reflection information for a static variable */
+template<typename ValueType>
+Reflection::VariableInfo const* MakeStatic(ValueType* pointer, Hash32 id, std::u16string_view name, std::u16string_view description, Reflection::FVariableFlags flags = Reflection::FVariableFlags::None()) {
+	return new Reflection::StaticVariableInfo<ValueType>(pointer, id, name, description, flags);
+}
 
-REFLECT(glm::u8vec3, Struct);
-REFLECT(glm::u8vec4, Struct);
-DEFINE_REFLECTED_SERIALIZATION(glm::u8vec3);
-DEFINE_REFLECTED_SERIALIZATION(glm::u8vec4);
+/** Helper method to create reflection information for a non-static member variable */
+template<typename ClassType, typename ValueType>
+Reflection::VariableInfo const* MakeMember(ValueType ClassType::* pointer, Hash32 id, std::u16string_view name, std::u16string_view description, Reflection::FVariableFlags flags = Reflection::FVariableFlags::None()) {
+	return new Reflection::MemberVariableInfo<ClassType, ValueType>(pointer, id, name, description, flags);
+}
 
-REFLECT(glm::mat2x2, Struct);
-REFLECT(glm::mat2x3, Struct);
-REFLECT(glm::mat2x4, Struct);
-DEFINE_REFLECTED_SERIALIZATION(glm::mat2x2);
-DEFINE_REFLECTED_SERIALIZATION(glm::mat2x3);
-DEFINE_REFLECTED_SERIALIZATION(glm::mat2x4);
+/** Helper method to create reflection information for a non-static member variable nested inside an unnamed struct type */
+template<typename ClassType, typename NestedType, typename ValueType>
+Reflection::VariableInfo const* MakeNestedMember(NestedType ClassType::* container_pointer, ValueType NestedType::* pointer, Hash32 id, std::u16string_view name, std::u16string_view description, Reflection::FVariableFlags flags = Reflection::FVariableFlags::None()) {
+	return new Reflection::NestedMemberVariableInfo<ClassType, NestedType, ValueType>(container_pointer, pointer, id, name, description, flags);
+}
 
-REFLECT(glm::mat3x2, Struct);
-REFLECT(glm::mat3x3, Struct);
-REFLECT(glm::mat3x4, Struct);
-DEFINE_REFLECTED_SERIALIZATION(glm::mat3x2);
-DEFINE_REFLECTED_SERIALIZATION(glm::mat3x3);
-DEFINE_REFLECTED_SERIALIZATION(glm::mat3x4);
-
-REFLECT(glm::mat4x2, Struct);
-REFLECT(glm::mat4x3, Struct);
-REFLECT(glm::mat4x4, Struct);
-DEFINE_REFLECTED_SERIALIZATION(glm::mat4x2);
-DEFINE_REFLECTED_SERIALIZATION(glm::mat4x3);
-DEFINE_REFLECTED_SERIALIZATION(glm::mat4x4);
-
+/** Helper method to create reflection information for a non-static member variable that is accessed using an indexing operator (i.e. for vector or matrix types) */
+template<typename ClassType, typename ValueType, typename IndexType>
+Reflection::VariableInfo const* MakeIndexed(IndexType index, Hash32 id, std::u16string_view name, std::u16string_view description, Reflection::FVariableFlags flags = Reflection::FVariableFlags::None()) {
+	return new Reflection::IndexedVariableInfo<ClassType, ValueType, IndexType>(index, id, name, description, flags);
+}

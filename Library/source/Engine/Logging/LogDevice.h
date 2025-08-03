@@ -1,6 +1,9 @@
 #pragma once
 #include "Engine/Logging/LogMessage.h"
-#include "Engine/StandardTypes.h"
+#include "Engine/Core.h"
+#include "Engine/SmartPointers.h"
+#include "Engine/String.h"
+#include "Engine/Vector.h"
 
 /** A device created within a Logger that is responsible for processing output messages. */
 struct ILogDevice {

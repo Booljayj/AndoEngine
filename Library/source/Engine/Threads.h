@@ -1,5 +1,42 @@
 #pragma once
-#include "Engine/StandardTypes.h"
+#include <atomic>
+#include <future>
+#include <mutex>
+#include <shared_mutex>
+#include <thread>
+#include "Engine/Concepts.h"
+
+class RecursiveSharedMutex : public std::shared_mutex {
+public:
+	inline void lock(void) {
+		std::thread::id this_id = std::this_thread::get_id();
+		if (owner == this_id) {
+			// recursive locking
+			count++;
+		} else {
+			// normal locking
+			shared_mutex::lock();
+			owner = this_id;
+			count = 1;
+		}
+	}
+
+	inline void unlock(void) {
+		if (count > 1) {
+			// recursive unlocking
+			count--;
+		} else {
+			// normal unlocking
+			owner = std::thread::id();
+			count = 0;
+			shared_mutex::unlock();
+		}
+	}
+
+private:
+	std::atomic<std::thread::id> owner;
+	uint32_t count;
+};
 
 /** Create a thread that will execute the callable object */
 template<typename Callable>
@@ -23,7 +60,7 @@ struct InclusiveLockedValue {
 	inline ValueType const& operator*() const { return value; }
 
 	inline auto const& operator[](size_t index) const {
-		if constexpr (stdext::indexible<ValueType>) return value[index];
+		if constexpr (Concepts::Indexible<ValueType>) return value[index];
 		else return value;
 	}
 
@@ -49,11 +86,11 @@ struct ExclusiveLockedValue {
 	inline ValueType const& operator*() const { return value; }
 
 	inline auto& operator[](size_t index) {
-		if constexpr (stdext::indexible<ValueType>) return value[index];
+		if constexpr (Concepts::Indexible<ValueType>) return value[index];
 		else return value;
 	}
 	inline auto const& operator[](size_t index) const {
-		if constexpr (stdext::indexible<ValueType>) return value[index];
+		if constexpr (Concepts::Indexible<ValueType>) return value[index];
 		else return value;
 	}
 

@@ -1,6 +1,9 @@
 #pragma once
 #include "Engine/Reflection.h"
-#include "Engine/StandardTypes.h"
+#include "Engine/Core.h"
+#include "Engine/SmartPointers.h"
+#include "Engine/Variant.h"
+#include "Engine/Vector.h"
 #include "Rendering/Vertex.h"
 #include "Rendering/Vulkan/Resources.h"
 #include "Resources/Resource.h"
@@ -15,7 +18,7 @@ namespace Rendering {
 	using FormattedIndices = std::variant<Indices_Short, Indices_Long>;
 
 	struct StaticMesh : public Resources::Resource {
-		REFLECT_STRUCT(StaticMesh, Resources::Resource);
+		DECLARE_STRUCT_REFLECTION_MEMBERS(StaticMesh, Resources::Resource);
 		using Resources::Resource::Resource;
 
 		FormattedVertices vertices;
@@ -26,4 +29,5 @@ namespace Rendering {
 }
 
 REFLECT(Rendering::StaticMesh, Struct);
-DEFINE_REFLECTED_SERIALIZATION(Rendering::StaticMesh);
+DEFINE_DEFAULT_ARCHIVE_SERIALIZATION(Rendering::StaticMesh);
+DEFINE_DEFAULT_YAML_SERIALIZATION(Rendering::StaticMesh);

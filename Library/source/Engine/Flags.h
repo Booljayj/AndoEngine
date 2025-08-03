@@ -1,5 +1,6 @@
 #pragma once
-#include <type_traits>
+#include "Engine/Concepts.h"
+#include "Engine/Threads.h"
 
 /** Test if the bitflag value is set to true in the mask */
 #define TEST_BIT(Mask, Flag) ((size_t)(Mask) & (size_t)(Flag))
@@ -8,7 +9,7 @@
 /** Set the bitflag to false in the mask */
 #define CLEAR_BIT(Mask, Flag) ((size_t)(Mask) &= (size_t)(~(Flag)))
 
-template<stdext::enumeration InEnumType>
+template<Concepts::Enumeration InEnumType>
 struct TFlags {
 public:
 	using EnumType = InEnumType;
@@ -79,7 +80,7 @@ protected:
 };
 
 
-template<stdext::enumeration InEnumType>
+template<Concepts::Enumeration InEnumType>
 struct TAtomicFlags {
 public:
 	using EnumType = InEnumType;

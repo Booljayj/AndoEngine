@@ -1,8 +1,9 @@
 #pragma once
+#include "Engine/Core.h"
 #include "Engine/Flags.h"
-#include "Engine/StandardTypes.h"
-#include "Engine/Temporary.h"
-#include "EntityFramework/EntityTypes.h"
+#include "Engine/Map.h"
+#include "Engine/TemporaryContainers.h"
+#include "Engine/Vector.h"
 #include "Geometry/Rect.h"
 
 struct GlyphInfo {

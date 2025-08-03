@@ -1,6 +1,7 @@
 #pragma once
-#include <glm/mat4x4.hpp>
-#include "Engine/StandardTypes.h"
+#include "Engine/Core.h"
+#include "Engine/GLM.h"
+#include "Engine/Vector.h"
 
 /** Allows an entity to exist at a point in space, often relative to another entity */
 struct TransformComponent {

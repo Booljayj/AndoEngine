@@ -1,4 +1,5 @@
 #include "Rendering/Vulkan/UniformLayouts.h"
+#include "Engine/Array.h"
 #include "Engine/Logging.h"
 #include "Rendering/UniformTypes.h"
 

@@ -1,5 +1,5 @@
 #pragma once
-#include "Engine/StandardTypes.h"
+#include "Engine/GLM.h"
 
 namespace Rendering {
 	using Color = glm::u8vec4;

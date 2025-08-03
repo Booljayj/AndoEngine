@@ -1,8 +1,9 @@
+#include "Rendering/Surface.h"
+#include "Engine/EnumArray.h"
 #include "Rendering/Material.h"
 #include "Rendering/MeshRenderer.h"
 #include "Rendering/RenderingSystem.h"
 #include "Rendering/StaticMesh.h"
-#include "Rendering/Surface.h"
 #include "Rendering/UniformTypes.h"
 
 namespace Rendering {
@@ -144,7 +145,7 @@ namespace Rendering {
 							Object,
 							MAX
 						};
-						stdext::enum_array<uint32_t, EDynamicOffsets> offsets;
+						EnumArray<uint32_t, EDynamicOffsets> offsets;
 						
 						//Write to the part of the object uniform buffer designated for this object
 						offsets[EDynamicOffsets::Object] = uniforms.object.Write(
@@ -158,7 +159,7 @@ namespace Rendering {
 						vkCmdBindPipeline(commands, VK_PIPELINE_BIND_POINT_GRAPHICS, material->objects->pipeline);
 
 						//Bind the descriptor sets to use for this draw command
-						stdext::enum_array<VkDescriptorSet, EGraphicsLayouts> sets;
+						EnumArray<VkDescriptorSet, EGraphicsLayouts> sets;
 						sets[EGraphicsLayouts::Global] = uniforms.global;
 						sets[EGraphicsLayouts::Object] = uniforms.object;
 						//sets[EGraphicsLayouts::Material] = material->gpuResources->set;

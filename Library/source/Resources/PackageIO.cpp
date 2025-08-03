@@ -1,5 +1,5 @@
 #include "Resources/PackageIO.h"
-#include "Engine/Algo.h"
+#include "Engine/Core.h"
 #include "Resources/Package.h"
 #include "Resources/Streaming.h"
 #include "Resources/StreamingUtils.h"
@@ -31,7 +31,7 @@ namespace Resources {
 		archive << dependencies;
 	}
 
-	void  PackageOutput_Binary::SerializeContents(Archive::Output& archive, Package::ContentsContainerType const& contents) {
+	void PackageOutput_Binary::SerializeContents(Archive::Output& archive, Package::ContentsContainerType const& contents) {
 		archive << contents.size();
 
 		std::vector<std::byte> resource_bytes;
@@ -52,9 +52,10 @@ namespace Resources {
 	}
 
 	PackageInput_Binary::PackageInput_Binary(std::istream& stream)
-		: bytes(Utility::ExtractBytes(stream))
-		, archive(bytes)
-	{}
+		: archive(bytes)
+	{
+		ExtractBytes(stream, std::back_inserter(bytes));
+	}
 
 	std::unordered_set<StringID> PackageInput_Binary::GetDependencies() {
 		std::unordered_set<StringID> packages;

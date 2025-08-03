@@ -1,6 +1,7 @@
 #pragma once
+#include "Engine/Core.h"
 #include "Engine/Delegates.h"
-#include "Engine/StandardTypes.h"
+#include "Engine/Threads.h"
 
 using EventHandleType = std::shared_ptr<char const>;
 
@@ -19,7 +20,7 @@ private:
 	static constexpr char HandleByteValue = 0b00001111;
 
 	std::vector<DelegateInfo> delegateInfos;
-	mutable stdext::recursive_shared_mutex mutex;
+	mutable RecursiveSharedMutex mutex;
 	
 public:
 	/** Return the number of delegates bound to this event */

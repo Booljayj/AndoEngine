@@ -1,6 +1,11 @@
 #pragma once
-#include "Engine/StandardTypes.h"
+#include "Engine/Core.h"
+#include "Engine/Map.h"
+#include "Engine/Optional.h"
+#include "Engine/SmartPointers.h"
 #include "Engine/StringID.h"
+#include "Engine/Threads.h"
+#include "Engine/Vector.h"
 #include "Resources/Database.h"
 #include "Resources/Package.h"
 #include "Resources/PackageIO.h"
@@ -70,7 +75,7 @@ namespace Resources {
 		std::shared_ptr<Package> Wait(std::chrono::milliseconds duration);
 
 	private:
-		stdext::shared_ref<PackageRequest> request;
+		std::shared_ptr<PackageRequest> request;
 
 		/** Helper that returns true if the result has a value assigned */
 		static inline bool IsResultReady(std::optional<PackageRequest::Result> const& result) { return result.has_value(); }

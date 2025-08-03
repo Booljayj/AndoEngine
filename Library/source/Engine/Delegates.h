@@ -1,7 +1,7 @@
 #pragma once
+#include "Engine/Concepts.h"
+#include "Engine/Core.h"
 #include "Engine/InlineInterface.h"
-#include "Engine/StandardTypes.h"
-#include "Engine/TypeTraits.h"
 
 //Delegates wrap a callable together with an optional context object. When executed, the callable
 //and context object are used together to invoke the specified behavior. Based on "The Impossibly

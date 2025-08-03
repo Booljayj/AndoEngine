@@ -1,10 +1,10 @@
 #pragma once
-#include "Engine/Archive.h"
+#include "Engine/Core.h"
 #include "Engine/Hash.h"
 #include "Engine/Reflection.h"
-#include "Engine/StandardTypes.h"
 #include "Engine/StringUtils.h"
-#include "Engine/Temporary.h"
+#include "Engine/StringView.h"
+#include "Engine/TemporaryStrings.h"
 
 /** A stable and cheap identifier based on a string, but which internally caches strings to avoid keeping many duplicates in memory. This also means comparisons are very fast. */
 struct StringID {
@@ -74,8 +74,7 @@ private:
 	friend struct std::hash<StringID>;
 	friend struct StringStorage;
 	friend struct YAML::as_if<StringID, void>;
-	template<typename T> friend struct Archive::Serializer;
-
+	
 	static constexpr uint16_t CreateHash(std::string_view string) {
 		uint32_t const full = Hash32{ string }.ToValue();
 		return static_cast<uint16_t>(full) ^ static_cast<uint16_t>(full >> 16);
@@ -103,7 +102,7 @@ inline bool operator<(StringID const& a, StringID const& b) { return StringID::F
 template<>
 struct std::hash<StringID> {
 	size_t operator()(StringID id) const {
-		return stdext::hash_combine(stdext::hash_combine(id.hash, id.collision), id.var);
+		return static_cast<size_t>(id.hash) | (static_cast<size_t>(id.collision) << 16) | (static_cast<size_t>(id.var) << 32);
 	}
 };
 
@@ -115,7 +114,7 @@ struct std::formatter<StringID> : std::formatter<std::string_view> {
 };
 
 template<>
-struct ::Reflection::Reflect<StringID> {
+struct Reflect<StringID> {
 	static Reflection::PrimitiveTypeInfo const& Get() { return StringID::info_StringID; }
 	static constexpr Hash128 ID = Hash128{ std::string_view{ STRINGIFY(StringID) } };
 };
@@ -126,6 +125,9 @@ namespace Archive {
 		static void Write(Output& archive, StringID const sid);
 		static void Read(Input& archive, StringID& sid);
 	};
+
+	template<>
+	inline StringID DefaultReadValue<StringID>() { return StringID::None; }
 }
 
 namespace YAML {

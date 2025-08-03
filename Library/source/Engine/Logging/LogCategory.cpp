@@ -1,15 +1,12 @@
 #include "Engine/Logging/LogCategory.h"
-#include "Engine/Algo.h"
+#include "Engine/Ranges.h"
 
 std::deque<LogCategory*> const& LogCategory::GetCategories() {
 	return GetMutableCategories();
 }
 
 LogCategory* LogCategory::FindCategory(std::string_view name) {
-	auto const iter = std::find_if(
-		GetCategories().begin(), GetCategories().end(),
-		[&](LogCategory* category) { return category->name.compare(name) == 0; }
-	);
+	auto const iter = ranges::find_if(GetCategories(), [&](LogCategory* category) { return category->name.compare(name) == 0; });
 	if (iter != GetCategories().end()) return *iter;
 	else return nullptr;
 }

@@ -1,5 +1,7 @@
 #pragma once
-#include "Engine/StandardTypes.h"
+#include "Engine/Core.h"
+#include "Engine/Variant.h"
+#include "Engine/GLM.h"
 #include "Geometry/CurveTypes.h"
 
 namespace Geometry {

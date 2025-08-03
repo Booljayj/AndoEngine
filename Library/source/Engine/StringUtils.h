@@ -1,6 +1,6 @@
 #pragma once
-#include "Engine/StandardTypes.h"
-#include "Engine/Temporary.h"
+#include "Engine/Core.h"
+#include "Engine/TemporaryStrings.h"
 
 namespace StringUtils {
 	constexpr int32_t ConvertStringToInteger(std::string_view string) {

@@ -1,5 +1,7 @@
 #include "Geometry/Contour.h"
-#include "Engine/StandardTypes.h"
+#include "Engine/Array.h"
+#include "Engine/GLM.h"
+#include "Engine/Variant.h"
 #include "Geometry/Equations.h"
 #include "Geometry/Curve.h"
 

@@ -1,5 +1,5 @@
 #include "Rendering/Vulkan/Resources.h"
-#include "Engine/Temporary.h"
+#include "Engine/EnumArray.h"
 #include "Rendering/Vulkan/UniformLayouts.h"
 
 namespace Rendering {
@@ -11,7 +11,7 @@ namespace Rendering {
 
 		//Create the pipeline layout
 		{
-			stdext::enum_array<VkDescriptorSetLayout, EGraphicsLayouts> setLayouts;
+			EnumArray<VkDescriptorSetLayout, EGraphicsLayouts> setLayouts;
 			setLayouts[EGraphicsLayouts::Global] = uniforms.global;
 			setLayouts[EGraphicsLayouts::Object] = uniforms.object;
 			//setLayouts[ELayouts::Material] = layouts.set;
@@ -113,7 +113,7 @@ namespace Rendering {
 		
 		//Shader stages
 		enum class EShaderStage : uint8_t { Vertex, Fragment, MAX };
-		stdext::enum_array<VkPipelineShaderStageCreateInfo, EShaderStage> stages;
+		EnumArray<VkPipelineShaderStageCreateInfo, EShaderStage> stages;
 		
 		stages[EShaderStage::Vertex] = VkPipelineShaderStageCreateInfo{
 			.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,

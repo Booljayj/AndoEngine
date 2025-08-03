@@ -1,7 +1,9 @@
 #pragma once
+#include "Engine/Array.h"
 #include "Engine/Logging/LogCategory.h"
 #include "Engine/Logging/LogVerbosity.h"
-#include "Engine/StandardTypes.h"
+#include "Engine/Core.h"
+#include "Engine/String.h"
 #include "Engine/TimeStamp.h"
 
 struct LogMessageHeader {

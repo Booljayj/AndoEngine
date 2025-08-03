@@ -1,4 +1,6 @@
 #pragma once
+#include "Engine/Core.h"
+#include "Engine/MoveOnly.h"
 #include "Rendering/Vulkan/Buffers.h"
 #include "Rendering/Vulkan/RenderObjects.h"
 #include "Rendering/Vulkan/Vulkan.h"
@@ -37,7 +39,7 @@ namespace Rendering {
 		~GraphicsPipelineResources();
 
 	private:
-		stdext::move_only<VkDevice> device;
+		MoveOnly<VkDevice> device;
 	};
 
 	/** Stores resources related to a mesh */

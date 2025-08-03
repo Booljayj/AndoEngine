@@ -1,5 +1,8 @@
 #pragma once
-#include "Engine/StandardTypes.h"
+#include "Engine/Core.h"
+#include "Engine/GLM.h"
+#include "Engine/MoveOnly.h"
+#include "Engine/Vector.h"
 #include "Rendering/Vulkan/Vulkan.h"
 
 namespace Rendering {
@@ -42,7 +45,7 @@ namespace Rendering {
 		}
 
 	private:
-		stdext::move_only<VkDevice> device;
+		MoveOnly<VkDevice> device;
 		VkSwapchainKHR swapchain = nullptr;
 
 		/** The images in the swapchain */

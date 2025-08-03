@@ -1,6 +1,7 @@
 #include "Rendering/Vulkan/Device.h"
 #include "Engine/Logging.h"
-#include "Engine/Temporary.h"
+#include "Engine/TemporaryContainers.h"
+#include "Engine/TemporaryStrings.h"
 
 namespace Rendering {
 	Device::Device(Framework const& framework, PhysicalDeviceDescription const& physical, VkPhysicalDeviceFeatures features, ExtensionsView extensions, QueueRequests const& requests)

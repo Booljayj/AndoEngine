@@ -1,5 +1,6 @@
 #pragma once
-#include "Engine/StandardTypes.h"
+#include "Engine/Core.h"
+#include "Engine/Set.h"
 #include "Resources/Package.h"
 
 namespace Reflection { struct StructTypeInfo; }

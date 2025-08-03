@@ -6,10 +6,11 @@ namespace Reflection {
 		switch (classification) {
 			default:
 			CASE_ENUM(Unknown, XXXX);
-			CASE_ENUM(Primitive, PRIM);
+			CASE_ENUM(Valueless, VLES);
+			CASE_ENUM(Numeric, NUME);
 			CASE_ENUM(Struct, STRU);
-			CASE_ENUM(Alias, ALIA);
-			CASE_ENUM(Enumeration, ENUM);
+			CASE_ENUM(String, STNG);
+			CASE_ENUM(Enum, ENUM);
 			CASE_ENUM(Flags, FLAG);
 			CASE_ENUM(Array, ARRY);
 			CASE_ENUM(Map, MAP_);
@@ -41,10 +42,10 @@ namespace Reflection {
 		if (flags.Has(EDebugPrintFlags::DetailedInfo)) {
 			if (StructTypeInfo const* structType = Cast<StructTypeInfo>(type)) {
 				//Print variables
-				if (structType->variables.size() > 0) {
+				if (structType->GetVariables().size() > 0) {
 					std::format_to(out, " variables:\n");
-					for (auto const& variable : structType->variables) {
-						std::format_to(out, "\t{} : {}\n"sv, variable.name, variable.type->GetName());
+					for (auto const& variable : structType->GetVariables()) {
+						std::format_to(out, "\t{} : {}\n"sv, variable->name, variable->type->GetName());
 					}
 				}
 			}

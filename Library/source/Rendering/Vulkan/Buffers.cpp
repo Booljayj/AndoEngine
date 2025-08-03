@@ -1,5 +1,5 @@
 #include "Rendering/Vulkan/Buffers.h"
-#include "Engine/Temporary.h"
+#include "Engine/TemporaryStrings.h"
 
 namespace Rendering {
 	Buffer::Writer::Writer(Buffer const& source)

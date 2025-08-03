@@ -1,5 +1,4 @@
 #include "Rendering/RenderingSystem.h"
-#include "Engine/StandardTypes.h"
 #include "Engine/Utility.h"
 #include "HAL/WindowingSystem.h"
 #include "Rendering/Material.h"

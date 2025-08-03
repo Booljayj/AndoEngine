@@ -1,6 +1,6 @@
 #pragma once
-#include "Engine/StandardTypes.h"
-#include "Engine/TypeTraits.h"
+#include "Engine/Concepts.h"
+#include "Engine/Core.h"
 
 /** Returns the sizes of all types in the tuple summed together, rather than the size of the tuple as a whole. This allows padding to be detected. */
 template<typename TupleType>

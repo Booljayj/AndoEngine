@@ -1,5 +1,5 @@
 #pragma once
-#include "Engine/StandardTypes.h"
+#include "Engine/Core.h"
 #include "yaml-cpp/yaml.h"
 
 //Default serializers for standard types which were missed in the yaml-cpp library

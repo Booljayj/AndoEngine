@@ -1,5 +1,5 @@
 #pragma once
-#include "Engine/StandardTypes.h"
+#include "Engine/Core.h"
 
 /**
  * A managed object maintains an internal thread-safe count of how many things are referencing it.

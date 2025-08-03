@@ -100,6 +100,7 @@ int main(int argc, char** argv) {
 	using namespace Rendering;
 	using namespace Resources;
 
+	//Allocate a temporary buffer for the main thread
 	ThreadBuffer buffer{ 20'000 };
 	
 	Logger::Get().AddDevices(std::make_shared<TerminalLogDevice>());
@@ -111,7 +112,7 @@ int main(int argc, char** argv) {
 	Application application;
 
 	if (application.Startup()) {
-		//Create the default plane mesh. This demonstrates the process of assining raw vertex and index information for a mesh.
+		//Create the default plane mesh. This demonstrates the process of assigning raw vertex and index information for a mesh.
 		Handle<StaticMesh> const plane = application.database.Create<StaticMesh>(
 			"SM_Plane"_sid, Database::GetTemporary(),
 			[](StaticMesh& mesh) {
@@ -215,6 +216,7 @@ void main() {
 		application.MainLoop();
 	}
 	application.Shutdown();
+	const auto temporary = application.database.GetTemporary();
 
 	buffer.LogDebugStats();
 

@@ -1,7 +1,7 @@
 #pragma once
-#include "Engine/Algo.h"
+#include "Engine/Core.h"
 #include "Engine/Events.h"
-#include "Engine/StandardTypes.h"
+#include "Engine/GLM.h"
 #include "HAL/SDL2.h"
 
 namespace HAL {

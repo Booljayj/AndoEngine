@@ -1,6 +1,10 @@
 #pragma once
+#include "Engine/Core.h"
 #include "Engine/Logging.h"
-#include "Engine/StandardTypes.h"
+#include "Engine/Optional.h"
+#include "Engine/SmartPointers.h"
+#include "Engine/Tuple.h"
+#include "Engine/Vector.h"
 #include "HAL/WindowingSystem.h"
 #include "Rendering/Surface.h"
 #include "Rendering/Vulkan/Device.h"

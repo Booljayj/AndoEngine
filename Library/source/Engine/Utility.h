@@ -1,79 +1,50 @@
 #pragma once
-#include "Engine/StandardTypes.h"
-
-/** Utility to convert a symbol to a string */
-#define STRINGIFY(x) #x
-/** Utility to convert an expanded macro to a string */
-#define STRINGIFY_MACRO(x) STRINGIFY(x)
-
-/** Expands to a human-readable description of the compiler used when compiling */
-#if defined(_MSC_VER)
-#define COMPILER_VERSION "Microsoft C/C++ Compiler v" STRINGIFY_MACRO(_MSC_VER)
-#elif defined(__clang__)
-#define COMPILER_VERSION __VERSION__
-#elif defined(__GNUC__)
-#define COMPILER_VERSION __VERSION__
-#else
-#define COMPILER_VERSION "Unknown Compiler"
-#endif
+#include "Engine/Concepts.h"
+#include "Engine/Core.h"
+#include "Engine/Ranges.h"
 
 namespace Utility {
-	/** Calculates floor(log2(value)) */
-	constexpr size_t FloorLog2(size_t value) {
-		return value == 1 ? 0 : 1 + FloorLog2(value >> 1);
-	}
-
-	/** Calculates the minimum number of bits required to store a maximum value. Also equal to ceil(log2(value)). */
-	constexpr size_t GetMinimumNumBits(size_t max) {
-		return max == 1 ? 0 : FloorLog2(max - 1) + 1;
-	}
-
-	/** Load a value from a byte array. The byte array is assumed to be in little-endian order. */
-	template<stdext::numeric T>
+	/** Load a numeric value from a byte array. The byte array is assumed to be in little-endian order. */
+	template<Concepts::Arithmetic T>
 	constexpr inline void LoadOrdered(std::span<std::byte const, sizeof(T)> source, T& value) {
-		for (size_t index = 0; index < sizeof(T); ++index) {
-			T const byte = static_cast<T>(std::to_integer<uint8_t>(source[index]));
-			value |= (byte << (CHAR_BIT * index));
+#ifdef __cpp_lib_start_lifetime_as
+#pragma error "std::start_lifetime_as is now available, this method should be modified to make use of it."
+#endif
+
+		if constexpr (std::endian::native == std::endian::little) {
+			uint64_t integer_value = 0;
+			for (uint8_t byte_index = 0; byte_index < sizeof(T); ++byte_index) {
+				integer_value |= (std::to_integer<uint64_t>(source[byte_index]) << (byte_index * CHAR_BIT));
+			}
+			value = static_cast<T>(integer_value);
+
+			//value = *std::start_lifetime_as<T>(source.data());
+		} else if constexpr (std::endian::native == std::endian::big) {
+			uint64_t integer_value = 0;
+			for (uint8_t byte_index = 0; byte_index < sizeof(T); ++byte_index) {
+				integer_value |= (std::to_integer<uint64_t>(source[sizeof(T) - byte_index - 1]) << (byte_index * CHAR_BIT));
+			}
+			value = static_cast<T>(integer_value);
+
+			//value = std::byteswap(*std::start_lifetime_as<T>(source.data()));
+		} else {
+			static_assert(false, "Mixed-endian platforms not supported");
 		}
 	}
-	/** Save a value to a byte array. The byte array is assumed to be in little-endian order. */
-	template<stdext::numeric T>
+
+	/** Save a numeric value to a byte array. The byte array is assumed to be in little-endian order. */
+	template<Concepts::Arithmetic T>
 	constexpr inline void SaveOrdered(T value, std::span<std::byte, sizeof(T)> target) {
-		for (size_t index = 0; index < sizeof(T); ++index) {
-			uint8_t const byte = static_cast<uint8_t>(value >> (CHAR_BIT * index));
-			target[index] = std::byte{ byte };
+		std::span<std::byte const, sizeof(T)> value_span = std::as_bytes(std::span<T, 1>{ &value, 1 });
+
+		if constexpr (std::endian::native == std::endian::little) {
+			for (size_t index = 0; index < sizeof(T); ++index) target[index] = value_span[index];
+		} else if constexpr (std::endian::native == std::endian::big) {
+			constexpr size_t last_index = sizeof(T) - 1;
+			for (size_t index = 0; index < sizeof(T); ++index) target[index] = value_span[last_index - index];
+		} else {
+			static_assert(false, "Mixed-endian platforms not supported");
 		}
-	}
-
-	/** Load a value from a character array. The character array is assumed to be in little-endian order. */
-	template<stdext::numeric T>
-	constexpr inline void LoadOrdered(std::span<char const, sizeof(T)> source, T& value) {
-		for (size_t index = 0; index < sizeof(T); ++index) {
-			value |= (static_cast<T>(source[index]) << (CHAR_BIT * index));
-		}
-	}
-
-	/** Save a value to a character array. The character array is assumed to be in little-endian order. */
-	template<stdext::numeric T>
-	constexpr inline void SaveOrdered(T value, std::span<char, sizeof(T)> target) {
-		for (size_t index = 0; index < sizeof(T); ++index) {
-			target[index] = static_cast<uint8_t>(value >> (CHAR_BIT * index));
-		}
-	}
-
-	/** Extract the raw bytes from a stream. Does not limit the number of bytes that will be read, should not be used on infinite streams. */
-	inline void ExtractBytes(std::istream& stream, std::vector<std::byte>& output) {
-		std::for_each(
-			std::istream_iterator<char>{ stream }, std::istream_iterator<char>{},
-			[&output](char c) { output.push_back(std::byte{ static_cast<unsigned char>(c) }); }
-		);
-	}
-
-	/** Extract the raw bytes from a stream. Does not limit the number of bytes that will be read, should not be used on infinite streams. */
-	inline std::vector<std::byte> ExtractBytes(std::istream& stream) {
-		std::vector<std::byte> result;
-		ExtractBytes(stream, result);
-		return result;
 	}
 }
 

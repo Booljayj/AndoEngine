@@ -1,6 +1,8 @@
 #pragma once
-#include "Engine/StandardTypes.h"
-#include "Engine/Temporary.h"
+#include "Engine/Core.h"
+#include "Engine/GLM.h"
+#include "Engine/TemporaryContainers.h"
+#include "Engine/Tuple.h"
 #include "Geometry/Shape.h"
 #include "Rendering/Font/FreeType.h"
 

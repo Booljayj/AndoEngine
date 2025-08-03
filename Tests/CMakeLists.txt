@@ -3,10 +3,12 @@ project(Tests)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_BUILD_TYPE Debug)
 
 add_executable(Tests WIN32 source/main.cpp)
 target_include_directories(Tests PUBLIC ${PROJECT_SOURCE_DIR}/source)
 target_precompile_headers(Tests PRIVATE source/PCH.h)
+target_compile_features(Library PUBLIC cxx_std_23)
 
 #Copy the contents directory to the same directory as the executable
 add_custom_command(

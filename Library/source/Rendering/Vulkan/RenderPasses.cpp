@@ -1,5 +1,6 @@
 #include "Rendering/Vulkan/RenderPasses.h"
 #include "Engine/Logging.h"
+#include "Engine/TemporaryStrings.h"
 #include "Engine/Utility.h"
 #include "Rendering/Vulkan/Handles.h"
 
@@ -48,7 +49,7 @@ namespace Rendering {
 
 			auto imageViewHandle = ImageView::Create(device, viewCI, "Failed to create framebuffer image view");
 			
-			stdext::enum_array<VkImageView, EAttachments> attachmentImageViews;
+			EnumArray<VkImageView, EAttachments> attachmentImageViews;
 			attachmentImageViews[EAttachments::Color] = imageViewHandle;
 			//attachmentImageViews[EAttachments::Depth] = sharedImageViews[ESharedAttachments::Depth];
 
@@ -101,7 +102,7 @@ namespace Rendering {
 		: device(inDevice)
 	{
 		// Attachments
-		stdext::enum_array<VkAttachmentDescription, EAttachments> descriptions;
+		EnumArray<VkAttachmentDescription, EAttachments> descriptions;
 		{
 			descriptions[EAttachments::Color] = VkAttachmentDescription{
 				.format = format,
@@ -124,13 +125,13 @@ namespace Rendering {
 			//UserInterface,
 			MAX
 		};
-		stdext::enum_array<VkSubpassDescription, ESubpasses> subpasses;
+		EnumArray<VkSubpassDescription, ESubpasses> subpasses;
 
 		enum struct EOpaqueSubpassReferences {
 			Color,
 			MAX
 		};
-		stdext::enum_array<VkAttachmentReference, EOpaqueSubpassReferences> opaqueReferences;
+		EnumArray<VkAttachmentReference, EOpaqueSubpassReferences> opaqueReferences;
 
 		opaqueReferences[EOpaqueSubpassReferences::Color] = VkAttachmentReference{
 			.attachment = std::to_underlying(EAttachments::Color),
@@ -148,7 +149,7 @@ namespace Rendering {
 			ExternalToOpaque,
 			MAX
 		};
-		stdext::enum_array<VkSubpassDependency, EDependencies> dependencies;
+		EnumArray<VkSubpassDependency, EDependencies> dependencies;
 		
 		dependencies[EDependencies::ExternalToOpaque] = VkSubpassDependency{
 			.srcSubpass = VK_SUBPASS_EXTERNAL,

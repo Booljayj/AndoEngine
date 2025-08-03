@@ -2,8 +2,10 @@
 #include "Engine/Archive.h"
 #include "Resources/Package.h"
 #include "Engine/Reflection.h"
-#include "Engine/StandardTypes.h"
+#include "Engine/Core.h"
+#include "Engine/Set.h"
 #include "Engine/StringID.h"
+#include "Engine/Variant.h"
 #include "ThirdParty/yaml.h"
 
 namespace Resources {
