@@ -3,16 +3,22 @@
 
 using namespace Reflection;
 
-DEFINE_STRUCT_REFLECTION_MEMBERS(,ReflectedType, "Reflected Type")
-	.Variables(
+::Reflection::StructTypeInfo const& ::Reflect<::ReflectedType>::Get() { return ::ReflectedType::info_ReflectedType; }
+::Reflection::TStructTypeInfo<::ReflectedType> const ::ReflectedType::info_ReflectedType{
+	u"::ReflectedType"sv, u"Reflected Type"sv, std::in_place_type<::ReflectedType::BaseType>,
+	{
 		MakeMember(&ReflectedType::IntegerValue, "IntegerValue"_h32, u"IntegerValue"sv, u""sv),
 		MakeMember(&ReflectedType::BooleanValue, "BooleanValue"_h32, u"BooleanValue"sv, u""sv)
-	);
+	}
+};
 
-DEFINE_STRUCT_REFLECTION_MEMBERS(,SecondReflectedType, "Second Reflected Type")
-	.Variables(
+::Reflection::StructTypeInfo const& ::Reflect<::SecondReflectedType>::Get() { return ::SecondReflectedType::info_SecondReflectedType; }
+::Reflection::TStructTypeInfo<::SecondReflectedType> const ::SecondReflectedType::info_SecondReflectedType{
+	u"::SecondReflectedType"sv, u"Second Reflected Type"sv, std::in_place_type<::SecondReflectedType::BaseType>,
+	{
 		MakeMember(&SecondReflectedType::VectorValue, "VectorValue"_h32, u"VectorValue"sv, u""sv)
-	);
+	}
+};
 
 /*
 int16_t ReflectedType::StaticShortValue = 4;

@@ -3,10 +3,13 @@
 namespace Reflection {
 	template<typename T>
 	struct TStringTypeInfo : public ImplementedTypeInfo<T, StringTypeInfo> {
+		using StringTypeInfo::characters;
+
 		TStringTypeInfo(std::u16string_view name, std::u16string_view description)
 			: ImplementedTypeInfo<T, StringTypeInfo>(Reflect<T>::ID, name, description)
-			, characters(&Reflect<T::value_type>::Get())
-		{}
+		{
+			characters = &Reflect<T::value_type>::Get();
+		}
 
 		virtual std::u16string Get(void const* instance) const override final { throw std::runtime_error{ "not implemented yet" }; }
 		virtual void Set(void const* instance, std::u16string const& string) const override final { throw std::runtime_error{ "not implemented yet" }; }

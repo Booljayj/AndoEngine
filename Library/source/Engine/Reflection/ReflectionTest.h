@@ -1,7 +1,6 @@
 #pragma once
-
+#include "Engine/Array.h"
 #include "Engine/Reflection.h"
-#include "Engine/Vector.h"
 
 struct ReflectedType {
 	DECLARE_STRUCT_REFLECTION_MEMBERS(ReflectedType, void);

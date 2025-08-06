@@ -18,11 +18,11 @@ static ::Reflection::TStructTypeInfo<ThisType> const info_ ## StructType;\
 virtual ::Reflection::StructTypeInfo const& GetTypeInfo() const { return info_ ## StructType; }
 
 /** Define members of a struct used for reflection */
-#define DEFINE_STRUCT_REFLECTION_MEMBERS(Namespace, StructType, Description)\
+#define DEFINE_STRUCT_REFLECTION_MEMBERS(Namespace, StructType, Description, Variables)\
 DEFINE_REFLECT(Namespace::StructType, Struct, Namespace::StructType::info_ ## StructType)\
-::Reflection::TStructTypeInfo<Namespace::StructType> const Namespace::StructType::info_ ## StructType =\
-	::Reflection::TStructTypeInfo<Namespace::StructType>{ STRINGIFY_U16(Namespace::StructType) ## sv, u ## Description ## sv }\
-		.Base<Namespace::StructType::BaseType>()
+::Reflection::TStructTypeInfo<Namespace::StructType> const Namespace::StructType::info_ ## StructType = ::Reflection::TStructTypeInfo<Namespace::StructType>{\
+	STRINGIFY_U16(Namespace::StructType) ## sv, u ## Description ## sv, std::in_place_type<Namespace::StructType::BaseType>, Variables\
+}
 
 //============================================================
 // Alias reflection macros

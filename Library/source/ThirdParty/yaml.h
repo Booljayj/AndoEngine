@@ -23,13 +23,11 @@ namespace YAML {
 		static Node encode(char8_t value) { return convert<uint8_t>::encode(static_cast<uint8_t>(value)); }
 		static bool decode(Node const& node, char8_t& value) { return convert<uint8_t>::decode(node, reinterpret_cast<uint8_t&>(value)); }
 	};
-
 	template<>
 	struct convert<char16_t> {
 		static Node encode(char16_t value) { return convert<uint16_t>::encode(static_cast<uint16_t>(value)); }
 		static bool decode(Node const& node, char16_t& value) { return convert<uint16_t>::decode(node, reinterpret_cast<uint16_t&>(value)); }
 	};
-
 	template<>
 	struct convert<char32_t> {
 		static Node encode(char32_t value) { return convert<uint32_t>::encode(static_cast<uint32_t>(value)); }
@@ -41,16 +39,27 @@ namespace YAML {
 		static Node encode(std::u8string const& value);
 		static bool decode(Node const& node, std::u8string& value);
 	};
-
 	template<>
 	struct convert<std::u16string> {
 		static Node encode(std::u16string const& value);
 		static bool decode(Node const& node, std::u16string& value);
 	};
-
 	template<>
 	struct convert<std::u32string> {
 		static Node encode(std::u32string const& value);
 		static bool decode(Node const& node, std::u32string& value);
+	};
+
+	template<>
+	struct convert<std::u8string_view> {
+		static Node encode(std::u8string_view const& value);
+	};
+	template<>
+	struct convert<std::u16string_view> {
+		static Node encode(std::u16string_view const& value);
+	};
+	template<>
+	struct convert<std::u32string_view> {
+		static Node encode(std::u32string_view const& value);
 	};
 }

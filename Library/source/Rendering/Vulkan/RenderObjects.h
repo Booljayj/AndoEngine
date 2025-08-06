@@ -1,6 +1,6 @@
 #pragma once
+#include "Engine/Array.h"
 #include "Engine/SmartPointers.h"
-#include "Engine/Vector.h"
 
 namespace Rendering {
 	struct RenderObjectsBase {

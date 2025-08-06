@@ -16,42 +16,7 @@ namespace Reflection {
 			(std::derived_from<StructType, T> and std::is_class_v<T>);
 	}
 
-	struct StructVariableRange {
-		struct Iterator {
-			using difference_type = std::ptrdiff_t;
-			using value_type = VariableInfo const*;
-
-			constexpr Iterator() = default;
-			Iterator(StructTypeInfo const& type);
-
-			friend inline bool operator==(const Iterator& a, const Iterator& b) { return a.current == b.current && a.index == b.index; };
-			friend inline bool operator!=(const Iterator& a, const Iterator& b) { return !(a == b); };
-			friend inline bool operator==(const Iterator& a, const std::default_sentinel_t&) { return a.current == nullptr; }
-			friend inline bool operator!=(const Iterator& a, const std::default_sentinel_t&) { return a.current != nullptr; }
-
-			Iterator& operator++();
-			inline void operator++(int) { ++*this; }
-			VariableInfo const* operator*() const;
-			VariableInfo const* operator->() const;
-
-		private:
-			size_t index = 0;
-			StructTypeInfo const* current = nullptr;
-		};
-
-		StructVariableRange(StructTypeInfo const& type) : type(type) {}
-
-		inline Iterator begin() const noexcept { return Iterator{ type }; }
-		inline constexpr std::default_sentinel_t end() const noexcept { return std::default_sentinel; }
-
-		/** Finds a variable with the given name */
-		VariableInfo const* FindVariable(std::u16string_view name) const;
-		/** Finds a variable with the given id */
-		VariableInfo const* FindVariable(Hash32 id) const;
-
-	private:
-		StructTypeInfo const& type;
-	};
+	static const std::initializer_list<VariableInfo const*> no_variables{};
 
 	template<Concepts::Class StructType_>
 	struct TStructTypeInfo : public ImplementedTypeInfo<StructType_, StructTypeInfo> {
@@ -92,7 +57,7 @@ namespace Reflection {
 		}
 
 		virtual StructTypeInfo const& GetInstanceTypeInfo(void const* instance) const final {
-			if constexpr (Concepts::HasGetTypeInfoMethod<StructType>) return &Cast(instance).GetTypeInfo();
+			if constexpr (Concepts::HasGetTypeInfoMethod<StructType>) return Cast(instance).GetTypeInfo();
 			else return *this;
 		}
 	

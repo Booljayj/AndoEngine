@@ -1,14 +1,12 @@
 #include "Engine/StringConversion.h"
 #include <cuchar>
 
-template<>
-void ConvertString<std::string, std::u8string>(std::u8string const& f, std::string& t) {
+void ConvertString(std::u8string_view f, std::string& t) {
 	t.resize(f.size());
 	for (size_t index = 0; index < f.size(); ++index) t[index] = static_cast<char>(f[index]);
 }
 
-template<>
-void ConvertString<std::string, std::u16string>(std::u16string const& f, std::string& t) {
+void ConvertString(std::u16string_view f, std::string& t) {
 	t.reserve(f.size());
 
 	std::mbstate_t state{}; // zero-initialized to initial state
@@ -20,8 +18,7 @@ void ConvertString<std::string, std::u16string>(std::u16string const& f, std::st
 	}
 }
 
-template<>
-void ConvertString<std::string, std::u32string>(std::u32string const& f, std::string& t) {
+void ConvertString(std::u32string_view f, std::string& t) {
 	t.reserve(f.size());
 
 	std::mbstate_t state{}; // zero-initialized to initial state
@@ -33,14 +30,12 @@ void ConvertString<std::string, std::u32string>(std::u32string const& f, std::st
 	}
 }
 
-template<>
-void ConvertString<std::u8string, std::string>(std::string const& f, std::u8string& t) {
+void ConvertString(std::string_view f, std::u8string& t) {
 	t.resize(f.size());
 	for (size_t index = 0; index < f.size(); ++index) t[index] = static_cast<char8_t>(f[index]);
 }
 
-template<>
-void ConvertString<std::u16string, std::string>(std::string const& f, std::u16string& t) {
+void ConvertString(std::string_view f, std::u16string& t) {
 	std::mbstate_t state{}; // zero-initialized to initial state
 	char16_t c16 = 0;
 	const char* ptr = f.data();
@@ -60,8 +55,7 @@ void ConvertString<std::u16string, std::string>(std::string const& f, std::u16st
 	}
 }
 
-template<>
-void ConvertString<std::u32string, std::string>(std::string const& f, std::u32string& t) {
+void ConvertString(std::string_view f, std::u32string& t) {
 	std::mbstate_t state{}; // zero-initialized to initial state
 	char32_t c32 = 0;
 	const char* ptr = f.data();

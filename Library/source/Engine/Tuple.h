@@ -7,7 +7,6 @@ namespace Reflection {
 	template<typename TupleType, typename... ElementTypes>
 	struct TTupleTypeInfo : public ImplementedTypeInfo<TupleType, TupleTypeInfo> {
 		using ImplementedTypeInfo<TupleType, TupleTypeInfo>::Cast;
-		using TupleTypeInfo::types;
 
 		std::vector<TypeInfo const*> types;
 

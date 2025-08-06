@@ -129,8 +129,9 @@ struct std::formatter<StringStorage::View> : std::formatter<std::string_view> {
 	}
 };
 
-const Reflection::TPrimitiveTypeInfo<StringID> StringID::info_StringID = Reflection::TPrimitiveTypeInfo<StringID>{ "StringID"sv }
-	.Description("Stable and fast identifier created from a string, which can be converted back into the original string"sv);
+const Reflection::TStructTypeInfo<StringID> StringID::info_StringID{
+	u"StringID"sv, u"Stable and fast identifier created from a string, which can be converted back into the original string"sv, Reflection::no_variables
+};
 
 const StringID StringID::Zero = "0"_sid;
 const StringID StringID::None = "None"_sid;

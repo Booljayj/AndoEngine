@@ -1,28 +1,16 @@
 #pragma once
 #include "Engine/String.h"
 
-/** Convert a string in one encoding to a string in a different encoding, possibly expanding or contracting multi-byte encodings */
-template<typename ToType, typename FromType>
-void ConvertString(FromType const&, ToType&);
+void ConvertString(std::u8string_view f, std::string& t);
+void ConvertString(std::u16string_view f, std::string& t);
+void ConvertString(std::u32string_view f, std::string& t);
+void ConvertString(std::string_view f, std::u8string& t);
+void ConvertString(std::string_view f, std::u16string& t);
+void ConvertString(std::string_view f, std::u32string& t);
 
 /** Convert a string in one encoding to a string in a different encoding, possibly expanding or contracting multi-byte encodings */
-template<typename ToType, typename FromType>
-inline ToType ConvertString(FromType const& f) { ToType t; ConvertString<ToType, FromType>(f, t); return t; }
-
-template<>
-void ConvertString<std::string, std::u8string>(std::u8string const& f, std::string& t);
-
-template<>
-void ConvertString<std::string, std::u16string>(std::u16string const& f, std::string& t);
-
-template<>
-void ConvertString<std::string, std::u32string>(std::u32string const& f, std::string& t);
-
-template<>
-void ConvertString<std::u8string, std::string>(std::string const& f, std::u8string& t);
-
-template<>
-void ConvertString<std::u16string, std::string>(std::string const& f, std::u16string& t);
-
-template<>
-void ConvertString<std::u32string, std::string>(std::string const& f, std::u32string& t);
+template<typename ToCharacterType, typename FromCharacterType>
+inline std::basic_string<ToCharacterType> ConvertString(std::basic_string_view<FromCharacterType> f) { std::basic_string<ToCharacterType> t; ConvertString(f, t); return t; }
+/** Convert a string in one encoding to a string in a different encoding, possibly expanding or contracting multi-byte encodings */
+template<typename ToCharacterType, typename FromCharacterType, typename AllocatorType>
+inline std::basic_string<ToCharacterType> ConvertString(std::basic_string<FromCharacterType, std::char_traits<FromCharacterType>, AllocatorType> const& f) { return ConvertString<ToCharacterType>(std::basic_string_view<FromCharacterType>{ f }); }

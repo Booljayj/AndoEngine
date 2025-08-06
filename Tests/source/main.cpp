@@ -193,7 +193,7 @@ void main() {
 		);
 
 		Reflection::StructTypeInfo const& type = Reflect<Text>::Get();
-		LOG(Temp, Warning, "Name: {}, ID: {}, Vars: {}", type.name, type.id, type.variables.size());
+		LOG(Temp, Warning, "Name: {}, ID: {}, Vars: {}", type.name, type.id, type.GetVariables().size());
 
 		/*if (Reflection::VariableInfo const* variable = type.GetVariableRange().FindVariable("string"sv))
 		{
@@ -202,7 +202,6 @@ void main() {
 
 			LOG(Temp, Warning, "Address: {}, Expected: {}", reinterpret_cast<uintptr_t>(instance), reinterpret_cast<uintptr_t>(text.get()) + offsetof(Text, string));
 		}*/
-
 
 		{
 			//Serialization test - convert resource objects to YAML to determine if the output is formatted the right way

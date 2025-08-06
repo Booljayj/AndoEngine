@@ -30,11 +30,6 @@ add_subdirectory(modules/Optick)
 target_include_directories(Library PUBLIC ${OptickCore_INCLUDE_DIR})
 target_link_libraries(Library PUBLIC OptickCore)
 
-#Boost library
-set(Boost_USE_STATIC_LIBS 1)
-find_package(Boost REQUIRED)
-target_include_directories(Library PRIVATE ${Boost_INCLUDE_DIR})
-
 #GLM library
 find_package(glm REQUIRED)
 target_link_libraries(Library PUBLIC glm::glm)
@@ -52,9 +47,9 @@ find_package(SDL2 REQUIRED)
 target_link_libraries(Library PUBLIC SDL2::SDL2 PUBLIC SDL2::SDL2main)
 
 #Vulkan library
-find_package(Vulkan REQUIRED shaderc_combined)
+find_package(Vulkan REQUIRED)
 target_link_libraries(Library PUBLIC Vulkan::Vulkan)
-target_link_libraries(Library PUBLIC Vulkan::shaderc_combined)
+#target_link_libraries(Library PUBLIC Vulkan::shaderc_combined)
 
 #FreeType library
 find_package(freetype CONFIG REQUIRED)

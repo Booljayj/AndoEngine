@@ -1,4 +1,5 @@
 #include "Engine/Reflection/TypeUtility.h"
+#include "Engine/String.h"
 
 namespace Reflection {
 	std::string_view GetClassificationIdentifier(ETypeClassification classification) {

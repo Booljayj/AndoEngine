@@ -1,6 +1,6 @@
 #pragma once
+#include "Engine/Array.h"
 #include "Engine/Core.h"
-#include "Engine/Vector.h"
 #include "Geometry/Rect.h"
 
 namespace Geometry {

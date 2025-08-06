@@ -50,13 +50,6 @@ namespace YAML {
 	};
 }
 
-int Test()
-{
-	std::u16string s = u"something";
-	Hash128 h = "something"_h128;
-	std::cout << std::format("{0}", s);
-}
-
 template<>
 struct std::formatter<Reflection::TypeInfoReference> : std::formatter<std::string_view> {
 	inline auto format(const Reflection::TypeInfoReference& ref, format_context& ctx) const {

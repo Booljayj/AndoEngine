@@ -4,8 +4,7 @@
 #include "Resources/Streaming.h"
 using namespace Reflection;
 
-DEFINE_STRUCT_REFLECTION_MEMBERS(Resources, Resource)
-	.Description("An object which can be shared between several other objects"sv);
+DEFINE_STRUCT_REFLECTION_MEMBERS(Resources, Resource, "An object which can be shared between several other objects", {});
 
 namespace Resources {
 	StringID Resource::GetName() const {

@@ -92,7 +92,7 @@ namespace Reflection {
 		using ArrayTypeInfo::isFixedSize;
 		using ArrayTypeInfo::elements;
 
-		TFixedArrayTypeInfo(std::u16string_view name) : ImplementedTypeInfo<ArrayType, ArrayTypeInfo>(Reflect<ArrayType>::ID, name, {}) {
+		TFixedArrayTypeInfo(std::u16string_view name, std::u16string_view description) : ImplementedTypeInfo<ArrayType, ArrayTypeInfo>(Reflect<ArrayType>::ID, name, description) {
 			isFixedSize = true;
 			elements = Reflect<ElementType>::Get();
 		}
@@ -135,7 +135,7 @@ namespace Reflection {
 		using ArrayTypeInfo::isFixedSize;
 		using ArrayTypeInfo::elements;
 
-		TDynamicArrayTypeInfo(std::u16string_view name) : ImplementedTypeInfo<ArrayType, ArrayTypeInfo>(Reflect<ArrayType>::ID, name) {
+		TDynamicArrayTypeInfo(std::u16string_view name, std::u16string_view description) : ImplementedTypeInfo<ArrayType, ArrayTypeInfo>(Reflect<ArrayType>::ID, name, description) {
 			isFixedSize = false;
 			elements = &Reflect<ElementType>::Get();
 		}
@@ -191,10 +191,9 @@ private:
 	using ThisTypeInfo = ::Reflection::TFixedArrayTypeInfo<std::array<ElementType, Size>, ElementType, Size>;
 	static ThisTypeInfo const info;
 };
+
 template<typename ElementType, size_t Size>
-typename Reflect<std::array<ElementType, Size>>::ThisTypeInfo const Reflect<std::array<ElementType, Size>>::info =
-	Reflect<std::array<ElementType, Size>>::ThisTypeInfo{ "std::array"sv }
-	.Description("fixed array"sv);
+typename Reflect<std::array<ElementType, Size>>::ThisTypeInfo const Reflect<std::array<ElementType, Size>>::info{ u"std::array"sv, u"fixed array"sv };
 
 template<typename T>
 struct Reflect<std::deque<T>> {
@@ -206,9 +205,7 @@ private:
 };
 
 template<typename T>
-typename Reflect<std::deque<T>>::ThisTypeInfo const Reflect<std::deque<T>>::info =
-	Reflect<std::deque<T>>::ThisTypeInfo{ "std::deque" }
-	.Description("double-ended queue"sv);
+typename Reflect<std::deque<T>>::ThisTypeInfo const Reflect<std::deque<T>>::info{ u"std::deque"sv, u"double-ended queue"sv };
 
 template<typename T>
 struct Reflect<std::forward_list<T>> {
@@ -218,6 +215,10 @@ private:
 	using ThisTypeInfo = ::Reflection::TDynamicArrayTypeInfo<std::forward_list<T>, T>;
 	static ThisTypeInfo const info;
 };
+
+template<typename T>
+typename Reflect<std::forward_list<T>>::ThisTypeInfo const Reflect<std::forward_list<T>>::info{ u"std::forward_list"sv, u"forward list"sv };
+
 template<typename T>
 struct Reflect<std::list<T>> {
 	static ::Reflection::ArrayTypeInfo const& Get() { return info; }
@@ -228,13 +229,7 @@ private:
 };
 
 template<typename T>
-typename Reflect<std::forward_list<T>>::ThisTypeInfo const Reflect<std::forward_list<T>>::info =
-	Reflect<std::forward_list<T>>::ThisTypeInfo{ "std::forward_list" }
-	.Description("forward list"sv);
-template<typename T>
-typename Reflect<std::list<T>>::ThisTypeInfo const Reflect<std::list<T>>::info =
-	Reflect<std::list<T>>::ThisTypeInfo{ "std::list" }
-	.Description("list"sv);
+typename Reflect<std::list<T>>::ThisTypeInfo const Reflect<std::list<T>>::info{ u"std::list"sv, u"list"sv };
 
 template<typename T>
 struct Reflect<std::vector<T>> {
@@ -246,6 +241,4 @@ private:
 };
 
 template<typename T>
-typename Reflect<std::vector<T>>::ThisTypeInfo const Reflect<std::vector<T>>::info =
-	Reflect<std::vector<T>>::ThisTypeInfo{ "std::vector" }
-	.Description("vector"sv);
+typename Reflect<std::vector<T>>::ThisTypeInfo const Reflect<std::vector<T>>::info{ u"std::vector"sv, u"vector"sv };

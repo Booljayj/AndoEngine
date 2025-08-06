@@ -123,20 +123,19 @@ namespace Reflection {
 		using BaseType = std::decay_t<QualifiedBaseType>;
 
 		using ImplementedTypeInfo<PointerType, ReferenceTypeInfo>::Cast;
-		using ImplementedTypeInfo<PointerType, ReferenceTypeInfo>::CanAssignFromReference;
 		using ReferenceTypeInfo::base;
 		using ReferenceTypeInfo::isImmutable;
 
-		TSharedPointerTypeInfo(std::string_view name) : ImplementedTypeInfo<PointerType, ReferenceTypeInfo>(Reflect<PointerType>::ID, name) {
+		TSharedPointerTypeInfo(std::u16string_view name, std::u16string_view description) : ImplementedTypeInfo<PointerType, ReferenceTypeInfo>(Reflect<PointerType>::ID, name, description) {
 			base = &Reflect<BaseType>::Get();
 			isImmutable = std::is_const_v<QualifiedBaseType>;
 		}
 
-		virtual void* GetMutable(void const* instance) const final {
+		virtual std::shared_ptr<void> GetMutable(void const* instance) const final {
 			if constexpr (std::is_const_v<QualifiedBaseType>) return nullptr;
 			else return std::static_pointer_cast<void>(Cast(instance));
 		}
-		virtual void const* GetImmutable(void const* instance) const final {
+		virtual std::shared_ptr<void const> GetImmutable(void const* instance) const final {
 			return std::static_pointer_cast<void const>(Cast(instance));
 		}
 
@@ -148,11 +147,10 @@ namespace Reflection {
 		using BaseType = std::decay_t<QualifiedBaseType>;
 
 		using ImplementedTypeInfo<PointerType, ReferenceTypeInfo>::Cast;
-		using ImplementedTypeInfo<PointerType, ReferenceTypeInfo>::CanAssignFromReference;
 		using ReferenceTypeInfo::base;
 		using ReferenceTypeInfo::isImmutable;
 
-		TWeakPointerTypeInfo(std::string_view inName) : ImplementedTypeInfo<PointerType, ReferenceTypeInfo>(Reflect<PointerType>::ID, inName) {
+		TWeakPointerTypeInfo(std::u16string_view name, std::u16string_view description) : ImplementedTypeInfo<PointerType, ReferenceTypeInfo>(Reflect<PointerType>::ID, name, description) {
 			base = &Reflect<BaseType>::Get();
 			isImmutable = std::is_const_v<QualifiedBaseType>;
 		}
@@ -208,9 +206,7 @@ private:
 };
 
 template<Reflection::Concepts::ReflectedStructType Type>
-Reflect<std::shared_ptr<Type>>::ThisTypeInfo const Reflect<std::shared_ptr<Type>>::info =
-	Reflect<std::shared_ptr<Type>>::ThisTypeInfo{ "std::shared_ptr"sv }
-	.Description("shared pointer"sv);
+Reflect<std::shared_ptr<Type>>::ThisTypeInfo const Reflect<std::shared_ptr<Type>>::info{ u"std::shared_ptr"sv, u"shared pointer"sv };
 
 template<Reflection::Concepts::ReflectedStructType Type>
 struct Reflect<std::weak_ptr<Type>> {
@@ -222,19 +218,15 @@ private:
 };
 
 template<Reflection::Concepts::ReflectedStructType Type>
-Reflect<std::weak_ptr<Type>>::ThisTypeInfo const Reflect<std::weak_ptr<Type>>::info =
-	Reflect<std::weak_ptr<Type>>::ThisTypeInfo{ "std::weak_ptr"sv }
-	.Description("weak pointer"sv);
+Reflect<std::weak_ptr<Type>>::ThisTypeInfo const Reflect<std::weak_ptr<Type>>::info{ u"std::weak_ptr"sv, u"weak pointer"sv };
 
 template<typename BaseType>
 struct Reflect<std::unique_ptr<BaseType>> {
 	static ::Reflection::PolyTypeInfo const& Get() { return info; }
 	static constexpr Hash128 ID = Hash128{ "std::unique_ptr"sv } + Reflect<BaseType>::ID;
 private:
-	using ThisTypeInfo = ::Reflection::TPointerTypeInfo<std::unique_ptr<BaseType>, BaseType>;
+	using ThisTypeInfo = ::Reflection::TUniquePointerTypeInfo<std::unique_ptr<BaseType>, BaseType>;
 	static ThisTypeInfo const info;
 };
 template<typename BaseType>
-typename Reflect<std::unique_ptr<BaseType>>::ThisTypeInfo const Reflect<std::unique_ptr<BaseType>>::info =
-	Reflect<std::unique_ptr<BaseType>>{ "std::unique_ptr"sv }
-	.Description("unique pointer"sv);
+typename Reflect<std::unique_ptr<BaseType>>::ThisTypeInfo const Reflect<std::unique_ptr<BaseType>>::info{ u"std::unique_ptr"sv, u"unique pointer"sv };

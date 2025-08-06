@@ -50,7 +50,7 @@ namespace Reflection {
 		using SetTypeInfo::values;
 
 		TSetTypeInfo(std::u16string_view name, std::u16string_view description)
-			: ImplementedTypeInfo<SetType, SetTypeInfo>(Reflect<SetType>::ID, name, desription)
+			: ImplementedTypeInfo<SetType, SetTypeInfo>(Reflect<SetType>::ID, name, description)
 			, values(Reflect<ValueType>::Get())
 		{}
 
@@ -84,8 +84,7 @@ private:
 };
 
 template<typename T>
-typename Reflect<std::set<T>>::ThisTypeInfo const Reflect<std::set<T>>::info =
-	Reflect<std::set<T>>::ThisTypeInfo{ u"std::set"sv, u"set"sv };
+typename Reflect<std::set<T>>::ThisTypeInfo const Reflect<std::set<T>>::info{ u"std::set"sv, u"set"sv };
 
 template<typename T>
 struct Reflect<std::unordered_set<T>> {
@@ -97,5 +96,4 @@ private:
 };
 
 template<typename T>
-typename Reflect<std::unordered_set<T>>::ThisTypeInfo const Reflect<std::unordered_set<T>>::info =
-	Reflect<std::unordered_set<T>>::ThisTypeInfo{ u"std::unordered_set"sv, u"unordered_set"sv };
+typename Reflect<std::unordered_set<T>>::ThisTypeInfo const Reflect<std::unordered_set<T>>::info{ u"std::unordered_set"sv, u"unordered_set"sv };

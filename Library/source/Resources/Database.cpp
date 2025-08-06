@@ -1,4 +1,5 @@
 #include "Resources/Database.h"
+#include "Engine/String.h"
 #include "Resources/Package.h"
 #include "Resources/RegisteredResource.h"
 #include "Resources/Resource.h"

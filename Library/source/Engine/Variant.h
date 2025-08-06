@@ -1,6 +1,7 @@
 #pragma once
 #include <variant>
 #include "Engine/Core.h"
+#include "Engine/Reflection/TypeInfo.h"
 
 //@todo Implement proper serialization for variants. Right now these are just stubs that don't serialize anything.
 
@@ -16,13 +17,13 @@ namespace Reflection {
 	template<typename VariantType, typename... ValueTypes>
 	struct TVariantTypeInfo : public ImplementedTypeInfo<VariantType, VariantTypeInfo> {
 		using ImplementedTypeInfo<VariantType, VariantTypeInfo>::Cast;
-		using VariantTypeInfo::types;
 
 		std::vector<TypeInfo const*> types;
 
-		TVariantTypeInfo(std::string_view inName) : ImplementedTypeInfo<VariantType, VariantTypeInfo>(Reflect<VariantType>::ID, inName) {
-			types = { Reflect<ValueTypes>::Get() ... };
-		}
+		TVariantTypeInfo(std::string_view inName)
+			: ImplementedTypeInfo<VariantType, VariantTypeInfo>(Reflect<VariantType>::ID, inName)
+			, types({ Reflect<ValueTypes>::Get() ... })
+		{}
 
 		virtual std::span<TypeInfo const*> GetTypes() const override final { return types; }
 

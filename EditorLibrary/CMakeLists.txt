@@ -14,17 +14,14 @@ target_include_directories(EditorLibrary PUBLIC ${PROJECT_SOURCE_DIR}/source)
 add_dependencies(EditorLibrary Library)
 target_link_libraries(EditorLibrary PUBLIC Library)
 
-#Boost library
-set(Boost_USE_STATIC_LIBS 1)
-find_package(Boost REQUIRED)
-target_include_directories(EditorLibrary PRIVATE ${Boost_INCLUDE_DIR})
-
 #GLM library
 find_package(glm REQUIRED)
 target_link_libraries(EditorLibrary PUBLIC glm::glm)
 
 #Vulkan library
-find_package(Vulkan REQUIRED shaderc_combined)
+find_package(Vulkan REQUIRED)
 target_link_libraries(EditorLibrary PUBLIC Vulkan::Vulkan)
-target_link_libraries(EditorLibrary PUBLIC Vulkan::shaderc_combined)
-target_include_directories(EditorLibrary PUBLIC Vulkan::shaderc_combined)
+
+#shaderc library
+find_package(unofficial-shaderc CONFIG REQUIRED)
+target_link_libraries(EditorLibrary PRIVATE unofficial::shaderc::shaderc)

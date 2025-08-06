@@ -24,7 +24,7 @@ struct StringID {
 	};
 
 	/** Reflected type information */
-	static const Reflection::TPrimitiveTypeInfo<StringID> info_StringID;
+	static const Reflection::TStructTypeInfo<StringID> info_StringID;
 
 	/** Constant for a fully numeric StringID representing zero */
 	static const StringID Zero;
@@ -115,7 +115,7 @@ struct std::formatter<StringID> : std::formatter<std::string_view> {
 
 template<>
 struct Reflect<StringID> {
-	static Reflection::PrimitiveTypeInfo const& Get() { return StringID::info_StringID; }
+	static Reflection::StructTypeInfo const& Get() { return StringID::info_StringID; }
 	static constexpr Hash128 ID = Hash128{ std::string_view{ STRINGIFY(StringID) } };
 };
 

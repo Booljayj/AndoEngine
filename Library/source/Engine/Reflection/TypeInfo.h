@@ -237,6 +237,7 @@ namespace Reflection {
 			SignedInteger,
 			FloatingPoint,
 			Binary,
+			Bits,
 		};
 
 		/** The type of number that this represents, which can determine what kinds of values it will hold. */

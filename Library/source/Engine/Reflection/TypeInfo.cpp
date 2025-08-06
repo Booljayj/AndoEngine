@@ -2,8 +2,9 @@
 
 namespace Reflection {
 	template<typename T>
-	static NumericTypeInfo::ENumericType GetNumericType() {
-		if constexpr (std::is_same_v<T, bool>) return NumericTypeInfo::ENumericType::Binary;
+	static constexpr NumericTypeInfo::ENumericType GetNumericType() {
+		if constexpr (std::is_same_v<T, std::byte>) return NumericTypeInfo::ENumericType::Bits;
+		else if constexpr (std::is_same_v<T, bool>) return NumericTypeInfo::ENumericType::Binary;
 		else if constexpr (std::floating_point<T>) return NumericTypeInfo::ENumericType::FloatingPoint;
 		else if constexpr (std::is_signed_v<T>) return NumericTypeInfo::ENumericType::SignedInteger;
 		else if constexpr (std::is_unsigned_v<T>) return NumericTypeInfo::ENumericType::UnsignedInteger;
@@ -31,10 +32,14 @@ namespace Reflection {
 
 	template<typename T>
 	struct TNumericTypeInfo : public ImplementedTypeInfo<T, NumericTypeInfo> {
+		using ImplementedTypeInfo<T, NumericTypeInfo>::Cast;
+		using NumericTypeInfo::numeric_type;
+
 		TNumericTypeInfo(std::u16string_view name, std::u16string_view description)
 			: ImplementedTypeInfo<T, NumericTypeInfo>(Reflect<T>::ID, name, description)
-			, numeric_type(GetNumericType<T>())
-		{}
+		{
+			numeric_type = GetNumericType<T>();
+		}
 
 		virtual uint64_t GetUnsignedInteger(void const* instance) const override final { return static_cast<uint64_t>(Cast(instance)); }
 		virtual int64_t GetSignedInteger(void const* instance) const override final { return static_cast<int64_t>(Cast(instance)); }

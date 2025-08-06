@@ -64,7 +64,7 @@ namespace Reflection {
 		using MapTypeInfo::keys;
 		using MapTypeInfo::values;
 
-		TMapTypeInfo(std::u16string_view name, std::u16string_view description) : ImplementedTypeInfo<MapType, MapTypeInfo>(Reflect<MapType>::ID, name, desription) {
+		TMapTypeInfo(std::u16string_view name, std::u16string_view description) : ImplementedTypeInfo<MapType, MapTypeInfo>(Reflect<MapType>::ID, name, description) {
 			keys = Reflect<KeyType>::Get();
 			values = Reflect<ValueType>::Get();
 		}
@@ -119,8 +119,7 @@ private:
 };
 
 template<typename K, typename V>
-typename Reflect<std::map<K, V>>::ThisTypeInfo const Reflect<std::map<K, V>>::info =
-	Reflect<std::map<K, V>>::ThisTypeInfo{ u"std::map"sv, u"map"sv };
+typename Reflect<std::map<K, V>>::ThisTypeInfo const Reflect<std::map<K, V>>::info{ u"std::map"sv, u"map"sv };
 
 template<typename K, typename V>
 struct Reflect<std::unordered_map<K, V>> {
@@ -132,5 +131,4 @@ private:
 };
 
 template<typename K, typename V>
-typename Reflect<std::unordered_map<K, V>>::ThisTypeInfo const Reflect<std::unordered_map<K, V>>::info =
-	Reflect<std::unordered_map<K, V>>::ThisTypeInfo{ u"std::unordered_map"sv, u"unordered_map"sv };
+typename Reflect<std::unordered_map<K, V>>::ThisTypeInfo const Reflect<std::unordered_map<K, V>>::info{ u"std::unordered_map"sv, u"unordered_map"sv };

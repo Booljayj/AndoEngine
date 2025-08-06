@@ -2,9 +2,9 @@
 #include "Engine/Utility.h"
 #include "Resources/RegisteredResource.h"
 
-DEFINE_STRUCT_REFLECTION_MEMBERS(Rendering, Shader);
-DEFINE_STRUCT_REFLECTION_MEMBERS(Rendering, VertexShader);
-DEFINE_STRUCT_REFLECTION_MEMBERS(Rendering, FragmentShader);
+DEFINE_STRUCT_REFLECTION_MEMBERS(Rendering, Shader, "Shader base class", {});
+DEFINE_STRUCT_REFLECTION_MEMBERS(Rendering, VertexShader, "Vertex Shader", {});
+DEFINE_STRUCT_REFLECTION_MEMBERS(Rendering, FragmentShader, "Fragment Shader", {});
 
 REGISTER_RESOURCE(Rendering, VertexShader);
 REGISTER_RESOURCE(Rendering, FragmentShader);

@@ -1,5 +1,5 @@
 #pragma once
-#include "Engine/Vector.h"
+#include "Engine/Array.h"
 
 namespace Geometry {
 	struct Contour;
