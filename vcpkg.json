@@ -5,8 +5,9 @@
     "entt",
     "freetype",
     "glm",
-    "sdl2",
-    "shaderc",
-    "vulkan"
+    {
+      "name": "sdl2",
+      "features": [ "vulkan" ]
+    }
   ]
 }

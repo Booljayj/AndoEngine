@@ -54,7 +54,7 @@ namespace Rendering {
 		QueueRequests& operator+=(QueueReference reference);
 		Request const& operator[](size_t index) const { return requests[index]; }
 
-		size_t Size() const { return requests.size(); }
+		size_t size() const { return requests.size(); }
 
 	private:
 		std::vector<Request> requests;

@@ -1,6 +1,5 @@
 #include "Rendering/Vulkan/FrameOrganizer.h"
 #include "Engine/TemporaryStrings.h"
-#include "Rendering/Vulkan/Handles.h"
 #include "Rendering/UniformTypes.h"
 
 namespace Rendering {
@@ -15,28 +14,9 @@ namespace Rendering {
 	{}
 
 	FrameSynchronization::FrameSynchronization(VkDevice inDevice)
-		: device(inDevice)
+		: imageAvailableSemaphore(inDevice, 0)
 		, fence(inDevice)
-	{
-		//Create the semaphores
-		VkSemaphoreCreateInfo const semaphoreInfo{
-			.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-		};
-
-		auto imageAvailableHandle = Semaphore::Create(device, semaphoreInfo, "Failed to create image available semaphore");
-		auto renderFinishedHandle = Semaphore::Create(device, semaphoreInfo, "Failed to create render finished semaphore");
-
-		imageAvailable = imageAvailableHandle.Release();
-		renderFinished = renderFinishedHandle.Release();
-	}
-
-	FrameSynchronization::~FrameSynchronization() {
-		if (device) {
-			fence.WaitUntilSignalled(std::chrono::nanoseconds(std::numeric_limits<uint64_t>::max()));
-			vkDestroySemaphore(device, renderFinished, nullptr);
-			vkDestroySemaphore(device, imageAvailable, nullptr);
-		}
-	}
+	{}
 
 	FrameResources::FrameResources(VkDevice inDevice, uint32_t graphicsQueueFamilyIndex, UniformLayouts const& uniformLayouts, VkDescriptorPool descriptorPool, VmaAllocator allocator)
 		: uniforms(inDevice, uniformLayouts, descriptorPool, allocator)
@@ -86,10 +66,23 @@ namespace Rendering {
 		, descriptorPool(device, GetPoolSizes(buffering), GetNumFrames(buffering) * 2)
 	{
 		size_t const numFrames = GetNumFrames(buffering);
+		size_t const numImages = swapchain.GetNumImages();
+
+		//Create the resources that are unique to each frame
 		for (size_t index = 0; index < numFrames; ++index) {
 			frames.emplace_back(device, graphicsQueueFamilyIndex, uniformLayouts, descriptorPool, allocator);
 		}
-		imageFences.resize(swapchain.GetNumImages(), nullptr);
+
+		//Create the resources that are unique to each swapchain image
+		imageFences.resize(numImages, nullptr);
+		
+		VkSemaphoreCreateInfo const semaphoreInfo{
+			.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+		};
+		imageSubmittedSemaphores.reserve(numImages);
+		for (size_t index = 0; index < numImages; ++index) {
+			imageSubmittedSemaphores.emplace_back(device, 0);
+		}
 	}
 
 	std::optional<RecordingContext> FrameOrganizer::CreateRecordingContext(size_t numObjects, size_t numThreads) {
@@ -109,7 +102,7 @@ namespace Rendering {
 
 		//Acquire the swapchain image that can be used for this frame
 		currentImageIndex = 0;
-		if (vkAcquireNextImageKHR(device, swapchain, timeout.count(), frame.sync.imageAvailable, VK_NULL_HANDLE, &currentImageIndex) != VK_SUCCESS) {
+		if (vkAcquireNextImageKHR(device, swapchain, timeout.count(), frame.sync.imageAvailableSemaphore, VK_NULL_HANDLE, &currentImageIndex) != VK_SUCCESS) {
 			LOG(Vulkan, Warning, "Timed out waiting for next available swapchain image");
 			return std::optional<RecordingContext>{};
 		}
@@ -143,24 +136,24 @@ namespace Rendering {
 		//Reset the fence for this frame, so we can start another rendering process that it will track
 		frame.sync.fence.Reset();
 
-		//Set up information for how commands should be process when submitted to the queue
-		VkSemaphore const waitSemaphores[] = { frame.sync.imageAvailable };
-		VkPipelineStageFlags const waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-		static_assert(std::size(waitSemaphores) == std::size(waitStages), "Number of semaphores must equal number of stages");
+		//Set up information for how commands should be processed when submitted to the queue
+		VkSemaphore const submitWaitSemaphores[] = { frame.sync.imageAvailableSemaphore };
+		VkSemaphore const submitFinishedSemaphores[] = { imageSubmittedSemaphores[currentImageIndex] };
 
-		VkSemaphore const signalSemaphores[] = { frame.sync.renderFinished };
+		VkPipelineStageFlags const waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+		static_assert(std::size(submitWaitSemaphores) == std::size(waitStages), "Number of semaphores must equal number of stages");
 
 		VkSubmitInfo const submitInfo{
 			.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-			.waitSemaphoreCount = static_cast<uint32_t>(std::size(waitSemaphores)),
-			.pWaitSemaphores = waitSemaphores,
+			.waitSemaphoreCount = static_cast<uint32_t>(std::size(submitWaitSemaphores)),
+			.pWaitSemaphores = submitWaitSemaphores,
 			.pWaitDstStageMask = waitStages,
 
 			.commandBufferCount = static_cast<uint32_t>(commands.size()),
 			.pCommandBuffers = commands.data(),
 			
-			.signalSemaphoreCount = static_cast<uint32_t>(std::size(signalSemaphores)),
-			.pSignalSemaphores = signalSemaphores,
+			.signalSemaphoreCount = static_cast<uint32_t>(std::size(submitFinishedSemaphores)),
+			.pSignalSemaphores = submitFinishedSemaphores,
 		};
 
 		//Submit the actual command buffer
@@ -169,15 +162,13 @@ namespace Rendering {
 		}
 
 		//Set up information for how to present the rendered image once commands are finished on the queue
-		VkSwapchainKHR const swapchains[] = { swapchain };
-		
 		VkPresentInfoKHR const presentInfo{
 			.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
 			.waitSemaphoreCount = 1,
-			.pWaitSemaphores = signalSemaphores,
+			.pWaitSemaphores = submitFinishedSemaphores,
 
-			.swapchainCount = static_cast<uint32_t>(std::size(swapchains)),
-			.pSwapchains = swapchains,
+			.swapchainCount = 1,
+			.pSwapchains = &swapchain,
 			.pImageIndices = &currentImageIndex,
 
 			.pResults = nullptr, //Optional

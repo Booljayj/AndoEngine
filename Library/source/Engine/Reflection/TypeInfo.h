@@ -95,6 +95,26 @@ namespace Reflection {
 		Abstract,
 	};
 
+	namespace ENumericType {
+		enum Type {
+			UnsignedInteger,
+			SignedInteger,
+			FloatingPoint,
+			Binary,
+			Bits,
+		};
+
+		template<typename T>
+		static constexpr Type Create() {
+			if constexpr (std::is_same_v<T, std::byte>) return Bits;
+			else if constexpr (std::is_same_v<T, bool>) return Binary;
+			else if constexpr (std::floating_point<T>) return FloatingPoint;
+			else if constexpr (std::is_signed_v<T>) return SignedInteger;
+			else if constexpr (std::is_unsigned_v<T>) return UnsignedInteger;
+			else throw std::logic_error{ "type is not numeric" };
+		}
+	}
+
 	/** flags that describe traits of a particular type */
 	struct FTypeFlags : public TFlags<ETypeFlags> {
 		TFLAGS_METHODS(FTypeFlags);
@@ -134,13 +154,13 @@ namespace Reflection {
 		/** The classification of this TypeInfo, defining what kinds of type information it contains */
 		ETypeClassification const classification = ETypeClassification::Unknown;
 		
-		/** The identifier for this type. Always unique and stable. */
-		Hash128 const id;
 		/** The memory parameters for this type */
 		MemoryParams const memory;
 		/** Flags that provide additional information about this type */
 		FTypeFlags const flags;
 
+		/** The identifier for this type. Always unique and stable. */
+		Hash128 const id;
 		/** The fully-qualified name of this type. If this is a template, does not include template parameters. */
 		std::u16string_view const name;
 		/** Human-readable description of this type */
@@ -182,8 +202,9 @@ namespace Reflection {
 		inline auto& Flags(this Self&& self, Reflection::FTypeFlags inFlags) { self.flags += inFlags; return self; }
 		
 	protected:
-		inline TypeInfo(ETypeClassification classification, Hash128 id, MemoryParams memory, FTypeFlags flags, std::u16string_view name, std::u16string_view description)
-			: classification(classification), id(id), memory(memory), flags(flags), name(name), description(description)
+		template<typename T>
+		inline TypeInfo(ETypeClassification classification, std::in_place_type_t<T>, Hash128 id, std::u16string_view name, std::u16string_view description)
+			: classification(classification), memory(MemoryParams::Create<T>()), flags(FTypeFlags::Create<T>()), id(id), name(name), description(description)
 		{}
 	};
 
@@ -223,25 +244,19 @@ namespace Reflection {
 
 	/** Info for a valueless type */
 	struct ValuelessTypeInfo : public TypeInfo {
-		using TypeInfo::TypeInfo;
 		static constexpr ETypeClassification Classification = ETypeClassification::Valueless;
+
+	protected:
+		template<typename T>
+		ValuelessTypeInfo(std::in_place_type_t<T> t, Hash128 id, std::u16string_view name, std::u16string_view description) : TypeInfo(Classification, t, id, name, description) {}
 	};
 
 	/** Info for a numeric type, which can be assigned from various number values and retrieved as a number value. */
 	struct NumericTypeInfo : public TypeInfo {
-		using TypeInfo::TypeInfo;
 		static constexpr ETypeClassification Classification = ETypeClassification::Numeric;
 
-		enum struct ENumericType : uint8_t {
-			UnsignedInteger,
-			SignedInteger,
-			FloatingPoint,
-			Binary,
-			Bits,
-		};
-
 		/** The type of number that this represents, which can determine what kinds of values it will hold. */
-		ENumericType numeric_type = ENumericType::UnsignedInteger;
+		ENumericType::Type numeric_type;
 
 		virtual uint64_t GetUnsignedInteger(void const* instance) const = 0;
 		virtual int64_t GetSignedInteger(void const* instance) const = 0;
@@ -250,11 +265,17 @@ namespace Reflection {
 		virtual void Set(void* instance, uint64_t value) const = 0;
 		virtual void Set(void* instance, int64_t value) const = 0;
 		virtual void Set(void* instance, double value) const = 0;
+
+	protected:
+		template<typename T>
+		NumericTypeInfo(std::in_place_type_t<T> t, Hash128 id, std::u16string_view name, std::u16string_view description)
+			: TypeInfo(Classification, t, id, name, description)
+			, numeric_type(ENumericType::Create<T>())
+		{}
 	};
 
 	/** Info for a string type, which is a sequence of characters */
 	struct StringTypeInfo : public TypeInfo {
-		using TypeInfo::TypeInfo;
 		static constexpr ETypeClassification Classification = ETypeClassification::String;
 
 		/** The type for the characters within the string */
@@ -266,6 +287,10 @@ namespace Reflection {
 		virtual void Set(void const* instance, std::u16string const& string) const = 0;
 		/** Reset the contents of the string, so it will be empty */
 		virtual void Reset() const = 0;
+
+	protected:
+		template<typename T>
+		StringTypeInfo(std::in_place_type_t<T> t, Hash128 id, std::u16string_view name, std::u16string_view description) : TypeInfo(Classification, t, id, name, description) {}
 	};
 
 	/** flags to describe traits of a particular variable */
@@ -304,17 +329,10 @@ namespace Reflection {
 
 	/** Info for a struct type, which contains various fields and supports inheritance */
 	struct StructTypeInfo : public TypeInfo {
-		using TypeInfo::TypeInfo;
 		static constexpr ETypeClassification Classification = ETypeClassification::Struct;
 
 		/** The type that this type inherits from. Only single-inheritance from another object type is supported. */
 		StructTypeInfo const* base = nullptr;
-
-		static void SerializeVariables(StructTypeInfo const& type, YAML::Node& node, void const* instance);
-		static void DeserializeVariables(StructTypeInfo const& type, YAML::Node const& node, void* instance);
-
-		static void SerializeVariables(StructTypeInfo const& type, Archive::Output& archive, void const* instance);
-		static void DeserializeVariables(StructTypeInfo const& type, Archive::Input& archive, void* instance);
 
 		/** Allocate an default-construct an instance of this type. If the type cannot be default-constructed, this returns an empty pointer. */
 		template<Concepts::ReflectedStructType T>
@@ -343,27 +361,18 @@ namespace Reflection {
 		virtual StructTypeInfo const& GetInstanceTypeInfo(void const* instance) const = 0;
 
 	protected:
+		template<typename T>
+		StructTypeInfo(std::in_place_type_t<T> t, Hash128 id, std::u16string_view name, std::u16string_view description) : TypeInfo(Classification, t, id, name, description) {}
+
 		virtual void* AllocateRaw() const = 0;
-
-	private:
-		static void SerializeVariables_Diff(StructTypeInfo const& type, YAML::Node& node, void const* instance, void const* defaults);
-		static void SerializeVariables_Diff(StructTypeInfo const& type, Archive::Output& archive, void const* instance, void const* defaults);
-
-		static void SerializeVariables_NonDiff(StructTypeInfo const& type, YAML::Node& node, void const* instance);
-		static void SerializeVariables_NonDiff(StructTypeInfo const& type, Archive::Output& archive, void const* instance);
 	};
 
 	/** TypeInfo for an enum, which is a type that can be set equal to one of several discrete named values */
 	struct EnumTypeInfo : public TypeInfo {
-		using TypeInfo::TypeInfo;
-		using TypeInfo::GetName;
 		static constexpr ETypeClassification Classification = ETypeClassification::Enum;
 
 		/** The underlying type of the values in the enumeration */
 		TypeInfo const* underlying = nullptr;
-
-		virtual void Serialize(YAML::Node& node, void const* instance) const final { node = GetName(GetIndexOfValue(instance)); }
-		virtual void Deserialize(YAML::Node const& node, void* instance) const final { underlying->Copy(instance, GetValue(GetIndexOfName(node.as<std::string>()))); }
 
 		/** Get the number of values that the enumeration defines */
 		virtual size_t GetCount() const = 0;
@@ -371,12 +380,16 @@ namespace Reflection {
 		/** Get the value at the specified index */
 		virtual void const* GetValue(size_t index) const = 0;
 		/** Get the name of the value at the specified index */
-		virtual std::string_view GetName(size_t index) const = 0;
+		virtual std::string_view GetElementName(size_t index) const = 0;
 
 		/** Get the index of the first element with the specified value */
 		virtual size_t GetIndexOfValue(void const* value) const = 0;
 		/** Get the index of the first element with the specified name */
-		virtual size_t GetIndexOfName(std::string_view name) const = 0;
+		virtual size_t GetIndexOfElementName(std::string_view name) const = 0;
+
+	protected:
+		template<typename T>
+		EnumTypeInfo(std::in_place_type_t<T> t, Hash128 id, std::u16string_view name, std::u16string_view description) : TypeInfo(Classification, t, id, name, description) {}
 	};
 
 	/**
@@ -385,7 +398,6 @@ namespace Reflection {
 	 * unique values and names, and several aggregates may be predefined if appropriate.
 	 */
 	struct FlagsTypeInfo : public TypeInfo {
-		using TypeInfo::TypeInfo;
 		static constexpr ETypeClassification Classification = ETypeClassification::Flags;
 
 		TypeInfo const* underlying = nullptr;
@@ -431,11 +443,14 @@ namespace Reflection {
 
 		/** Fills the output vector with the indices of any components in the aggregate */
 		virtual void ForEachComponent(void const* aggregate, FunctionRef<bool(size_t)> functor) const = 0;
+
+	protected:
+		template<typename T>
+		FlagsTypeInfo(std::in_place_type_t<T> t, Hash128 id, std::u16string_view name, std::u16string_view description) : TypeInfo(Classification, t, id, name, description) {}
 	};
 
 	/** TypeInfo for an array type. Arrays are containers of elements of the same type. */
 	struct ArrayTypeInfo : public TypeInfo {
-		using TypeInfo::TypeInfo;
 		static constexpr ETypeClassification Classification = ETypeClassification::Array;
 
 		/** Whether the number of elements in the array can be manipulated */
@@ -466,11 +481,14 @@ namespace Reflection {
 		virtual bool RemoveElement(void* instance, void const* element) const = 0;
 		/** Insert a new element at the position of the pointed-at element, equal to the value. If value is nullptr, the new element is default-constructed. Returns true if successful. */
 		virtual bool InsertElement(void* instance, void const* element, void const* value) const = 0;
+
+	protected:
+		template<typename T>
+		ArrayTypeInfo(std::in_place_type_t<T> t, Hash128 id, std::u16string_view name, std::u16string_view description) : TypeInfo(Classification, t, id, name, description) {}
 	};
 
 	/** TypeInfo for a map type. Maps are containers of key-value pairs with unique keys. */
 	struct MapTypeInfo : public TypeInfo {
-		using TypeInfo::TypeInfo;
 		static constexpr ETypeClassification Classification = ETypeClassification::Map;
 
 		/** The type of the keys in the map */
@@ -496,11 +514,14 @@ namespace Reflection {
 		virtual bool RemoveEntry(void* instance, void const* key) const = 0;
 		/** Add a new entry to the map with the specified value. If the key is already in the map, nothing will happen and will return false. If value is nullptr, the new value will be default constructed */
 		virtual bool InsertEntry(void* instance, void const* key, void const* value) const = 0;
+
+	protected:
+		template<typename T>
+		MapTypeInfo(std::in_place_type_t<T> t, Hash128 id, std::u16string_view name, std::u16string_view description) : TypeInfo(Classification, t, id, name, description) {}
 	};
 
 	/** TypeInfo for a set type. Sets are collections of unique elements. */
 	struct SetTypeInfo : public TypeInfo {
-		using TypeInfo::TypeInfo;
 		static constexpr ETypeClassification Classification = ETypeClassification::Set;
 
 		/** The type of the values in the set */
@@ -521,11 +542,14 @@ namespace Reflection {
 		virtual bool Add(void* instance, void const* value) const = 0;
 		/** Remove the value from the set */
 		virtual bool Remove(void* instance, void const* value) const = 0;
+
+	protected:
+		template<typename T>
+		SetTypeInfo(std::in_place_type_t<T> t, Hash128 id, std::u16string_view name, std::u16string_view description) : TypeInfo(Classification, t, id, name, description) {}
 	};
 
 	/** TypeInfo for a poly type. "Poly" is short for Polymorphic Interface. A poly owns a pointer to an optional instance that can be cast to a base type. */
 	struct PolyTypeInfo : public TypeInfo {
-		using TypeInfo::TypeInfo;
 		static constexpr ETypeClassification Classification = ETypeClassification::Poly;
 
 		/** The base type for this poly */
@@ -548,6 +572,10 @@ namespace Reflection {
 		virtual bool Assign(void* instance, StructTypeInfo const& type, void const* value) const = 0;
 		/** Unassign the value of a poly */
 		virtual void Unassign(void* instance) const = 0;
+
+	protected:
+		template<typename T>
+		PolyTypeInfo(std::in_place_type_t<T> t, Hash128 id, std::u16string_view name, std::u16string_view description) : TypeInfo(Classification, t, id, name, description) {}
 	};
 
 	/**
@@ -556,7 +584,6 @@ namespace Reflection {
 	 * The referenced object must also be a reflected struct type, to ensure we can safely retrieve information about it.
 	 */
 	struct ReferenceTypeInfo : public TypeInfo {
-		using TypeInfo::TypeInfo;
 		static constexpr ETypeClassification Classification = ETypeClassification::Reference;
 
 		/** The base type of the referenced object. The actual reference may be a derived type. */
@@ -571,11 +598,14 @@ namespace Reflection {
 
 		/** Reset an instance so it no longer holds a reference to any object */
 		virtual void Reset(void* instance) = 0;
+
+	protected:
+		template<typename T>
+		ReferenceTypeInfo(std::in_place_type_t<T> t, Hash128 id, std::u16string_view name, std::u16string_view description) : TypeInfo(Classification, t, id, name, description) {}
 	};
 
 	/** TypeInfo for a tuple type. Tuples are an indexed collection of other types. */
 	struct TupleTypeInfo : public TypeInfo {
-		using TypeInfo::TypeInfo;
 		static constexpr ETypeClassification Classification = ETypeClassification::Tuple;
 
 		/** The types of each element in the tuple */
@@ -584,11 +614,14 @@ namespace Reflection {
 		/** Get the value at a specific index in the tuple */
 		virtual void* GetValue(void* instance, size_t index) const = 0;
 		virtual void const* GetValue(void const* instance, size_t index) const = 0;
+
+	protected:
+		template<typename T>
+		TupleTypeInfo(std::in_place_type_t<T> t, Hash128 id, std::u16string_view name, std::u16string_view description) : TypeInfo(Classification, t, id, name, description) {}
 	};
 
 	/** TypeInfo for a variant type. Variants are containers that can hold a single value with more than one possible type. */
 	struct VariantTypeInfo : public TypeInfo {
-		using TypeInfo::TypeInfo;
 		static constexpr ETypeClassification Classification = ETypeClassification::Variant;
 
 		/** Get the possible types this variant can have */
@@ -603,6 +636,10 @@ namespace Reflection {
 
 		/** Assign the value inside the variant. Returns true if the new value was successfully assigned. Value is optional, if provided the newly assigned value will be a copy */
 		virtual bool Assign(void* instance, const TypeInfo& type, void const* source) const = 0;
+
+	protected:
+		template<typename T>
+		VariantTypeInfo(std::in_place_type_t<T> t, Hash128 id, std::u16string_view name, std::u16string_view description) : TypeInfo(Classification, t, id, name, description) {}
 	};
 }
 
@@ -634,40 +671,40 @@ TargetType const* Cast(OriginalType const& info) {
 //============================================================
 // Implementation helpers and standard implementations
 
+#define IMPLEMENT_TYPEINFO_METHODS(Type)\
+static constexpr Type const& Cast(void const* pointer) { return *static_cast<Type const*>(pointer); }\
+static constexpr Type& Cast(void* pointer) { return *static_cast<Type*>(pointer); }\
+void Destruct(void* instance) const final {\
+	if constexpr (!std::is_trivially_destructible_v<Type>) Cast(instance).~Type();\
+}\
+void Construct(void* instance) const final {\
+	if constexpr (std::is_default_constructible_v<Type>) new (instance) Type();\
+}\
+void Construct(void* instance, void const* other) const final {\
+	if constexpr (std::is_copy_constructible_v<Type>) new (instance) Type(Cast(other));\
+	else Construct(instance);\
+}\
+void Copy(void* instance, void const* other) const final {\
+	if constexpr (std::is_copy_assignable_v<Type>) Cast(instance) = Cast(other);\
+}\
+bool Equal(void const* a, void const* b) const final {\
+	if constexpr (std::equality_comparable<Type>) return Cast(a) == Cast(b);\
+	else return false;\
+}\
+void Serialize(Archive::Output& archive, void const* instance) const final { return Archive::Serializer<Type>::Write(archive, Cast(instance)); }\
+void Deserialize(Archive::Input& archive, void* instance) const final { return Archive::Serializer<Type>::Read(archive, Cast(instance)); }\
+YAML::Node Serialize(void const* instance) const final { return YAML::convert<Type>::encode(Cast(instance)); }\
+void Deserialize(YAML::Node const& node, void* instance) const final { YAML::convert<Type>::decode(node, Cast(instance)); }
+
 namespace Reflection {
 	/** Implements type-specific operation overrides for a particular TypeInfo instance. */
 	template<std::destructible Type, std::derived_from<TypeInfo> BaseType>
 	struct ImplementedTypeInfo : public BaseType {
-		static constexpr Type const& Cast(void const* pointer) { return *static_cast<Type const*>(pointer); }
-		static constexpr Type& Cast(void* pointer) { return *static_cast<Type*>(pointer); }
-
 		ImplementedTypeInfo(Hash128 id, std::u16string_view name, std::u16string_view description)
-			: BaseType(BaseType::Classification, id, MemoryParams::Create<Type>(), FTypeFlags::Create<Type>(), name, description)
+			: BaseType(std::in_place_type<Type>, id, name, description)
 		{}
 
-		virtual void Destruct(void* instance) const final {
-			if constexpr (!std::is_trivially_destructible_v<Type>) Cast(instance).~Type();
-		}
-		virtual void Construct(void* instance) const final {
-			if constexpr (std::is_default_constructible_v<Type>) new (instance) Type();
-		}
-		virtual void Construct(void* instance, void const* other) const final {
-			if constexpr (std::is_copy_constructible_v<Type>) new (instance) Type(Cast(other));
-			else Construct(instance);
-		}
-		virtual void Copy(void* instance, void const* other) const final {
-			if constexpr (std::is_copy_assignable_v<Type>) Cast(instance) = Cast(other);
-		}
-		virtual bool Equal(void const* a, void const* b) const final {
-			if constexpr (std::equality_comparable<Type>) return Cast(a) == Cast(b);
-			else return false;
-		}
-
-		virtual void Serialize(Archive::Output& archive, void const* instance) const override { return Archive::Serializer<Type>::Write(archive, Cast(instance)); }
-		virtual void Deserialize(Archive::Input& archive, void* instance) const override { return Archive::Serializer<Type>::Read(archive, Cast(instance)); }
-
-		virtual YAML::Node Serialize(void const* instance) const override { return YAML::convert<Type>::encode(Cast(instance)); }
-		virtual void Deserialize(YAML::Node const& node, void* instance) const override { YAML::convert<Type>::decode(node, Cast(instance)); }
+		IMPLEMENT_TYPEINFO_METHODS(Type)
 	};
 }
 

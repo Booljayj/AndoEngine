@@ -26,7 +26,6 @@ REFLECT(std::u8string, String);
 REFLECT(std::u16string, String);
 REFLECT(std::u32string, String);
 
-
 //@todo These methods are just snippets to get things working. They assumes the u16 code points are identical to u8 code points, which is only true for some of the more common code points.
 //      We'll need a more detailed unicode conversion library to do a proper conversion here, and to do it a non-allocating way.
 template<>

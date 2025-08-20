@@ -138,14 +138,22 @@ namespace Reflection {
 	private:
 		IndexType const index;
 	};
+
+	namespace StructSerializationHelpers {
+		void SerializeVariables(StructTypeInfo const& type, YAML::Node& node, void const* instance);
+		void DeserializeVariables(StructTypeInfo const& type, YAML::Node const& node, void* instance);
+
+		void SerializeVariables(StructTypeInfo const& type, Archive::Output& archive, void const* instance);
+		void DeserializeVariables(StructTypeInfo const& type, Archive::Input& archive, void* instance);
+	}
 }
 
 /** Define default archive serialization methods for a struct based on the reflected variables of the struct. */
 #define DEFINE_DEFAULT_ARCHIVE_SERIALIZATION(StructType)\
 namespace Archive {\
 	template<> struct Serializer<StructType> {\
-		static inline void Write(Output& archive, StructType const& instance) { ::Reflection::StructTypeInfo::SerializeVariables(::Reflect<StructType>::Get(), archive, &instance); }\
-		static inline void Read(Input& archive, StructType& instance) { ::Reflection::StructTypeInfo::DeserializeVariables(::Reflect<StructType>::Get(), archive, &instance); }\
+		static inline void Write(Output& archive, StructType const& instance) { ::Reflection::StructSerializationHelpers::SerializeVariables(::Reflect<StructType>::Get(), archive, &instance); }\
+		static inline void Read(Input& archive, StructType& instance) { ::Reflection::StructSerializationHelpers::DeserializeVariables(::Reflect<StructType>::Get(), archive, &instance); }\
 	};\
 }\
 
@@ -154,11 +162,11 @@ namespace Archive {\
 namespace YAML {\
 	template<> struct convert<StructType> {\
 		static inline Node encode(const StructType& instance) {\
-			Node node{ NodeType::Map }; ::Reflection::StructTypeInfo::SerializeVariables(::Reflect<StructType>::Get(), node, &instance); return node;\
+			Node node{ NodeType::Map }; ::Reflection::StructSerializationHelpers::SerializeVariables(::Reflect<StructType>::Get(), node, &instance); return node;\
 		}\
 		static inline bool decode(const Node& node, StructType& instance) {\
 			if (!node.IsMap()) return false;\
-			::Reflection::StructTypeInfo::DeserializeVariables(::Reflect<StructType>::Get(), node, &instance); return true;\
+			::Reflection::StructSerializationHelpers::DeserializeVariables(::Reflect<StructType>::Get(), node, &instance); return true;\
 		}\
 	};\
 }

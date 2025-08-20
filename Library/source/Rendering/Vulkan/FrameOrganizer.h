@@ -11,6 +11,7 @@
 #include "Rendering/Vulkan/Fence.h"
 #include "Rendering/Vulkan/PhysicalDevice.h"
 #include "Rendering/Vulkan/RenderObjects.h"
+#include "Rendering/Vulkan/Semaphore.h"
 #include "Rendering/Vulkan/Swapchain.h"
 #include "Rendering/Vulkan/UniformLayouts.h"
 #include "Rendering/Vulkan/Uniforms.h"
@@ -41,17 +42,12 @@ namespace Rendering {
 
 	/** Synchronization objects used each frame to coordinate rendering operations */
 	struct FrameSynchronization {
-		VkSemaphore imageAvailable = nullptr;
-		VkSemaphore renderFinished = nullptr;
+		Semaphore imageAvailableSemaphore;
 		Fence fence;
 		
 		FrameSynchronization(VkDevice inDevice);
 		FrameSynchronization(FrameSynchronization const&) = delete;
 		FrameSynchronization(FrameSynchronization&&) noexcept = default;
-		~FrameSynchronization();
-
-	private:
-		MoveOnly<VkDevice> device;
 	};
 
 	/** Resources used for a single frame of rendering */
@@ -127,6 +123,8 @@ namespace Rendering {
 		std::vector<FrameResources> frames;
 		/** Copies of the per-frame resources that are being used for each swapchain image */
 		std::vector<VkFence> imageFences;
+		/** Semaphores used to determine when the queue is finished using each swapchain image */
+		std::vector<Semaphore> imageSubmittedSemaphores;
 
 		uint32_t currentFrameIndex = 0;
 		uint32_t currentImageIndex = -1;

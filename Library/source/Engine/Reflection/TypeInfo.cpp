@@ -1,20 +1,12 @@
 #include "Engine/Reflection/TypeInfo.h"
 
 namespace Reflection {
-	template<typename T>
-	static constexpr NumericTypeInfo::ENumericType GetNumericType() {
-		if constexpr (std::is_same_v<T, std::byte>) return NumericTypeInfo::ENumericType::Bits;
-		else if constexpr (std::is_same_v<T, bool>) return NumericTypeInfo::ENumericType::Binary;
-		else if constexpr (std::floating_point<T>) return NumericTypeInfo::ENumericType::FloatingPoint;
-		else if constexpr (std::is_signed_v<T>) return NumericTypeInfo::ENumericType::SignedInteger;
-		else if constexpr (std::is_unsigned_v<T>) return NumericTypeInfo::ENumericType::UnsignedInteger;
-		else throw std::logic_error{ "type is not numeric" };
-	}
+
 
 	template<typename T>
 	struct TValuelessTypeInfo : public ValuelessTypeInfo {
 		TValuelessTypeInfo(std::u16string_view name, std::u16string_view description)
-			: ValuelessTypeInfo(ETypeClassification::Valueless, Reflect<T>::ID, MemoryParams{ 0, 0 }, FTypeFlags::None(), name, description)
+			: ValuelessTypeInfo(std::in_place_type<T>, Reflect<T>::ID, name, description)
 		{}
 
 		virtual void Destruct(void* instance) const override final {}
@@ -31,15 +23,12 @@ namespace Reflection {
 	};
 
 	template<typename T>
-	struct TNumericTypeInfo : public ImplementedTypeInfo<T, NumericTypeInfo> {
-		using ImplementedTypeInfo<T, NumericTypeInfo>::Cast;
-		using NumericTypeInfo::numeric_type;
-
+	struct TNumericTypeInfo : public NumericTypeInfo {
 		TNumericTypeInfo(std::u16string_view name, std::u16string_view description)
-			: ImplementedTypeInfo<T, NumericTypeInfo>(Reflect<T>::ID, name, description)
-		{
-			numeric_type = GetNumericType<T>();
-		}
+			: NumericTypeInfo(std::in_place_type<T>, Reflect<T>::ID, name, description)
+		{}
+
+		IMPLEMENT_TYPEINFO_METHODS(T)
 
 		virtual uint64_t GetUnsignedInteger(void const* instance) const override final { return static_cast<uint64_t>(Cast(instance)); }
 		virtual int64_t GetSignedInteger(void const* instance) const override final { return static_cast<int64_t>(Cast(instance)); }

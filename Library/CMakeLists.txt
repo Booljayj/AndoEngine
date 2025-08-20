@@ -24,11 +24,11 @@ target_include_directories(Library PUBLIC ${YAML_CPP_INCLUDE_DIR})
 target_link_libraries(Library PUBLIC yaml-cpp::yaml-cpp)
 
 #Optick module
-set(OPTICK_INSTALL_TARGETS OFF CACHE BOOL "" FORCE)
-set(OPTICK_USE_VULKAN ON CACHE BOOL "" FORCE)
-add_subdirectory(modules/Optick)
-target_include_directories(Library PUBLIC ${OptickCore_INCLUDE_DIR})
-target_link_libraries(Library PUBLIC OptickCore)
+#set(OPTICK_INSTALL_TARGETS OFF CACHE BOOL "" FORCE)
+#set(OPTICK_USE_VULKAN ON CACHE BOOL "" FORCE)
+#add_subdirectory(modules/Optick)
+#target_include_directories(Library PUBLIC ${OptickCore_INCLUDE_DIR})
+#target_link_libraries(Library PUBLIC OptickCore)
 
 #GLM library
 find_package(glm REQUIRED)
@@ -43,13 +43,13 @@ find_package(EnTT REQUIRED)
 target_link_libraries(Library PUBLIC EnTT::EnTT)
 
 #SDL library
-find_package(SDL2 REQUIRED)
+find_package(SDL2 CONFIG REQUIRED)
 target_link_libraries(Library PUBLIC SDL2::SDL2 PUBLIC SDL2::SDL2main)
 
 #Vulkan library
-find_package(Vulkan REQUIRED)
+find_package(Vulkan REQUIRED COMPONENTS shaderc_combined)
 target_link_libraries(Library PUBLIC Vulkan::Vulkan)
-#target_link_libraries(Library PUBLIC Vulkan::shaderc_combined)
+target_link_libraries(Library PUBLIC Vulkan::shaderc_combined)
 
 #FreeType library
 find_package(freetype CONFIG REQUIRED)

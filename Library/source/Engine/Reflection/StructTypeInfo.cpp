@@ -6,7 +6,13 @@
 #include "Engine/StringConversion.h"
 
 namespace Reflection {
-	void StructTypeInfo::SerializeVariables(StructTypeInfo const& type, Archive::Output& archive, void const* instance) {
+	static void SerializeVariables_Diff(StructTypeInfo const& type, YAML::Node& node, void const* instance, void const* defaults);
+	static void SerializeVariables_NonDiff(StructTypeInfo const& type, YAML::Node& node, void const* instance);
+
+	static void SerializeVariables_Diff(StructTypeInfo const& type, Archive::Output& archive, void const* instance, void const* defaults);
+	static void SerializeVariables_NonDiff(StructTypeInfo const& type, Archive::Output& archive, void const* instance);
+
+	void StructSerializationHelpers::SerializeVariables(StructTypeInfo const& type, Archive::Output& archive, void const* instance) {
 		void const* defaults = type.GetDefaults();
 		if (defaults && type.flags.Has(ETypeFlags::EqualityComparable)) {
 			SerializeVariables_Diff(type, archive, instance, defaults);
@@ -14,7 +20,8 @@ namespace Reflection {
 			SerializeVariables_NonDiff(type, archive, instance);
 		}
 	}
-	void StructTypeInfo::DeserializeVariables(StructTypeInfo const& type, Archive::Input& archive, void* instance) {
+
+	void StructSerializationHelpers::DeserializeVariables(StructTypeInfo const& type, Archive::Input& archive, void* instance) {
 		std::u16string name;
 		std::span<std::byte const> buffer;
 
@@ -43,7 +50,7 @@ namespace Reflection {
 		}
 	}
 
-	void StructTypeInfo::SerializeVariables(StructTypeInfo const& type, YAML::Node& node, void const* instance) {
+	void StructSerializationHelpers::SerializeVariables(StructTypeInfo const& type, YAML::Node& node, void const* instance) {
 		void const* defaults = type.GetDefaults();
 		if (defaults && type.flags.Has(ETypeFlags::EqualityComparable)) {
 			SerializeVariables_Diff(type, node, instance, defaults);
@@ -51,7 +58,8 @@ namespace Reflection {
 			SerializeVariables_NonDiff(type, node, instance);
 		}
 	}
-	void StructTypeInfo::DeserializeVariables(StructTypeInfo const& type, YAML::Node const& node, void* instance) {
+
+	void StructSerializationHelpers::DeserializeVariables(StructTypeInfo const& type, YAML::Node const& node, void* instance) {
 		const auto FindVariable = [&](std::u16string_view name) -> Reflection::VariableInfo const* {
 			for (StructTypeInfo const* current = &type; current; current = current->base) {
 				auto const iter = ranges::find_if(current->GetVariables(), [name](std::unique_ptr<VariableInfo const> const& info) { return info->name == name; });
@@ -76,7 +84,7 @@ namespace Reflection {
 		}
 	}
 
-	void StructTypeInfo::SerializeVariables_Diff(StructTypeInfo const& type, YAML::Node& node, void const* instance, void const* defaults) {
+	void SerializeVariables_Diff(StructTypeInfo const& type, YAML::Node& node, void const* instance, void const* defaults) {
 		std::string u8name;
 
 		for (StructTypeInfo const* current = &type; current; current = current->base) {
@@ -94,7 +102,26 @@ namespace Reflection {
 			}
 		}
 	}
-	void StructTypeInfo::SerializeVariables_Diff(StructTypeInfo const& type, Archive::Output& archive, void const* instance, void const* defaults) {
+	void SerializeVariables_NonDiff(StructTypeInfo const& type, YAML::Node& node, void const* instance) {
+		std::string u8name;
+
+		for (StructTypeInfo const* current = &type; current; current = current->base) {
+			for (std::unique_ptr<VariableInfo const> const& variable : current->GetVariables()) {
+				if (!variable->flags.Has(Reflection::EVariableFlags::Deprecated)) {
+					YAML::Node const value = variable->type->Serialize(variable->GetImmutable(instance));
+
+					//If we've serialized any contents for this node, add it to the map using the name of the variable.
+					if (value) {
+						u8name.clear();
+						ConvertString(variable->name, u8name);
+						node[u8name] = value;
+					}
+				}
+			}
+		}
+	}
+
+	void SerializeVariables_Diff(StructTypeInfo const& type, Archive::Output& archive, void const* instance, void const* defaults) {
 		std::vector<std::byte> buffer;
 
 		//Serialize each variable as a name-buffer pair
@@ -119,26 +146,7 @@ namespace Reflection {
 		archive << ""sv;
 		archive << buffer;
 	}
-
-	void StructTypeInfo::SerializeVariables_NonDiff(StructTypeInfo const& type, YAML::Node& node, void const* instance) {
-		std::string u8name;
-
-		for (StructTypeInfo const* current = &type; current; current = current->base) {
-			for (std::unique_ptr<VariableInfo const> const& variable : current->GetVariables()) {
-				if (!variable->flags.Has(Reflection::EVariableFlags::Deprecated)) {
-					YAML::Node const value = variable->type->Serialize(variable->GetImmutable(instance));
-
-					//If we've serialized any contents for this node, add it to the map using the name of the variable.
-					if (value) {
-						u8name.clear();
-						ConvertString(variable->name, u8name);
-						node[u8name] = value;
-					}
-				}
-			}
-		}
-	}
-	void StructTypeInfo::SerializeVariables_NonDiff(StructTypeInfo const& type, Archive::Output& archive, void const* instance) {
+	void SerializeVariables_NonDiff(StructTypeInfo const& type, Archive::Output& archive, void const* instance) {
 		std::vector<std::byte> buffer;
 
 		//Serialize each variable as a name-buffer pair

@@ -215,6 +215,7 @@ namespace Rendering {
 		//Log the message
 		if (messageSeverity & VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
 			LOG(VulkanMessage, Error, "{}{} {}{}", prefix, pCallbackData->messageIdNumber, pCallbackData->pMessage, context);
+			__debugbreak();
 		} else if (messageSeverity & VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
 			LOG(VulkanMessage, Warning, "{}{} {}{}", prefix, pCallbackData->messageIdNumber, pCallbackData->pMessage, context);
 		} else if (messageSeverity & VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {

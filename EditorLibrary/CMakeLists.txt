@@ -21,7 +21,4 @@ target_link_libraries(EditorLibrary PUBLIC glm::glm)
 #Vulkan library
 find_package(Vulkan REQUIRED)
 target_link_libraries(EditorLibrary PUBLIC Vulkan::Vulkan)
-
-#shaderc library
-find_package(unofficial-shaderc CONFIG REQUIRED)
-target_link_libraries(EditorLibrary PRIVATE unofficial::shaderc::shaderc)
+#target_link_libraries(EditorLibrary PUBLIC Vulkan::shaderc_combined)

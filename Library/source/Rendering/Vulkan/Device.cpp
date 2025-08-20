@@ -9,21 +9,24 @@ namespace Rendering {
 	{
 		ScopedThreadBufferMark mark;
 
-		if (requests.Size() == 0) throw FormatType<std::runtime_error>("Device was created with no queue requests. At least one must be provided.");
-
-		float queuePriority = 1.0f;
+		if (requests.size() == 0) throw FormatType<std::runtime_error>("Device was created with no queue requests. At least one must be provided.");
 
 		//Describe how to create the queues for each family based on the requests
+		t_vector<t_vector<float>> queuePriorities;
 		t_vector<VkDeviceQueueCreateInfo> queueCIs;
-		queueCIs.resize(requests.Size());
-		for (uint32_t req = 0; req < requests.Size(); ++req) {
-			auto const& request = requests[req];
+		queuePriorities.resize(requests.size());
+		queueCIs.resize(requests.size());
 
-			queueCIs[req] = VkDeviceQueueCreateInfo{
+		for (uint32_t index = 0; index < requests.size(); ++index) {
+			auto const& request = requests[index];
+
+			queuePriorities[index].resize(request.count, 1.0f);
+
+			queueCIs[index] = VkDeviceQueueCreateInfo{
 				.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
 				.queueFamilyIndex = request.family,
-				.queueCount = request.count,
-				.pQueuePriorities = &queuePriority,
+				.queueCount = static_cast<uint32_t>(queuePriorities[index].size()),
+				.pQueuePriorities = queuePriorities[index].data(),
 			};
 		}
 

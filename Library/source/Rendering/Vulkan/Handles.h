@@ -34,8 +34,7 @@ namespace Rendering {
 	};
 
 	using ImageView = DeviceOwned<VkImageView, VkImageViewCreateInfo, &vkCreateImageView, &vkDestroyImageView>;
-	using Semaphore = DeviceOwned<VkSemaphore, VkSemaphoreCreateInfo, &vkCreateSemaphore, &vkDestroySemaphore>;
-
+	
 	/** Creates handles to objects that are owned by a pool within a device */
 	template<typename T, typename PoolType, typename ParamsType, auto* CreateMethod, auto* DeleteMethod>
 	struct PoolOwned {

@@ -24,17 +24,20 @@ namespace Rendering {
 	}
 
 	QueueRequests& QueueRequests::operator+=(QueueReference reference) {
-		auto const iter = std::find_if(requests.begin(), requests.end(), [&](auto const& request) { return request.family == reference.family; });
-		if (iter == requests.end()) requests.emplace_back( reference.family, reference.index + 1 );
-		else iter->count = std::max(iter->count, reference.index + 1);
+		auto const iter = ranges::find_if(requests, [&](auto const& request) { return request.family == reference.family; });
+		if (iter == requests.end()) {
+			requests.emplace_back(reference.family, reference.index + 1);
+		} else {
+			iter->count = std::max(iter->count, reference.index + 1);
+		}
 		return *this;
 	}
 
 	QueueResults::QueueResults(VkDevice device, QueueRequests const& requests) {
 		results.clear();
-		results.resize(requests.Size());
+		results.resize(requests.size());
 
-		for (uint32_t req = 0; req < requests.Size(); ++req) {
+		for (uint32_t req = 0; req < requests.size(); ++req) {
 			auto const& request = requests[req];
 			auto& result = results[req];
 

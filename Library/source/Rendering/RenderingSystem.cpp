@@ -163,7 +163,7 @@ namespace Rendering {
 
 			passes.emplace(*device, primarySurfaceFormat.format);
 			uniformLayouts.emplace(*device);
-			transferCommandPool.emplace(*device, queues->transfer.index);
+			transferCommandPool.emplace(*device, queues->transfer.family);
 
 			//Let the surfaces know about the new rendering objects so they can prepare for rendering
 			for (auto const& surface : surfaces) surface->InitializeRendering(*device, GetPhysicalDevice(), *passes, *uniformLayouts);
