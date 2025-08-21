@@ -23,6 +23,18 @@ namespace Rendering {
 		return result;
 	}
 
+	void Queue::Submit(VkSubmitInfo const& info, VkFence fence) const {
+		if (vkQueueSubmit(queue, 1, &info, fence) != VK_SUCCESS) {
+			throw std::runtime_error{ "Failed to submit commands to queue" };
+		}
+	}
+
+	void Queue::Present(VkPresentInfoKHR const& info) const {
+		if (vkQueuePresentKHR(queue, &info) != VK_SUCCESS) {
+			throw std::runtime_error{ "Failed to present to queue" };
+		}
+	}
+
 	QueueRequests& QueueRequests::operator+=(QueueReference reference) {
 		auto const iter = ranges::find_if(requests, [&](auto const& request) { return request.family == reference.family; });
 		if (iter == requests.end()) {
@@ -51,7 +63,7 @@ namespace Rendering {
 	}
 
 	std::optional<Queue> QueueResults::Find(QueueReference reference) const {
-		auto const iter = std::find_if(results.begin(), results.end(), [&](auto const& result) { return result.family == reference.family; });
+		auto const iter = ranges::find_if(results, [&](auto const& result) { return result.family == reference.family; });
 		if (iter == results.end() || iter->queues.size() <= reference.index) return std::nullopt;
 		else return Queue{ iter->queues[reference.index], reference };
 	}

@@ -31,7 +31,8 @@ namespace Rendering {
 		uint32_t family = std::numeric_limits<uint32_t>::max();
 		uint32_t index = 0;
 
-		inline bool operator==(QueueReference const& other) const { return family == other.family && index == other.index; }
+		inline bool operator==(QueueReference const&) const = default;
+		inline bool operator!=(QueueReference const&) const = default;
 	};
 
 	/** A specific queue that was created on a device */
@@ -40,7 +41,12 @@ namespace Rendering {
 
 		inline operator VkQueue() const { return queue; }
 
-	private:
+		/** Submit commands on this queue */
+		void Submit(VkSubmitInfo const& info, VkFence fence) const;
+		/** Present on this queue */
+		void Present(VkPresentInfoKHR const& info) const;
+
+	protected:
 		VkQueue queue = nullptr;
 	};
 

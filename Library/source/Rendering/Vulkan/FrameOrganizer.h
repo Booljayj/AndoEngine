@@ -37,7 +37,7 @@ namespace Rendering {
 
 		FrameUniforms(VkDevice device, UniformLayouts const& uniformLayouts, VkDescriptorPool pool, VmaAllocator allocator);
 		FrameUniforms(FrameUniforms const&) = delete;
-		FrameUniforms(FrameUniforms&&) noexcept;
+		FrameUniforms(FrameUniforms&&) noexcept = default;
 	};
 
 	/** Synchronization objects used each frame to coordinate rendering operations */
@@ -64,14 +64,13 @@ namespace Rendering {
 
 		RenderObjectsHandleCollection objects;
 
-		FrameResources(VkDevice device, uint32_t graphicsQueueFamilyIndex, UniformLayouts const& uniformLayouts, VkDescriptorPool descriptorPool, VmaAllocator allocator);
+		FrameResources(VkDevice device, QueueReference graphics, UniformLayouts const& uniformLayouts, VkDescriptorPool descriptorPool, VmaAllocator allocator);
 		FrameResources(FrameResources const&) = delete;
-		FrameResources(FrameResources&&) noexcept;
+		FrameResources(FrameResources&&) noexcept = default;
 
 		friend RenderObjectsHandleCollection& operator<<(RenderObjectsHandleCollection& collection, FrameResources& frame);
 
-		bool WaitUntilUnused(std::chrono::nanoseconds timeout) const;
-		void Prepare(VkDevice device, size_t numObjects, size_t numThreads, uint32_t graphicsQueueFamilyIndex);
+		void Prepare(VkDevice device, size_t numObjects, size_t numThreads, QueueReference graphics);
 	};
 
 	struct RecordingContext {
@@ -111,12 +110,8 @@ namespace Rendering {
 
 		MoveOnly<VkDevice> device;
 		VkSwapchainKHR swapchain = nullptr;
-		struct {
-			VkQueue graphics = nullptr;
-			VkQueue present = nullptr;
-		} queue;
-		uint32_t graphicsQueueFamilyIndex = 0;
-
+		SurfaceQueues queues;
+		
 		DescriptorPool descriptorPool;
 
 		/** The frames that we will cycle through when rendering */

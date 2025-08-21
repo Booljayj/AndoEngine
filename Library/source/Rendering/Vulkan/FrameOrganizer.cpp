@@ -9,36 +9,19 @@ namespace Rendering {
 		, object(device, sets[1], 512, allocator)
 	{}
 
-	FrameUniforms::FrameUniforms(FrameUniforms&& other) noexcept
-		: sets(std::move(other.sets)), global(std::move(other.global)), object(std::move(other.object))
-	{}
-
 	FrameSynchronization::FrameSynchronization(VkDevice inDevice)
 		: imageAvailableSemaphore(inDevice, 0)
 		, fence(inDevice)
 	{}
 
-	FrameResources::FrameResources(VkDevice inDevice, uint32_t graphicsQueueFamilyIndex, UniformLayouts const& uniformLayouts, VkDescriptorPool descriptorPool, VmaAllocator allocator)
+	FrameResources::FrameResources(VkDevice inDevice, QueueReference graphics, UniformLayouts const& uniformLayouts, VkDescriptorPool descriptorPool, VmaAllocator allocator)
 		: uniforms(inDevice, uniformLayouts, descriptorPool, allocator)
-		, mainCommandPool(inDevice, graphicsQueueFamilyIndex)
+		, mainCommandPool(inDevice, graphics.family)
 		, mainCommandBuffer(mainCommandPool.CreateBuffer(VkCommandBufferLevel::VK_COMMAND_BUFFER_LEVEL_PRIMARY))
 		, sync(inDevice)
 	{}
 
-	FrameResources::FrameResources(FrameResources&& other) noexcept
-		: uniforms(std::move(other.uniforms))
-		, mainCommandPool(std::move(other.mainCommandPool))
-		, mainCommandBuffer(other.mainCommandBuffer)
-		, threadCommandPools(std::move(other.threadCommandPools))
-		, threadCommandBuffers(std::move(other.threadCommandBuffers))
-		, sync(std::move(other.sync))
-	{}
-
-	bool FrameResources::WaitUntilUnused(std::chrono::nanoseconds timeout) const {
-		return sync.fence.WaitUntilSignalled(timeout);
-	}
-
-	void FrameResources::Prepare(VkDevice device, size_t numObjects, size_t numThreads, uint32_t graphicsQueueFamilyIndex) {
+	void FrameResources::Prepare(VkDevice device, size_t numObjects, size_t numThreads, QueueReference graphics) {
 		//Resize the object uniforms buffer so we can store all the per-object data that will be used for rendering
 		uniforms.object.Reserve(numObjects);
 
@@ -50,7 +33,7 @@ namespace Rendering {
 
 		//Grow the number of command pools to match the number of threads
 		for (size_t threadIndex = threadCommandPools.size(); threadIndex < numThreads; ++threadIndex) {
-			CommandPool& newPool = threadCommandPools.emplace_back(device, graphicsQueueFamilyIndex);
+			CommandPool& newPool = threadCommandPools.emplace_back(device, graphics.family);
 			threadCommandBuffers.emplace_back(newPool.CreateBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY));
 		}
 
@@ -61,8 +44,7 @@ namespace Rendering {
 	FrameOrganizer::FrameOrganizer(VkDevice device, VmaAllocator allocator, SurfaceQueues const& queues, Swapchain const& swapchain, UniformLayouts const& uniformLayouts, EBuffering buffering)
 		: device(device)
 		, swapchain(swapchain)
-		, queue({ queues.graphics, queues.present })
-		, graphicsQueueFamilyIndex(queues.graphics.family)
+		, queues(queues)
 		, descriptorPool(device, GetPoolSizes(buffering), GetNumFrames(buffering) * 2)
 	{
 		size_t const numFrames = GetNumFrames(buffering);
@@ -70,15 +52,12 @@ namespace Rendering {
 
 		//Create the resources that are unique to each frame
 		for (size_t index = 0; index < numFrames; ++index) {
-			frames.emplace_back(device, graphicsQueueFamilyIndex, uniformLayouts, descriptorPool, allocator);
+			frames.emplace_back(device, queues.graphics, uniformLayouts, descriptorPool, allocator);
 		}
 
 		//Create the resources that are unique to each swapchain image
 		imageFences.resize(numImages, nullptr);
 		
-		VkSemaphoreCreateInfo const semaphoreInfo{
-			.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-		};
 		imageSubmittedSemaphores.reserve(numImages);
 		for (size_t index = 0; index < numImages; ++index) {
 			imageSubmittedSemaphores.emplace_back(device, 0);
@@ -93,12 +72,12 @@ namespace Rendering {
 		FrameResources& frame = frames[currentFrameIndex];
 
 		//Wait until the frame is no longer being used. If this takes too long, we'll have to skip rendering.
-		if (!frame.WaitUntilUnused(timeout)) {
+		if (!frame.sync.fence.WaitUntilSignalled(timeout)) {
 			LOG(Vulkan, Warning, "Timed out waiting for fence");
 			return std::optional<RecordingContext>{};
 		}
 
-		frame.Prepare(device, numObjects, numThreads, graphicsQueueFamilyIndex);
+		frame.Prepare(device, numObjects, numThreads, queues.graphics);
 
 		//Acquire the swapchain image that can be used for this frame
 		currentImageIndex = 0;
@@ -119,7 +98,7 @@ namespace Rendering {
 			}
 		}
 		//This frame will now be assocaited with a new image, so stop tracking this frame's fence with any other image
-		std::replace(imageFences.begin(), imageFences.end(), (VkFence)frame.sync.fence, VkFence{ VK_NULL_HANDLE });
+		ranges::replace(imageFences, (VkFence)frame.sync.fence, VkFence{ VK_NULL_HANDLE });
 
 		return RecordingContext{ currentFrameIndex, currentImageIndex, frame.uniforms, frame.mainCommandBuffer, frame.threadCommandBuffers, frame.objects };
 	}
@@ -143,6 +122,7 @@ namespace Rendering {
 		VkPipelineStageFlags const waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 		static_assert(std::size(submitWaitSemaphores) == std::size(waitStages), "Number of semaphores must equal number of stages");
 
+		//Submit the actual command buffers
 		VkSubmitInfo const submitInfo{
 			.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
 			.waitSemaphoreCount = static_cast<uint32_t>(std::size(submitWaitSemaphores)),
@@ -155,11 +135,7 @@ namespace Rendering {
 			.signalSemaphoreCount = static_cast<uint32_t>(std::size(submitFinishedSemaphores)),
 			.pSignalSemaphores = submitFinishedSemaphores,
 		};
-
-		//Submit the actual command buffer
-		if (vkQueueSubmit(queue.graphics, 1, &submitInfo, frame.sync.fence) != VK_SUCCESS) {
-			throw FormatType<std::runtime_error>("Failed to submit command buffer to qraphics queue");
-		}
+		queues.graphics.Submit(submitInfo, frame.sync.fence);
 
 		//Set up information for how to present the rendered image once commands are finished on the queue
 		VkPresentInfoKHR const presentInfo{
@@ -173,10 +149,7 @@ namespace Rendering {
 
 			.pResults = nullptr, //Optional
 		};
-		
-		if (vkQueuePresentKHR(queue.present, &presentInfo) != VK_SUCCESS) {
-			throw FormatType<std::runtime_error>("Failed to present image");
-		}
+		queues.present.Present(presentInfo);
 
 		//We've successfully finished rendering this frame, so move to the next frame
 		currentFrameIndex = (currentFrameIndex + 1) % frames.size();

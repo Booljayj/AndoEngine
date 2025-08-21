@@ -37,23 +37,13 @@ namespace Rendering {
 		return entry.module;
 	}
 
-	MeshCreationHelper::MeshCreationHelper(VkDevice device, VkQueue queue, VkCommandPool pool)
-		: device(device), queue(queue), pool(pool)
-	{
-		VkFenceCreateInfo const fenceCI{
-			.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-			.flags = VK_FENCE_CREATE_SIGNALED_BIT,
-		};
-		
-		if (vkCreateFence(device, &fenceCI, nullptr, &fence) != VK_SUCCESS || !fence) {
-			throw std::runtime_error{ "Failed to create fence" };
-		}
-	}
+	MeshCreationHelper::MeshCreationHelper(VkDevice device, Queue transfer, VkCommandPool pool)
+		: device(device), transfer(transfer), pool(pool), fence(device)
+	{}
 
 	MeshCreationHelper::~MeshCreationHelper() {
 		if (pendingCommands.size() > 0) Flush();
 		FinishSubmit();
-		vkDestroyFence(device, fence, nullptr);
 	}
 
 	void MeshCreationHelper::Submit(VkCommandBuffer commands, MappedBuffer&& staging) {
@@ -72,7 +62,7 @@ namespace Rendering {
 		FinishSubmit();
 
 		//Prepare for the new submit
-		vkResetFences(device, 1, &fence);
+		fence.Reset();
 		std::swap(pendingCommands, submittedCommands);
 		std::swap(pendingStagingBuffers, submittedStagingBuffers);
 
@@ -82,13 +72,13 @@ namespace Rendering {
 			.commandBufferCount = static_cast<uint32_t>(submittedCommands.size()),
 			.pCommandBuffers = submittedCommands.data(),
 		};
-		vkQueueSubmit(queue, 1, &submitInfo, fence);
+		transfer.Submit(submitInfo, fence);
 	}
 
 	void MeshCreationHelper::FinishSubmit() {
 		//Wait for the previous flush to finish
-		vkWaitForFences(device, 1, &fence, VK_TRUE, std::numeric_limits<uint64_t>::max());
-
+		fence.WaitUntilSignalled(std::chrono::nanoseconds::max());
+		
 		//Clean up the temporary resources from the previous flush
 		if (submittedCommands.size() > 0) {
 			vkFreeCommandBuffers(device, pool, static_cast<uint32_t>(submittedCommands.size()), submittedCommands.data());
