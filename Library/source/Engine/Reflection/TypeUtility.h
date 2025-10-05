@@ -10,8 +10,10 @@ namespace Reflection {
 		IncludeMetrics,
 		DetailedInfo,
 	};
-	using FDebugPrintFlags = TFlags<EDebugPrintFlags>;
+	DEFINE_FLAGS_STRUCT(DebugPrintFlags) {
+		using TFlags::TFlags;
+	};
 
 	/** Print a description of a TypeInfo to a stream for debugging purposes. */
-	void DebugPrint(TypeInfo const* type, std::ostream& stream, FDebugPrintFlags flags = FDebugPrintFlags::None());
+	void DebugPrint(TypeInfo const* type, std::ostream& stream, FDebugPrintFlags flags = NoFlags);
 }

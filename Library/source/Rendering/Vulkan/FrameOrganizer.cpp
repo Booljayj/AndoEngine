@@ -14,14 +14,14 @@ namespace Rendering {
 		, fence(inDevice)
 	{}
 
-	FrameResources::FrameResources(VkDevice inDevice, QueueReference graphics, UniformLayouts const& uniformLayouts, VkDescriptorPool descriptorPool, VmaAllocator allocator)
-		: uniforms(inDevice, uniformLayouts, descriptorPool, allocator)
-		, mainCommandPool(inDevice, graphics.family)
+	FrameResources::FrameResources(VkDevice device, GraphicsQueue graphics, UniformLayouts const& uniformLayouts, VkDescriptorPool descriptorPool, VmaAllocator allocator)
+		: uniforms(device, uniformLayouts, descriptorPool, allocator)
+		, mainCommandPool(device, graphics)
 		, mainCommandBuffer(mainCommandPool.CreateBuffer(VkCommandBufferLevel::VK_COMMAND_BUFFER_LEVEL_PRIMARY))
-		, sync(inDevice)
+		, sync(device)
 	{}
 
-	void FrameResources::Prepare(VkDevice device, size_t numObjects, size_t numThreads, QueueReference graphics) {
+	void FrameResources::Prepare(VkDevice device, size_t numObjects, size_t numThreads, GraphicsQueue graphics) {
 		//Resize the object uniforms buffer so we can store all the per-object data that will be used for rendering
 		uniforms.object.Reserve(numObjects);
 
@@ -33,7 +33,7 @@ namespace Rendering {
 
 		//Grow the number of command pools to match the number of threads
 		for (size_t threadIndex = threadCommandPools.size(); threadIndex < numThreads; ++threadIndex) {
-			CommandPool& newPool = threadCommandPools.emplace_back(device, graphics.family);
+			CommandPool& newPool = threadCommandPools.emplace_back(device, graphics);
 			threadCommandBuffers.emplace_back(newPool.CreateBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY));
 		}
 

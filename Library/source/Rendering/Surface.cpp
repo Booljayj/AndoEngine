@@ -5,6 +5,7 @@
 #include "Rendering/RenderingSystem.h"
 #include "Rendering/StaticMesh.h"
 #include "Rendering/UniformTypes.h"
+#include "Rendering/Vulkan/QueueSelection.h"
 
 namespace Rendering {
 	Surface::Surface(VkInstance instance, HAL::Window& inWindow)
@@ -30,15 +31,15 @@ namespace Rendering {
 	void Surface::InitializeRendering(Device const& device, PhysicalDeviceDescription const& physical, RenderPasses const& passes, UniformLayouts const& layouts) {
 		if (queues || swapchain) throw std::runtime_error{ "Initializing rendering on a surface which is already initialized" };
 
-		t_vector<QueueFamilyDescription> const families = physical.GetSurfaceFamilies(*this);
+		QueueFamilySelectors selectors{ physical.GetSurfaceFamilies(*this) };
 		
-		auto const references = SurfaceQueues::References::Find(families);
+		auto const references = selectors.SelectSurfaceQueues();
 		if (!references) {
 			LOG(Vulkan, Warning, "Physical device does not support required queues for surface {}. Cannot initialize rendering.", GetID());
 			return;
 		}
 
-		queues = references->ResolveFrom(device.queues);
+		queues = device.queues.Resolve(*references);
 		if (!queues) {
 			LOG(Vulkan, Warning, "Device does not contain required queues for surface {}. Cannot initialize rendering.", GetID());
 			return;

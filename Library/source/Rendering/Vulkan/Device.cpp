@@ -24,7 +24,7 @@ namespace Rendering {
 
 			queueCIs[index] = VkDeviceQueueCreateInfo{
 				.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-				.queueFamilyIndex = request.family,
+				.queueFamilyIndex = request.id,
 				.queueCount = static_cast<uint32_t>(queuePriorities[index].size()),
 				.pQueuePriorities = queuePriorities[index].data(),
 			};

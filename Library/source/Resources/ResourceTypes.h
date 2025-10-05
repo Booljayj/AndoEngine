@@ -15,8 +15,10 @@ namespace Resources {
 		/** Indicates this resource has been fully initialized */
 		Initialized,
 	};
-	using FResourceFlags = TFlags<EResourceFlags>;
-
+	DEFINE_FLAGS_STRUCT(ResourceFlags) {
+		using TFlags::TFlags;
+	};
+	
 	struct Identifier {
 		/** The name of the package in which the resource can be found */
 		StringID package = StringID::None;

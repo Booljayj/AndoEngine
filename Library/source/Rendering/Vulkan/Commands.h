@@ -1,12 +1,16 @@
 #pragma once
 #include "Engine/Core.h"
 #include "Engine/MoveOnly.h"
+#include "Rendering/Vulkan/Queues.h"
 #include "Rendering/Vulkan/Vulkan.h"
 
 namespace Rendering {
 	struct CommandPool {
 	public:
-		CommandPool(VkDevice inDevice, uint32_t queueFamilyIndex);
+		CommandPool(VkDevice device, GraphicsQueue graphics) : CommandPool(device, graphics.id) {}
+		CommandPool(VkDevice device, TransferQueue transfer) : CommandPool(device, transfer.id) {}
+		CommandPool(VkDevice device, ComputeQueue compute) : CommandPool(device, compute.id) {}
+
 		CommandPool(CommandPool const&) = delete;
 		CommandPool(CommandPool&&) noexcept = default;
 		~CommandPool();
@@ -23,6 +27,8 @@ namespace Rendering {
 		void DestroyBuffers(std::span<VkCommandBuffer const> buffers);
 
 	private:
+		CommandPool(VkDevice device, uint32_t id);
+
 		MoveOnly<VkDevice> device;
 		VkCommandPool pool = nullptr;
 	};

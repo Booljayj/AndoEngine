@@ -9,9 +9,9 @@ namespace Geometry {
 		Green,
 		Blue,
 	};
+	DEFINE_FLAGS_STRUCT(ColorChannel) {
+		using TFlags::TFlags;
 
-	struct FColorChannel : public TFlags<EColorChannel> {
-		TFLAGS_METHODS(FColorChannel)
 		static const FColorChannel Yellow;
 		static const FColorChannel Magenta;
 		static const FColorChannel Cyan;

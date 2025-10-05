@@ -116,9 +116,9 @@ namespace Reflection {
 	}
 
 	/** flags that describe traits of a particular type */
-	struct FTypeFlags : public TFlags<ETypeFlags> {
-		TFLAGS_METHODS(FTypeFlags);
-
+	DEFINE_FLAGS_STRUCT(TypeFlags) {
+		using TFlags::TFlags;
+		
 		/** Create a standard set of flags based on the type */
 		template<typename Type>
 		constexpr static FTypeFlags Create() {
@@ -306,8 +306,10 @@ namespace Reflection {
 		/** The variable is deprecated. Existing values will be loaded during serialization, but new values will not be saved. Using the variable should produce a warning. */
 		Deprecated,
 	};
-	using FVariableFlags = TFlags<EVariableFlags>;
-
+	DEFINE_FLAGS_STRUCT(VariableFlags) {
+		using TFlags::TFlags;
+	};
+	
 	/** Info that describes a variable value within a struct */
 	struct VariableInfo {
 		TypeInfo const* type = nullptr;

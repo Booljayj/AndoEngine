@@ -37,7 +37,7 @@ namespace Rendering {
 		return entry.module;
 	}
 
-	MeshCreationHelper::MeshCreationHelper(VkDevice device, Queue transfer, VkCommandPool pool)
+	MeshCreationHelper::MeshCreationHelper(VkDevice device, TransferQueue transfer, VkCommandPool pool)
 		: device(device), transfer(transfer), pool(pool), fence(device)
 	{}
 

@@ -1,13 +1,13 @@
 #include "Rendering/Vulkan/Commands.h"
 
 namespace Rendering {
-	CommandPool::CommandPool(VkDevice device, uint32_t queueFamilyIndex)
+	CommandPool::CommandPool(VkDevice device, uint32_t id)
 		: device(device)
 	{
 		VkCommandPoolCreateInfo const poolInfo{
 			.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
 			.flags = 0, // Optional
-			.queueFamilyIndex = queueFamilyIndex,
+			.queueFamilyIndex = id,
 		};
 
 		if (vkCreateCommandPool(device, &poolInfo, nullptr, &pool) != VK_SUCCESS || !pool) {

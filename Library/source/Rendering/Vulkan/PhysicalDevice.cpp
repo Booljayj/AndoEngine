@@ -24,15 +24,15 @@ namespace Rendering {
 			for (uint32_t index = 0; index < numFamilies; ++index) {
 				VkQueueFamilyProperties const& properties = rawFamilies[index];
 
-				families[index].flags = FQueueFlags::Parse(properties.queueFlags);
-				families[index].count = properties.queueCount;
+				families[index].flags = FQueueFlags::Create(properties.queueFlags);
+				families[index].size = properties.queueCount;
 			}
 		}
 	}
 
 	bool PhysicalDeviceDescription::SupportsExtension(char const* extension) const {
 		auto const IsMatchingExtension = [extension](VkExtensionProperties const& props) { return strcmp(props.extensionName, extension) == 0; };
-		return std::any_of(extensions.begin(), extensions.end(), IsMatchingExtension);
+		return ranges::any_of(extensions, IsMatchingExtension);
 	}
 
 	t_vector<QueueFamilyDescription> PhysicalDeviceDescription::GetSurfaceFamilies(VkSurfaceKHR surface) const {

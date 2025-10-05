@@ -173,24 +173,24 @@ namespace YAML {\
 
 /** Helper method to create reflection information for a static variable */
 template<typename ValueType>
-Reflection::VariableInfo const* MakeStatic(ValueType* pointer, Hash32 id, std::u16string_view name, std::u16string_view description, Reflection::FVariableFlags flags = Reflection::FVariableFlags::None()) {
+Reflection::VariableInfo const* MakeStatic(ValueType* pointer, Hash32 id, std::u16string_view name, std::u16string_view description, Reflection::FVariableFlags flags = NoFlags) {
 	return new Reflection::StaticVariableInfo<ValueType>(pointer, id, name, description, flags);
 }
 
 /** Helper method to create reflection information for a non-static member variable */
 template<typename ClassType, typename ValueType>
-Reflection::VariableInfo const* MakeMember(ValueType ClassType::* pointer, Hash32 id, std::u16string_view name, std::u16string_view description, Reflection::FVariableFlags flags = Reflection::FVariableFlags::None()) {
+Reflection::VariableInfo const* MakeMember(ValueType ClassType::* pointer, Hash32 id, std::u16string_view name, std::u16string_view description, Reflection::FVariableFlags flags = NoFlags) {
 	return new Reflection::MemberVariableInfo<ClassType, ValueType>(pointer, id, name, description, flags);
 }
 
 /** Helper method to create reflection information for a non-static member variable nested inside an unnamed struct type */
 template<typename ClassType, typename NestedType, typename ValueType>
-Reflection::VariableInfo const* MakeNestedMember(NestedType ClassType::* container_pointer, ValueType NestedType::* pointer, Hash32 id, std::u16string_view name, std::u16string_view description, Reflection::FVariableFlags flags = Reflection::FVariableFlags::None()) {
+Reflection::VariableInfo const* MakeNestedMember(NestedType ClassType::* container_pointer, ValueType NestedType::* pointer, Hash32 id, std::u16string_view name, std::u16string_view description, Reflection::FVariableFlags flags = NoFlags) {
 	return new Reflection::NestedMemberVariableInfo<ClassType, NestedType, ValueType>(container_pointer, pointer, id, name, description, flags);
 }
 
 /** Helper method to create reflection information for a non-static member variable that is accessed using an indexing operator (i.e. for vector or matrix types) */
 template<typename ClassType, typename ValueType, typename IndexType>
-Reflection::VariableInfo const* MakeIndexed(IndexType index, Hash32 id, std::u16string_view name, std::u16string_view description, Reflection::FVariableFlags flags = Reflection::FVariableFlags::None()) {
+Reflection::VariableInfo const* MakeIndexed(IndexType index, Hash32 id, std::u16string_view name, std::u16string_view description, Reflection::FVariableFlags flags = NoFlags) {
 	return new Reflection::IndexedVariableInfo<ClassType, ValueType, IndexType>(index, id, name, description, flags);
 }

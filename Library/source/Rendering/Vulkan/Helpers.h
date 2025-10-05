@@ -36,7 +36,7 @@ namespace Rendering {
 
 	struct MeshCreationHelper {
 	public:
-		MeshCreationHelper(VkDevice device, Queue transfer, VkCommandPool pool);
+		MeshCreationHelper(VkDevice device, TransferQueue transfer, VkCommandPool pool);
 		MeshCreationHelper(MeshCreationHelper const&) = delete;
 		MeshCreationHelper(MeshCreationHelper&&) = delete;
 		~MeshCreationHelper();
@@ -54,7 +54,7 @@ namespace Rendering {
 
 		VkDevice device = nullptr;
 		VmaAllocator allocator = nullptr;
-		Queue transfer;
+		TransferQueue transfer;
 		VkCommandPool pool = nullptr;
 
 		Fence fence;

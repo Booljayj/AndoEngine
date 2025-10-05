@@ -7,6 +7,7 @@
 #include "Rendering/StaticMesh.h"
 #include "Rendering/Vulkan/Buffers.h"
 #include "Rendering/Vulkan/Handles.h"
+#include "Rendering/Vulkan/QueueSelection.h"
 #include "Rendering/Vulkan/RenderPasses.h"
 #include "Resources/Database.h"
 #include "Resources/Cache.h"
@@ -149,7 +150,7 @@ namespace Rendering {
 			//Create the new device, and set up all the required values
 			selectedPhysicalIndex = index;
 			device.emplace(*framework, physical, features, extensions, requests);
-			queues = shared.ResolveFrom(device->queues);
+			queues = device->queues.Resolve(shared);
 
 			//Get the surface format that will be used when rendering with this device
 			primarySurfaceFormat = [presentation]() -> VkSurfaceFormatKHR {
@@ -163,7 +164,7 @@ namespace Rendering {
 
 			passes.emplace(*device, primarySurfaceFormat.format);
 			uniformLayouts.emplace(*device);
-			transferCommandPool.emplace(*device, queues->transfer.family);
+			transferCommandPool.emplace(*device, queues->transfers[0]);
 
 			//Let the surfaces know about the new rendering objects so they can prepare for rendering
 			for (auto const& surface : surfaces) surface->InitializeRendering(*device, GetPhysicalDevice(), *passes, *uniformLayouts);
@@ -208,13 +209,13 @@ namespace Rendering {
 		} found;
 	
 		//Default mode - we're creating queues that will work for the first surface, and assuming other surfaces should also be able to use those queues
-		t_vector<QueueFamilyDescription> const families = physical.GetSurfaceFamilies(surface);
+		QueueFamilySelectors selectors{ physical.GetSurfaceFamilies(surface) };
 
-		found.surface = SurfaceQueues::References::Find(families);
-		if (!found.surface) throw FormatType<std::runtime_error>("Physical device %s does not contain required queues", physical.properties.deviceName);
+		found.surface = selectors.SelectSurfaceQueues();
+		if (!found.surface) throw FormatType<std::runtime_error>("Physical device %s does not contain required surface queues", physical.properties.deviceName);
 
-		found.shared = SharedQueues::References::Find(families, *found.surface);
-		if (!found.shared) throw FormatType<std::runtime_error>("Physical device %s does not contain required queues", physical.properties.deviceName);
+		found.shared = selectors.SelectSharedQueues(*found.surface);
+		if (!found.shared) throw FormatType<std::runtime_error>("Physical device %s does not contain required shared queues", physical.properties.deviceName);
 		
 		QueueRequests requests;
 		requests << *found.surface;
@@ -224,17 +225,15 @@ namespace Rendering {
 	}
 
 	std::tuple<QueueRequests, SharedQueues::References> RenderingSystem::GetHeadlessQueueRequests(PhysicalDeviceDescription const& physical) {
-		struct {
-			std::optional<SharedQueues::References> shared;
-		} found;
+		QueueFamilySelectors selectors{ physical.families };
 
-		found.shared = SharedQueues::References::FindHeadless(physical.families);
-		if (!found.shared) throw FormatType<std::runtime_error>("Physical device %s does not contain required queues", physical.properties.deviceName);
+		const auto shared = selectors.SelectSharedQueues();
+		if (!shared) throw FormatType<std::runtime_error>("Physical device %s does not contain required queues", physical.properties.deviceName);
 
 		QueueRequests requests;
-		requests << *found.shared;
+		requests << *shared;
 
-		return std::make_tuple(requests, *found.shared);
+		return std::make_tuple(requests, *shared);
 	}
 
 	void RenderingSystem::OnDestroyingWindow(HAL::Window::IdType id) {
@@ -286,7 +285,7 @@ namespace Rendering {
 	}
 
 	void RenderingSystem::RefreshStaticMeshes() {
-		MeshCreationHelper helper{ *device, queues->transfer, *transferCommandPool};
+		MeshCreationHelper helper{ *device, queues->transfers[0], *transferCommandPool };
 
 		for (const Resources::Handle<StaticMesh>& mesh : dirtyStaticMeshes) {
 			//Existing resources become stale

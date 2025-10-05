@@ -127,7 +127,7 @@ namespace Rendering {
 		std::vector<std::unique_ptr<Surface>> surfaces;
 
 		/** Create the pipeline resources for a material */
-		std::shared_ptr<GraphicsPipelineResources> CreateGraphicsPipeline(Material const& material, PipelineCreationHelper & helper);
+		std::shared_ptr<GraphicsPipelineResources> CreateGraphicsPipeline(Material const& material, PipelineCreationHelper& helper);
 		/** Create the mesh resources for a mesh component */
 		std::shared_ptr<MeshResources> CreateMesh(StaticMesh const& mesh, VkCommandPool pool, MeshCreationHelper& helper);
 

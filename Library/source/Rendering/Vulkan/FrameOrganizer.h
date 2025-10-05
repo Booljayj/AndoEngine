@@ -64,13 +64,13 @@ namespace Rendering {
 
 		RenderObjectsHandleCollection objects;
 
-		FrameResources(VkDevice device, QueueReference graphics, UniformLayouts const& uniformLayouts, VkDescriptorPool descriptorPool, VmaAllocator allocator);
+		FrameResources(VkDevice device, GraphicsQueue graphics, UniformLayouts const& uniformLayouts, VkDescriptorPool descriptorPool, VmaAllocator allocator);
 		FrameResources(FrameResources const&) = delete;
 		FrameResources(FrameResources&&) noexcept = default;
 
 		friend RenderObjectsHandleCollection& operator<<(RenderObjectsHandleCollection& collection, FrameResources& frame);
 
-		void Prepare(VkDevice device, size_t numObjects, size_t numThreads, QueueReference graphics);
+		void Prepare(VkDevice device, size_t numObjects, size_t numThreads, GraphicsQueue graphics);
 	};
 
 	struct RecordingContext {

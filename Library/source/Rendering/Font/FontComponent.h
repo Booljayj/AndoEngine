@@ -82,7 +82,7 @@ struct FontFamilyComponent {
 		Bold,
 		Light,
 	};
-	using FFontStyle = TFlags<EFontStyle>;
+	struct FFontStyle : TFlags<EFontStyle, FFontStyle> {};
 
 	enum class EHanGlyphType : uint8_t {
 		SimplifiedChinese = 0,

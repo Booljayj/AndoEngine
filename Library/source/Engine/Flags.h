@@ -9,6 +9,14 @@
 /** Set the bitflag to false in the mask */
 #define CLEAR_BIT(Mask, Flag) ((size_t)(Mask) &= (size_t)(~(Flag)))
 
+struct NoFlagsInitializer {};
+/**
+ * Constant that can be used to initialize a set of flags that contains no flags.
+ * This is the same as default-initializing the flags, but can be shorter in some cases. Similar to std::nullopt.
+ */
+constexpr NoFlagsInitializer NoFlags;
+
+/** CRTP class that injects methods to make DerivedType behave as a set of flags based on the enum type */
 template<Concepts::Enumeration InEnumType>
 struct TFlags {
 public:
@@ -19,47 +27,47 @@ public:
 	constexpr inline TFlags(TFlags const& other) noexcept = default;
 	constexpr inline TFlags(TFlags&& other) noexcept = default;
 
+	constexpr inline TFlags(NoFlagsInitializer) : TFlags() {}
 	constexpr inline TFlags(UnderlyingType flags) : flags(flags) {}
 	constexpr inline TFlags(EnumType flag) : flags(1 << static_cast<UnderlyingType>(flag)) {}
-	constexpr inline TFlags(std::initializer_list<EnumType> inFlags) {
-		for (EnumType flag : inFlags) flags |= (1 << (UnderlyingType)flag);
+	constexpr inline TFlags(std::initializer_list<EnumType> flags_list) {
+		for (EnumType flag : flags_list) flags |= (1 << static_cast<UnderlyingType>(flag));
 	}
 
-	template<typename... FlagTypes>
-		requires std::conjunction_v<std::is_same<FlagTypes, EnumType>...>
-	static constexpr inline TFlags Make(FlagTypes... flags) {
-		return TFlags{ static_cast<UnderlyingType>((... | (1 << static_cast<UnderlyingType>(flags)))) };
-	}
-
-	static constexpr inline TFlags None() { return TFlags{}; }
-	
 	constexpr inline TFlags& operator=(TFlags const& other) noexcept = default;
-	constexpr inline TFlags& operator=(TFlags&& other) noexcept = default;
 
 	constexpr inline bool operator==(TFlags other) const noexcept { return flags == other.flags; }
 	constexpr inline bool operator!=(TFlags other) const noexcept { return flags != other.flags; }
-
+	 
 	/** Get the underlying integer value for this set of flags */
-	constexpr inline UnderlyingType operator+() noexcept { return flags; }
+	constexpr inline UnderlyingType operator+() const noexcept { return flags; }
 
 	/** Add a value to the set of flags */
-	constexpr inline TFlags operator+(EnumType flag) const { return flags | (1 << (UnderlyingType)flag); }
-	constexpr inline TFlags& operator+=(EnumType flag) { *this = *this + flag; return *this; }
+	template<typename Derived>
+	constexpr inline Derived operator+(this Derived const& self, EnumType flag) { return self.flags | (1 << (UnderlyingType)flag); }
+	template<typename Derived>
+	constexpr inline Derived& operator+=(this Derived& self, EnumType flag) { self = self + flag; return self; }
 	/** Remove a value from the set of flags */
-	constexpr inline TFlags operator-(EnumType flag) const { return flags & ~(1 << (UnderlyingType)flag); }
-	constexpr inline TFlags& operator-=(EnumType flag) { *this = *this - flag; return *this; }
+	template<typename Derived>
+	constexpr inline Derived operator-(this Derived const& self, EnumType flag) { return self.flags & ~(1 << (UnderlyingType)flag); }
+	template<typename Derived>
+	constexpr inline Derived& operator-=(this Derived& self, EnumType flag) { self = self - flag; return self; }
 
 	/** True if this set of flags contains no values */
 	constexpr inline bool IsEmpty() const noexcept { return !!flags; }
 
 	/** Returns the set of flags in this or the other */
-	constexpr inline TFlags Union(TFlags other) const noexcept { return flags | other.flags; }
+	template<typename Derived>
+	constexpr inline Derived Union(this Derived const& self, TFlags other) noexcept { return self.flags | other.flags; }
 	/** Returns the set of flags in this but without the flags in other */
-	constexpr inline TFlags Subtraction(TFlags other) const noexcept { return flags & ~other.flags; }
+	template<typename Derived>
+	constexpr inline Derived Subtraction(this Derived const& self, TFlags other) noexcept { return self.flags & ~other.flags; }
 	/** Returns the set of flags in both this and other */
-	constexpr inline TFlags Intersection(TFlags other) const noexcept { return flags & other.flags; }
+	template<typename Derived>
+	constexpr inline Derived Intersection(this Derived const& self, TFlags other) noexcept { return self.flags & other.flags; }
 	/** Returns the set of flags that are different in this and other */
-	constexpr inline TFlags Difference(TFlags other) const noexcept { return flags ^ other.flags; }
+	template<typename Derived>
+	constexpr inline Derived Difference(this Derived const& self, TFlags other) noexcept { return self.flags ^ other.flags; }
 
 	/** True if this set of flags contains the value */
 	constexpr inline bool Has(EnumType flag) const noexcept { return (flags & (1 << (UnderlyingType)flag)) != 0; }
@@ -70,15 +78,16 @@ public:
 
 	/** True if this set of flags contains all of the values */
 	template<typename... FlagTypes>
-	constexpr inline bool HasAll(EnumType flag, FlagTypes... other) const { return HasAll(Make(flag, other...)); }
+	constexpr inline bool HasAll(EnumType flag, FlagTypes... other) const { return HasAll(TFlags{ flag, other... }); }
 	/** True if this set of flags contains any of the values */
 	template<typename... FlagTypes>
-	constexpr inline bool HasAny(EnumType flag, FlagTypes... other) const { return HasAny(Make(flag, other...)); }
+	constexpr inline bool HasAny(EnumType flag, FlagTypes... other) const { return HasAny(TFlags{ flag, other... }); }
 
 protected:
 	UnderlyingType flags = 0;
 };
 
+#define DEFINE_FLAGS_STRUCT(TypeName) struct F ## TypeName : TFlags<E ## TypeName>
 
 template<Concepts::Enumeration InEnumType>
 struct TAtomicFlags {
@@ -160,7 +169,8 @@ protected:
 	std::atomic<UnderlyingType> flags = 0;
 };
 
+#define DEFINE_ATOMIC_FLAGS_STRUCT(TypeName) struct F ## TypeName : TAtomicFlags<E ## TypeName, F ## TypeName>
+
 #define TFLAGS_METHODS(DerivedType)\
-	using TFlags<EnumType>::TFlags;\
-	DerivedType(TFlags<EnumType> const& other) : TFlags<EnumType>(other) {}\
-	operator TFlags<EnumType>() const { return TFlags<EnumType>{ flags }; }
+	using TFlags<EnumType, DerivedType>::TFlags;\
+
