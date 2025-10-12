@@ -2,7 +2,6 @@
 #include "Engine/Logging.h"
 #include "Engine/TemporaryStrings.h"
 #include "Engine/Utility.h"
-#include "Rendering/Vulkan/Handles.h"
 
 namespace Rendering {
 	Framebuffer::Framebuffer(VkDevice device, VkImageView view, VkFramebuffer framebuffer)
@@ -47,10 +46,13 @@ namespace Rendering {
 				},
 			};
 
-			auto imageViewHandle = ImageView::Create(device, viewCI, "Failed to create framebuffer image view");
+			VkImageView color_attachment_view = nullptr;
+			if (vkCreateImageView(device, &viewCI, nullptr, &color_attachment_view) != VK_SUCCESS || !color_attachment_view) {
+				throw FormatType<std::runtime_error>("Failed to create framebuffer image view");
+			}
 			
 			EnumArray<VkImageView, EAttachments> attachmentImageViews;
-			attachmentImageViews[EAttachments::Color] = imageViewHandle;
+			attachmentImageViews[EAttachments::Color] = color_attachment_view;
 			//attachmentImageViews[EAttachments::Depth] = sharedImageViews[ESharedAttachments::Depth];
 
 			glm::u32vec2 const extent = swapchain.GetExtent();
@@ -69,7 +71,7 @@ namespace Rendering {
 				throw FormatType<std::runtime_error>("Failed to create framebuffer");
 			}
 
-			framebuffers.emplace_back(device, imageViewHandle.Release(), framebuffer);
+			framebuffers.emplace_back(device, color_attachment_view, framebuffer);
 		}
 	}
 

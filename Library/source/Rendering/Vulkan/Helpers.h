@@ -2,6 +2,7 @@
 #include "Engine/Array.h"
 #include "Engine/Hash.h"
 #include "Engine/StringID.h"
+#include "Rendering/Vulkan/Commands.h"
 #include "Rendering/Vulkan/Fence.h"
 #include "Rendering/Vulkan/Queues.h"
 #include "Rendering/Vulkan/Resources.h"
@@ -36,10 +37,12 @@ namespace Rendering {
 
 	struct MeshCreationHelper {
 	public:
-		MeshCreationHelper(VkDevice device, TransferQueue transfer, VkCommandPool pool);
+		MeshCreationHelper(VkDevice device, TransferQueue transfer, CommandPool& pool);
 		MeshCreationHelper(MeshCreationHelper const&) = delete;
 		MeshCreationHelper(MeshCreationHelper&&) = delete;
 		~MeshCreationHelper();
+
+		VkCommandBuffer CreateBuffer();
 
 		void Submit(VkCommandBuffer commands, MappedBuffer&& staging);
 		void Flush();
@@ -55,7 +58,7 @@ namespace Rendering {
 		VkDevice device = nullptr;
 		VmaAllocator allocator = nullptr;
 		TransferQueue transfer;
-		VkCommandPool pool = nullptr;
+		CommandPool& pool;
 
 		Fence fence;
 		

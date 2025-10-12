@@ -5,6 +5,7 @@
 #include "HAL/WindowingSystem.h"
 #include "Rendering/Vulkan/FrameOrganizer.h"
 #include "Rendering/Vulkan/RenderPasses.h"
+#include "Rendering/Vulkan/ResourcesCollection.h"
 #include "Rendering/Vulkan/Swapchain.h"
 #include "Rendering/Vulkan/Vulkan.h"
 #include "ThirdParty/EnTT.h"
@@ -22,8 +23,6 @@ namespace Rendering {
 		Surface(Surface const&) = delete;
 		Surface(Surface&&) = delete;
 		~Surface();
-
-		friend RenderObjectsHandleCollection& operator<<(RenderObjectsHandleCollection& collection, Surface& surface);
 
 		operator VkSurfaceKHR() const { return surface; }
 		inline bool operator==(HAL::Window::IdType otherID) const { return GetID() == otherID; }
@@ -45,7 +44,7 @@ namespace Rendering {
 		bool RecreateSwapchain(Device const& device, PhysicalDeviceDescription const& physical, RenderPasses const& passes, UniformLayouts const& layouts);
 		
 		/** Render the renderable entities from the registry to this surface */
-		bool Render(RenderPasses const& passes, entt::registry& registry);
+		bool Render(RenderPasses const& passes, entt::registry& registry, ResourcesCollection& previous_resources);
 
 	private:
 		friend RenderingSystem;

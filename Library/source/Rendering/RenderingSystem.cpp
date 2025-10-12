@@ -6,7 +6,6 @@
 #include "Rendering/Shader.h"
 #include "Rendering/StaticMesh.h"
 #include "Rendering/Vulkan/Buffers.h"
-#include "Rendering/Vulkan/Handles.h"
 #include "Rendering/Vulkan/QueueSelection.h"
 #include "Rendering/Vulkan/RenderPasses.h"
 #include "Resources/Database.h"
@@ -57,9 +56,9 @@ namespace Rendering {
 			auto const staticMeshes = database.FindOrCreateCache<StaticMesh>();
 			staticMeshes->RemoveObserver(*this);
 			staticMeshes->ForEachResource([](StaticMesh& mesh) { mesh.objects.reset(); return true; });
-			//Destroy stale objects
-			staleGraphicsPipelineResources.clear();
-			staleMeshResources.clear();
+			//Finish any cleanup process and destroy any stale resources that haven't been cleaned up yet.
+			cleanup_thread.reset();
+			stale_collection.clear();
 			//Destroy objects owned by the system
 			transferCommandPool.reset();
 			uniformLayouts.reset();
@@ -74,26 +73,8 @@ namespace Rendering {
 	}
 
 	bool RenderingSystem::Render(entt::registry& registry) {
-		//Collect unused resources and destroy them on a parallel thread
-		//Collect resource handles used since the last frame, and destroy them now that
-		std::jthread const cleanup = [this]() {
-			RenderObjectsHandleCollection collection;
-			for (auto& surface : surfaces) collection << *surface;
-			collection << std::move(staleGraphicsPipelineResources);
-			collection << std::move(staleMeshResources);
-
-			if (collection.size() > 0) {
-				return std::jthread{
-					[](std::stop_token, RenderObjectsHandleCollection collection) {
-						ThreadBuffer buffer{ 20'000 };
-						collection.clear();
-					},
-					std::move(collection)
-				};
-			} else {
-				return std::jthread{};
-			}
-		}();
+		//If we're still destroying resources that were used on the previous frame, wait for that to finish now.
+		cleanup_thread.reset();
 
 		//Recreate swapchains if necessary. This happens periodically if the rendering parameters have changed significantly.
 		for (auto const& surface : surfaces) {
@@ -104,12 +85,26 @@ namespace Rendering {
 			}
 		}
 
-		//Rebuild any resources, creating new ones and destroying stale ones
+		//Rebuild any resources, creating new ones and marking dirty ones as stale.
 		RebuildResources();
 
+		//Perform the render on every surface.
 		bool success = true;
 		for (auto const& surface : surfaces) {
-			success &= surface->Render(*passes, registry);
+			success &= surface->Render(*passes, registry, stale_collection);
+		}
+
+		if (!stale_collection.empty()) {
+			//Create a worker thread that will attempt to destroy unused resources in parallel with the new rendering process.
+			std::swap(stale_collection, cleaning_collection);
+
+			cleanup_thread = std::make_unique<std::jthread>(
+				[](std::stop_token, ResourcesCollection* collection) {
+					ThreadBuffer buffer{ 20'000 };
+					collection->clear();
+				},
+				&cleaning_collection
+			);
 		}
 
 		return success;
@@ -278,7 +273,7 @@ namespace Rendering {
 
 		for (Resources::Handle<Material> const& material : dirtyMaterials) {
 			//Existing resources become stale
-			if (material->objects) staleGraphicsPipelineResources.emplace_back(std::move(material->objects));
+			if (material->objects) stale_collection << material->objects;
 			//Create new resources
 			material->objects = CreateGraphicsPipeline(*material, helper);
 		}
@@ -292,7 +287,7 @@ namespace Rendering {
 
 	void RenderingSystem::MarkMaterialStale(Resources::Handle<Material> const& material) {
 		//Steal the resources from the material so we can destroy them later when they're no longer being used
-		staleGraphicsPipelineResources.emplace_back(std::move(material->objects));
+		stale_collection << material->objects;
 	}
 
 	void RenderingSystem::RefreshStaticMeshes() {
@@ -300,7 +295,7 @@ namespace Rendering {
 
 		for (const Resources::Handle<StaticMesh>& mesh : dirtyStaticMeshes) {
 			//Existing resources become stale
-			if (mesh->objects) staleMeshResources.emplace_back(std::move(mesh->objects));
+			if (mesh->objects) stale_collection << mesh->objects;
 			//Create new resources
 			mesh->objects = CreateMesh(*mesh, *transferCommandPool, helper);
 		}
@@ -315,7 +310,7 @@ namespace Rendering {
 
 	void RenderingSystem::MarkStaticMeshStale(Resources::Handle<StaticMesh> const& mesh) {
 		//Keep track of the dirty resources so we can destroy them during the next render
-		staleMeshResources.emplace_back(std::move(mesh->objects));
+		stale_collection << mesh->objects;
 	}
 
 	std::shared_ptr<GraphicsPipelineResources> RenderingSystem::CreateGraphicsPipeline(Material const& material, PipelineCreationHelper& helper) {
@@ -332,7 +327,7 @@ namespace Rendering {
 		return std::make_shared<GraphicsPipelineResources>(*device, modules, *uniformLayouts, vertex, passes->surface);
 	}
 
-	std::shared_ptr<MeshResources> RenderingSystem::CreateMesh(StaticMesh const& mesh, VkCommandPool pool, MeshCreationHelper& helper) {
+	std::shared_ptr<MeshResources> RenderingSystem::CreateMesh(StaticMesh const& mesh, CommandPool& pool, MeshCreationHelper& helper) {
 		//Calculate byte size values for the input mesh
 		const auto BufferSizeVisitor = [](auto const& v) { return v.size() * sizeof(typename std::remove_reference_t<decltype(v)>::value_type); };
 		size_t const vertexBytes = std::visit(BufferSizeVisitor, mesh.vertices);
@@ -352,18 +347,9 @@ namespace Rendering {
 		//Create the final resources that will be used for this mesh
 		std::shared_ptr<MeshResources> const resources = std::make_shared<MeshResources>(*device, totalBytes);
 
-		//Allocate a command buffer for the transfer from the staging to the target buffer
-		VkCommandBufferAllocateInfo const bufferAI{
-			.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-			.commandPool = pool,
-			.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-			.commandBufferCount = 1,
-		};
-
-		auto commandHandles = CommandBuffers::Create<1>(device->operator VkDevice(), pool, bufferAI, "Failed to allocate command buffer for staging commands");
-		
+		const VkCommandBuffer commands = helper.CreateBuffer();
 		{
-			ScopedCommands const scope{ commandHandles[0], VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, nullptr };
+			ScopedCommands const scope{ commands, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, nullptr };
 
 			//Record the command to transfer from the staging buffer to the target buffer
 			VkBufferCopy const copy{
@@ -371,11 +357,11 @@ namespace Rendering {
 				.dstOffset = 0, // Optional
 				.size = totalBytes,
 			};
-			vkCmdCopyBuffer(commandHandles[0], staging, resources->buffer, 1, &copy);
+			vkCmdCopyBuffer(commands, staging, resources->buffer, 1, &copy);
 		}
 
-		//Submit the buffer and commands. We've successfully created everything
-		helper.Submit(commandHandles.Release()[0], std::move(staging));
+		//Submit the buffer and commands. We've successfully created everything.
+		helper.Submit(commands, std::move(staging));
 
 		//Record the size and offset information. This is the primary way we'll know that the resources are valid
 		const auto CountVisitor = [](const auto& v) { return static_cast<uint32_t>(v.size()); };

@@ -37,13 +37,17 @@ namespace Rendering {
 		return entry.module;
 	}
 
-	MeshCreationHelper::MeshCreationHelper(VkDevice device, TransferQueue transfer, VkCommandPool pool)
+	MeshCreationHelper::MeshCreationHelper(VkDevice device, TransferQueue transfer, CommandPool& pool)
 		: device(device), transfer(transfer), pool(pool), fence(device)
 	{}
 
 	MeshCreationHelper::~MeshCreationHelper() {
 		if (pendingCommands.size() > 0) Flush();
 		FinishSubmit();
+	}
+
+	VkCommandBuffer MeshCreationHelper::CreateBuffer() {
+		return pool.CreateBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 	}
 
 	void MeshCreationHelper::Submit(VkCommandBuffer commands, MappedBuffer&& staging) {
@@ -81,7 +85,7 @@ namespace Rendering {
 		
 		//Clean up the temporary resources from the previous flush
 		if (submittedCommands.size() > 0) {
-			vkFreeCommandBuffers(device, pool, static_cast<uint32_t>(submittedCommands.size()), submittedCommands.data());
+			pool.DestroyBuffers(submittedCommands);
 			submittedCommands.clear();
 			submittedStagingBuffers.clear();
 		}

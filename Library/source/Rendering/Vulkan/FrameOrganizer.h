@@ -10,7 +10,7 @@
 #include "Rendering/Vulkan/Device.h"
 #include "Rendering/Vulkan/Fence.h"
 #include "Rendering/Vulkan/PhysicalDevice.h"
-#include "Rendering/Vulkan/RenderObjects.h"
+#include "Rendering/Vulkan/ResourcesCollection.h"
 #include "Rendering/Vulkan/Semaphore.h"
 #include "Rendering/Vulkan/Swapchain.h"
 #include "Rendering/Vulkan/UniformLayouts.h"
@@ -62,15 +62,13 @@ namespace Rendering {
 
 		FrameSynchronization sync;
 
-		std::vector<RenderObjectsHandleCollection> threadObjects;
+		std::vector<ResourcesCollection> threadResources;
 
 		FrameResources(VkDevice device, GraphicsQueue graphics, UniformLayouts const& uniformLayouts, VkDescriptorPool descriptorPool, VmaAllocator allocator);
 		FrameResources(FrameResources const&) = delete;
 		FrameResources(FrameResources&&) noexcept = default;
 
-		friend RenderObjectsHandleCollection& operator<<(RenderObjectsHandleCollection& collection, FrameResources& frame);
-
-		void Prepare(VkDevice device, size_t numObjects, size_t numThreads, GraphicsQueue graphics);
+		void Prepare(VkDevice device, size_t numObjects, size_t numThreads, GraphicsQueue graphics, ResourcesCollection& previous_resources);
 	};
 
 	struct RecordingContext {
@@ -86,7 +84,7 @@ namespace Rendering {
 		std::span<VkCommandBuffer> secondaryCommandBuffers;
 
 		/** Containers to collect resource handles that are being used by the recorded commands */
-		std::span<RenderObjectsHandleCollection> threadObjects;
+		std::span<ResourcesCollection> threadResources;
 	};
 
 	/** Keeps track of the resources used each frame, and how they should be used to render a number of viewports. */
@@ -95,13 +93,11 @@ namespace Rendering {
 		FrameOrganizer(FrameOrganizer const&) = delete;
 		FrameOrganizer(FrameOrganizer&&) noexcept = default;
 
-		friend RenderObjectsHandleCollection& operator<<(RenderObjectsHandleCollection& collection, FrameOrganizer& organizer);
-
 		/**
 		 * Create a recording context for the current frame using an unused set of resources.
 		 * Returngs nothing if all resources are in use and we should skip recording this frame.
 		 */
-		std::optional<RecordingContext> CreateRecordingContext(size_t numObjects, size_t numThreads);
+		std::optional<RecordingContext> CreateRecordingContext(size_t numObjects, size_t numThreads, ResourcesCollection& previous_resources);
 
 		/** Submit everything currently recorded so that it can be rendered. */
 		void Submit(std::span<VkCommandBuffer const> commands);
@@ -122,6 +118,7 @@ namespace Rendering {
 		/** Semaphores used to determine when the queue is finished using each swapchain image */
 		std::vector<Semaphore> imageSubmittedSemaphores;
 
+		uint32_t prevousFrameIndex = std::numeric_limits<uint32_t>::max();
 		uint32_t currentFrameIndex = 0;
 		uint32_t currentImageIndex = -1;
 

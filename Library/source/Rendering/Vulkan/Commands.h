@@ -44,6 +44,8 @@ namespace Rendering {
 		VkCommandBuffer buffer;
 	};
 
+	//=================== EXPERIMENTAL
+
 	struct GraphicsCommandBuffer {
 		explicit operator VkCommandBuffer() const { return buffer; }
 
@@ -56,8 +58,6 @@ namespace Rendering {
 		GraphicsCommandWriter(ScopedCommands const&) = delete;
 		GraphicsCommandWriter(ScopedCommands&&) = delete;
 		~GraphicsCommandWriter();
-
-
 
 	private:
 		VkCommandBuffer buffer;

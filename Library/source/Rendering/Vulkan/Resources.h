@@ -1,8 +1,8 @@
 #pragma once
 #include "Engine/Core.h"
 #include "Engine/MoveOnly.h"
+#include "Engine/SmartPointers.h"
 #include "Rendering/Vulkan/Buffers.h"
-#include "Rendering/Vulkan/RenderObjects.h"
 #include "Rendering/Vulkan/Vulkan.h"
 
 namespace Rendering {
@@ -20,7 +20,7 @@ namespace Rendering {
 		std::span<VkVertexInputAttributeDescription const> attributes;
 	};
 
-	struct GraphicsPipelineResources : public RenderObjectsBase {
+	struct GraphicsPipelineResources {
 		struct ShaderModules {
 			VkShaderModule vertex = nullptr;
 			VkShaderModule fragment = nullptr;
@@ -43,7 +43,7 @@ namespace Rendering {
 	};
 
 	/** Stores resources related to a mesh */
-	struct MeshResources : public RenderObjectsBase {
+	struct MeshResources {
 		Buffer buffer;
 
 		struct {

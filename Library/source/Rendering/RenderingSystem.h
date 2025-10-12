@@ -13,6 +13,7 @@
 #include "Rendering/Vulkan/PhysicalDevice.h"
 #include "Rendering/Vulkan/RenderPasses.h"
 #include "Rendering/Vulkan/Resources.h"
+#include "Rendering/Vulkan/ResourcesCollection.h"
 #include "Rendering/Vulkan/UniformLayouts.h"
 #include "Rendering/Vulkan/Vulkan.h"
 #include "Resources/Cache.h"
@@ -84,6 +85,16 @@ namespace Rendering {
 		void DestroySurface(HAL::Window::IdType id);
 
 	protected:
+		/** Dirty resources that need to be rebuilt */
+		std::vector<Resources::Handle<Material>> dirtyMaterials;
+		std::vector<Resources::Handle<StaticMesh>> dirtyStaticMeshes;
+		/** Resources that are pending destruction */
+		ResourcesCollection stale_collection;
+		/** Resources that are currently being cleaned up by the worker thread. This must not be accessed without destroying the cleanup thread first. */
+		ResourcesCollection cleaning_collection;
+		/** The thread that is cleaning up unused resources from the previous frame in parallel with any new work that is happening on a new frame. */
+		std::unique_ptr<std::jthread> cleanup_thread;
+
 		/** Determine which queues to request from the physical device. Queues needed for surface rendering will be avoided if possible. */
 		static std::tuple<QueueRequests, SharedQueues::References> GetQueueRequests(PhysicalDeviceDescription const& physical, VkSurfaceKHR surface);
 		/** Determine which queues to request from the physical device. Used in headless mode when surface rendering is not available. */
@@ -99,14 +110,6 @@ namespace Rendering {
 		/** Callbacks for when static meshes are created or destroyed */
 		void OnCreated(Resources::Handle<StaticMesh> const& mesh) final;
 		void OnDestroyed(Resources::Handle<StaticMesh> const& mesh) final;
-
-		/** Dirty resources that need to be rebuilt */
-		std::vector<Resources::Handle<Material>> dirtyMaterials;
-		std::vector<Resources::Handle<StaticMesh>> dirtyStaticMeshes;
-
-		/** Resources that are pending destruction */
-		std::vector<std::shared_ptr<GraphicsPipelineResources>> staleGraphicsPipelineResources;
-		std::vector<std::shared_ptr<MeshResources>> staleMeshResources;
 
 		/** Refresh dirty materials so they are no longer dirty */
 		void RefreshMaterials();
@@ -129,7 +132,7 @@ namespace Rendering {
 		/** Create the pipeline resources for a material */
 		std::shared_ptr<GraphicsPipelineResources> CreateGraphicsPipeline(Material const& material, PipelineCreationHelper& helper);
 		/** Create the mesh resources for a mesh component */
-		std::shared_ptr<MeshResources> CreateMesh(StaticMesh const& mesh, VkCommandPool pool, MeshCreationHelper& helper);
+		std::shared_ptr<MeshResources> CreateMesh(StaticMesh const& mesh, CommandPool& pool, MeshCreationHelper& helper);
 
 		//InitImGUI(VulkanLogicalDevice& logical, VulkanPhysicalDevice& physical, Surface& surface);
 	};

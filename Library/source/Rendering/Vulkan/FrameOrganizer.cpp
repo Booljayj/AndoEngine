@@ -21,10 +21,9 @@ namespace Rendering {
 		, sync(device)
 	{}
 
-	void FrameResources::Prepare(VkDevice device, size_t numObjects, size_t numThreads, GraphicsQueue graphics) {
+	void FrameResources::Prepare(VkDevice device, size_t numObjects, size_t numThreads, GraphicsQueue graphics, ResourcesCollection& previous_resources) {
 		//Assuming objects are evenly distributed across threads, this is the max number of objects that can be processed by each thread.
 		const size_t max_objects_per_thread = (numObjects / numThreads) + 1;
-		const size_t approximate_resources_per_object = 2;
 
 		//Resize the object uniforms buffer so we can store all the per-object data that will be used for rendering, usually two sets of resources.
 		uniforms.object.Reserve(numObjects);
@@ -34,9 +33,9 @@ namespace Rendering {
 		for (CommandPool& threadCommandPool : threadCommandPools) {
 			threadCommandPool.Reset();
 		}
-		for (auto& objects : threadObjects) {
-			objects.clear();
-			objects.reserve(max_objects_per_thread * approximate_resources_per_object);
+		for (auto& resources : threadResources) {
+			previous_resources << resources;
+			resources.reserve(max_objects_per_thread);
 		}
 
 		//Grow the number of per-thread resources to match the number of threads
@@ -44,7 +43,7 @@ namespace Rendering {
 			CommandPool& newPool = threadCommandPools.emplace_back(device, graphics);
 			threadCommandBuffers.emplace_back(newPool.CreateBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY));
 
-			threadObjects.emplace_back().reserve(max_objects_per_thread * approximate_resources_per_object);
+			threadResources.emplace_back().reserve(max_objects_per_thread);
 		}
 	}
 
@@ -71,7 +70,7 @@ namespace Rendering {
 		}
 	}
 
-	std::optional<RecordingContext> FrameOrganizer::CreateRecordingContext(size_t numObjects, size_t numThreads) {
+	std::optional<RecordingContext> FrameOrganizer::CreateRecordingContext(size_t numObjects, size_t numThreads, ResourcesCollection& previous_resources) {
 		//The timeout duration in nanoseconds to wait for the frame resources to finish the previous render.
 		//If the previous render takes longer than this, then this render call has failed.
 		constexpr auto timeout = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::seconds(5));
@@ -84,7 +83,7 @@ namespace Rendering {
 			return std::optional<RecordingContext>{};
 		}
 
-		frame.Prepare(device, numObjects, numThreads, queues.graphics);
+		frame.Prepare(device, numObjects, numThreads, queues.graphics, previous_resources);
 
 		//Acquire the swapchain image that can be used for this frame
 		currentImageIndex = 0;
@@ -104,10 +103,11 @@ namespace Rendering {
 				return std::optional<RecordingContext>{};
 			}
 		}
-		//This frame will now be assocaited with a new image, so stop tracking this frame's fence with any other image
+
+		//This frame will now be associated with a new image, so stop tracking this frame's fence with any other image
 		ranges::replace(imageFences, (VkFence)frame.sync.fence, VkFence{ VK_NULL_HANDLE });
 
-		return RecordingContext{ currentFrameIndex, currentImageIndex, frame.uniforms, frame.mainCommandBuffer, frame.threadCommandBuffers, frame.threadObjects };
+		return RecordingContext{ currentFrameIndex, currentImageIndex, frame.uniforms, frame.mainCommandBuffer, frame.threadCommandBuffers, frame.threadResources };
 	}
 
 	void FrameOrganizer::Submit(std::span<VkCommandBuffer const> commands) {
@@ -175,17 +175,5 @@ namespace Rendering {
 			VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, numFrames },
 			VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, numFrames * 16 },
 		};
-	}
-
-	RenderObjectsHandleCollection& operator<<(RenderObjectsHandleCollection& collection, FrameResources& frame) {
-		for (auto& objects : frame.threadObjects) {
-			collection << std::move(objects);
-		}
-		return collection;
-	}
-
-	RenderObjectsHandleCollection& operator<<(RenderObjectsHandleCollection& collection, FrameOrganizer& organizer) {
-		for (auto& frame : organizer.frames) collection << frame;
-		return collection;
 	}
 }

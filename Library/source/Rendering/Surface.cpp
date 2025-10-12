@@ -81,7 +81,7 @@ namespace Rendering {
 		return true;
 	}
 
-	bool Surface::Render(RenderPasses const& passes, entt::registry& registry) {
+	bool Surface::Render(RenderPasses const& passes, entt::registry& registry, ResourcesCollection& previous_resources) {
 		//@todo This would ideally be done with some acceleration structure that contains a mapping between the pipelines and all of
 		//      the geometry that should be drawn with that pipeline, to avoid binding the same pipeline more than once and to strip
 		//      out culled geometry.
@@ -89,7 +89,7 @@ namespace Rendering {
 		auto const renderables = registry.view<MeshRenderer const>();
 
 		constexpr size_t numThreads = 1;
-		auto const context = organizer->CreateRecordingContext(renderables.size(), numThreads);
+		auto const context = organizer->CreateRecordingContext(renderables.size(), numThreads, previous_resources);
 		if (context) {
 			{
 				FrameUniforms& uniforms = context->uniforms;
@@ -138,8 +138,8 @@ namespace Rendering {
 						StaticMesh const* mesh = renderer.mesh.get();
 
 						if (material && material->objects && mesh && mesh->objects) {
-							context->threadObjects[thread_index].push_back(material->objects);
-							context->threadObjects[thread_index].push_back(mesh->objects);
+							context->threadResources[thread_index] += material->objects;
+							context->threadResources[thread_index] += mesh->objects;
 
 							enum class EDynamicOffsets : uint8_t {
 								Object,
@@ -226,10 +226,5 @@ namespace Rendering {
 			}
 			return true;
 		}
-	}
-
-	RenderObjectsHandleCollection& operator<<(RenderObjectsHandleCollection& collection, Surface& surface) {
-		if (surface.organizer) collection << *surface.organizer;
-		return collection;
 	}
 }
