@@ -80,7 +80,7 @@ namespace Rendering {
 	SurfaceRenderPass::ScopedRecord::ScopedRecord(VkCommandBuffer commands, SurfaceRenderPass const& surface, Framebuffer const& framebuffer, Geometry::ScreenRect const& rect)
 	: cachedCommands(commands)
 	{
-		VkRenderPassBeginInfo const renderPassBI{
+		VkRenderPassBeginInfo const info{
 			.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
 			.renderPass = surface,
 			.framebuffer = framebuffer,
@@ -91,7 +91,7 @@ namespace Rendering {
 			.clearValueCount = surface.clearValues.size(),
 			.pClearValues = surface.clearValues.data(),
 		};
-		vkCmdBeginRenderPass(commands, &renderPassBI, VK_SUBPASS_CONTENTS_INLINE);
+		vkCmdBeginRenderPass(commands, &info, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 	}
 
 	SurfaceRenderPass::ScopedRecord::~ScopedRecord() {

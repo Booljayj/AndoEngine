@@ -62,7 +62,7 @@ namespace Rendering {
 
 		FrameSynchronization sync;
 
-		RenderObjectsHandleCollection objects;
+		std::vector<RenderObjectsHandleCollection> threadObjects;
 
 		FrameResources(VkDevice device, GraphicsQueue graphics, UniformLayouts const& uniformLayouts, VkDescriptorPool descriptorPool, VmaAllocator allocator);
 		FrameResources(FrameResources const&) = delete;
@@ -85,7 +85,8 @@ namespace Rendering {
 		VkCommandBuffer primaryCommandBuffer;
 		std::span<VkCommandBuffer> secondaryCommandBuffers;
 
-		RenderObjectsHandleCollection& objects;
+		/** Containers to collect resource handles that are being used by the recorded commands */
+		std::span<RenderObjectsHandleCollection> threadObjects;
 	};
 
 	/** Keeps track of the resources used each frame, and how they should be used to render a number of viewports. */

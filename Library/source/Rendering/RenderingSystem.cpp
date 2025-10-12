@@ -75,13 +75,24 @@ namespace Rendering {
 
 	bool RenderingSystem::Render(entt::registry& registry) {
 		//Collect unused resources and destroy them on a parallel thread
+		//Collect resource handles used since the last frame, and destroy them now that
 		std::jthread const cleanup = [this]() {
 			RenderObjectsHandleCollection collection;
 			for (auto& surface : surfaces) collection << *surface;
 			collection << std::move(staleGraphicsPipelineResources);
 			collection << std::move(staleMeshResources);
 
-			return std::jthread{ [](std::stop_token, RenderObjectsHandleCollection collection) { collection.clear(); }, std::move(collection) };
+			if (collection.size() > 0) {
+				return std::jthread{
+					[](std::stop_token, RenderObjectsHandleCollection collection) {
+						ThreadBuffer buffer{ 20'000 };
+						collection.clear();
+					},
+					std::move(collection)
+				};
+			} else {
+				return std::jthread{};
+			}
 		}();
 
 		//Recreate swapchains if necessary. This happens periodically if the rendering parameters have changed significantly.
@@ -298,11 +309,12 @@ namespace Rendering {
 	}
 
 	void RenderingSystem::MarkStaticMeshDirty(Resources::Handle<StaticMesh> const& mesh) {
-		//Keep track of the dirty material so we can refresh it during the next render
+		//Keep track of the dirty resources so we can destroy them during the next render
 		dirtyStaticMeshes.emplace_back(mesh);
 	}
 
 	void RenderingSystem::MarkStaticMeshStale(Resources::Handle<StaticMesh> const& mesh) {
+		//Keep track of the dirty resources so we can destroy them during the next render
 		staleMeshResources.emplace_back(std::move(mesh->objects));
 	}
 

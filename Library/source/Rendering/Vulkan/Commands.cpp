@@ -91,4 +91,24 @@ namespace Rendering {
 			LOG(Vulkan, Error, "Failed to finish recording command buffer");
 		}
 	}
+
+	GraphicsCommandWriter::GraphicsCommandWriter(GraphicsCommandBuffer graphics_buffer, VkCommandBufferUsageFlags flags, VkCommandBufferInheritanceInfo const* inheritance)
+		: buffer(static_cast<VkCommandBuffer>(graphics_buffer))
+	{
+		VkCommandBufferBeginInfo const info{
+			.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+			.flags = flags,
+			.pInheritanceInfo = inheritance,
+		};
+
+		if (vkBeginCommandBuffer(buffer, &info) != VK_SUCCESS) {
+			throw std::runtime_error{ "Failed to begin recording command buffer" };
+		}
+	}
+
+	GraphicsCommandWriter::~GraphicsCommandWriter() {
+		if (vkEndCommandBuffer(buffer) != VK_SUCCESS) {
+			LOG(Vulkan, Error, "Failed to finish recording command buffer");
+		}
+	}
 }

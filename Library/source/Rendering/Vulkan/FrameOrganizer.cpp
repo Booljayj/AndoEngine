@@ -22,23 +22,30 @@ namespace Rendering {
 	{}
 
 	void FrameResources::Prepare(VkDevice device, size_t numObjects, size_t numThreads, GraphicsQueue graphics) {
-		//Resize the object uniforms buffer so we can store all the per-object data that will be used for rendering
+		//Assuming objects are evenly distributed across threads, this is the max number of objects that can be processed by each thread.
+		const size_t max_objects_per_thread = (numObjects / numThreads) + 1;
+		const size_t approximate_resources_per_object = 2;
+
+		//Resize the object uniforms buffer so we can store all the per-object data that will be used for rendering, usually two sets of resources.
 		uniforms.object.Reserve(numObjects);
 
-		//Reset the command pools so new commands can be written
+		//Reset existing resources
 		mainCommandPool.Reset();
 		for (CommandPool& threadCommandPool : threadCommandPools) {
 			threadCommandPool.Reset();
 		}
+		for (auto& objects : threadObjects) {
+			objects.clear();
+			objects.reserve(max_objects_per_thread * approximate_resources_per_object);
+		}
 
-		//Grow the number of command pools to match the number of threads
+		//Grow the number of per-thread resources to match the number of threads
 		for (size_t threadIndex = threadCommandPools.size(); threadIndex < numThreads; ++threadIndex) {
 			CommandPool& newPool = threadCommandPools.emplace_back(device, graphics);
 			threadCommandBuffers.emplace_back(newPool.CreateBuffer(VK_COMMAND_BUFFER_LEVEL_SECONDARY));
-		}
 
-		//Release resources that were previously used to render this frame
-		objects.clear();
+			threadObjects.emplace_back().reserve(max_objects_per_thread * approximate_resources_per_object);
+		}
 	}
 
 	FrameOrganizer::FrameOrganizer(VkDevice device, VmaAllocator allocator, SurfaceQueues const& queues, Swapchain const& swapchain, UniformLayouts const& uniformLayouts, EBuffering buffering)
@@ -65,8 +72,8 @@ namespace Rendering {
 	}
 
 	std::optional<RecordingContext> FrameOrganizer::CreateRecordingContext(size_t numObjects, size_t numThreads) {
-		//The timeout duration in nanoseconds
-		//constexpr uint64_t timeout = 5'000'000'000;
+		//The timeout duration in nanoseconds to wait for the frame resources to finish the previous render.
+		//If the previous render takes longer than this, then this render call has failed.
 		constexpr auto timeout = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::seconds(5));
 
 		FrameResources& frame = frames[currentFrameIndex];
@@ -100,7 +107,7 @@ namespace Rendering {
 		//This frame will now be assocaited with a new image, so stop tracking this frame's fence with any other image
 		ranges::replace(imageFences, (VkFence)frame.sync.fence, VkFence{ VK_NULL_HANDLE });
 
-		return RecordingContext{ currentFrameIndex, currentImageIndex, frame.uniforms, frame.mainCommandBuffer, frame.threadCommandBuffers, frame.objects };
+		return RecordingContext{ currentFrameIndex, currentImageIndex, frame.uniforms, frame.mainCommandBuffer, frame.threadCommandBuffers, frame.threadObjects };
 	}
 
 	void FrameOrganizer::Submit(std::span<VkCommandBuffer const> commands) {
@@ -171,7 +178,9 @@ namespace Rendering {
 	}
 
 	RenderObjectsHandleCollection& operator<<(RenderObjectsHandleCollection& collection, FrameResources& frame) {
-		collection << std::move(frame.objects);
+		for (auto& objects : frame.threadObjects) {
+			collection << std::move(objects);
+		}
 		return collection;
 	}
 

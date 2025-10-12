@@ -43,4 +43,23 @@ namespace Rendering {
 	private:
 		VkCommandBuffer buffer;
 	};
+
+	struct GraphicsCommandBuffer {
+		explicit operator VkCommandBuffer() const { return buffer; }
+
+	private:
+		VkCommandBuffer buffer;
+	};
+
+	struct GraphicsCommandWriter {
+		GraphicsCommandWriter(GraphicsCommandBuffer graphics_buffer, VkCommandBufferUsageFlags flags, VkCommandBufferInheritanceInfo const* inheritance);
+		GraphicsCommandWriter(ScopedCommands const&) = delete;
+		GraphicsCommandWriter(ScopedCommands&&) = delete;
+		~GraphicsCommandWriter();
+
+
+
+	private:
+		VkCommandBuffer buffer;
+	};
 }

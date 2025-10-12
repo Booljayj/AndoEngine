@@ -16,6 +16,7 @@
 #include <sstream>
 //Misc
 #include <chrono>
+#include <execution>
 #include <expected>
 #include <filesystem>
 #include <format>
