@@ -5,6 +5,7 @@
 #include "Rendering/RenderingSystem.h"
 #include "Rendering/StaticMesh.h"
 #include "Rendering/UniformTypes.h"
+#include "Rendering/Vulkan/GraphicsCommands.h"
 #include "Rendering/Vulkan/QueueSelection.h"
 
 namespace Rendering {
@@ -109,12 +110,11 @@ namespace Rendering {
 				};
 
 				//The inheritance info that is shared by all secondary command buffers
-				VkCommandBufferInheritanceInfo inheritance = {};
-				inheritance.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-				inheritance.pNext = nullptr;
-				inheritance.renderPass = passes.surface;
-				inheritance.framebuffer = framebuffers->surface[context->imageIndex];
-
+				CommandInheritance const inheritance{
+					.renderPass = passes.surface,
+					.framebuffer = framebuffers->surface[context->imageIndex],
+				};
+				
 				const auto draw_partial = [&passes, renderables, &context, &uniforms, &viewport, &scissor, &inheritance](size_t thread_index) {
 					ThreadBuffer buffer{ 20'000 };
 
@@ -124,11 +124,10 @@ namespace Rendering {
 					size_t const start = thread_index * objects_per_thread;
 					size_t const end = start + objects_per_thread + (thread_index < extra_objects ? 1 : 0);
 
-					VkCommandBuffer const commands = context->secondaryCommandBuffers[thread_index];
-					ScopedCommands const scopedCommands{ commands, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT | VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT, &inheritance };
+					GraphicsCommandWriter commands{ context->secondaryCommandBuffers[thread_index], inheritance };
 
-					vkCmdSetViewport(commands, 0, 1, &viewport);
-					vkCmdSetScissor(commands, 0, 1, &scissor);
+					commands.SetViewports(0, MakeSpan(viewport));
+					commands.SetScissors(0, MakeSpan(scissor));
 
 					for (size_t index = start; index < end; ++index) {
 						entt::entity const entity = renderables.handle()->operator[](index);
@@ -156,28 +155,24 @@ namespace Rendering {
 							);
 
 							//Bind the pipeline that will be used for rendering
-							vkCmdBindPipeline(commands, VK_PIPELINE_BIND_POINT_GRAPHICS, material->objects->pipeline);
-
+							commands.BindGraphicsPipeline(material->objects->pipeline);
+							
 							//Bind the descriptor sets to use for this draw command
 							EnumArray<VkDescriptorSet, EGraphicsLayouts> sets;
 							sets[EGraphicsLayouts::Global] = uniforms.global;
 							sets[EGraphicsLayouts::Object] = uniforms.object;
 							//sets[EGraphicsLayouts::Material] = material->gpuResources->set;
 
-							vkCmdBindDescriptorSets(
-								commands, VK_PIPELINE_BIND_POINT_GRAPHICS, material->objects->layouts.pipeline,
-								0, sets.size(), sets.data(), offsets.size(), offsets.data()
-							);
+							commands.BindGraphicsDescriptorSets(material->objects->layouts.pipeline, 0, MakeSpan(sets), MakeSpan(offsets));
 
 							//Bind the vetex and index buffers for the mesh
-							MeshResources const& meshRes = *mesh->objects;
-							VkBuffer const vertexBuffers[] = { meshRes.buffer };
-							VkDeviceSize const vertexOffsets[] = { meshRes.offset.vertex };
-							vkCmdBindVertexBuffers(commands, 0, 1, vertexBuffers, vertexOffsets);
-							vkCmdBindIndexBuffer(commands, meshRes.buffer, meshRes.offset.index, meshRes.indexType);
+							VkBuffer const mesh_buffer = mesh->objects->buffer;
+							commands.BindVertexBuffers(0, MakeSpan(mesh_buffer), MakeSpan(mesh->objects->offset.vertex));
+							commands.BindIndexBuffer(mesh_buffer, mesh->objects->offset.index, mesh->objects->indexType);
 
 							//Submit the command to draw using the vertex and index buffers
-							vkCmdDrawIndexed(commands, meshRes.size.indices, 1, 0, 0, 0);
+							constexpr uint32_t instance_count = 1;
+							commands.DrawIndexed(0, mesh->objects->size.indices, 0, instance_count);
 						}
 					}
 				};
@@ -199,22 +194,19 @@ namespace Rendering {
 					}
 				);
 
-				VkCommandBuffer const commands = context->primaryCommandBuffer;
-				//Scope within which we will write commands to the buffer
-				ScopedCommands const scopedCommands{ commands, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, nullptr };
-
-				Geometry::ScreenRect const rect = { glm::i32vec2{ 0, 0 }, extent };
+				GraphicsCommandWriter commands{ context->primaryCommandBuffer };
 
 				//Create a scope for all commands that belong to the surface render pass
+				Geometry::ScreenRect const rect = { glm::i32vec2{ 0, 0 }, extent };
 				SurfaceRenderPass::ScopedRecord const scopedRecord{ commands, passes.surface, framebuffers->surface[context->imageIndex], rect };
 
 				//Wait for the workers to finish, and then add their commands to the primary command buffer. We do this by clearing to make sure workers are not used beyond this point.
 				workers.clear();
-				vkCmdExecuteCommands(commands, context->secondaryCommandBuffers.size(), context->secondaryCommandBuffers.data());
+				commands.ExecuteCommands(context->secondaryCommandBuffers);
 			}
 
 			//Submit the rendering commands for this frame
-			organizer->Submit(std::span<VkCommandBuffer const>{ &context->primaryCommandBuffer, 1 });
+			organizer->Submit(*context);
 
 			retryCount = 0;
 			return true;

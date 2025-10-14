@@ -32,34 +32,4 @@ namespace Rendering {
 		MoveOnly<VkDevice> device;
 		VkCommandPool pool = nullptr;
 	};
-
-	/** A scope within which commands can be written to the provided buffer */
-	struct ScopedCommands {
-		ScopedCommands(VkCommandBuffer buffer, VkCommandBufferUsageFlags flags, VkCommandBufferInheritanceInfo const* inheritance);
-		ScopedCommands(ScopedCommands const&) = delete;
-		ScopedCommands(ScopedCommands&&) = delete;
-		~ScopedCommands();
-
-	private:
-		VkCommandBuffer buffer;
-	};
-
-	//=================== EXPERIMENTAL
-
-	struct GraphicsCommandBuffer {
-		explicit operator VkCommandBuffer() const { return buffer; }
-
-	private:
-		VkCommandBuffer buffer;
-	};
-
-	struct GraphicsCommandWriter {
-		GraphicsCommandWriter(GraphicsCommandBuffer graphics_buffer, VkCommandBufferUsageFlags flags, VkCommandBufferInheritanceInfo const* inheritance);
-		GraphicsCommandWriter(ScopedCommands const&) = delete;
-		GraphicsCommandWriter(ScopedCommands&&) = delete;
-		~GraphicsCommandWriter();
-
-	private:
-		VkCommandBuffer buffer;
-	};
 }

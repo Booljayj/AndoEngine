@@ -71,44 +71,4 @@ namespace Rendering {
 	void CommandPool::DestroyBuffers(std::span<VkCommandBuffer const> buffers) {
 		vkFreeCommandBuffers(device, pool, buffers.size(), buffers.data());
 	}
-
-	ScopedCommands::ScopedCommands(VkCommandBuffer buffer, VkCommandBufferUsageFlags flags, VkCommandBufferInheritanceInfo const* inheritance)
-		: buffer(buffer)
-	{
-		VkCommandBufferBeginInfo const beginInfo{
-			.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-			.flags = flags,
-			.pInheritanceInfo = inheritance,
-		};
-		
-		if (vkBeginCommandBuffer(buffer, &beginInfo) != VK_SUCCESS) {
-			throw std::runtime_error{ "Failed to begin recording command buffer" };
-		}
-	}
-
-	ScopedCommands::~ScopedCommands() {
-		if (vkEndCommandBuffer(buffer) != VK_SUCCESS) {
-			LOG(Vulkan, Error, "Failed to finish recording command buffer");
-		}
-	}
-
-	GraphicsCommandWriter::GraphicsCommandWriter(GraphicsCommandBuffer graphics_buffer, VkCommandBufferUsageFlags flags, VkCommandBufferInheritanceInfo const* inheritance)
-		: buffer(static_cast<VkCommandBuffer>(graphics_buffer))
-	{
-		VkCommandBufferBeginInfo const info{
-			.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-			.flags = flags,
-			.pInheritanceInfo = inheritance,
-		};
-
-		if (vkBeginCommandBuffer(buffer, &info) != VK_SUCCESS) {
-			throw std::runtime_error{ "Failed to begin recording command buffer" };
-		}
-	}
-
-	GraphicsCommandWriter::~GraphicsCommandWriter() {
-		if (vkEndCommandBuffer(buffer) != VK_SUCCESS) {
-			LOG(Vulkan, Error, "Failed to finish recording command buffer");
-		}
-	}
 }

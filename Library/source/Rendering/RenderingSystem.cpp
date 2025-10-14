@@ -7,6 +7,7 @@
 #include "Rendering/StaticMesh.h"
 #include "Rendering/Vulkan/Buffers.h"
 #include "Rendering/Vulkan/QueueSelection.h"
+#include "Rendering/Vulkan/TransferCommands.h"
 #include "Rendering/Vulkan/RenderPasses.h"
 #include "Resources/Database.h"
 #include "Resources/Cache.h"
@@ -347,21 +348,21 @@ namespace Rendering {
 		//Create the final resources that will be used for this mesh
 		std::shared_ptr<MeshResources> const resources = std::make_shared<MeshResources>(*device, totalBytes);
 
-		const VkCommandBuffer commands = helper.CreateBuffer();
+		const VkCommandBuffer buffer = helper.CreateBuffer();
 		{
-			ScopedCommands const scope{ commands, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, nullptr };
+			TransferCommandWriter commands{ buffer };
 
 			//Record the command to transfer from the staging buffer to the target buffer
-			VkBufferCopy const copy{
+			VkBufferCopy const region{
 				.srcOffset = 0, // Optional
 				.dstOffset = 0, // Optional
 				.size = totalBytes,
 			};
-			vkCmdCopyBuffer(commands, staging, resources->buffer, 1, &copy);
+			commands.Copy(staging, resources->buffer, MakeSpan(region));
 		}
 
 		//Submit the buffer and commands. We've successfully created everything.
-		helper.Submit(commands, std::move(staging));
+		helper.Submit(buffer, std::move(staging));
 
 		//Record the size and offset information. This is the primary way we'll know that the resources are valid
 		const auto CountVisitor = [](const auto& v) { return static_cast<uint32_t>(v.size()); };

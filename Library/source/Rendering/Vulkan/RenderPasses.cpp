@@ -79,8 +79,8 @@ namespace Rendering {
 		//@todo Destroy the shared image views
 	}
 
-	SurfaceRenderPass::ScopedRecord::ScopedRecord(VkCommandBuffer commands, SurfaceRenderPass const& surface, Framebuffer const& framebuffer, Geometry::ScreenRect const& rect)
-	: cachedCommands(commands)
+	SurfaceRenderPass::ScopedRecord::ScopedRecord(GraphicsCommandWriter& commands, SurfaceRenderPass const& surface, Framebuffer const& framebuffer, Geometry::ScreenRect const& rect)
+	: cachedCommands(static_cast<VkCommandBuffer>(commands))
 	{
 		VkRenderPassBeginInfo const info{
 			.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
@@ -93,7 +93,7 @@ namespace Rendering {
 			.clearValueCount = surface.clearValues.size(),
 			.pClearValues = surface.clearValues.data(),
 		};
-		vkCmdBeginRenderPass(commands, &info, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+		vkCmdBeginRenderPass(cachedCommands, &info, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 	}
 
 	SurfaceRenderPass::ScopedRecord::~ScopedRecord() {

@@ -80,16 +80,16 @@ namespace Rendering {
 		//Wait until the frame is no longer being used. If this takes too long, we'll have to skip rendering.
 		if (!frame.sync.fence.WaitUntilSignalled(timeout)) {
 			LOG(Vulkan, Warning, "Timed out waiting for fence");
-			return std::optional<RecordingContext>{};
+			return std::nullopt;
 		}
 
 		frame.Prepare(device, numObjects, numThreads, queues.graphics, previous_resources);
 
 		//Acquire the swapchain image that can be used for this frame
-		currentImageIndex = 0;
+		uint32_t currentImageIndex = 0;
 		if (vkAcquireNextImageKHR(device, swapchain, timeout.count(), frame.sync.imageAvailableSemaphore, VK_NULL_HANDLE, &currentImageIndex) != VK_SUCCESS) {
 			LOG(Vulkan, Warning, "Timed out waiting for next available swapchain image");
-			return std::optional<RecordingContext>{};
+			return std::nullopt;
 		}
 
 		if (currentImageIndex >= imageFences.size()) {
@@ -100,7 +100,7 @@ namespace Rendering {
 		if (imageFences[currentImageIndex] != VK_NULL_HANDLE) {
 			if (vkWaitForFences(device, 1, &imageFences[currentImageIndex], VK_TRUE, timeout.count()) != VK_SUCCESS) {
 				LOG(Vulkan, Warning, "Timed out waiting for image fence {}", currentImageIndex);
-				return std::optional<RecordingContext>{};
+				return std::nullopt;
 			}
 		}
 
@@ -110,21 +110,21 @@ namespace Rendering {
 		return RecordingContext{ currentFrameIndex, currentImageIndex, frame.uniforms, frame.mainCommandBuffer, frame.threadCommandBuffers, frame.threadResources };
 	}
 
-	void FrameOrganizer::Submit(std::span<VkCommandBuffer const> commands) {
+	void FrameOrganizer::Submit(RecordingContext const& context) {
 		FrameResources const& frame = frames[currentFrameIndex];
 
 		frame.uniforms.global.Flush();
 		frame.uniforms.object.Flush();
 		
 		//Assign this frame's fence as the one using the swap image so other frames that try to use this image know to wait
-		imageFences[currentImageIndex] = frame.sync.fence;
+		imageFences[context.imageIndex] = frame.sync.fence;
 
 		//Reset the fence for this frame, so we can start another rendering process that it will track
 		frame.sync.fence.Reset();
 
 		//Set up information for how commands should be processed when submitted to the queue
 		VkSemaphore const submitWaitSemaphores[] = { frame.sync.imageAvailableSemaphore };
-		VkSemaphore const submitFinishedSemaphores[] = { imageSubmittedSemaphores[currentImageIndex] };
+		VkSemaphore const submitFinishedSemaphores[] = { imageSubmittedSemaphores[context.imageIndex] };
 
 		VkPipelineStageFlags const waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 		static_assert(std::size(submitWaitSemaphores) == std::size(waitStages), "Number of semaphores must equal number of stages");
@@ -136,8 +136,8 @@ namespace Rendering {
 			.pWaitSemaphores = submitWaitSemaphores,
 			.pWaitDstStageMask = waitStages,
 
-			.commandBufferCount = static_cast<uint32_t>(commands.size()),
-			.pCommandBuffers = commands.data(),
+			.commandBufferCount = 1,
+			.pCommandBuffers = &context.primaryCommandBuffer,
 			
 			.signalSemaphoreCount = static_cast<uint32_t>(std::size(submitFinishedSemaphores)),
 			.pSignalSemaphores = submitFinishedSemaphores,
@@ -152,7 +152,7 @@ namespace Rendering {
 
 			.swapchainCount = 1,
 			.pSwapchains = &swapchain,
-			.pImageIndices = &currentImageIndex,
+			.pImageIndices = &context.imageIndex,
 
 			.pResults = nullptr, //Optional
 		};

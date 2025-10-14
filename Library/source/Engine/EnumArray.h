@@ -19,3 +19,8 @@ public:
 private:
 	std::array<ValueType, Size> array;
 };
+
+template<typename ValueType, Concepts::Enumeration EnumType, size_t Size>
+inline std::span<ValueType const, Size> MakeSpan(EnumArray<ValueType, EnumType, Size> const& enum_array) {
+	return std::span<ValueType const, Size>{ enum_array.data(), enum_array.size() };
+}

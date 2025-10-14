@@ -81,7 +81,7 @@ namespace Rendering {
 		FrameUniforms& uniforms;
 		/** Command buffers used to record commands */
 		VkCommandBuffer primaryCommandBuffer;
-		std::span<VkCommandBuffer> secondaryCommandBuffers;
+		std::span<VkCommandBuffer const> secondaryCommandBuffers;
 
 		/** Containers to collect resource handles that are being used by the recorded commands */
 		std::span<ResourcesCollection> threadResources;
@@ -100,7 +100,7 @@ namespace Rendering {
 		std::optional<RecordingContext> CreateRecordingContext(size_t numObjects, size_t numThreads, ResourcesCollection& previous_resources);
 
 		/** Submit everything currently recorded so that it can be rendered. */
-		void Submit(std::span<VkCommandBuffer const> commands);
+		void Submit(RecordingContext const& context);
 		
 	private:
 		using PoolSizesType = std::array<VkDescriptorPoolSize, 3>;
@@ -120,7 +120,6 @@ namespace Rendering {
 
 		uint32_t prevousFrameIndex = std::numeric_limits<uint32_t>::max();
 		uint32_t currentFrameIndex = 0;
-		uint32_t currentImageIndex = -1;
 
 		/** Get the pool sizes that should be used with the type of buffering */
 		static PoolSizesType GetPoolSizes(EBuffering buffering);

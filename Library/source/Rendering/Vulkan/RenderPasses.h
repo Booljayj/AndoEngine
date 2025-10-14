@@ -5,6 +5,7 @@
 #include "Engine/MoveOnly.h"
 #include "Geometry/ScreenRect.h"
 #include "Rendering/Vulkan/Device.h"
+#include "Rendering/Vulkan/GraphicsCommands.h"
 #include "Rendering/Vulkan/Swapchain.h"
 #include "Rendering/Vulkan/Vulkan.h"
 
@@ -64,7 +65,7 @@ namespace Rendering {
 		/** Created to mark a scope within which commands are recorded for the pass */
 		struct ScopedRecord {
 		public:
-			ScopedRecord(VkCommandBuffer commands, SurfaceRenderPass const& surface, Framebuffer const& framebuffer, Geometry::ScreenRect const& rect);
+			ScopedRecord(GraphicsCommandWriter& commands, SurfaceRenderPass const& surface, Framebuffer const& framebuffer, Geometry::ScreenRect const& rect);
 			~ScopedRecord();
 		private:
 			VkCommandBuffer cachedCommands;
