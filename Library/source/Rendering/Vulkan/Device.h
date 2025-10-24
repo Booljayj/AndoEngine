@@ -3,7 +3,7 @@
 #include "Rendering/Vulkan/Framework.h"
 #include "Rendering/Vulkan/Vulkan.h"
 #include "Rendering/Vulkan/PhysicalDevice.h"
-#include "Rendering/Vulkan/Queues.h"
+#include "Rendering/Vulkan/QueueRequests.h"
 
 namespace Rendering {
 	/**

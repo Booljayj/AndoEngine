@@ -37,7 +37,7 @@ namespace Rendering {
 		return entry.module;
 	}
 
-	MeshCreationHelper::MeshCreationHelper(VkDevice device, TransferQueue transfer, CommandPool& pool)
+	MeshCreationHelper::MeshCreationHelper(VkDevice device, TransferQueue transfer, TransferCommandPool& pool)
 		: device(device), transfer(transfer), pool(pool), fence(device)
 	{}
 
@@ -70,13 +70,7 @@ namespace Rendering {
 		std::swap(pendingCommands, submittedCommands);
 		std::swap(pendingStagingBuffers, submittedStagingBuffers);
 
-		//Submit the current commands
-		VkSubmitInfo const submitInfo{
-			.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-			.commandBufferCount = static_cast<uint32_t>(submittedCommands.size()),
-			.pCommandBuffers = submittedCommands.data(),
-		};
-		transfer.Submit(submitInfo, fence);
+		transfer.Submit({}, {}, submittedCommands, {}, fence);
 	}
 
 	void MeshCreationHelper::FinishSubmit() {

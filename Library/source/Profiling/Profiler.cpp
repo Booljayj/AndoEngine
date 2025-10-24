@@ -1,5 +1,5 @@
 #include "Profiling/Profiler.h"
-#include "Engine/TemporaryStrings.h"
+#include "Engine/Format.h"
 
 DEFINE_LOG_CATEGORY(Profiler, Info);
 

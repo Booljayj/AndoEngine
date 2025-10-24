@@ -11,6 +11,7 @@
 #include "Rendering/Vulkan/Framework.h"
 #include "Rendering/Vulkan/Helpers.h"
 #include "Rendering/Vulkan/PhysicalDevice.h"
+#include "Rendering/Vulkan/QueueRequests.h"
 #include "Rendering/Vulkan/RenderPasses.h"
 #include "Rendering/Vulkan/Resources.h"
 #include "Rendering/Vulkan/ResourcesCollection.h"
@@ -58,7 +59,7 @@ namespace Rendering {
 		/** Uniform layouts for standard uniforms */
 		std::optional<UniformLayouts> uniformLayouts;
 		/** Pool for command buffers used in transfer operations */
-		std::optional<CommandPool> transferCommandPool;
+		std::optional<TransferCommandPool> transferCommandPool;
 
 		/** Flags for tracking rendering behavior and changes */
 		uint8_t retryCount = 0;
@@ -126,13 +127,13 @@ namespace Rendering {
 		void MarkStaticMeshStale(Resources::Handle<StaticMesh> const& mesh);
 
 	private:
-		/** Surfaces used for rendering */
+		/** Window surfaces that will be rendered */
 		std::vector<std::unique_ptr<Surface>> surfaces;
 
 		/** Create the pipeline resources for a material */
 		std::shared_ptr<GraphicsPipelineResources> CreateGraphicsPipeline(Material const& material, PipelineCreationHelper& helper);
 		/** Create the mesh resources for a mesh component */
-		std::shared_ptr<MeshResources> CreateMesh(StaticMesh const& mesh, CommandPool& pool, MeshCreationHelper& helper);
+		std::shared_ptr<MeshResources> CreateMesh(StaticMesh const& mesh, TransferCommandPool& pool, MeshCreationHelper& helper);
 
 		//InitImGUI(VulkanLogicalDevice& logical, VulkanPhysicalDevice& physical, Surface& surface);
 	};

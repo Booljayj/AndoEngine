@@ -1,53 +1,6 @@
-#include "Rendering/Vulkan/Queues.h"
-#include "Rendering/Vulkan/PhysicalDevice.h"
+#include "Rendering/Vulkan/QueueRequests.h"
 
 namespace Rendering {
-	//Finds the next free index if the references to used queues are part of the same family. Used with pack expansion.
-	struct FreeIndexFinder {
-		uint32_t familyID = 0;
-		uint32_t index = 0;
-
-		FreeIndexFinder(uint32_t familyID) : familyID(familyID) {}
-
-		FreeIndexFinder& operator+=(QueueReference reference) {
-			if (reference.id == familyID) index = std::max(index, reference.index + 1);
-			return *this;
-		}
-	};
-
-	FQueueFlags FQueueFlags::Create(VkQueueFlags flags) {
-		FQueueFlags result;
-		if ((flags & VK_QUEUE_GRAPHICS_BIT) > 0) result += EQueueFlags::Graphics;
-		if ((flags & VK_QUEUE_TRANSFER_BIT) > 0) result += EQueueFlags::Transfer;
-		if ((flags & VK_QUEUE_SPARSE_BINDING_BIT) > 0) result += EQueueFlags::SparseBinding;
-		if ((flags & VK_QUEUE_COMPUTE_BIT) > 0) result += EQueueFlags::Compute;
-		return result;
-	}
-
-	void PresentQueue::Present(VkPresentInfoKHR const& info) const {
-		if (vkQueuePresentKHR(queue, &info) != VK_SUCCESS) {
-			throw std::runtime_error{ "Failed to present to queue" };
-		}
-	}
-
-	void GraphicsQueue::Submit(VkSubmitInfo const& info, VkFence fence) const {
-		if (vkQueueSubmit(queue, 1, &info, fence) != VK_SUCCESS) {
-			throw std::runtime_error{ "Failed to submit commands to queue" };
-		}
-	}
-
-	void TransferQueue::Submit(VkSubmitInfo const& info, VkFence fence) const {
-		if (vkQueueSubmit(queue, 1, &info, fence) != VK_SUCCESS) {
-			throw std::runtime_error{ "Failed to submit commands to queue" };
-		}
-	}
-
-	void ComputeQueue::Submit(VkSubmitInfo const& info, VkFence fence) const {
-		if (vkQueueSubmit(queue, 1, &info, fence) != VK_SUCCESS) {
-			throw std::runtime_error{ "Failed to submit commands to queue" };
-		}
-	}
-
 	QueueRequests& QueueRequests::operator+=(QueueReference reference) {
 		auto const iter = ranges::find_if(requests, [&](auto const& request) { return request.id == reference.id; });
 		if (iter != requests.end()) {
@@ -97,7 +50,7 @@ namespace Rendering {
 			std::optional<PresentQueue> present;
 			std::optional<GraphicsQueue> graphics;
 		} resolved;
-		
+
 		if (VkQueue queue = Find(references.present)) resolved.present = PresentQueue{ queue, references.present };
 		else return std::nullopt;
 

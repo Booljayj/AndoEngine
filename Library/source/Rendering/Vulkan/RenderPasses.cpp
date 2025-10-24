@@ -1,6 +1,6 @@
 #include "Rendering/Vulkan/RenderPasses.h"
+#include "Engine/Format.h"
 #include "Engine/Logging.h"
-#include "Engine/TemporaryStrings.h"
 #include "Engine/Utility.h"
 
 namespace Rendering {
@@ -79,7 +79,7 @@ namespace Rendering {
 		//@todo Destroy the shared image views
 	}
 
-	SurfaceRenderPass::ScopedRecord::ScopedRecord(GraphicsCommandWriter& commands, SurfaceRenderPass const& surface, Framebuffer const& framebuffer, Geometry::ScreenRect const& rect)
+	SurfaceRenderPass::ScopedRecord::ScopedRecord(GraphicsCommandWriter const& commands, SurfaceRenderPass const& surface, Framebuffer const& framebuffer, ViewRect const& rect)
 	: cachedCommands(static_cast<VkCommandBuffer>(commands))
 	{
 		VkRenderPassBeginInfo const info{

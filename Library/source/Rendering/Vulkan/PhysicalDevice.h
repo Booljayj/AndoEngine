@@ -4,7 +4,7 @@
 #include "Engine/GLM.h"
 #include "Engine/TemporaryContainers.h"
 #include "Rendering/Vulkan/Vulkan.h"
-#include "Rendering/Vulkan/Queues.h"
+#include "Rendering/Vulkan/QueueFamily.h"
 
 namespace Rendering {
 	/** A description of a physical device */

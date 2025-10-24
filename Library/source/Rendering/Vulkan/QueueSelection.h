@@ -2,7 +2,10 @@
 #include "Engine/Core.h"
 #include "Engine/Optional.h"
 #include "Engine/Tuple.h"
-#include "Rendering/Vulkan/Queues.h"
+#include "Rendering/Vulkan/QueueFamily.h"
+#include "Rendering/Vulkan/QueueReference.h"
+#include "Rendering/Vulkan/SharedQueues.h"
+#include "Rendering/Vulkan/SurfaceQueues.h"
 
 namespace Rendering {
 	/** Helper type used to search for available queues that match certain criteria. */

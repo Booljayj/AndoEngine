@@ -1,4 +1,5 @@
 #include "Engine/StringID.h"
+#include "Engine/Format.h"
 
 /*
 Given a string input:

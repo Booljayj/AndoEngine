@@ -2,22 +2,22 @@
 
 namespace Rendering {
 	VkDescriptorSetLayoutBinding GlobalUniforms::GetBinding() {
-		VkDescriptorSetLayoutBinding binding;
-		binding.binding = 0;
-		binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		binding.descriptorCount = 1;
-		binding.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
-		binding.pImmutableSamplers = nullptr; // Optional
-		return binding;
+		return VkDescriptorSetLayoutBinding{
+			.binding = 0,
+			.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+			.descriptorCount = 1,
+			.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS,
+			.pImmutableSamplers = nullptr, // Optional
+		};
 	}
 
 	VkDescriptorSetLayoutBinding ObjectUniforms::GetBinding() {
-		VkDescriptorSetLayoutBinding binding;
-		binding.binding = 0;
-		binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-		binding.descriptorCount = 1;
-		binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-		binding.pImmutableSamplers = nullptr; // Optional
-		return binding;
+		return VkDescriptorSetLayoutBinding{
+			.binding = 0,
+			.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+			.descriptorCount = 1,
+			.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+			.pImmutableSamplers = nullptr, // Optional
+		};
 	}
 }

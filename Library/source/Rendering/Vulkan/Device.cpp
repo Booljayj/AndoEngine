@@ -1,7 +1,7 @@
 #include "Rendering/Vulkan/Device.h"
+#include "Engine/Format.h"
 #include "Engine/Logging.h"
 #include "Engine/TemporaryContainers.h"
-#include "Engine/TemporaryStrings.h"
 
 namespace Rendering {
 	Device::Device(Framework const& framework, PhysicalDeviceDescription const& physical, VkPhysicalDeviceFeatures features, ExtensionsView extensions, QueueRequests const& requests)
@@ -9,7 +9,7 @@ namespace Rendering {
 	{
 		ScopedThreadBufferMark mark;
 
-		if (requests.size() == 0) throw FormatType<std::runtime_error>("Device was created with no queue requests. At least one must be provided.");
+		if (requests.size() == 0) throw std::runtime_error{ "Device was created with no queue requests. At least one must be provided." };
 
 		//Describe how to create the queues for each family based on the requests
 		t_vector<t_vector<float>> queuePriorities;

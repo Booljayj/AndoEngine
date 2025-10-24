@@ -1,7 +1,7 @@
 #include "HAL/WindowingSystem.h"
 #include "Engine/Logging.h"
 #include "Engine/Ranges.h"
-#include "Engine/TemporaryStrings.h"
+#include "Engine/Format.h"
 #include "HAL/SDL2.h"
 #include "imgui.h"
 #include "backends/imgui_impl_sdl.h"

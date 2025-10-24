@@ -1,49 +1,41 @@
 #pragma once
 #include "Engine/Core.h"
 #include "Engine/GLM.h"
-#include "Geometry/ScreenRect.h"
-#include "Rendering/Vulkan/Device.h"
-#include "Rendering/Vulkan/FrameOrganizer.h"
-#include "Rendering/Vulkan/Helpers.h"
-#include "Rendering/Vulkan/Resources.h"
-#include "Rendering/Vulkan/Swapchain.h"
-#include "ThirdParty/EnTT.h"
+#include "Engine/StringID.h"
+#include "Rendering/Views/ViewCamera.h"
+#include "Rendering/Views/ViewRect.h"
 
 namespace Rendering {
-	struct ViewPerspectiveMatrixParams {
-		/** The transform that provides the location, rotation, and scale of the matrix */
-		glm::mat4 transform;
-		/** The vertical field-of-view */
-		float fov;
-		/** The aspect ratio to render with */
-		float aspect;
-		/** The near and far clip distances from the matrix location */
-		struct {
-			float near;
-			float far;
-		} clip;
-	};
-
-	/** A view renders things within a region, using some configuration of viewports and render passes */
+	/** A view defines a region within a surface where rendering will take place, and what will be rendered there. */
 	struct View {
-		View(Geometry::ScreenRect const& rect);
+		View(StringID id) : id(id) {}
+		View(View const&) = delete;
+		View(View&&) = default;
 		virtual ~View() = default;
 
-		/** Prepare to render commands for this view for a single frame */
-		virtual void Prepare(entt::registry const& registry, FrameResources& frame) const = 0;
-		/** Record rendering commands for this view for a single frame */
-		virtual void Record(const entt::registry& registry, const FrameResources& frame, size_t index) const = 0;
+		/** The id of this view. Can be used to distinguish it from other views. */
+		StringID id;
 
-		/** Create the resources used in this view */
-		virtual bool CreateResources(Device const& logical, Swapchain const& swapchain) = 0;
-		/** Destroy the resources for this view. Called when they are no longer going to be used, or before we need to create them again */
-		virtual void DestroyResources(Device const& logical) = 0;
+		/** The number of threads that should be used when recording rendering commands for this view. Views with many entities should use multiple threads, but simpler views can use fewer threads to save on resources. */
+		uint16_t num_threads = 1;
 
-		/** Reposition the part of the window to which this viewport should render */
-		virtual void Reposition(glm::ivec2 newExtent, glm::ivec2 newOffset) = 0;
+		/** calculator struct used to determine the view rect for this view */
+		std::unique_ptr<ViewRectCalculator> rect_calculator;
+		/** calculator struct used to determine the view camera for this view */
+		std::unique_ptr<ViewCameraCalculator> camera_calculator;
+	};
 
-	protected:
-		/** The position that this viewport will render to on the framebuffer */
-		Geometry::ScreenRect rect;
+	/** Gathered parameters that will be used to render a view */
+	struct ViewRenderingParameters {
+		ViewRect rect;
+		ViewCamera camera;
+
+		/** The frustum for this view */
+		glm::mat4 frustum;
+
+		/** The number of threads that will be used to render this view */
+		size_t num_threads = 1;
+		/** The set of non-culled entities that should be rendered to this view */
+		std::vector<entt::entity> entities;
 	};
 }

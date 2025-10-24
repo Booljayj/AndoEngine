@@ -3,26 +3,73 @@
 #include "Engine/GLM.h"
 #include "Engine/Optional.h"
 #include "HAL/WindowingSystem.h"
-#include "Rendering/Vulkan/FrameOrganizer.h"
+#include "Rendering/RenderTarget.h"
+#include "Rendering/Vulkan/FrameResources.h"
 #include "Rendering/Vulkan/RenderPasses.h"
-#include "Rendering/Vulkan/ResourcesCollection.h"
 #include "Rendering/Vulkan/Swapchain.h"
 #include "Rendering/Vulkan/Vulkan.h"
-#include "ThirdParty/EnTT.h"
 
 namespace Rendering {
+	struct PhysicalDeviceDescription;
 	struct RenderingSystem;
+	struct ResourcesCollection;
+
+	/** Buffering levels, which determine the number of frames that will be cycled through for rendering */
+	enum class EBuffering : uint8_t {
+		None,
+		Double,
+		Triple,
+	};
+	inline size_t GetNumFrames(EBuffering buffering) { return static_cast<size_t>(buffering) + 1; };
+
+	/** Keeps track of the resources used each frame for a surface */
+	struct SurfaceFrameOrganizer {
+		SurfaceFrameOrganizer(VkDevice device, VmaAllocator allocator, SurfaceQueues const& queues, Swapchain const& swapchain, UniformLayouts const& uniform_layouts, EBuffering buffering);
+		SurfaceFrameOrganizer(SurfaceFrameOrganizer const&) = delete;
+		SurfaceFrameOrganizer(SurfaceFrameOrganizer&&) noexcept = default;
+
+		/**
+		 * Prepare the resources for the next frame for rendering. This will wait for resources to be ready if they're not ready immediately.
+		 * If the resources take too long to become ready, this will return nothing and no rendering should happen.
+		 */
+		FrameResources* PrepareFrame(std::span<ViewRenderingParameters> view_params, ResourcesCollection& previous_resources);
+
+		/** Submit everything currently recorded so that it can be rendered. */
+		void Submit(FrameResources const& frame);
+
+	private:
+		using PoolSizesType = std::array<VkDescriptorPoolSize, 3>;
+
+		MoveOnly<VkDevice> device;
+		VkDescriptorSetLayout global_layout = nullptr;
+		VkDescriptorSetLayout object_layout = nullptr;
+		VmaAllocator allocator = nullptr;
+		VkSwapchainKHR swapchain = nullptr;
+		SurfaceQueues queues;
+
+		/** The frames that we will cycle through when rendering */
+		std::vector<FrameResources> frames;
+		/** Copies of the per-frame resources that are being used for each swapchain image */
+		std::vector<VkFence> imageFences;
+		/** Semaphores used to determine when the queue is finished using each swapchain image */
+		std::vector<Semaphore> imageSubmittedSemaphores;
+
+		uint32_t prevousFrameIndex = std::numeric_limits<uint32_t>::max();
+		uint32_t currentFrameIndex = 0;
+
+		/** Get the pool sizes that should be used with the type of buffering */
+		static PoolSizesType GetPoolSizes(EBuffering buffering);
+	};
 
 	/** A surface tied to a given window, which is used by a RenderSystem for rendering */
-	struct Surface {
+	struct Surface : public RenderTarget {
 	public:
-		/** The maximum number of consecutive times we can fail to render a frame */
-		static constexpr uint8_t maxRetryCount = 5;
-
 		Surface(VkInstance instance, HAL::Window& inWindow);
 		Surface(Surface const&) = delete;
 		Surface(Surface&&) = delete;
 		~Surface();
+
+		glm::u32vec2 GetExtent() const override;
 
 		operator VkSurfaceKHR() const { return surface; }
 		inline bool operator==(HAL::Window::IdType otherID) const { return GetID() == otherID; }
@@ -36,15 +83,17 @@ namespace Rendering {
 		inline bool IsSwapchainDirty() const { return shouldRecreateSwapchain; }
 
 		/** Create resources used for rendering */
-		void InitializeRendering(Device const& device, PhysicalDeviceDescription const& physical, RenderPasses const& passes, UniformLayouts const& layouts);
+		void InitializeRendering(Device const& device, PhysicalDeviceDescription const& physical, RenderPasses const& passes, UniformLayouts const& uniform_layouts);
 		/** Remove resources used for rendering */
 		void DeinitializeRendering();
 
 		/** Create or recreate the swapchain and related resources for this surface */
-		bool RecreateSwapchain(Device const& device, PhysicalDeviceDescription const& physical, RenderPasses const& passes, UniformLayouts const& layouts);
+		bool RecreateSwapchain(Device const& device, PhysicalDeviceDescription const& physical, RenderPasses const& passes, UniformLayouts const& uniform_layouts);
 		
-		/** Render the renderable entities from the registry to this surface */
-		bool Render(RenderPasses const& passes, entt::registry& registry, ResourcesCollection& previous_resources);
+	protected:
+		Framebuffer const& GetFramebuffer(uint32_t image_index) const override;
+		FrameResources* PrepareFrame(std::span<ViewRenderingParameters> view_params, ResourcesCollection& previous_resources) override;
+		void SubmitFrame(FrameResources& frame) override;
 
 	private:
 		friend RenderingSystem;
@@ -64,7 +113,7 @@ namespace Rendering {
 		/** The framebuffers for rendering on the swapchain */
 		std::optional<Framebuffers> framebuffers;
 		/** The frame organizer that keeps track of resources used each frame */
-		std::optional<FrameOrganizer> organizer;
+		std::optional<SurfaceFrameOrganizer> organizer;
 
 		/** The full size of the window that is associated with this surface */
 		glm::u32vec2 windowSize;

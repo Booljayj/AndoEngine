@@ -5,9 +5,10 @@
 #include "Rendering/MeshRenderer.h"
 #include "Rendering/Shader.h"
 #include "Rendering/StaticMesh.h"
+#include "Rendering/Views/View.h"
 #include "Rendering/Vulkan/Buffers.h"
 #include "Rendering/Vulkan/QueueSelection.h"
-#include "Rendering/Vulkan/TransferCommands.h"
+#include "Rendering/Vulkan/TransferQueue.h"
 #include "Rendering/Vulkan/RenderPasses.h"
 #include "Resources/Database.h"
 #include "Resources/Cache.h"
@@ -27,7 +28,15 @@ namespace Rendering {
 		if (!CreateSurface(primaryWindow)) return false;
 		
 		Surface& primarySurface = GetPrimarySurface();
+		{
+			auto views = primarySurface.ts_views.LockExclusive();
 
+			View& primaryView = views->emplace_back(StringID::None);
+			primaryView.rect_calculator = std::make_unique<FullViewRectCalculator>();
+			primaryView.camera_calculator = std::make_unique<EditorViewCameraCalculator>();
+
+		}
+		
 		//Select a default physical device
 		if (!SelectPhysicalDevice(0)) {
 			LOG(Rendering, Error, "Failed to select default physical device");
@@ -328,7 +337,7 @@ namespace Rendering {
 		return std::make_shared<GraphicsPipelineResources>(*device, modules, *uniformLayouts, vertex, passes->surface);
 	}
 
-	std::shared_ptr<MeshResources> RenderingSystem::CreateMesh(StaticMesh const& mesh, CommandPool& pool, MeshCreationHelper& helper) {
+	std::shared_ptr<MeshResources> RenderingSystem::CreateMesh(StaticMesh const& mesh, TransferCommandPool& pool, MeshCreationHelper& helper) {
 		//Calculate byte size values for the input mesh
 		const auto BufferSizeVisitor = [](auto const& v) { return v.size() * sizeof(typename std::remove_reference_t<decltype(v)>::value_type); };
 		size_t const vertexBytes = std::visit(BufferSizeVisitor, mesh.vertices);

@@ -4,7 +4,6 @@
 #include "Engine/Reflection.h"
 #include "Engine/StringUtils.h"
 #include "Engine/StringView.h"
-#include "Engine/TemporaryStrings.h"
 
 /** A stable and cheap identifier based on a string, but which internally caches strings to avoid keeping many duplicates in memory. This also means comparisons are very fast. */
 struct StringID {
@@ -15,7 +14,7 @@ struct StringID {
 		friend consteval Initializer operator ""_sid(char const* p, size_t s);
 
 		constexpr Initializer(StringUtils::DecomposedString const& source) : source(source), hash(CreateHash(source.body)) {
-			if (ContainsInvalidCharacters(source.body)) throw FormatType<std::runtime_error>("Source string contains invalid characters");
+			if (ContainsInvalidCharacters(source.body)) throw std::runtime_error{ "Source string contains invalid characters" };
 		}
 		constexpr Initializer(std::string_view string) : Initializer(StringUtils::DecomposedString{ string }) {}
 

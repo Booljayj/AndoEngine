@@ -1,16 +1,118 @@
 #include "Rendering/Surface.h"
-#include "Engine/EnumArray.h"
-#include "Rendering/Material.h"
-#include "Rendering/MeshRenderer.h"
-#include "Rendering/RenderingSystem.h"
-#include "Rendering/StaticMesh.h"
-#include "Rendering/UniformTypes.h"
-#include "Rendering/Vulkan/GraphicsCommands.h"
 #include "Rendering/Vulkan/QueueSelection.h"
 
 namespace Rendering {
+	SurfaceFrameOrganizer::SurfaceFrameOrganizer(VkDevice device, VmaAllocator allocator, SurfaceQueues const& queues, Swapchain const& swapchain, UniformLayouts const& uniform_layouts, EBuffering buffering)
+		: device(device)
+		, allocator(allocator)
+		, global_layout(uniform_layouts.global)
+		, object_layout(uniform_layouts.object)
+		, swapchain(swapchain)
+		, queues(queues)
+	{
+		size_t const num_frames = GetNumFrames(buffering);
+		size_t const num_images = swapchain.GetNumImages();
+
+		//Create the resources that are unique to each frame
+		for (size_t index = 0; index < num_frames; ++index) {
+			frames.emplace_back(device, queues.graphics, global_layout, object_layout, allocator);
+		}
+
+		//Create the resources that are unique to each swapchain image
+		imageFences.resize(num_images, nullptr);
+
+		imageSubmittedSemaphores.reserve(num_images);
+		for (size_t index = 0; index < num_images; ++index) {
+			imageSubmittedSemaphores.emplace_back(device, 0);
+		}
+	}
+
+	FrameResources* SurfaceFrameOrganizer::PrepareFrame(std::span<ViewRenderingParameters> view_params, ResourcesCollection& previous_resources) {
+		//The timeout duration in nanoseconds to wait for the frame resources to finish the previous render.
+		//If the previous render takes longer than this, then this render call has failed.
+		constexpr auto timeout = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::seconds(5));
+
+		FrameResources& frame = frames[currentFrameIndex];
+
+		//Wait until the frame is no longer being used. If this takes too long, we'll have to skip rendering.
+		if (!frame.fence.WaitUntilSignalled(timeout)) {
+			LOG(Vulkan, Warning, "Timed out waiting for fence");
+			return nullptr;
+		}
+
+		frame.Prepare(device, view_params, queues.graphics, global_layout, object_layout, allocator, previous_resources);
+
+		//Acquire the swapchain image that can be used for this frame
+		frame.current_image_index = 0;
+		if (vkAcquireNextImageKHR(device, swapchain, timeout.count(), frame.image_available_semaphore, VK_NULL_HANDLE, &frame.current_image_index) != VK_SUCCESS) {
+			LOG(Vulkan, Warning, "Timed out waiting for next available swapchain image");
+			return nullptr;
+		}
+
+		if (frame.current_image_index >= imageFences.size()) {
+			throw FormatType<std::runtime_error>("AcquireNextImage index is out of range: %i >= %i", frame.current_image_index, imageFences.size());
+		}
+
+		//If another frame is still using this image, wait for it to complete
+		if (imageFences[frame.current_image_index] != VK_NULL_HANDLE) {
+			if (vkWaitForFences(device, 1, &imageFences[frame.current_image_index], VK_TRUE, timeout.count()) != VK_SUCCESS) {
+				LOG(Vulkan, Warning, "Timed out waiting for image fence {}", frame.current_image_index);
+				return nullptr;
+			}
+		}
+
+		//This frame will now be associated with a new image, so stop tracking this frame's fence with any other image
+		ranges::replace(imageFences, (VkFence)frame.fence, VkFence{ VK_NULL_HANDLE });
+
+		return &frame;
+	}
+
+	void SurfaceFrameOrganizer::Submit(FrameResources const& frame) {
+		for (ViewResources const& view : frame.views) {
+			view.uniforms.global.Flush();
+			view.uniforms.object.Flush();
+		}
+
+		//Assign this frame's fence as the one using the swap image so other frames that try to use this image know to wait
+		imageFences[frame.current_image_index] = frame.fence;
+
+		//Reset the fence for this frame, so we can start another rendering process that it will track
+		frame.fence.Reset();
+
+		//Set up information for how commands should be processed when submitted to the queue
+		VkSemaphore const imageAvailableSemaphores[] = { frame.image_available_semaphore };
+		VkPipelineStageFlags const imageAVailableStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+		static_assert(std::size(imageAvailableSemaphores) == std::size(imageAVailableStages), "Number of semaphores must equal number of stages");
+
+		VkSemaphore const submitFinishedSemaphores[] = { imageSubmittedSemaphores[frame.current_image_index] };
+
+		queues.graphics.Submit(imageAvailableSemaphores, imageAVailableStages, frame.view_command_buffers, submitFinishedSemaphores, frame.fence);
+		queues.present.Present(submitFinishedSemaphores, MakeSpan(swapchain), MakeSpan(frame.current_image_index));
+
+		//We've successfully finished rendering this frame, so move to the next frame
+		currentFrameIndex = (currentFrameIndex + 1) % frames.size();
+	}
+
+	SurfaceFrameOrganizer::PoolSizesType SurfaceFrameOrganizer::GetPoolSizes(EBuffering buffering) {
+		uint32_t const num_frames = static_cast<uint32_t>(GetNumFrames(buffering));
+
+		//Each frame should have:
+		//- One VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER (used by global uniforms)
+		//- One VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC (used by object uniforms)
+		//- Up to 16 VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER (used by samplers in the global or object uniforms)
+		//- Two descriptor sets (for global and object uniforms)
+		return {
+			VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, num_frames },
+			VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, num_frames },
+			VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, num_frames * 16 },
+		};
+	}
+
 	Surface::Surface(VkInstance instance, HAL::Window& inWindow)
-	: instance(instance), window(inWindow), retryCount(0), shouldRecreateSwapchain(false)
+		: instance(instance)
+		, window(inWindow)
+		, retryCount(0)
+		, shouldRecreateSwapchain(false)
 	{
 		if (SDL_Vulkan_CreateSurface(window, instance, &surface) != SDL_TRUE || !surface) {
 			throw std::runtime_error{ "Failed to create Vulkan window surface" };
@@ -29,7 +131,11 @@ namespace Rendering {
 		vkDestroySurfaceKHR(instance, surface, nullptr);
 	}
 
-	void Surface::InitializeRendering(Device const& device, PhysicalDeviceDescription const& physical, RenderPasses const& passes, UniformLayouts const& layouts) {
+	glm::u32vec2 Surface::GetExtent() const {
+		return swapchain->GetExtent();
+	}
+
+	void Surface::InitializeRendering(Device const& device, PhysicalDeviceDescription const& physical, RenderPasses const& passes, UniformLayouts const& uniform_layouts) {
 		if (queues || swapchain) throw std::runtime_error{ "Initializing rendering on a surface which is already initialized" };
 
 		QueueFamilySelectors selectors{ physical.GetSurfaceFamilies(*this) };
@@ -51,7 +157,7 @@ namespace Rendering {
 
 		swapchain.emplace(device, nullptr, presentation, capabilities, *this);
 		framebuffers.emplace(device, *swapchain, passes);
-		organizer.emplace(device, device, *queues, *swapchain, layouts, EBuffering::Double);
+		organizer.emplace(device, device, *queues, *swapchain, uniform_layouts, EBuffering::Double);
 	}
 
 	void Surface::DeinitializeRendering() {
@@ -61,7 +167,7 @@ namespace Rendering {
 		queues.reset();
 	}
 
-	bool Surface::RecreateSwapchain(Device const& device, PhysicalDeviceDescription const& physical, RenderPasses const& passes, UniformLayouts const& layouts) {
+	bool Surface::RecreateSwapchain(Device const& device, PhysicalDeviceDescription const& physical, RenderPasses const& passes, UniformLayouts const& uniform_layouts) {
 		organizer.reset();
 		framebuffers.reset();
 
@@ -77,146 +183,20 @@ namespace Rendering {
 		}
 
 		framebuffers.emplace(device, *swapchain, passes);
-		organizer.emplace(device, device, *queues, *swapchain, layouts, EBuffering::Double);
+		organizer.emplace(device, device, *queues, *swapchain, uniform_layouts, EBuffering::Double);
 
 		return true;
 	}
 
-	bool Surface::Render(RenderPasses const& passes, entt::registry& registry, ResourcesCollection& previous_resources) {
-		//@todo This would ideally be done with some acceleration structure that contains a mapping between the pipelines and all of
-		//      the geometry that should be drawn with that pipeline, to avoid binding the same pipeline more than once and to strip
-		//      out culled geometry.
-		
-		auto const renderables = registry.view<MeshRenderer const>();
+	Framebuffer const& Surface::GetFramebuffer(uint32_t image_index) const {
+		return framebuffers->surface[image_index];
+	}
 
-		constexpr size_t numThreads = 1;
-		auto const context = organizer->CreateRecordingContext(renderables.size(), numThreads, previous_resources);
-		if (context) {
-			{
-				FrameUniforms& uniforms = context->uniforms;
+	FrameResources* Surface::PrepareFrame(std::span<ViewRenderingParameters> view_params, ResourcesCollection& previous_resources) {
+		return organizer->PrepareFrame(view_params, previous_resources);
+	}
 
-				glm::u32vec2 const extent = swapchain->GetExtent();
-				VkViewport const viewport{
-					.x = 0.0f,
-					.y = 0.0f,
-					.width = static_cast<float>(extent.x),
-					.height = static_cast<float>(extent.y),
-					.minDepth = 0.0f,
-					.maxDepth = 1.0f,
-				};
-				VkRect2D const scissor{
-					.offset = { 0, 0 },
-					.extent = { extent.x, extent.y },
-				};
-
-				//The inheritance info that is shared by all secondary command buffers
-				CommandInheritance const inheritance{
-					.renderPass = passes.surface,
-					.framebuffer = framebuffers->surface[context->imageIndex],
-				};
-				
-				const auto draw_partial = [&passes, renderables, &context, &uniforms, &viewport, &scissor, &inheritance](size_t thread_index) {
-					ThreadBuffer buffer{ 20'000 };
-
-					size_t const objects_per_thread = renderables.size() / numThreads;
-					size_t const extra_objects = renderables.size() % numThreads;
-
-					size_t const start = thread_index * objects_per_thread;
-					size_t const end = start + objects_per_thread + (thread_index < extra_objects ? 1 : 0);
-
-					GraphicsCommandWriter commands{ context->secondaryCommandBuffers[thread_index], inheritance };
-
-					commands.SetViewports(0, MakeSpan(viewport));
-					commands.SetScissors(0, MakeSpan(scissor));
-
-					for (size_t index = start; index < end; ++index) {
-						entt::entity const entity = renderables.handle()->operator[](index);
-						auto const& renderer = renderables.get<MeshRenderer const>(entity);
-
-						Material const* material = renderer.material.get();
-						StaticMesh const* mesh = renderer.mesh.get();
-
-						if (material && material->objects && mesh && mesh->objects) {
-							context->threadResources[thread_index] += material->objects;
-							context->threadResources[thread_index] += mesh->objects;
-
-							enum class EDynamicOffsets : uint8_t {
-								Object,
-								MAX
-							};
-							EnumArray<uint32_t, EDynamicOffsets> offsets;
-
-							//Write to the part of the object uniform buffer designated for this object
-							offsets[EDynamicOffsets::Object] = uniforms.object.Write(
-								ObjectUniforms{
-									.modelViewProjection = glm::identity<glm::mat4>(),
-								},
-								index
-							);
-
-							//Bind the pipeline that will be used for rendering
-							commands.BindGraphicsPipeline(material->objects->pipeline);
-							
-							//Bind the descriptor sets to use for this draw command
-							EnumArray<VkDescriptorSet, EGraphicsLayouts> sets;
-							sets[EGraphicsLayouts::Global] = uniforms.global;
-							sets[EGraphicsLayouts::Object] = uniforms.object;
-							//sets[EGraphicsLayouts::Material] = material->gpuResources->set;
-
-							commands.BindGraphicsDescriptorSets(material->objects->layouts.pipeline, 0, MakeSpan(sets), MakeSpan(offsets));
-
-							//Bind the vetex and index buffers for the mesh
-							VkBuffer const mesh_buffer = mesh->objects->buffer;
-							commands.BindVertexBuffers(0, MakeSpan(mesh_buffer), MakeSpan(mesh->objects->offset.vertex));
-							commands.BindIndexBuffer(mesh_buffer, mesh->objects->offset.index, mesh->objects->indexType);
-
-							//Submit the command to draw using the vertex and index buffers
-							constexpr uint32_t instance_count = 1;
-							commands.DrawIndexed(0, mesh->objects->size.indices, 0, instance_count);
-						}
-					}
-				};
-
-				//Start the worker threads that will begin adding commands to the secondary command buffers. We want this to happen in parallel with as much of the main thread work as possible.
-				t_vector<std::jthread> workers;
-				workers.reserve(numThreads);
-
-				for (size_t thread_index = 0; thread_index < numThreads; ++thread_index) {
-					workers.emplace_back(draw_partial, thread_index);
-				}
-
-				//Write global uniform values that can be accessed by shaders
-				uniforms.global.Write(
-					GlobalUniforms{
-						.viewProjection = glm::identity<glm::mat4>(),
-						.viewProjectionInverse = glm::inverse(glm::identity<glm::mat4>()),
-						.time = 0,
-					}
-				);
-
-				GraphicsCommandWriter commands{ context->primaryCommandBuffer };
-
-				//Create a scope for all commands that belong to the surface render pass
-				Geometry::ScreenRect const rect = { glm::i32vec2{ 0, 0 }, extent };
-				SurfaceRenderPass::ScopedRecord const scopedRecord{ commands, passes.surface, framebuffers->surface[context->imageIndex], rect };
-
-				//Wait for the workers to finish, and then add their commands to the primary command buffer. We do this by clearing to make sure workers are not used beyond this point.
-				workers.clear();
-				commands.ExecuteCommands(context->secondaryCommandBuffers);
-			}
-
-			//Submit the rendering commands for this frame
-			organizer->Submit(*context);
-
-			retryCount = 0;
-			return true;
-
-		} else {
-			if (++retryCount >= maxRetryCount) {
-				LOG(Rendering, Error, "Too many subsequent frames ({}) have failed to render.", maxRetryCount);
-				return false;
-			}
-			return true;
-		}
+	void Surface::SubmitFrame(FrameResources& frame) {
+		organizer->Submit(frame);
 	}
 }
