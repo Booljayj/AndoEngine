@@ -1,9 +1,10 @@
 #include "Rendering/Vulkan/Framework.h"
+#include "Rendering/Vulkan/Environment.h"
 #include "Engine/Format.h"
 #include "Engine/Logging.h"
 
 namespace Rendering {
-	Framework::Framework(HAL::Window const& window) {
+	Framework::Framework(Environment const& environment, NameSpan enabled_layer_names, NameSpan enabled_extension_names) {
 		ScopedThreadBufferMark mark;
 
 #ifdef VULKAN_DEBUG
@@ -13,26 +14,11 @@ namespace Rendering {
 
 		//Vulkan Instance
 		{
-			//Layer support
-			uint32_t numLayers = 0;
-			vkEnumerateInstanceLayerProperties(&numLayers, nullptr);
-			layers.resize(numLayers);
-			vkEnumerateInstanceLayerProperties(&numLayers, layers.data());
-
-			auto const requiredLayers = GetInstanceLayerNames();
-			for (auto layer : requiredLayers) {
-				if (!SupportsLayer(layer)) throw FormatType<std::runtime_error>("Required layer %s is not supported by Vulkan instances", layer);
+			for (char const* layer_name : enabled_layer_names) {
+				if (!environment.SupportsLayer(layer_name)) throw FormatType<std::runtime_error>("Enabled layer {} is not supported by Vulkan environment", layer_name);
 			}
-
-			//Extension support
-			uint32_t numExtensions = 0;
-			vkEnumerateInstanceExtensionProperties(nullptr, &numExtensions, nullptr);
-			extensions.resize(numExtensions);
-			vkEnumerateInstanceExtensionProperties(nullptr, &numExtensions, extensions.data());
-
-			auto const requiredExtensions = GetInstanceExtensionNames(window);
-			for (auto extension : requiredExtensions) {
-				if (!SupportsExtension(extension)) throw FormatType<std::runtime_error>("Required extension %s is not supported by Vulkan instances", extension);
+			for (char const* extension_name : enabled_extension_names) {
+				if (!environment.SupportsExtension(extension_name)) throw FormatType<std::runtime_error>("Enabled extension {} is not supported by Vulkan environment", extension_name);
 			}
 
 			//Application info
@@ -57,11 +43,11 @@ namespace Rendering {
 #endif
 				.pApplicationInfo = &appInfo,
 				//Validation layers
-				.enabledLayerCount = static_cast<uint32_t>(requiredLayers.size()),
-				.ppEnabledLayerNames = requiredLayers.data(),
+				.enabledLayerCount = static_cast<uint32_t>(enabled_layer_names.size()),
+				.ppEnabledLayerNames = enabled_layer_names.data(),
 				//Extensions
-				.enabledExtensionCount = static_cast<uint32_t>(requiredExtensions.size()),
-				.ppEnabledExtensionNames = requiredExtensions.data(),
+				.enabledExtensionCount = static_cast<uint32_t>(enabled_extension_names.size()),
+				.ppEnabledExtensionNames = enabled_extension_names.data(),
 			};
 			
 			if (vkCreateInstance(&instanceCI, nullptr, &instance) != VK_SUCCESS || !instance) {
@@ -76,20 +62,7 @@ namespace Rendering {
 			t_vector<VkPhysicalDevice> devices{ numDevices };
 			vkEnumeratePhysicalDevices(instance, &numDevices, devices.data());
 
-			auto const requiredDeviceExtensions = GetDeviceExtensionNames();
-
-			for (VkPhysicalDevice device : devices) {
-				PhysicalDeviceDescription const physical{ device };
-
-				for (auto extension : requiredDeviceExtensions) {
-					if (!physical.SupportsExtension(extension)) {
-						LOG(Vulkan, Warning, "Physical device {} cannot be used because it does not support required extension {}", physical.properties.deviceName, extension);
-						continue;
-					}
-				}
-
-				physicalDevices.emplace_back(physical);
-			}
+			for (VkPhysicalDevice device : devices) physicalDevices.emplace_back(device);
 
 			if (physicalDevices.empty()) {
 				throw FormatType<std::runtime_error>("No usable physical devices were found");
@@ -115,57 +88,6 @@ namespace Rendering {
 		destroyMessenger(instance, messenger, nullptr);
 #endif
 		vkDestroyInstance(instance, nullptr);
-	}
-
-	t_vector<char const*> Framework::GetInstanceLayerNames() {
-		return {
-#ifdef VULKAN_DEBUG
-			"VK_LAYER_KHRONOS_validation"
-#endif
-		};
-	}
-
-	t_vector<char const*> Framework::GetInstanceExtensionNames(HAL::Window const& window) {
-		//Standard extensions which the application requires
-		constexpr char const* standardExtensions[] = {
-#ifdef VULKAN_DEBUG
-			VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
-#endif
-			VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
-		};
-		constexpr size_t numStandardExtensions = std::size(standardExtensions);
-
-		//Extensions required by the HAL
-		uint32_t numHALExtensions = 0;
-		SDL_Vulkan_GetInstanceExtensions(window, &numHALExtensions, nullptr);
-		t_vector<char const*> halExtensions{ numHALExtensions };
-		SDL_Vulkan_GetInstanceExtensions(window, &numHALExtensions, halExtensions.data());
-
-		//Create the full list of extensions that will be provided to the API
-		t_vector<char const*> extensions;
-		extensions.reserve(numStandardExtensions + halExtensions.size());
-
-		extensions.insert(extensions.end(), standardExtensions, standardExtensions + numStandardExtensions);
-		extensions.insert(extensions.end(), halExtensions.begin(), halExtensions.end());
-
-		return extensions;
-	}
-
-	t_vector<char const*> Framework::GetDeviceExtensionNames() {
-		return {
-			VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-			VK_KHR_MAINTENANCE3_EXTENSION_NAME,
-		};
-	}
-
-	bool Framework::SupportsLayer(char const* layer) const {
-		auto const IsMatchingLayer = [layer](VkLayerProperties const& props) { return strcmp(props.layerName, layer) == 0; };
-		return std::any_of(layers.begin(), layers.end(), IsMatchingLayer);
-	}
-
-	bool Framework::SupportsExtension(char const* extension) const {
-		auto const IsMatchingExtension = [extension](VkExtensionProperties const& props) { return strcmp(props.extensionName, extension) == 0; };
-		return std::any_of(extensions.begin(), extensions.end(), IsMatchingExtension);
 	}
 
 #ifdef VULKAN_DEBUG

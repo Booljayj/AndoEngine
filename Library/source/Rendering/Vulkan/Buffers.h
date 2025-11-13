@@ -9,8 +9,11 @@ namespace Rendering {
 		constexpr VkBufferUsageFlagBits TransferSrc = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 		constexpr VkBufferUsageFlagBits TransferDst = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 		constexpr VkBufferUsageFlagBits Uniform = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+		constexpr VkBufferUsageFlagBits Storage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 		constexpr VkBufferUsageFlagBits Index = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 		constexpr VkBufferUsageFlagBits Vertex = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+
+		constexpr VkBufferUsageFlagBits ShaderBufferAddress = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
 	}
 
 	/** Aliases for values in the VmaMemoryUsage enum */

@@ -37,8 +37,10 @@ namespace Rendering {
 		/** The maximum number of consecutive times we can fail to render a frame */
 		static constexpr uint8_t maxRetryCount = 5;
 
-		/** The enabled features on any physical device that this application uses */
-		VkPhysicalDeviceFeatures features = {};
+		/** The required features on any physical device that this application uses */
+		PhysicalDeviceFeatures required_device_features;
+		/** The required extensions on any physical device that this application uses */
+		std::vector<char const*> required_device_extension_names;
 
 		/** The vulkan framework for this application */
 		std::optional<Framework> framework;
@@ -64,7 +66,7 @@ namespace Rendering {
 		/** Flags for tracking rendering behavior and changes */
 		uint8_t retryCount = 0;
 		
-		RenderingSystem() = default;
+		RenderingSystem();
 
 		bool Startup(HAL::WindowingSystem& windowing, Resources::Database& database);
 		bool Shutdown(Resources::Database& database);
@@ -130,6 +132,9 @@ namespace Rendering {
 		/** Window surfaces that will be rendered */
 		std::vector<std::unique_ptr<Surface>> surfaces;
 
+		static t_vector<char const*> GetRequiredInstanceLayerNames();
+		static t_vector<char const*> GetRequiredInstanceExtensionNames(HAL::Window const& window);
+		
 		/** Create the pipeline resources for a material */
 		std::shared_ptr<GraphicsPipelineResources> CreateGraphicsPipeline(Material const& material, PipelineCreationHelper& helper);
 		/** Create the mesh resources for a mesh component */

@@ -3,6 +3,7 @@
 #include <future>
 #include <mutex>
 #include <shared_mutex>
+#include <stop_token>
 #include <thread>
 #include "Engine/Concepts.h"
 

@@ -4,8 +4,8 @@
 #include "Engine/Optional.h"
 #include "HAL/WindowingSystem.h"
 #include "Rendering/RenderTarget.h"
-#include "Rendering/Vulkan/FrameResources.h"
 #include "Rendering/Vulkan/RenderPasses.h"
+#include "Rendering/Vulkan/Semaphore.h"
 #include "Rendering/Vulkan/Swapchain.h"
 #include "Rendering/Vulkan/Vulkan.h"
 
@@ -13,6 +13,7 @@ namespace Rendering {
 	struct PhysicalDeviceDescription;
 	struct RenderingSystem;
 	struct ResourcesCollection;
+	struct UniformLayouts;
 
 	/** Buffering levels, which determine the number of frames that will be cycled through for rendering */
 	enum class EBuffering : uint8_t {
@@ -32,10 +33,10 @@ namespace Rendering {
 		 * Prepare the resources for the next frame for rendering. This will wait for resources to be ready if they're not ready immediately.
 		 * If the resources take too long to become ready, this will return nothing and no rendering should happen.
 		 */
-		FrameResources* PrepareFrame(std::span<ViewRenderingParameters> view_params, ResourcesCollection& previous_resources);
+		FrameContext* GetNextFrameContext();
 
 		/** Submit everything currently recorded so that it can be rendered. */
-		void Submit(FrameResources const& frame);
+		void SubmitFrameContext(FrameContext const& frame);
 
 	private:
 		using PoolSizesType = std::array<VkDescriptorPoolSize, 3>;
@@ -48,7 +49,7 @@ namespace Rendering {
 		SurfaceQueues queues;
 
 		/** The frames that we will cycle through when rendering */
-		std::vector<FrameResources> frames;
+		std::vector<FrameContext> frames;
 		/** Copies of the per-frame resources that are being used for each swapchain image */
 		std::vector<VkFence> imageFences;
 		/** Semaphores used to determine when the queue is finished using each swapchain image */
@@ -68,8 +69,6 @@ namespace Rendering {
 		Surface(Surface const&) = delete;
 		Surface(Surface&&) = delete;
 		~Surface();
-
-		glm::u32vec2 GetExtent() const override;
 
 		operator VkSurfaceKHR() const { return surface; }
 		inline bool operator==(HAL::Window::IdType otherID) const { return GetID() == otherID; }
@@ -92,8 +91,8 @@ namespace Rendering {
 		
 	protected:
 		Framebuffer const& GetFramebuffer(uint32_t image_index) const override;
-		FrameResources* PrepareFrame(std::span<ViewRenderingParameters> view_params, ResourcesCollection& previous_resources) override;
-		void SubmitFrame(FrameResources& frame) override;
+		FrameContext* GetNextFrameContext() override;
+		void SubmitFrameContext(FrameContext const& frame) override;
 
 	private:
 		friend RenderingSystem;

@@ -15,11 +15,7 @@ namespace Rendering {
 			std::is_trivially_copyable_v<T> and std::is_trivially_destructible_v<T> and //Copied and destroyed trivially
 			TupleElementSizes<typename T::VariableTypes>::Sum() == sizeof(T) and //Packed tightly, with no unaccounted-for padding space
 			(sizeof(T) % sizeof(uint32_t)) == 0 and //Size is a multiple of 4
-			alignof(T) == alignof(uint32_t) and //Aligned to 4-byte boundaries
-			requires {
-				{ T::GetBindingDescription() } -> std::convertible_to<VkVertexInputBindingDescription>;
-				{ T::GetAttributeDescriptions() } -> ranges::range;
-			};
+			alignof(T) == alignof(uint32_t); //Aligned to 4-byte boundaries
 	}
 
 	/** A simple 3D vertex */
@@ -42,11 +38,8 @@ namespace Rendering {
 		>;
 		static constexpr size_t NumAttributes = std::tuple_size_v<VariableTypes>;
 
-		static VkVertexInputBindingDescription GetBindingDescription();
-		static std::array<VkVertexInputAttributeDescription, NumAttributes> GetAttributeDescriptions();
-
 		Vertex_Simple() = default;
-		Vertex_Simple(glm::vec3 position, Color color, glm::vec3 normal, glm::vec2 uv0, glm::vec2 uv1 = { 0, 0 }, glm::vec2 uv2 = { 0, 0 })
+		Vertex_Simple(glm::vec3 position, Color color, glm::vec3 normal, glm::vec2 uv0, glm::vec2 uv1 = glm::zero<glm::vec2>(), glm::vec2 uv2 = glm::zero<glm::vec2>())
 			: position(position), color(color), normal(normal), uv0(uv0), uv1(uv1), uv2(uv2)
 		{}
 	};
@@ -77,9 +70,6 @@ namespace Rendering {
 			decltype(uv0), decltype(uv1), decltype(uv2), decltype(uv3)
 		>;
 		static constexpr size_t NumAttributes = std::tuple_size_v<VariableTypes>;
-
-		static VkVertexInputBindingDescription GetBindingDescription();
-		static std::array<VkVertexInputAttributeDescription, NumAttributes> GetAttributeDescriptions();
 
 		Vertex_Complex() = default;
 		Vertex_Complex(glm::packed_vec3 position, Color color, glm::vec3 normal, glm::vec3 tangent, glm::vec3 bitangent, uint32_t userData, glm::vec2 uv0, glm::vec2 uv1 = { 0, 0 }, glm::vec2 uv2 = { 0, 0 }, glm::vec2 uv3 = { 0, 0 })

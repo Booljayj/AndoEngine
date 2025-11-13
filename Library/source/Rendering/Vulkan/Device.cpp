@@ -4,10 +4,14 @@
 #include "Engine/TemporaryContainers.h"
 
 namespace Rendering {
-	Device::Device(Framework const& framework, PhysicalDeviceDescription const& physical, VkPhysicalDeviceFeatures features, ExtensionsView extensions, QueueRequests const& requests)
+	Device::Device(Framework const& framework, PhysicalDeviceDescription const& physical, PhysicalDeviceFeatures const& enabled_features, NameSpan enabled_extension_names, QueueRequests const& requests)
 		: physical(physical), device(nullptr)
 	{
 		ScopedThreadBufferMark mark;
+
+		for (char const* extension_name : enabled_extension_names) {
+			if (!physical.SupportsExtension(extension_name)) throw FormatType<std::runtime_error>("Enabled extension {} is not supported by physical device {}", extension_name, physical.properties.deviceName);
+		}
 
 		if (requests.size() == 0) throw std::runtime_error{ "Device was created with no queue requests. At least one must be provided." };
 
@@ -32,25 +36,26 @@ namespace Rendering {
 
 		VkDeviceCreateInfo const deviceCI = {
 			.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+			.pNext = &enabled_features.version10,
 			//Queues
 			.queueCreateInfoCount = static_cast<uint32_t>(queueCIs.size()),
 			.pQueueCreateInfos = queueCIs.data(),
 			//Extensions
-			.enabledExtensionCount = static_cast<uint32_t>(extensions.size()),
-			.ppEnabledExtensionNames = extensions.data(),
+			.enabledExtensionCount = static_cast<uint32_t>(enabled_extension_names.size()),
+			.ppEnabledExtensionNames = enabled_extension_names.data(),
 			//Features
-			.pEnabledFeatures = &features,
+			.pEnabledFeatures = nullptr, //This is handled with VkPhysicalDeviceFeatures2 in the pNext chain
 		};
 
 		if (vkCreateDevice(physical, &deviceCI, nullptr, &device.get()) != VK_SUCCESS || !device) {
-			throw std::runtime_error{ "Failed to create command pool for logical device" };
+			throw std::runtime_error{ "Failed to create logical device" };
 		}
 
 		queues = QueueResults{ device, requests };
 
 		//Create the allocator for device memory
 		VmaAllocatorCreateInfo const allocatorInfo = {
-			.flags = 0,
+			.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT,
 			.physicalDevice = physical,
 			.device = device,
 			.instance = framework,

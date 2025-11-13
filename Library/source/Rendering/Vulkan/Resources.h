@@ -15,11 +15,6 @@ namespace Rendering {
 		MAX
 	};
 
-	struct VertexInformationViews {
-		std::span<VkVertexInputBindingDescription const> bindings;
-		std::span<VkVertexInputAttributeDescription const> attributes;
-	};
-
 	struct GraphicsPipelineResources {
 		struct ShaderModules {
 			VkShaderModule vertex = nullptr;
@@ -33,7 +28,7 @@ namespace Rendering {
 			VkPipelineLayout pipeline = nullptr;
 		} layouts;
 
-		GraphicsPipelineResources(VkDevice device, ShaderModules const& modules, UniformLayouts const& uniforms, VertexInformationViews const& vertex, VkRenderPass pass);
+		GraphicsPipelineResources(VkDevice device, ShaderModules const& modules, UniformLayouts const& uniforms, VkRenderPass pass);
 		GraphicsPipelineResources(GraphicsPipelineResources const&) = delete;
 		GraphicsPipelineResources(GraphicsPipelineResources&&) noexcept = default;
 		~GraphicsPipelineResources();
@@ -45,6 +40,7 @@ namespace Rendering {
 	/** Stores resources related to a mesh */
 	struct MeshResources {
 		Buffer buffer;
+		VkDeviceAddress address;
 
 		struct {
 			VkDeviceSize vertex = 0;
@@ -58,7 +54,7 @@ namespace Rendering {
 
 		VkIndexType indexType = VK_INDEX_TYPE_MAX_ENUM;
 
-		MeshResources(VmaAllocator allocator, size_t capacity);
+		MeshResources(VkDevice device, VmaAllocator allocator, size_t capacity);
 		MeshResources(MeshResources const&) = delete;
 		MeshResources(MeshResources&&) noexcept = default;
 	};

@@ -2,7 +2,7 @@
 
 namespace Rendering {
 	ViewRect FullViewRectCalculator::Calculate(glm::u32vec2 surface_extent) const {
-		return ViewRect{ glm::zero<glm::i32vec2>(), surface_extent };
+		return ViewRect{ surface_extent };
 	}
 	
 	ViewRect FixedViewRectCalculator::Calculate(glm::u32vec2 surface_extent) const {
@@ -14,8 +14,8 @@ namespace Rendering {
 		max = glm::min(max, { surface_extent.x, surface_extent.y });
 
 		return ViewRect{
-			{ static_cast<int32_t>(min.x), static_cast<int32_t>(min.y) },
-			{ static_cast<uint32_t>(max.x - min.x), static_cast<uint32_t>(max.y - min.y) }
+			glm::i32vec2{ static_cast<int32_t>(min.x), static_cast<int32_t>(min.y) },
+			glm::u32vec2{ static_cast<uint32_t>(max.x - min.x), static_cast<uint32_t>(max.y - min.y) }
 		};
 	}
 

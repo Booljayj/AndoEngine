@@ -7,12 +7,16 @@
 #include "Rendering/Vulkan/Vulkan.h"
 
 namespace Rendering {
+	struct Environment;
+
 	/**
 	 * Contains basic components for a Vulkan rendering system. These typically last for the lifetime of the application,
 	 * unless fundamental rendering parameters change.
 	 */
 	struct Framework {
-		Framework(HAL::Window const& window);
+		using NameSpan = std::span<char const* const>;
+
+		Framework(Environment const& environment, NameSpan enabled_layer_names, NameSpan enabled_extension_names);
 		Framework(Framework const&) = delete;
 		Framework(Framework&&) = delete;
 		~Framework();
@@ -20,7 +24,7 @@ namespace Rendering {
 		inline operator VkInstance() const { return instance; }
 		
 		/** Get the oldest version of the Vulkan API that this application requires */
-		static VulkanVersion GetMinVersion() { return VK_API_VERSION_1_0; }
+		static VulkanVersion GetMinVersion() { return VK_API_VERSION_1_2; }
 
 		/** Get a pointer to a Vulkan API function */
 		template<typename Signature>
@@ -29,15 +33,9 @@ namespace Rendering {
 		/** Get the physical devices available on this machine */
 		std::vector<PhysicalDeviceDescription> const& GetPhysicalDevices() const { return physicalDevices; }
 
-		static t_vector<char const*> GetDeviceExtensionNames();
-
 	private:
 		VkInstance instance = nullptr;
 
-		/** Layers that are supported by this instance */
-		std::vector<VkLayerProperties> layers;
-		/** Extensions that are supported by this instance */
-		std::vector<VkExtensionProperties> extensions;
 		/** Physical devices which can be used */
 		std::vector<PhysicalDeviceDescription> physicalDevices;
 
@@ -47,12 +45,6 @@ namespace Rendering {
 		/** The messenger responsible for interpreting debug messages */
 		VkDebugUtilsMessengerEXT messenger = nullptr;
 #endif
-
-		static t_vector<char const*> GetInstanceLayerNames();
-		static t_vector<char const*> GetInstanceExtensionNames(HAL::Window const& window);
-
-		bool SupportsLayer(char const* layer) const;
-		bool SupportsExtension(char const* extension) const;
 
 #ifdef VULKAN_DEBUG
 		/** Callback function invoked by the Vulkan API when a message should be logged */

@@ -1,5 +1,7 @@
 #include "Rendering/Surface.h"
+#include "Rendering/RenderTargetContexts.h"
 #include "Rendering/Vulkan/QueueSelection.h"
+#include "Rendering/Vulkan/UniformLayouts.h"
 
 namespace Rendering {
 	SurfaceFrameOrganizer::SurfaceFrameOrganizer(VkDevice device, VmaAllocator allocator, SurfaceQueues const& queues, Swapchain const& swapchain, UniformLayouts const& uniform_layouts, EBuffering buffering)
@@ -27,20 +29,18 @@ namespace Rendering {
 		}
 	}
 
-	FrameResources* SurfaceFrameOrganizer::PrepareFrame(std::span<ViewRenderingParameters> view_params, ResourcesCollection& previous_resources) {
+	FrameContext* SurfaceFrameOrganizer::GetNextFrameContext() {
 		//The timeout duration in nanoseconds to wait for the frame resources to finish the previous render.
 		//If the previous render takes longer than this, then this render call has failed.
 		constexpr auto timeout = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::seconds(5));
 
-		FrameResources& frame = frames[currentFrameIndex];
+		FrameContext& frame = frames[currentFrameIndex];
 
 		//Wait until the frame is no longer being used. If this takes too long, we'll have to skip rendering.
 		if (!frame.fence.WaitUntilSignalled(timeout)) {
 			LOG(Vulkan, Warning, "Timed out waiting for fence");
 			return nullptr;
 		}
-
-		frame.Prepare(device, view_params, queues.graphics, global_layout, object_layout, allocator, previous_resources);
 
 		//Acquire the swapchain image that can be used for this frame
 		frame.current_image_index = 0;
@@ -67,12 +67,7 @@ namespace Rendering {
 		return &frame;
 	}
 
-	void SurfaceFrameOrganizer::Submit(FrameResources const& frame) {
-		for (ViewResources const& view : frame.views) {
-			view.uniforms.global.Flush();
-			view.uniforms.object.Flush();
-		}
-
+	void SurfaceFrameOrganizer::SubmitFrameContext(FrameContext const& frame) {
 		//Assign this frame's fence as the one using the swap image so other frames that try to use this image know to wait
 		imageFences[frame.current_image_index] = frame.fence;
 
@@ -131,10 +126,6 @@ namespace Rendering {
 		vkDestroySurfaceKHR(instance, surface, nullptr);
 	}
 
-	glm::u32vec2 Surface::GetExtent() const {
-		return swapchain->GetExtent();
-	}
-
 	void Surface::InitializeRendering(Device const& device, PhysicalDeviceDescription const& physical, RenderPasses const& passes, UniformLayouts const& uniform_layouts) {
 		if (queues || swapchain) throw std::runtime_error{ "Initializing rendering on a surface which is already initialized" };
 
@@ -158,9 +149,13 @@ namespace Rendering {
 		swapchain.emplace(device, nullptr, presentation, capabilities, *this);
 		framebuffers.emplace(device, *swapchain, passes);
 		organizer.emplace(device, device, *queues, *swapchain, uniform_layouts, EBuffering::Double);
+
+		extent = swapchain->GetExtent();
 	}
 
 	void Surface::DeinitializeRendering() {
+		extent = glm::zero<glm::u32vec2>();
+
 		organizer.reset();
 		framebuffers.reset();
 		swapchain.reset();
@@ -185,6 +180,8 @@ namespace Rendering {
 		framebuffers.emplace(device, *swapchain, passes);
 		organizer.emplace(device, device, *queues, *swapchain, uniform_layouts, EBuffering::Double);
 
+		extent = swapchain->GetExtent();
+
 		return true;
 	}
 
@@ -192,11 +189,11 @@ namespace Rendering {
 		return framebuffers->surface[image_index];
 	}
 
-	FrameResources* Surface::PrepareFrame(std::span<ViewRenderingParameters> view_params, ResourcesCollection& previous_resources) {
-		return organizer->PrepareFrame(view_params, previous_resources);
+	FrameContext* Surface::GetNextFrameContext() {
+		return organizer->GetNextFrameContext();
 	}
 
-	void Surface::SubmitFrame(FrameResources& frame) {
-		organizer->Submit(frame);
+	void Surface::SubmitFrameContext(FrameContext const& frame) {
+		organizer->SubmitFrameContext(frame);
 	}
 }

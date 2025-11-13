@@ -1,9 +1,9 @@
 #pragma once
 #include "Rendering/Vertex.h"
-#include "Rendering/Vulkan/Resources.h"
 #include "Resources/Resource.h"
 
 namespace Rendering {
+	struct GraphicsPipelineResources;
 	struct RenderingSystem;
 	struct VertexShader;
 	struct FragmentShader;

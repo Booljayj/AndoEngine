@@ -3,36 +3,63 @@
 #include "Engine/Utility.h"
 
 namespace Rendering {
+	PhysicalDeviceFeatures::PhysicalDeviceFeatures() {
+		version10.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
+		version10.pNext = &version11;
+
+		version11.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
+		version11.pNext = &version12;
+
+		version12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+		version12.pNext = nullptr;
+	}
+
+	PhysicalDeviceFeatures::PhysicalDeviceFeatures(VkPhysicalDevice device)
+		: PhysicalDeviceFeatures()
+	{
+		vkGetPhysicalDeviceFeatures2(device, &version10);
+	}
+
+	PhysicalDeviceFeatures::PhysicalDeviceFeatures(const PhysicalDeviceFeatures& other) {
+		version10 = other.version10;
+		version11 = other.version11;
+		version12 = other.version12;
+
+		version10.pNext = &version11;
+		version11.pNext = &version12;
+		version12.pNext = nullptr;
+	}
+
 	PhysicalDeviceDescription::PhysicalDeviceDescription(VkPhysicalDevice device)
 		: device(device)
+		, supported_features(device)
 	{
 		vkGetPhysicalDeviceProperties(device, &properties);
-		vkGetPhysicalDeviceFeatures(device, &features);
 		{
-			uint32_t numExtensions = 0;
-			vkEnumerateDeviceExtensionProperties(device, nullptr, &numExtensions, nullptr);
-			extensions.resize(numExtensions);
-			vkEnumerateDeviceExtensionProperties(device, nullptr, &numExtensions, extensions.data());
+			uint32_t num_extensions = 0;
+			vkEnumerateDeviceExtensionProperties(device, nullptr, &num_extensions, nullptr);
+			supported_extensions.resize(num_extensions);
+			vkEnumerateDeviceExtensionProperties(device, nullptr, &num_extensions, supported_extensions.data());
 		}
 		{
-			uint32_t numFamilies = 0;
-			vkGetPhysicalDeviceQueueFamilyProperties(device, &numFamilies, nullptr);
-			t_vector<VkQueueFamilyProperties> rawFamilies{ numFamilies };
-			vkGetPhysicalDeviceQueueFamilyProperties(device, &numFamilies, rawFamilies.data());
+			uint32_t num_families = 0;
+			vkGetPhysicalDeviceQueueFamilyProperties(device, &num_families, nullptr);
+			t_vector<VkQueueFamilyProperties> raw_families{ num_families };
+			vkGetPhysicalDeviceQueueFamilyProperties(device, &num_families, raw_families.data());
 
-			families.resize(numFamilies);
-			for (uint32_t index = 0; index < numFamilies; ++index) {
-				VkQueueFamilyProperties const& properties = rawFamilies[index];
+			families.resize(num_families);
+			for (uint32_t index = 0; index < num_families; ++index) {
+				VkQueueFamilyProperties const& family = raw_families[index];
 
-				families[index].flags = FQueueFlags::Create(properties.queueFlags);
-				families[index].size = properties.queueCount;
+				families[index].flags = FQueueFlags::Create(family.queueFlags);
+				families[index].size = family.queueCount;
 			}
 		}
 	}
 
-	bool PhysicalDeviceDescription::SupportsExtension(char const* extension) const {
-		auto const IsMatchingExtension = [extension](VkExtensionProperties const& props) { return strcmp(props.extensionName, extension) == 0; };
-		return ranges::any_of(extensions, IsMatchingExtension);
+	bool PhysicalDeviceDescription::SupportsExtension(char const* extension_name) const {
+		auto const MatchesExtensionName = [extension_name](VkExtensionProperties const& extension) { return strcmp(extension.extensionName, extension_name) == 0; };
+		return ranges::any_of(supported_extensions, MatchesExtensionName);
 	}
 
 	t_vector<QueueFamilyDescription> PhysicalDeviceDescription::GetSurfaceFamilies(VkSurfaceKHR surface) const {

@@ -4,8 +4,12 @@
 namespace Rendering {
 	/** A rect that defines the draw area for a view */
 	struct ViewRect {
-		glm::i32vec2 offset;
-		glm::u32vec2 extent;
+		glm::i32vec2 offset = glm::zero<glm::i32vec2>();
+		glm::u32vec2 extent = glm::zero<glm::u32vec2>();
+
+		ViewRect() = default;
+		ViewRect(glm::u32vec2 extent) : extent(extent) {}
+		ViewRect(glm::i32vec2 offset, glm::u32vec2 extent) : offset(offset), extent(extent) {}
 	};
 
 	/** Base class for  */

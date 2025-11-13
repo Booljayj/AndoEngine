@@ -1,4 +1,9 @@
 //Fragment in/out variables for simple rendering
 
-layout(location = 0) in vec4 inFragColor;
-layout(location = 0) out vec4 outColor;
+layout(location = 0) in vec4 inColor;
+layout(location = 1) in vec3 inNormal;
+layout(location = 2) in vec2 inUV0;
+layout(location = 3) in vec2 inUV1;
+layout(location = 4) in vec2 inUV2;
+
+layout(location = 0) out vec4 outFragColor;

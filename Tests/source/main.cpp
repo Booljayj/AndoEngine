@@ -112,6 +112,13 @@ int main(int argc, char** argv) {
 	Application application;
 
 	if (application.Startup()) {
+		//Tell the primary surface's main view to render the entities in the primary registry
+		{
+			auto& surface = application.rendering.GetPrimarySurface();
+			auto views = surface.ts_views.LockExclusive();
+			views[0].registry = &application.registry;
+		}
+
 		//Create the default plane mesh. This demonstrates the process of assigning raw vertex and index information for a mesh.
 		Handle<StaticMesh> const plane = application.database.Create<StaticMesh>(
 			"SM_Plane"_sid, Database::GetTemporary(),
@@ -147,8 +154,12 @@ int main(int argc, char** argv) {
 #include "attributes_simple.vert.incl"
 
 void main() {
-	gl_Position = object.modelViewProjection * vec4(inPosition, 1.0);
-	outFragColor = inColor;
+	Vertex v = PushConstants.vertex_buffer.vertices[gl_VertexIndex];
+	gl_Position = PushConstants.mvp_matrix * vec4(v.position, 1.0f);
+
+	outColor = GetColor(gl_VertexIndex);
+	outNormal = GetNormal(gl_VertexIndex);
+	outUV0 = GetUV0(gl_VertexIndex);
 }
 					)"sv,
 							"default.vert"sv
@@ -169,7 +180,7 @@ void main() {
 #include "fragments_simple.frag.incl"
 
 void main() {
-    outColor = inFragColor;
+    outFragColor = inColor;
 }
 					)"sv,
 							"default.frag"sv

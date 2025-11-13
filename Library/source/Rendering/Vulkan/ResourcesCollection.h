@@ -1,9 +1,11 @@
 #pragma once
 #include "Engine/Array.h"
 #include "Engine/SmartPointers.h"
-#include "Rendering/Vulkan/Resources.h"
 
 namespace Rendering {
+	struct GraphicsPipelineResources;
+	struct MeshResources;
+
 	/** Holds a collection of handles to various resources. Used to prevent those resources from being destroyed until it is safe to do so. */
 	struct ResourcesCollection {
 		ResourcesCollection() = default;

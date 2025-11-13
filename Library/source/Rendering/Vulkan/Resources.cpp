@@ -1,9 +1,10 @@
 #include "Rendering/Vulkan/Resources.h"
 #include "Engine/EnumArray.h"
+#include "Rendering/Vulkan/PushConstants.h"
 #include "Rendering/Vulkan/UniformLayouts.h"
 
 namespace Rendering {
-	GraphicsPipelineResources::GraphicsPipelineResources(VkDevice device, ShaderModules const& modules, UniformLayouts const& uniforms, VertexInformationViews const& vertex, VkRenderPass pass)
+	GraphicsPipelineResources::GraphicsPipelineResources(VkDevice device, ShaderModules const& modules, UniformLayouts const& uniforms, VkRenderPass pass)
 		: device(device)
 	{
 		//Create the descriptor set for per-material parameters
@@ -16,12 +17,18 @@ namespace Rendering {
 			setLayouts[EGraphicsLayouts::Object] = uniforms.object;
 			//setLayouts[ELayouts::Material] = layouts.set;
 
+			VkPushConstantRange mesh_push_constants{
+				.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+				.offset = 0,
+				.size = sizeof(MeshPushConstants),
+			};
+
 			VkPipelineLayoutCreateInfo const layoutCI{
 				.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
 				.setLayoutCount = setLayouts.size(),
 				.pSetLayouts = setLayouts.data(),
-				.pushConstantRangeCount = 0, // Optional
-				.pPushConstantRanges = nullptr, // Optional
+				.pushConstantRangeCount = 1,
+				.pPushConstantRanges = &mesh_push_constants,
 			};
 			
 			if (vkCreatePipelineLayout(device, &layoutCI, nullptr, &layouts.pipeline) != VK_SUCCESS || !layouts.pipeline) {
@@ -29,13 +36,9 @@ namespace Rendering {
 			}
 		}
 
-		//Vertex Input function
+		//Vertex Input function - we use vertex pulling to gether vertex data, so this is empty
 		VkPipelineVertexInputStateCreateInfo const vertexInputCI{
 			.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-			.vertexBindingDescriptionCount = static_cast<uint32_t>(vertex.bindings.size()),
-			.pVertexBindingDescriptions = vertex.bindings.data(),
-			.vertexAttributeDescriptionCount = static_cast<uint32_t>(vertex.attributes.size()),
-			.pVertexAttributeDescriptions = vertex.attributes.data(),
 		};
 
 		//Input assembly function
@@ -165,7 +168,15 @@ namespace Rendering {
 		}
 	}
 
-	MeshResources::MeshResources(VmaAllocator allocator, size_t capacity)
-		: buffer(allocator, capacity, (BufferUsage::Vertex | BufferUsage::Index | BufferUsage::TransferDst), MemoryUsage::GPU_Only)
-	{}
+	MeshResources::MeshResources(VkDevice device, VmaAllocator allocator, size_t capacity)
+		: buffer(allocator, capacity, (BufferUsage::Storage | BufferUsage::Index | BufferUsage::TransferDst | BufferUsage::ShaderBufferAddress), MemoryUsage::GPU_Only)
+	{
+		VkBufferDeviceAddressInfo const info{
+			.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
+			.pNext = nullptr,
+			.buffer = buffer,
+		};
+
+		address = vkGetBufferDeviceAddress(device, &info);
+	}
 }

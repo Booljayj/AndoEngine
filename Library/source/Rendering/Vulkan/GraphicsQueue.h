@@ -1,6 +1,7 @@
 #pragma once
 #include "Engine/Core.h"
 #include "Engine/MoveOnly.h"
+#include "Rendering/Vulkan/CommandBuffers.h"
 #include "Rendering/Vulkan/QueueReference.h"
 #include "Rendering/Vulkan/Vulkan.h"
 
@@ -31,10 +32,10 @@ namespace Rendering {
 		/** Reset the memory in the pool so it can be used by new command buffers */
 		void Reset();
 
-		VkCommandBuffer CreateBuffer(VkCommandBufferLevel level);
+		VkCommandBuffer CreateBuffer(ECommandBufferLevel level);
 		void DestroyBuffer(VkCommandBuffer buffer);
 
-		std::vector<VkCommandBuffer> CreateBuffers(uint32_t numBuffers, VkCommandBufferLevel level);
+		std::vector<VkCommandBuffer> CreateBuffers(uint32_t numBuffers, ECommandBufferLevel level);
 		void DestroyBuffers(std::span<VkCommandBuffer const> buffers);
 
 	private:
@@ -88,6 +89,11 @@ namespace Rendering {
 				commands, VK_PIPELINE_BIND_POINT_GRAPHICS, layout,
 				set_offset, CastSize(sets.size()), sets.data(), CastSize(dynamic_offsets.size()), dynamic_offsets.data()
 			);
+		}
+
+		template<typename T>
+		inline void PushConstants(VkPipelineLayout layout, VkShaderStageFlagBits stage_mask, uint32_t offset, const T& value) const {
+			vkCmdPushConstants(commands, layout, stage_mask, offset, sizeof(T), &value);
 		}
 
 		inline void BindVertexBuffers(uint32_t binding_offset, Span<VkBuffer> buffers, Span<VkDeviceSize> buffer_offsets) const {

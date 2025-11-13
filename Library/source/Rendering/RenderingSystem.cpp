@@ -7,34 +7,46 @@
 #include "Rendering/StaticMesh.h"
 #include "Rendering/Views/View.h"
 #include "Rendering/Vulkan/Buffers.h"
+#include "Rendering/Vulkan/Environment.h"
 #include "Rendering/Vulkan/QueueSelection.h"
-#include "Rendering/Vulkan/TransferQueue.h"
 #include "Rendering/Vulkan/RenderPasses.h"
+#include "Rendering/Vulkan/TransferQueue.h"
 #include "Resources/Database.h"
 #include "Resources/Cache.h"
 
 DEFINE_LOG_CATEGORY(Rendering, Info);
 
 namespace Rendering {
+	RenderingSystem::RenderingSystem() {
+		required_device_features.version12.bufferDeviceAddress = true;
+
+		required_device_extension_names = {
+			VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+		};
+	}
+
 	bool RenderingSystem::Startup(HAL::WindowingSystem& windowing, Resources::Database& database) {
+		Environment environment;
+		
 		windowing.destroying.Add(this, &RenderingSystem::OnDestroyingWindow);
 
 		//The primary window must exist in order to start the rendering system
-		HAL::Window& primaryWindow = windowing.GetPrimaryWindow();
+		HAL::Window& primary_window = windowing.GetPrimaryWindow();
 
-		framework.emplace(primaryWindow);
+		const auto required_layer_names = GetRequiredInstanceLayerNames();
+		const auto required_extension_names = GetRequiredInstanceExtensionNames(primary_window);
+		framework.emplace(environment, required_layer_names, required_extension_names);
 
 		//Create the primary surface for the primary window
-		if (!CreateSurface(primaryWindow)) return false;
+		if (!CreateSurface(primary_window)) return false;
 		
-		Surface& primarySurface = GetPrimarySurface();
+		Surface& primary_surface = GetPrimarySurface();
 		{
-			auto views = primarySurface.ts_views.LockExclusive();
+			auto views = primary_surface.ts_views.LockExclusive();
 
-			View& primaryView = views->emplace_back(StringID::None);
-			primaryView.rect_calculator = std::make_unique<FullViewRectCalculator>();
-			primaryView.camera_calculator = std::make_unique<EditorViewCameraCalculator>();
-
+			View& primary_view = views->emplace_back(StringID::None);
+			primary_view.rect_calculator = std::make_unique<FullViewRectCalculator>();
+			primary_view.camera_calculator = std::make_unique<EditorViewCameraCalculator>();
 		}
 		
 		//Select a default physical device
@@ -101,7 +113,7 @@ namespace Rendering {
 		//Perform the render on every surface.
 		bool success = true;
 		for (auto const& surface : surfaces) {
-			success &= surface->Render(*passes, registry, stale_collection);
+			success &= surface->Render(*passes, stale_collection);
 		}
 
 		if (!stale_collection.empty()) {
@@ -154,9 +166,6 @@ namespace Rendering {
 				return false;
 			}
 
-			//Determine which extensions to enable on this device
-			t_vector<char const*> const extensions = Framework::GetDeviceExtensionNames();
-
 			//Determine which queues to request from this device
 			QueueRequests requests;
 			SharedQueues::References shared;
@@ -165,7 +174,7 @@ namespace Rendering {
 
 			//Create the new device, and set up all the required values
 			selectedPhysicalIndex = index;
-			device.emplace(*framework, physical, features, extensions, requests);
+			device.emplace(*framework, physical, required_device_features, required_device_extension_names, requests);
 			queues = device->queues.Resolve(shared);
 
 			//Get the surface format that will be used when rendering with this device
@@ -185,8 +194,9 @@ namespace Rendering {
 			//Let the surfaces know about the new rendering objects so they can prepare for rendering
 			for (auto const& surface : surfaces) surface->InitializeRendering(*device, GetPhysicalDevice(), *passes, *uniformLayouts);
 			
-			VulkanVersion const version = VulkanVersion{ physical.properties.driverVersion };
-			LOG(Rendering, Info, "Selected device {} ({})", physical.properties.deviceName, version);
+			VulkanVersion const driver_version = VulkanVersion{ physical.properties.driverVersion };
+			VulkanVersion const vulkan_version = VulkanVersion{ physical.properties.apiVersion };
+			LOG(Rendering, Info, "Selected device {}, driver v{}, vulkan v{}", physical.properties.deviceName, driver_version, vulkan_version);
 			return true;
 		}
 		return false;
@@ -323,18 +333,47 @@ namespace Rendering {
 		stale_collection << mesh->objects;
 	}
 
+	t_vector<char const*> RenderingSystem::GetRequiredInstanceLayerNames() {
+		return {
+#ifdef VULKAN_DEBUG
+			"VK_LAYER_KHRONOS_validation"
+#endif
+		};
+	}
+
+	t_vector<char const*> RenderingSystem::GetRequiredInstanceExtensionNames(HAL::Window const& window) {
+		//Standard extensions which the application requires
+		constexpr char const* standard_extensions[] = {
+#ifdef VULKAN_DEBUG
+			VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
+#endif
+			VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
+			VK_KHR_DEVICE_GROUP_CREATION_EXTENSION_NAME,
+		};
+		constexpr size_t num_standard_extensions = std::size(standard_extensions);
+
+		//Extensions required by the HAL
+		uint32_t num_hal_extensions = 0;
+		SDL_Vulkan_GetInstanceExtensions(window, &num_hal_extensions, nullptr);
+		t_vector<char const*> hal_extensions{ num_hal_extensions };
+		SDL_Vulkan_GetInstanceExtensions(window, &num_hal_extensions, hal_extensions.data());
+
+		//Create the full list of extensions that will be provided to the API
+		t_vector<char const*> extensions;
+		extensions.reserve(num_standard_extensions + hal_extensions.size());
+
+		extensions.insert(extensions.end(), standard_extensions, standard_extensions + num_standard_extensions);
+		extensions.insert(extensions.end(), hal_extensions.begin(), hal_extensions.end());
+
+		return extensions;
+	}
+
 	std::shared_ptr<GraphicsPipelineResources> RenderingSystem::CreateGraphicsPipeline(Material const& material, PipelineCreationHelper& helper) {
 		GraphicsPipelineResources::ShaderModules modules;
 		modules.vertex = helper.GetModule(material.shaders.vertex);
 		modules.fragment = helper.GetModule(material.shaders.fragment);
 
-		auto const binding = Vertex_Simple::GetBindingDescription();
-		auto const attributes = Vertex_Simple::GetAttributeDescriptions();
-		VertexInformationViews vertex;
-		vertex.bindings = std::span{ &binding, 1 };
-		vertex.attributes = attributes;
-
-		return std::make_shared<GraphicsPipelineResources>(*device, modules, *uniformLayouts, vertex, passes->surface);
+		return std::make_shared<GraphicsPipelineResources>(*device, modules, *uniformLayouts, passes->surface);
 	}
 
 	std::shared_ptr<MeshResources> RenderingSystem::CreateMesh(StaticMesh const& mesh, TransferCommandPool& pool, MeshCreationHelper& helper) {
@@ -355,7 +394,7 @@ namespace Rendering {
 		std::visit([&](auto const& v) { staging.WriteMultiple(std::span{ v }, indexOffset); }, mesh.indices);
 
 		//Create the final resources that will be used for this mesh
-		std::shared_ptr<MeshResources> const resources = std::make_shared<MeshResources>(*device, totalBytes);
+		std::shared_ptr<MeshResources> const resources = std::make_shared<MeshResources>(*device, *device, totalBytes);
 
 		const VkCommandBuffer buffer = helper.CreateBuffer();
 		{

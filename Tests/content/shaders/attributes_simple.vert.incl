@@ -1,11 +1,84 @@
 //Attributes related to the Vertex_Simple type
 
-layout(location = 0) in vec3 inPosition;
-layout(location = 1) in vec4 inColor;
-layout(location = 2) in vec4 inNormal;
+#extension GL_EXT_buffer_reference : require
 
-layout(location = 3) in uint inUV0;
-layout(location = 4) in uint inUV1;
-layout(location = 5) in uint inUV2;
+layout(location = 0) out vec4 outColor;
+layout(location = 1) out vec3 outNormal;
+layout(location = 2) out vec2 outUV0;
+layout(location = 3) out vec2 outUV1;
+layout(location = 4) out vec2 outUV2;
 
-layout(location = 0) out vec4 outFragColor;
+struct Vertex {
+	vec3 position;
+	uint color_bytes;
+	uint compressed_normal;
+	uint compressed_uv0;
+	uint compressed_uv1;
+	uint compressed_uv2;
+};
+
+layout(buffer_reference, std430) readonly buffer VertexBuffer{
+	Vertex vertices[];
+};
+
+layout(push_constant) uniform constants {
+	mat4 mvp_matrix;
+	VertexBuffer vertex_buffer;
+} PushConstants;
+
+vec3 unpack_2_10_10_10(uint packed) {
+	const uint mask = ((1 << 10) - 1);
+	const uint packed_x = packed & mask;
+	const uint packed_y = (packed >> 10) & mask;
+	const uint packed_z = (packed >> 20) & mask;
+
+	const float x = packed_x / 1023.0f;
+	const float y = packed_y / 1023.0f;
+	const float z = packed_z / 1023.0f;
+
+	return vec3(x, y, z);
+}
+
+vec4 unpack_byte_color(uint packed) {
+	const uint mask = ((1 << 8) - 1);
+	const uint packed_r = packed & mask;
+	const uint packed_g = (packed >> 8) & mask;
+	const uint packed_b = (packed >> 16) & mask;
+	const uint packed_a = (packed >> 24) & mask;
+
+	const float r = packed_r / 255.0f;
+	const float g = packed_g / 255.0f;
+	const float b = packed_b / 255.0f;
+	const float a = packed_a / 255.0f;
+
+	return vec4(r, g, b, a);
+}
+
+vec3 GetPosition(int i) {
+	return PushConstants.vertex_buffer.vertices[i].position;
+}
+
+vec4 GetColor(int i) {
+	uint packed = PushConstants.vertex_buffer.vertices[i].color_bytes;
+	return unpack_byte_color(packed);
+}
+
+vec3 GetNormal(int i) {
+	uint packed = PushConstants.vertex_buffer.vertices[i].compressed_normal;
+	return unpack_2_10_10_10(packed);
+}
+
+vec2 GetUV0(int i) {
+	uint packed = PushConstants.vertex_buffer.vertices[i].compressed_uv0;
+	return unpackHalf2x16(packed);
+}
+
+vec2 GetUV1(int i) {
+	uint packed = PushConstants.vertex_buffer.vertices[i].compressed_uv1;
+	return unpackHalf2x16(packed);
+}
+
+vec2 GetUV2(int i) {
+	uint packed = PushConstants.vertex_buffer.vertices[i].compressed_uv2;
+	return unpackHalf2x16(packed);
+}

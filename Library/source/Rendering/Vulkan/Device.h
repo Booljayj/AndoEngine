@@ -11,12 +11,12 @@ namespace Rendering {
 	 * A new logical device is created for each physical device that will be used.
 	 */
 	struct Device {
-		using ExtensionsView = std::span<char const* const>;
+		using NameSpan = std::span<char const* const>;
 		
 		/** Queues created on this device */
 		QueueResults queues;
 
-		Device(Framework const& framework, PhysicalDeviceDescription const& physical, VkPhysicalDeviceFeatures features, ExtensionsView extensions, QueueRequests const& requests);
+		Device(Framework const& framework, PhysicalDeviceDescription const& physical, PhysicalDeviceFeatures const& enabled_features, NameSpan enabled_extension_names, QueueRequests const& requests);
 		Device(Device const&) = delete;
 		Device(Device&&) noexcept = default;
 		~Device();

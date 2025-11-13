@@ -5,10 +5,11 @@
 #include "Engine/SmartPointers.h"
 #include "Engine/Variant.h"
 #include "Rendering/Vertex.h"
-#include "Rendering/Vulkan/Resources.h"
 #include "Resources/Resource.h"
 
 namespace Rendering {
+	struct MeshResources;
+
 	using Vertices_Simple = std::vector<Vertex_Simple>;
 	using Vertices_Complex = std::vector<Vertex_Complex>;
 	using FormattedVertices = std::variant<Vertices_Simple, Vertices_Complex>;

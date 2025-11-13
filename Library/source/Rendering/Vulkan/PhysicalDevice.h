@@ -7,14 +7,25 @@
 #include "Rendering/Vulkan/QueueFamily.h"
 
 namespace Rendering {
+	struct PhysicalDeviceFeatures {
+		VkPhysicalDeviceFeatures2 version10 = {};
+		VkPhysicalDeviceVulkan11Features version11 = {};
+		VkPhysicalDeviceVulkan12Features version12 = {};
+		
+		PhysicalDeviceFeatures();
+		PhysicalDeviceFeatures(VkPhysicalDevice device);
+		PhysicalDeviceFeatures(const PhysicalDeviceFeatures& other);
+	};
+
 	/** A description of a physical device */
 	struct PhysicalDeviceDescription {
 		/** The properties of this physical device (such as device limits and API versions) */
 		VkPhysicalDeviceProperties properties;
+
 		/** The features available on this physical device */
-		VkPhysicalDeviceFeatures features;
+		PhysicalDeviceFeatures supported_features;
 		/** The extensions supported by this physical device */
-		std::vector<VkExtensionProperties> extensions;
+		std::vector<VkExtensionProperties> supported_extensions;
 
 		/** Queue families on this device that can be used for graphics operations */
 		std::vector<QueueFamilyDescription> families;
@@ -23,7 +34,7 @@ namespace Rendering {
 		inline operator VkPhysicalDevice() const { return device; }
 		inline bool operator==(VkPhysicalDevice other) const { return device == other; }
 
-		bool SupportsExtension(char const* extension) const;
+		bool SupportsExtension(char const* extension_name) const;
 
 		/** Get the descriptions of queue families including surface-specific properties */
 		t_vector<QueueFamilyDescription> GetSurfaceFamilies(VkSurfaceKHR surface) const;

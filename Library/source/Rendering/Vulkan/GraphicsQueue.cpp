@@ -52,12 +52,12 @@ namespace Rendering {
 		}
 	}
 
-	VkCommandBuffer GraphicsCommandPool::CreateBuffer(VkCommandBufferLevel level) {
+	VkCommandBuffer GraphicsCommandPool::CreateBuffer(ECommandBufferLevel level) {
 		VkCommandBufferAllocateInfo const info{
 			.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
 			.pNext = nullptr,
 			.commandPool = pool,
-			.level = level,
+			.level = static_cast<VkCommandBufferLevel>(level),
 			.commandBufferCount = 1,
 		};
 
@@ -73,19 +73,19 @@ namespace Rendering {
 		vkFreeCommandBuffers(device, pool, 1, &buffer);
 	}
 
-	std::vector<VkCommandBuffer> GraphicsCommandPool::CreateBuffers(uint32_t numBuffers, VkCommandBufferLevel level) {
-		if (numBuffers < 1) throw std::runtime_error{ "Cannot create a nonzero number of buffers" };
+	std::vector<VkCommandBuffer> GraphicsCommandPool::CreateBuffers(uint32_t num_buffers, ECommandBufferLevel level) {
+		if (num_buffers == 0) return {};
 
 		VkCommandBufferAllocateInfo const info{
 			.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
 			.pNext = nullptr,
 			.commandPool = pool,
-			.level = level,
-			.commandBufferCount = numBuffers,
+			.level = static_cast<VkCommandBufferLevel>(level),
+			.commandBufferCount = num_buffers,
 		};
 
 		std::vector<VkCommandBuffer> buffers;
-		buffers.resize(numBuffers, nullptr);
+		buffers.resize(num_buffers, nullptr);
 
 		if (vkAllocateCommandBuffers(device, &info, buffers.data()) != VK_SUCCESS || !buffers[0]) {
 			throw std::runtime_error{ "Failed to allocate command buffer" };
