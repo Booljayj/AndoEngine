@@ -129,24 +129,21 @@ namespace Rendering {
 	void Surface::InitializeRendering(Device const& device, PhysicalDeviceDescription const& physical, RenderPasses const& passes, UniformLayouts const& uniform_layouts) {
 		if (queues || swapchain) throw std::runtime_error{ "Initializing rendering on a surface which is already initialized" };
 
-		QueueFamilySelectors selectors{ physical.GetSurfaceFamilies(*this) };
+		QueueFamilySelectors selectors{ physical.GetSurfaceQueueFamilies(*this) };
 		
-		auto const references = selectors.SelectSurfaceQueues();
-		if (!references) {
+		auto const surface_references = selectors.SelectSurfaceQueues();
+		if (!surface_references) {
 			LOG(Vulkan, Warning, "Physical device does not support required queues for surface {}. Cannot initialize rendering.", GetID());
 			return;
 		}
 
-		queues = device.queues.Resolve(*references);
+		queues = device.GetSurfaceQueues(*surface_references);
 		if (!queues) {
 			LOG(Vulkan, Warning, "Device does not contain required queues for surface {}. Cannot initialize rendering.", GetID());
 			return;
 		}
 
-		PhysicalDevicePresentation const presentation = PhysicalDevicePresentation::GetPresentation(physical, *this).value();
-		PhysicalDeviceCapabilities const capabilities{ physical, *this };
-
-		swapchain.emplace(device, nullptr, presentation, capabilities, *this);
+		swapchain.emplace(device, nullptr, physical, *this);
 		framebuffers.emplace(device, *swapchain, passes);
 		organizer.emplace(device, device, *queues, *swapchain, uniform_layouts, EBuffering::Double);
 
@@ -166,15 +163,12 @@ namespace Rendering {
 		organizer.reset();
 		framebuffers.reset();
 
-		PhysicalDevicePresentation const presentation = PhysicalDevicePresentation::GetPresentation(physical, *this).value();
-		PhysicalDeviceCapabilities const capabilities{ physical, *this };
-
 		if (swapchain.has_value()) {
 			//The previous swapchain needs to exist long enough to create the new one, so we create a temporary new value before assigning it.
-			auto recreated = std::make_optional<Swapchain>(device, &swapchain.value(), presentation, capabilities, *this);
+			auto recreated = std::make_optional<Swapchain>(device, &swapchain.value(), physical, *this);
 			swapchain.swap(recreated);
 		} else {
-			swapchain.emplace(device, nullptr, presentation, capabilities, *this);
+			swapchain.emplace(device, nullptr, physical, *this);
 		}
 
 		framebuffers.emplace(device, *swapchain, passes);

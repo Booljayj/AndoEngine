@@ -124,10 +124,10 @@ int main(int argc, char** argv) {
 			"SM_Plane"_sid, Database::GetTemporary(),
 			[](StaticMesh& mesh) {
 				mesh.vertices.emplace<Vertices_Simple>() = {
-					{ vec3{ -0.5f, -0.5f, 0.0f }, Color{ 255, 0, 0, 255 }, vec3{ 0, 0, 1 }, vec2{ 0, 0 } },
-					{ vec3{ 0.5f, -0.5f, 0.0f }, Color{ 0, 255, 0, 255 }, vec3{ 0, 0, 1 }, vec2{ 0, 0 } },
-					{ vec3{ 0.5f, 0.5f, 0.0f }, Color{ 0, 0, 255, 255 }, vec3{ 0, 0, 1 }, vec2{ 0, 0 } },
-					{ vec3{ -0.5f, 0.5f, 0.0f }, Color{ 255, 255, 255, 255 }, vec3{ 0, 0, 1 }, vec2{ 0, 0 } },
+					{ vec3{ -0.5f, -0.5f, 0.0f }, Color{ 255, 0, 0, 255 }, vec3{ 0, 0, 1 }, vec3{ 0, 1, 0 }, vec2{ 0, 0 } },
+					{ vec3{ 0.5f, -0.5f, 0.0f }, Color{ 0, 255, 0, 255 }, vec3{ 0, 0, 1 }, vec3{ 0, 1, 0 }, vec2{ 0, 0 } },
+					{ vec3{ 0.5f, 0.5f, 0.0f }, Color{ 0, 0, 255, 255 }, vec3{ 0, 0, 1 }, vec3{ 0, 1, 0 }, vec2{ 0, 0 } },
+					{ vec3{ -0.5f, 0.5f, 0.0f }, Color{ 255, 255, 255, 255 }, vec3{ 0, 0, 1 }, vec3{ 0, 1, 0 }, vec2{ 0, 0 } },
 				};
 
 				mesh.indices.emplace<Indices_Short>() = { 0, 1, 2, 2, 3, 0 };

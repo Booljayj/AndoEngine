@@ -3,7 +3,6 @@ project(Tests)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-set(CMAKE_BUILD_TYPE Debug)
 
 add_executable(Tests WIN32 source/main.cpp)
 target_include_directories(Tests PUBLIC ${PROJECT_SOURCE_DIR}/source)

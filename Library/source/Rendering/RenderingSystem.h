@@ -88,6 +88,14 @@ namespace Rendering {
 		void DestroySurface(HAL::Window::IdType id);
 
 	protected:
+		/** The index of the physical device that should be used for surfaces. */
+		size_t desired_physical_index = 0;
+
+		/** The logical devices created for each physical device */
+		std::unordered_map<VkPhysicalDevice, std::shared_ptr<Device>> devices;
+		/** The render passes for each surface format. */
+		std::unordered_map<VkFormat, std::shared_ptr<RenderPasses>> formatted_render_passes;
+
 		/** Dirty resources that need to be rebuilt */
 		std::vector<Resources::Handle<Material>> dirtyMaterials;
 		std::vector<Resources::Handle<StaticMesh>> dirtyStaticMeshes;
@@ -99,9 +107,9 @@ namespace Rendering {
 		std::unique_ptr<std::jthread> cleanup_thread;
 
 		/** Determine which queues to request from the physical device. Queues needed for surface rendering will be avoided if possible. */
-		static std::tuple<QueueRequests, SharedQueues::References> GetQueueRequests(PhysicalDeviceDescription const& physical, VkSurfaceKHR surface);
+		static std::tuple<SharedQueues::References, SurfaceQueues::References> GetQueueRequests(PhysicalDeviceDescription const& physical, VkSurfaceKHR surface);
 		/** Determine which queues to request from the physical device. Used in headless mode when surface rendering is not available. */
-		static std::tuple<QueueRequests, SharedQueues::References> GetHeadlessQueueRequests(PhysicalDeviceDescription const& physical);
+		static SharedQueues::References GetHeadlessQueueRequests(PhysicalDeviceDescription const& physical);
 
 		/** Called just before a window is destroyed in the windowing system */
 		void OnDestroyingWindow(HAL::Window::IdType id);

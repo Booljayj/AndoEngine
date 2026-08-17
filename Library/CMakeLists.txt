@@ -45,6 +45,11 @@ target_link_libraries(Library PUBLIC EnTT::EnTT)
 #SDL library
 find_package(SDL2 CONFIG REQUIRED)
 target_link_libraries(Library PUBLIC SDL2::SDL2 PUBLIC SDL2::SDL2main)
+target_link_libraries(Library
+	PRIVATE
+	$<TARGET_NAME_IF_EXISTS:SDL2::SDL2main>
+	$<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,SDL2::SDL2-static>
+)
 
 #Vulkan library
 find_package(Vulkan REQUIRED COMPONENTS shaderc_combined)

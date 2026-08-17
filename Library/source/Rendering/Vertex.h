@@ -20,27 +20,27 @@ namespace Rendering {
 
 	/** A simple 3D vertex */
 	struct Vertex_Simple {
-		glm::packed_vec3 position = { 0, 0, 0 };
+		glm::vec3 position = { 0, 0, 0 };
 		Color color = { 0, 0, 0, 255 };
-		CompressedVec3 normal = { 0, 0, 1 };
-		CompressedVec2 uv0 = { 0, 0 };
-		CompressedVec2 uv1 = { 0, 0 };
-		CompressedVec2 uv2 = { 0, 0 };
+		CompressedNormal normal = { 0, 0, 1 };
+		CompressedNormal tangent = { 1, 0, 0 };
+		CompressedUVs uv0 = { 0, 0 };
+		CompressedUVs uv1 = { 0, 0 };
 
 		enum class VariableIndices : uint8_t {
 			Position, Color,
-			Normal, UV0, UV1, UV2,
+			Normal, Tangent, UV0, UV1,
 			MAX
 		};
 		using VariableTypes = std::tuple<
 			decltype(position), decltype(color),
-			decltype(normal), decltype(uv0), decltype(uv1), decltype(uv2)
+			decltype(normal), decltype(tangent), decltype(uv0), decltype(uv1)
 		>;
 		static constexpr size_t NumAttributes = std::tuple_size_v<VariableTypes>;
 
 		Vertex_Simple() = default;
-		Vertex_Simple(glm::vec3 position, Color color, glm::vec3 normal, glm::vec2 uv0, glm::vec2 uv1 = glm::zero<glm::vec2>(), glm::vec2 uv2 = glm::zero<glm::vec2>())
-			: position(position), color(color), normal(normal), uv0(uv0), uv1(uv1), uv2(uv2)
+		Vertex_Simple(glm::vec3 position, Color color, glm::vec3 normal, glm::vec3 tangent, glm::vec2 uv0, glm::vec2 uv1 = glm::zero<glm::vec2>())
+			: position(position), color(color), normal(normal), tangent(tangent), uv0(uv0), uv1(uv1)
 		{}
 	};
 	static_assert(Concepts::VertexType<Vertex_Simple>);
@@ -49,14 +49,14 @@ namespace Rendering {
 	struct Vertex_Complex {
 		glm::packed_vec3 position = { 0, 0, 0 };
 		Color color = { 0, 0, 0, 255 };
-		CompressedVec3 normal = { 0, 0, 1 };
-		CompressedVec3 tangent = { 1, 0, 0 };
-		CompressedVec3 bitangent = { 0, 1, 0 };
+		CompressedNormal normal = { 0, 0, 1 };
+		CompressedNormal tangent = { 1, 0, 0 };
+		CompressedNormal bitangent = { 0, 1, 0 };
 		uint32_t userData = 0;
-		CompressedVec2 uv0 = { 0, 0 };
-		CompressedVec2 uv1 = { 0, 0 };
-		CompressedVec2 uv2 = { 0, 0 };
-		CompressedVec2 uv3 = { 0, 0 };
+		CompressedUVs uv0 = { 0, 0 };
+		CompressedUVs uv1 = { 0, 0 };
+		CompressedUVs uv2 = { 0, 0 };
+		CompressedUVs uv3 = { 0, 0 };
 
 		enum class VariableIndices : uint8_t {
 			Position, Color,

@@ -160,31 +160,41 @@ namespace Rendering {
 			PhysicalDeviceDescription const& physical = framework->GetPhysicalDevices()[index];
 
 			//Get information about how to present to this device
-			auto const presentation = PhysicalDevicePresentation::GetPresentation(physical, *surfaces[0]);
-			if (!presentation) {
+			auto const surface_formats = physical.GetSurfaceFormats(*surfaces[0]);
+			if (surface_formats.size() == 0) {
 				LOG(Vulkan, Warning, "Physical device {} is unable to present to surfaces", physical.properties.deviceName);
 				return false;
 			}
 
-			//Determine which queues to request from this device
-			QueueRequests requests;
-			SharedQueues::References shared;
-			if (surfaces.size() > 0) std::tie(requests, shared) = GetQueueRequests(physical, *surfaces[0]);
-			else std::tie(requests, shared) = GetHeadlessQueueRequests(physical);
-
 			//Create the new device, and set up all the required values
+			if (surfaces.size() > 0) {
+				//Create a device with queues that are capable of presenting to the surface.
+				SurfaceQueues::References surface;
+				SharedQueues::References shared;
+				std::tie(shared, surface) = GetQueueRequests(physical, *surfaces[0]);
+
+				device.emplace(*framework, physical, required_device_features, required_device_extension_names, shared, surface);
+				queues = device->queues.shared;
+
+			} else {
+				//Create a device with queues that are only capable of computations, this device will not present to any surfaces.
+				SharedQueues::References shared = GetHeadlessQueueRequests(physical);
+
+				device.emplace(*framework, physical, required_device_features, required_device_extension_names, shared);
+				queues = device->queues.shared;
+			}
+
+			//Indicate that the physical device has ben successfully selected, now that we have created the device for it.
 			selectedPhysicalIndex = index;
-			device.emplace(*framework, physical, required_device_features, required_device_extension_names, requests);
-			queues = device->queues.Resolve(shared);
 
 			//Get the surface format that will be used when rendering with this device
-			primarySurfaceFormat = [presentation]() -> VkSurfaceFormatKHR {
-				for (const auto& surfaceFormat : presentation->surfaceFormats) {
+			primarySurfaceFormat = [surface_formats]() -> VkSurfaceFormatKHR {
+				for (const auto& surfaceFormat : surface_formats) {
 					if (surfaceFormat.format == VK_FORMAT_B8G8R8A8_UNORM && surfaceFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
 						return surfaceFormat;
 					}
 				}
-				return presentation->surfaceFormats[0];
+				return surface_formats[0];
 			}();
 
 			passes.emplace(*device, primarySurfaceFormat.format);
@@ -228,38 +238,31 @@ namespace Rendering {
 		}
 	}
 
-	std::tuple<QueueRequests, SharedQueues::References> RenderingSystem::GetQueueRequests(PhysicalDeviceDescription const& physical, VkSurfaceKHR surface) {
+	std::tuple<SharedQueues::References, SurfaceQueues::References> RenderingSystem::GetQueueRequests(PhysicalDeviceDescription const& physical, VkSurfaceKHR surface) {
 		struct {
 			std::optional<SurfaceQueues::References> surface;
 			std::optional<SharedQueues::References> shared;
 		} found;
 	
 		//Default mode - we're creating queues that will work for the first surface, and assuming other surfaces should also be able to use those queues
-		QueueFamilySelectors selectors{ physical.GetSurfaceFamilies(surface) };
+		QueueFamilySelectors selectors{ physical.GetSurfaceQueueFamilies(surface) };
 
 		found.surface = selectors.SelectSurfaceQueues();
 		if (!found.surface) throw FormatType<std::runtime_error>("Physical device %s does not contain required surface queues", physical.properties.deviceName);
 
 		found.shared = selectors.SelectSharedQueues(*found.surface);
 		if (!found.shared) throw FormatType<std::runtime_error>("Physical device %s does not contain required shared queues", physical.properties.deviceName);
-		
-		QueueRequests requests;
-		requests << *found.surface;
-		requests << *found.shared;
 
-		return std::make_tuple(requests, *found.shared);
+		return std::make_tuple(*found.shared, *found.surface);
 	}
 
-	std::tuple<QueueRequests, SharedQueues::References> RenderingSystem::GetHeadlessQueueRequests(PhysicalDeviceDescription const& physical) {
+	SharedQueues::References RenderingSystem::GetHeadlessQueueRequests(PhysicalDeviceDescription const& physical) {
 		QueueFamilySelectors selectors{ physical.families };
 
 		const auto shared = selectors.SelectSharedQueues();
 		if (!shared) throw FormatType<std::runtime_error>("Physical device %s does not contain required queues", physical.properties.deviceName);
 
-		QueueRequests requests;
-		requests << *shared;
-
-		return std::make_tuple(requests, *shared);
+		return *shared;
 	}
 
 	void RenderingSystem::OnDestroyingWindow(HAL::Window::IdType id) {

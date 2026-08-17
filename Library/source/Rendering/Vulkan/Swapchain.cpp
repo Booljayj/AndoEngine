@@ -3,7 +3,7 @@
 #include "Rendering/Vulkan/PhysicalDevice.h"
 
 namespace Rendering {
-	Swapchain::Swapchain(VkDevice device, Swapchain* previous, PhysicalDevicePresentation const& presentation, PhysicalDeviceCapabilities const& capabilities, Surface const& surface)
+	Swapchain::Swapchain(VkDevice device, Swapchain* previous, PhysicalDeviceDescription const& description, Surface const& surface)
 		: device(device)
 	{
 		auto const ChooseSwapSurfaceFormat = [](const std::vector<VkSurfaceFormatKHR>& availableSurfaceFormats) -> VkSurfaceFormatKHR {
@@ -28,10 +28,12 @@ namespace Rendering {
 			return VK_PRESENT_MODE_FIFO_KHR;
 		};
 
-		surfaceFormat = ChooseSwapSurfaceFormat(presentation.surfaceFormats);
-		presentMode = ChooseSwapPresentMode(presentation.presentModes);
-		extent = capabilities.GetSwapExtent(surface, extent);
-		preTransform = capabilities.GetPreTransform(surface);
+		surfaceFormat = ChooseSwapSurfaceFormat(description.GetSurfaceFormats(surface));
+		presentMode = ChooseSwapPresentMode(description.GetSurfacePresentModes(surface));
+
+		const PhysicalDeviceCapabilities capabilities = description.GetSurfaceCapabilities(surface);
+		extent = capabilities.GetSwapExtent(extent);
+		preTransform = capabilities.GetPreTransform();
 
 		uint32_t const queueFamilyIndices[2] = { surface.queues->graphics.index, surface.queues->present.index };
 		bool const usingSharedGraphicsAndPresentQueues = (queueFamilyIndices[0] == queueFamilyIndices[1]);

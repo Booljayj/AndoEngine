@@ -4,17 +4,17 @@
 
 layout(location = 0) out vec4 outColor;
 layout(location = 1) out vec3 outNormal;
-layout(location = 2) out vec2 outUV0;
-layout(location = 3) out vec2 outUV1;
-layout(location = 4) out vec2 outUV2;
+layout(location = 2) out vec3 outTangent;
+layout(location = 3) out vec2 outUV0;
+layout(location = 4) out vec2 outUV1;
 
 struct Vertex {
 	vec3 position;
 	uint color_bytes;
 	uint compressed_normal;
+	uint compressed_tangent;
 	uint compressed_uv0;
 	uint compressed_uv1;
-	uint compressed_uv2;
 };
 
 layout(buffer_reference, std430) readonly buffer VertexBuffer{
@@ -68,6 +68,11 @@ vec3 GetNormal(int i) {
 	return unpack_2_10_10_10(packed);
 }
 
+vec3 GetTangent(int i) {
+	uint packed = PushConstants.vertex_buffer.vertices[i].compressed_tangent;
+	return unpack_2_10_10_10(packed);
+}
+
 vec2 GetUV0(int i) {
 	uint packed = PushConstants.vertex_buffer.vertices[i].compressed_uv0;
 	return unpackHalf2x16(packed);
@@ -75,10 +80,5 @@ vec2 GetUV0(int i) {
 
 vec2 GetUV1(int i) {
 	uint packed = PushConstants.vertex_buffer.vertices[i].compressed_uv1;
-	return unpackHalf2x16(packed);
-}
-
-vec2 GetUV2(int i) {
-	uint packed = PushConstants.vertex_buffer.vertices[i].compressed_uv2;
 	return unpackHalf2x16(packed);
 }

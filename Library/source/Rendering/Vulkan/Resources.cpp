@@ -154,8 +154,10 @@ namespace Rendering {
 			.basePipelineHandle = VK_NULL_HANDLE, // Optional
 			.basePipelineIndex = -1, // Optional
 		};
+
+		VkPipelineCache cache = VK_NULL_HANDLE;
 		
-		if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &pipeline) != VK_SUCCESS || !pipeline) {
+		if (vkCreateGraphicsPipelines(device, cache, 1, &pipelineCI, nullptr, &pipeline) != VK_SUCCESS || !pipeline) {
 			throw std::runtime_error{ "Failed to create pipeline" };
 		}
 	}

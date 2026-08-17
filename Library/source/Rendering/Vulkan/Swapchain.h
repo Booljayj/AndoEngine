@@ -7,7 +7,7 @@
 
 namespace Rendering {
 	struct PhysicalDeviceCapabilities;
-	struct PhysicalDevicePresentation;
+	struct PhysicalDeviceDescription;
 	struct Surface;
 
 	/**
@@ -16,7 +16,7 @@ namespace Rendering {
 	 */
 	struct Swapchain {
 	public:
-		Swapchain(VkDevice device, Swapchain* previous, PhysicalDevicePresentation const& presentation, PhysicalDeviceCapabilities const& capabilities, Surface const& surface);
+		Swapchain(VkDevice device, Swapchain* previous, PhysicalDeviceDescription const& description, Surface const& surface);
 		Swapchain(Swapchain const&) = delete;
 		Swapchain(Swapchain&&) noexcept = default;
 		~Swapchain();

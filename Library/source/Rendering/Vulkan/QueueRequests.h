@@ -1,12 +1,15 @@
 #pragma once
 #include "Engine/Array.h"
 #include "Engine/Optional.h"
-#include "Rendering/Vulkan/SharedQueues.h"
-#include "Rendering/Vulkan/SurfaceQueues.h"
+#include "Rendering/Vulkan/QueueReference.h"
 
 namespace Rendering {
-	/** Requests used to create a number of queues from various families */
+	/**
+	 * Requests to create a number of queues from various families.
+	 * Queue references can be added arbitrarily, they will be coordinated internally to determine the unique queues being requested.
+	 */
 	struct QueueRequests {
+		/** A request to create some number of queues within a particular family. */
 		struct Request {
 			/** The family from which to request queues */
 			uint32_t id = 0;
@@ -15,34 +18,13 @@ namespace Rendering {
 		};
 
 		QueueRequests& operator+=(QueueReference reference);
-		QueueRequests& operator<<(SurfaceQueues::References const& references);
-		QueueRequests& operator<<(SharedQueues::References const& references);
 
-		Request const& operator[](size_t index) const { return requests[index]; }
-		size_t size() const { return requests.size(); }
+		auto cbegin() const { return requests.cbegin(); }
+		auto cend() const { return requests.cend(); }
+		auto size() const { return requests.size(); }
+		const auto& operator[](size_t index) const { return requests[index]; }
 
 	private:
 		std::vector<Request> requests;
-	};
-
-	/** A collection of queues that were created on a device */
-	struct QueueResults {
-		QueueResults() = default;
-		QueueResults(VkDevice device, QueueRequests const& requests);
-
-		/** Attempt to find a queue that is part of these results */
-		VkQueue Find(QueueReference reference) const;
-
-		std::optional<SurfaceQueues> Resolve(SurfaceQueues::References const& references) const;
-		std::optional<SharedQueues> Resolve(SharedQueues::References const& references) const;
-
-	private:
-		struct Result {
-			/** The unique id of the family to which the queues belong */
-			uint32_t id = 0;
-			/** The queues that were created in this family */
-			std::vector<VkQueue> queues;
-		};
-		std::vector<Result> results;
 	};
 }

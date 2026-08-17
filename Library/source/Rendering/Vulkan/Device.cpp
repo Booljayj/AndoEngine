@@ -4,8 +4,57 @@
 #include "Engine/TemporaryContainers.h"
 
 namespace Rendering {
-	Device::Device(Framework const& framework, PhysicalDeviceDescription const& physical, PhysicalDeviceFeatures const& enabled_features, NameSpan enabled_extension_names, QueueRequests const& requests)
-		: physical(physical), device(nullptr)
+	std::optional<SharedQueues> Device::GetSharedQueues(SharedQueues::References const& references) const
+	{
+		SharedQueues result;
+
+		for (QueueReference transfer : references.transfers) {
+			if (VkQueue queue = FindQueue(transfer)) result.transfers.emplace_back(queue, transfer);
+			else return std::nullopt;
+		}
+		for (QueueReference compute : references.computes) {
+			if (VkQueue queue = FindQueue(compute)) result.computes.emplace_back(queue, compute);
+			else return std::nullopt;
+		}
+
+		return result;
+	}
+
+	std::optional<SurfaceQueues> Device::GetSurfaceQueues(SurfaceQueues::References const& references) const
+	{
+		VkQueue present_queue = FindQueue(references.present);
+		if (!present_queue) throw std::runtime_error{ "Failed to resolve present queue on device" };
+
+		VkQueue graphics_queue = FindQueue(references.graphics);
+		if (!graphics_queue) throw std::runtime_error{ "Failed to resolve graphics queue on device" };
+
+		return SurfaceQueues{
+			PresentQueue{ present_queue, references.present },
+			GraphicsQueue{ graphics_queue, references.graphics }
+		};
+	}
+
+	Device::Device(Framework const& framework, PhysicalDeviceDescription const& physical, Features enabled_features, NameSpan enabled_extension_names, SharedQueues::References const& shared_references)
+		: Device(framework, physical, enabled_features, enabled_extension_names, GenerateQueueRequests(shared_references))
+	{
+		const auto possible_shared = GetSharedQueues(shared_references);
+		if (!possible_shared) throw std::runtime_error{ "Failed to retrieve shared queues on device" };
+
+		queues.shared = *possible_shared;
+	}
+
+	Device::Device(Framework const& framework, PhysicalDeviceDescription const& physical, Features enabled_features, NameSpan enabled_extension_names, SharedQueues::References const& shared_references, SurfaceQueues::References const& surface_references)
+		: Device(framework, physical, enabled_features, enabled_extension_names, GenerateQueueRequests(shared_references, surface_references))
+	{
+		const auto possible_shared = GetSharedQueues(shared_references);
+		if (!possible_shared) throw std::runtime_error{ "Failed to retrieve shared queues on device" };
+
+		queues.shared = *possible_shared;
+		queues.surface = GetSurfaceQueues(surface_references);
+	}
+
+	Device::Device(Framework const& framework, PhysicalDeviceDescription const& physical, Features enabled_features, NameSpan enabled_extension_names, QueueRequests const& requests)
+		: device(nullptr)
 	{
 		ScopedThreadBufferMark mark;
 
@@ -51,8 +100,6 @@ namespace Rendering {
 			throw std::runtime_error{ "Failed to create logical device" };
 		}
 
-		queues = QueueResults{ device, requests };
-
 		//Create the allocator for device memory
 		VmaAllocatorCreateInfo const allocatorInfo = {
 			.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT,
@@ -70,6 +117,46 @@ namespace Rendering {
 		functionSetDebugName = framework.GetFunction<PFN_vkSetDebugUtilsObjectNameEXT>("vkSetDebugUtilsObjectNameEXT");
 #endif
 	}
+
+	VkQueue Device::FindQueue(QueueReference reference) const
+	{
+		VkQueue queue = nullptr;
+		vkGetDeviceQueue(device, reference.id, reference.index, &queue);
+		return queue;
+	}
+
+	QueueRequests Device::GenerateQueueRequests(SharedQueues::References const& shared_references)
+	{
+		QueueRequests requests;
+		for (auto const& transfer : shared_references.transfers) requests += transfer;
+		for (auto const& compute : shared_references.computes) requests += compute;
+		return requests;
+	}
+
+	QueueRequests Device::GenerateQueueRequests(SharedQueues::References const& shared_references, SurfaceQueues::References const& surface_references)
+	{
+		QueueRequests requests = GenerateQueueRequests(shared_references);
+		requests += surface_references.present;
+		requests += surface_references.graphics;
+		return requests;
+	}
+
+#if VULKAN_DEBUG
+	VkResult Device::SetDebugName(void* object, VkObjectType type, char const* name) const
+	{
+		if (functionSetDebugName)
+		{
+			VkDebugUtilsObjectNameInfoEXT info = {};
+			info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+			info.pNext = nullptr;
+			info.objectHandle = reinterpret_cast<uint64_t>(object);
+			info.objectType = type;
+			info.pObjectName = name;
+			return functionSetDebugName(device, &info);
+		}
+		return VkResult::VK_ERROR_EXTENSION_NOT_PRESENT;
+	}
+#endif
 
 	Device::~Device() {
 		if (device) {

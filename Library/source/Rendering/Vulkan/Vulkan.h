@@ -24,6 +24,20 @@ namespace Rendering {
 		}
 		operator uint32_t() const { return *reinterpret_cast<uint32_t const*>(this); }
 	};
+
+	/** Call a vulkan method that provides a list of results, using the common call pattern. */
+	template<typename ResultType, typename CallableType, typename... ParameterTypes>
+	ResultType GetResults(CallableType callable, const ParameterTypes&... params) {
+		ResultType results;
+
+		uint32_t num = 0;
+		callable(params..., &num, nullptr);
+		results.resize(num);
+		callable(params..., &num, results.data());
+		
+		return results;
+	}
+
 }
 
 template<>

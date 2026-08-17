@@ -30,25 +30,48 @@ namespace Rendering {
 		version12.pNext = nullptr;
 	}
 
+	PhysicalDeviceCapabilities::PhysicalDeviceCapabilities(VkPhysicalDevice physical, VkSurfaceKHR surface) {
+		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical, surface, &capabilities);
+	}
+
+	uint32_t PhysicalDeviceCapabilities::GetImageCountMinimum() const {
+		uint32_t const maxImageCountActual = capabilities.maxImageCount > 0 ? capabilities.maxImageCount : std::numeric_limits<uint32_t>::max();
+		return std::min<uint32_t>(capabilities.minImageCount + 1, maxImageCountActual);
+	}
+
+	glm::u32vec2 PhysicalDeviceCapabilities::GetSwapExtent(glm::u32vec2 const& desiredExtent) const {
+		if (capabilities.currentExtent.width != UINT32_MAX) {
+			return glm::u32vec2{ capabilities.currentExtent.width, capabilities.currentExtent.height };
+		} else {
+			glm::u32vec2 actualExtent;
+			actualExtent.x = std::clamp(desiredExtent.x, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+			actualExtent.y = std::clamp(desiredExtent.y, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+			return actualExtent;
+		}
+	}
+
+	VkSurfaceTransformFlagBitsKHR PhysicalDeviceCapabilities::GetPreTransform() const {
+		if (capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) {
+			return VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+		}
+		else {
+			return capabilities.currentTransform;
+		}
+	}
+
 	PhysicalDeviceDescription::PhysicalDeviceDescription(VkPhysicalDevice device)
 		: device(device)
 		, supported_features(device)
 	{
 		vkGetPhysicalDeviceProperties(device, &properties);
-		{
-			uint32_t num_extensions = 0;
-			vkEnumerateDeviceExtensionProperties(device, nullptr, &num_extensions, nullptr);
-			supported_extensions.resize(num_extensions);
-			vkEnumerateDeviceExtensionProperties(device, nullptr, &num_extensions, supported_extensions.data());
-		}
-		{
-			uint32_t num_families = 0;
-			vkGetPhysicalDeviceQueueFamilyProperties(device, &num_families, nullptr);
-			t_vector<VkQueueFamilyProperties> raw_families{ num_families };
-			vkGetPhysicalDeviceQueueFamilyProperties(device, &num_families, raw_families.data());
+		
+		supported_extensions = GetResults<std::vector<VkExtensionProperties>>(&vkEnumerateDeviceExtensionProperties, device, nullptr);
 
-			families.resize(num_families);
-			for (uint32_t index = 0; index < num_families; ++index) {
+		{
+			t_vector<VkQueueFamilyProperties> raw_families = GetResults<t_vector<VkQueueFamilyProperties>>(&vkGetPhysicalDeviceQueueFamilyProperties, device);
+			
+			families.resize(raw_families.size());
+			for (uint32_t index = 0; index < raw_families.size(); ++index) {
 				VkQueueFamilyProperties const& family = raw_families[index];
 
 				families[index].flags = FQueueFlags::Create(family.queueFlags);
@@ -62,8 +85,13 @@ namespace Rendering {
 		return ranges::any_of(supported_extensions, MatchesExtensionName);
 	}
 
-	t_vector<QueueFamilyDescription> PhysicalDeviceDescription::GetSurfaceFamilies(VkSurfaceKHR surface) const {
-		t_vector<QueueFamilyDescription> results;
+	PhysicalDeviceCapabilities PhysicalDeviceDescription::GetSurfaceCapabilities(VkSurfaceKHR surface) const
+	{
+		return PhysicalDeviceCapabilities{ device, surface };
+	}
+
+	std::vector<QueueFamilyDescription> PhysicalDeviceDescription::GetSurfaceQueueFamilies(VkSurfaceKHR surface) const {
+		std::vector<QueueFamilyDescription> results;
 		results.resize(families.size());
 		for (uint32_t family = 0; family < families.size(); ++family) {
 			results[family] = families[family];
@@ -76,53 +104,11 @@ namespace Rendering {
 		return results;
 	}
 
-	std::optional<PhysicalDevicePresentation> PhysicalDevicePresentation::GetPresentation(PhysicalDeviceDescription const& physical, VkSurfaceKHR surface) {
-		PhysicalDevicePresentation result;
-		{
-			uint32_t numFormats = 0;
-			vkGetPhysicalDeviceSurfaceFormatsKHR(physical, surface, &numFormats, nullptr);
-			result.surfaceFormats.resize(numFormats);
-			vkGetPhysicalDeviceSurfaceFormatsKHR(physical, surface, &numFormats, result.surfaceFormats.data());
-
-			if (result.surfaceFormats.empty()) return std::optional<PhysicalDevicePresentation>{};
-		}
-		{
-			uint32_t numModes = 0;
-			vkGetPhysicalDeviceSurfacePresentModesKHR(physical, surface, &numModes, nullptr);
-			result.presentModes.resize(numModes);
-			vkGetPhysicalDeviceSurfacePresentModesKHR(physical, surface, &numModes, result.presentModes.data());
-
-			if (result.presentModes.empty()) return std::optional<PhysicalDevicePresentation>{};
-		}
-
-		return result;
+	std::vector<VkSurfaceFormatKHR> PhysicalDeviceDescription::GetSurfaceFormats(VkSurfaceKHR surface) const {
+		return GetResults<std::vector<VkSurfaceFormatKHR>>(&vkGetPhysicalDeviceSurfaceFormatsKHR, *this, surface);
 	}
 
-	PhysicalDeviceCapabilities::PhysicalDeviceCapabilities(VkPhysicalDevice physical, VkSurfaceKHR surface) {
-		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical, surface, &capabilities);
-	}
-
-	uint32_t PhysicalDeviceCapabilities::GetImageCountMinimum() const {
-		uint32_t const maxImageCountActual = capabilities.maxImageCount > 0 ? capabilities.maxImageCount : std::numeric_limits<uint32_t>::max();
-		return std::min<uint32_t>(capabilities.minImageCount + 1, maxImageCountActual);
-	}
-
-	glm::u32vec2 PhysicalDeviceCapabilities::GetSwapExtent(VkSurfaceKHR const& surface, glm::u32vec2 const& desiredExtent) const {
-		if (capabilities.currentExtent.width != UINT32_MAX) {
-			return glm::u32vec2{ capabilities.currentExtent.width, capabilities.currentExtent.height };
-		} else {
-			glm::u32vec2 actualExtent;
-			actualExtent.x = std::clamp(desiredExtent.x, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
-			actualExtent.y = std::clamp(desiredExtent.y, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
-			return actualExtent;
-		}
-	}
-	
-	VkSurfaceTransformFlagBitsKHR PhysicalDeviceCapabilities::GetPreTransform(VkSurfaceKHR const& surface) const {
-		if (capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) {
-			return VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
-		} else {
-			return capabilities.currentTransform;
-		}
+	std::vector<VkPresentModeKHR> PhysicalDeviceDescription::GetSurfacePresentModes(VkSurfaceKHR surface) const {
+		return GetResults<std::vector<VkPresentModeKHR>>(&vkGetPhysicalDeviceSurfacePresentModesKHR, *this, surface);
 	}
 }

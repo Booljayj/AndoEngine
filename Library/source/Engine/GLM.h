@@ -1,9 +1,9 @@
 #pragma once
 #define GLM_ENABLE_EXPERIMENTAL
-#define GLM_FORCE_RADIANS
 #define GLM_FORCE_ALIGNED_GENTYPES
-#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_SSE2
 #include <glm/common.hpp>
 #include <glm/glm.hpp>
 #include <glm/geometric.hpp>
