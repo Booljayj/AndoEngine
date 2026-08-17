@@ -9,7 +9,20 @@ namespace Rendering {
 
 #ifdef VULKAN_DEBUG
 		//Information to create a debug messenger, used in several locations within this function.
-		VkDebugUtilsMessengerCreateInfoEXT const messengerCI = GetDebugUtilsMessengerCreateInfo();
+		VkDebugUtilsMessengerCreateInfoEXT const messengerCI = {
+			.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
+			.pNext = nullptr,
+			.messageSeverity =
+				//VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+				//VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
+				VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+				VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
+			.messageType =
+				//VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+				VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+				VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
+			.pfnUserCallback = &Framework::VulkanDebugCallback,
+		};
 #endif
 
 		//Vulkan Instance
@@ -40,6 +53,8 @@ namespace Rendering {
 #ifdef VULKAN_DEBUG
 				//Debug messenger for messages that are sent during instance creation
 				.pNext = &messengerCI,
+#else
+				.pNext = nullptr,
 #endif
 				.pApplicationInfo = &appInfo,
 				//Validation layers
@@ -147,22 +162,6 @@ namespace Rendering {
 		}
 
 		return VK_FALSE;
-	}
-
-	VkDebugUtilsMessengerCreateInfoEXT Framework::GetDebugUtilsMessengerCreateInfo() {
-		return VkDebugUtilsMessengerCreateInfoEXT{
-			.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
-			.messageSeverity =
-				//VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-				//VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
-				VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-				VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
-			.messageType =
-				//VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-				VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-				VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
-			.pfnUserCallback = &Framework::VulkanDebugCallback,
-		};
 	}
 #endif
 }

@@ -1,4 +1,5 @@
 #include "Rendering/Surface.h"
+#include "HAL/Window.h"
 #include "Rendering/RenderTargetContexts.h"
 #include "Rendering/Vulkan/QueueSelection.h"
 #include "Rendering/Vulkan/UniformLayouts.h"
@@ -103,9 +104,9 @@ namespace Rendering {
 		};
 	}
 
-	Surface::Surface(VkInstance instance, HAL::Window& inWindow)
+	Surface::Surface(VkInstance instance, HAL::Window& window)
 		: instance(instance)
-		, window(inWindow)
+		, id(window.id)
 		, retryCount(0)
 		, shouldRecreateSwapchain(false)
 	{

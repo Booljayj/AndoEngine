@@ -27,3 +27,4 @@ std::deque<LogCategory*>& LogCategory::GetMutableCategories() {
 }
 
 LogCategory LogTemp{ "Temp"sv, ELogVerbosity::Debug };
+LogCategory LogApplication{ "Application"sv, ELogVerbosity::Debug };

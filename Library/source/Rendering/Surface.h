@@ -2,16 +2,20 @@
 #include "Engine/Core.h"
 #include "Engine/GLM.h"
 #include "Engine/Optional.h"
-#include "HAL/WindowingSystem.h"
+#include "HAL/WindowID.h"
 #include "Rendering/RenderTarget.h"
 #include "Rendering/Vulkan/RenderPasses.h"
 #include "Rendering/Vulkan/Semaphore.h"
 #include "Rendering/Vulkan/Swapchain.h"
 #include "Rendering/Vulkan/Vulkan.h"
 
+namespace HAL {
+	struct Window;
+}
+
 namespace Rendering {
 	struct PhysicalDeviceDescription;
-	struct RenderingSystem;
+	struct RenderingFramework;
 	struct ResourcesCollection;
 	struct UniformLayouts;
 
@@ -71,11 +75,11 @@ namespace Rendering {
 		~Surface();
 
 		operator VkSurfaceKHR() const { return surface; }
-		inline bool operator==(HAL::Window::IdType otherID) const { return GetID() == otherID; }
+		inline bool operator==(HAL::WindowID otherID) const { return id == otherID; }
 
-		/** Get the id of the window associated with this surface */
-		inline HAL::Window::IdType GetID() const { return window.id; }
-
+		/** Get the window associated with this surface. */
+		inline HAL::WindowID GetID() const { return id; }
+		
 		/** Return whether this is a valid surface that is prepared for rendering */
 		inline bool CanRender() const { return surface && queues && swapchain; }
 		/** Whether the swapchain needs to be recreated before it is used again */
@@ -95,11 +99,11 @@ namespace Rendering {
 		void SubmitFrameContext(FrameContext const& frame) override;
 
 	private:
-		friend RenderingSystem;
+		friend RenderingFramework;
 		friend Swapchain;
 
 		VkInstance instance = nullptr;
-		HAL::Window& window;
+		HAL::WindowID id;
 
 		/** The internal surface tied to this surface */
 		VkSurfaceKHR surface = nullptr;

@@ -1,9 +1,10 @@
 #pragma once
 #include "Engine/Array.h"
 #include "Engine/Core.h"
-#include "HAL/SDL2.h"
+#include "ThirdParty/SDL2.h"
 
 namespace HAL {
+	/** A union that contains a single event that has been processed. */
 	using EventUnion = SDL_Event;
 
 	/** System-wide events received when polling events each frame */
@@ -12,14 +13,12 @@ namespace HAL {
 	};
 
 	/** Manages input events received from the system each frame */
-	struct EventsSystem {
-	protected:
-		std::vector<EventUnion> frameEvents;
-
-	public:
-		bool Startup();
-		bool Shutdown();
+	struct EventFramework {
+		EventFramework();
 
 		void PollEvents(SystemEvents& system);
+
+	protected:
+		std::vector<EventUnion> frame_events;
 	};
 }

@@ -21,7 +21,7 @@ namespace Resources {
 
 	/**
 	 * A package is an abstract representation of a collection of resources.
-	 * It may correspond to a file, or to a location within an archive, or something else depending on the implementation.
+	 * It may correspond to a file, a location within an archive, a collection in memory, or something else depending on the implementation.
 	 * Each package must have a unique name, and each resource within a package must have a unique name.
 	 */
 	struct Package final : public std::enable_shared_from_this<Package> {

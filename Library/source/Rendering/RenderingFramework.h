@@ -5,34 +5,36 @@
 #include "Engine/Optional.h"
 #include "Engine/SmartPointers.h"
 #include "Engine/Tuple.h"
-#include "HAL/WindowingSystem.h"
-#include "Rendering/Surface.h"
 #include "Rendering/Vulkan/Device.h"
 #include "Rendering/Vulkan/Framework.h"
 #include "Rendering/Vulkan/Helpers.h"
 #include "Rendering/Vulkan/PhysicalDevice.h"
-#include "Rendering/Vulkan/QueueRequests.h"
 #include "Rendering/Vulkan/RenderPasses.h"
 #include "Rendering/Vulkan/Resources.h"
 #include "Rendering/Vulkan/ResourcesCollection.h"
 #include "Rendering/Vulkan/UniformLayouts.h"
 #include "Rendering/Vulkan/Vulkan.h"
 #include "Resources/Cache.h"
-#include "Resources/Database.h"
 #include "ThirdParty/EnTT.h"
 
 namespace HAL {
-	struct WindowingSystem;
+	struct Window;
+	struct WindowFramework;
+	struct WindowID;
 }
 namespace Rendering {
 	struct Material;
 	struct StaticMesh;
+	struct Surface;
+}
+namespace Resources {
+	struct Database;
 }
 
 DECLARE_LOG_CATEGORY(Rendering);
 
 namespace Rendering {
-	struct RenderingSystem : public Resources::Observer<Material>, public Resources::Observer<StaticMesh> {
+	struct RenderingFramework : public Resources::Observer<Material>, public Resources::Observer<StaticMesh> {
 	public:
 		/** The maximum number of consecutive times we can fail to render a frame */
 		static constexpr uint8_t maxRetryCount = 5;
@@ -42,7 +44,7 @@ namespace Rendering {
 		/** The required extensions on any physical device that this application uses */
 		std::vector<char const*> required_device_extension_names;
 
-		/** The vulkan framework for this application */
+		/** The vulkan instance for this application */
 		std::optional<Framework> framework;
 
 		/** The index of the currently selected physical device */
@@ -66,10 +68,8 @@ namespace Rendering {
 		/** Flags for tracking rendering behavior and changes */
 		uint8_t retryCount = 0;
 		
-		RenderingSystem();
-
-		bool Startup(HAL::WindowingSystem& windowing, Resources::Database& database);
-		bool Shutdown(Resources::Database& database);
+		RenderingFramework(HAL::WindowFramework& windowing, Resources::Database& database);
+		~RenderingFramework();
 
 		bool Render(entt::registry& registry);
 		void RebuildResources();
@@ -83,11 +83,13 @@ namespace Rendering {
 		/** Create a new surface bound to the given window */
 		Surface* CreateSurface(HAL::Window& window);
 		/** Find a surface using its id */
-		Surface* FindSurface(HAL::Window::IdType id) const;
+		Surface* FindSurface(HAL::WindowID id) const;
 		/** Destroy a surface using its id */
-		void DestroySurface(HAL::Window::IdType id);
+		void DestroySurface(HAL::WindowID id);
 
 	protected:
+		Resources::Database& database;
+
 		/** The index of the physical device that should be used for surfaces. */
 		size_t desired_physical_index = 0;
 
@@ -112,7 +114,7 @@ namespace Rendering {
 		static SharedQueues::References GetHeadlessQueueRequests(PhysicalDeviceDescription const& physical);
 
 		/** Called just before a window is destroyed in the windowing system */
-		void OnDestroyingWindow(HAL::Window::IdType id);
+		void OnWindowDestroyed(HAL::WindowID id);
 
 		/** Callbacks for when materials are created or destroyed */
 		void OnCreated(Resources::Handle<Material> const& material) final;

@@ -1,17 +1,15 @@
 #include "PCH.h"
+#include "Application/Application.h"
 #include "Engine/Time.h"
 #include "Engine/Logging.h"
-#include "HAL/EventsSystem.h"
-#include "HAL/FrameworkSystem.h"
-#include "HAL/SDL2.h"
-#include "HAL/WindowingSystem.h"
-#include "Rendering/RenderingSystem.h"
+#include "ThirdParty/SDL2.h"
 #include "Profiling/ProfilerMacros.h"
 
 #include "Rendering/Material.h"
 #include "Rendering/MeshRenderer.h"
 #include "Rendering/Shader.h"
 #include "Rendering/StaticMesh.h"
+#include "Rendering/Surface.h"
 
 #include "Resources/MemoryDatabase.h"
 #include "Resources/Text.h"
@@ -20,80 +18,35 @@
 
 #include "Importers/RenderingImporters.h"
 
-#define STARTUP_SYSTEM(Category, System, ...)\
-LOG(Category, Info, "Startup "#System);\
-if (!System.Startup(__VA_ARGS__)) { LOG(Category, Error, "Failed to startup " #System); return false; }
-
-#define SHUTDOWN_SYSTEM(Category, System, ...)\
-LOG(Category, Info, "Shutdown "#System);\
-if (!System.Shutdown(__VA_ARGS__)) { LOG(Category, Error, "Failed to shutdown " #System); }
-
 LOG_CATEGORY(Main, Debug);
 DEFINE_PROFILE_CATEGORY(Main);
 
-struct Application {
-	Resources::MemoryDatabase database;
-	
-	entt::registry registry;
+void MainLoop(entt::registry& registry) {
+	TimeController_FixedUpdateVariableRendering timeController{ 60.0f, 10.0f };
 
-	HAL::FrameworkSystem framework;
-	HAL::EventsSystem events;
-	HAL::WindowingSystem windowing;
-	Rendering::RenderingSystem rendering;
-
-	Application() = default;
-
-	// Primary system procedures
-	bool Startup() {
-		PROFILE_FUNCTION(Main);
+	HAL::SystemEvents ev;
+	while (!ev.quit) {
+		PROFILE_DURATION("MainLoop", Main);
 		ScopedThreadBufferMark mark;
-		LOG(Main, Info, "Starting up all systems...");
 
-		STARTUP_SYSTEM(Main, framework);
-		STARTUP_SYSTEM(Main, events);
-		STARTUP_SYSTEM(Main, windowing);
-		STARTUP_SYSTEM(Main, rendering, windowing, database);
-		return true;
-	}
+		timeController.NextFrame();
 
-	void Shutdown() {
-		PROFILE_FUNCTION(Main);
-		ScopedThreadBufferMark mark;
-		LOG(Main, Info, "Shutting down all systems...");
+		while (timeController.StartUpdate()) {
+			//Main Update. Anything inside this loop runs with a fixed interval (possibly simulated based on variable rates)
+			//const Time& time = timeController.GetTime();
 
-		SHUTDOWN_SYSTEM(Main, rendering, database);
-		SHUTDOWN_SYSTEM(Main, windowing);
-		SHUTDOWN_SYSTEM(Main, events);
-		SHUTDOWN_SYSTEM(Main, framework);
-	}
+			application->events.PollEvents(ev);
 
-	void MainLoop() {
-		TimeController_FixedUpdateVariableRendering timeController{60.0f, 10.0f};
+			timeController.FinishUpdate();
+		}
 
-		HAL::SystemEvents ev;
-		while (!ev.quit) {
-			PROFILE_DURATION("MainLoop", Main);
-			ScopedThreadBufferMark mark;
-
-			timeController.NextFrame();
-
-			while (timeController.StartUpdate()) {
-				//Main Update. Anything inside this loop runs with a fixed interval (possibly simulated based on variable rates)
-				//const Time& time = timeController.GetTime();
-
-				events.PollEvents(ev);
-
-				timeController.FinishUpdate();
-			}
-
-			if (!ev.quit) {
-				//Render. Anything inside this loop runs with a variable interval. Alpha will indicate the progress from the previous to the current main update.
-				//const float alpha = timeController.Alpha();
-				ev.quit |= !rendering.Render(registry);
-			}
+		if (!ev.quit) {
+			//Render. Anything inside this loop runs with a variable interval. Alpha will indicate the progress from the previous to the current main update.
+			//const float alpha = timeController.Alpha();
+			ev.quit |= !application->rendering.Render(registry);
 		}
 	}
-};
+}
 
 int main(int argc, char** argv) {
 	using namespace glm;
@@ -109,18 +62,20 @@ int main(int argc, char** argv) {
 	LOG(Main, Debug, "Compiled with " COMPILER_VERSION " on " __DATE__);
 	LOG(Main, Debug, "CWD: {}", std::filesystem::current_path().generic_string());
 
-	Application application;
+	application = std::make_unique<Application>();
 
-	if (application.Startup()) {
+	if (application) {
+		entt::registry registry;
+
 		//Tell the primary surface's main view to render the entities in the primary registry
 		{
-			auto& surface = application.rendering.GetPrimarySurface();
+			auto& surface = application->rendering.GetPrimarySurface();
 			auto views = surface.ts_views.LockExclusive();
-			views[0].registry = &application.registry;
+			views[0].registry = &registry;
 		}
 
 		//Create the default plane mesh. This demonstrates the process of assigning raw vertex and index information for a mesh.
-		Handle<StaticMesh> const plane = application.database.Create<StaticMesh>(
+		Handle<StaticMesh> const plane = application->database.Create<StaticMesh>(
 			"SM_Plane"_sid, Database::GetTemporary(),
 			[](StaticMesh& mesh) {
 				mesh.vertices.emplace<Vertices_Simple>() = {
@@ -135,13 +90,13 @@ int main(int argc, char** argv) {
 		);
 
 		//Create the default material. This demonstrates recursive resource creation that is thread-safe without deadlocks.
-		Handle<Material> const material = application.database.Create<Material>(
+		Handle<Material> const material = application->database.Create<Material>(
 			"M_Default"_sid, Database::GetTemporary(),
 			[&](Material& material) {
 				//Shaders are imported from raw text strings. This demonstrates the use of an importer object to initialize resources from raw data.
 				Importers::ShaderImporter importer;
 
-				material.shaders.vertex = application.database.Create<VertexShader>(
+				material.shaders.vertex = application->database.Create<VertexShader>(
 					"SH_DefaultVertex"_sid, Database::GetTemporary(),
 					[&](VertexShader& shader) {
 						importer.Import(
@@ -167,7 +122,7 @@ void main() {
 					}
 				);
 
-				material.shaders.fragment = application.database.Create<FragmentShader>(
+				material.shaders.fragment = application->database.Create<FragmentShader>(
 					"SH_DefaultFragment"_sid, Database::GetTemporary(),
 					[&](FragmentShader& shader) {
 						importer.Import(
@@ -191,12 +146,12 @@ void main() {
 		);
 
 		//Create a renderer that will show the default plane with the default material. This demonstrates the creation and initialization of entities.
-		entt::entity const testEntity = application.registry.create();
-		MeshRenderer& renderer = application.registry.emplace<MeshRenderer>(testEntity);
+		entt::entity const testEntity = registry.create();
+		MeshRenderer& renderer = registry.emplace<MeshRenderer>(testEntity);
 		renderer.material = material;
 		renderer.mesh = plane;
 
-		Handle<Text> text = application.database.Create<Text>(
+		Handle<Text> text = application->database.Create<Text>(
 			"T_Test"_sid, Database::GetTemporary(),
 			[](Text& text) {
 				text.string = "This is a test string. It should have exactly eleven words.";
@@ -223,10 +178,10 @@ void main() {
 			LOG(Temp, Warning, "Text: {}", YAML::Dump(textNode));
 		}
 
-		application.MainLoop();
+		MainLoop(registry);
 	}
-	application.Shutdown();
-	const auto temporary = application.database.GetTemporary();
+
+	application.reset();
 
 	buffer.LogDebugStats();
 

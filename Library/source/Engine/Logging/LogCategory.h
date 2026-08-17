@@ -36,3 +36,5 @@ private:
 
 /** Standard category for temporary logging */
 extern LogCategory LogTemp;
+/** Standard category for high-level application logging */
+extern LogCategory LogApplication;

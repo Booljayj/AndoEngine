@@ -1,34 +1,37 @@
-#include "Rendering/RenderingSystem.h"
+#include "Rendering/RenderingFramework.h"
 #include "Engine/Utility.h"
-#include "HAL/WindowingSystem.h"
+#include "HAL/WindowFramework.h"
 #include "Rendering/Material.h"
 #include "Rendering/MeshRenderer.h"
 #include "Rendering/Shader.h"
 #include "Rendering/StaticMesh.h"
+#include "Rendering/Surface.h"
 #include "Rendering/Views/View.h"
 #include "Rendering/Vulkan/Buffers.h"
 #include "Rendering/Vulkan/Environment.h"
 #include "Rendering/Vulkan/QueueSelection.h"
 #include "Rendering/Vulkan/RenderPasses.h"
 #include "Rendering/Vulkan/TransferQueue.h"
-#include "Resources/Database.h"
 #include "Resources/Cache.h"
+#include "Resources/Database.h"
 
 DEFINE_LOG_CATEGORY(Rendering, Info);
 
 namespace Rendering {
-	RenderingSystem::RenderingSystem() {
+	RenderingFramework::RenderingFramework(HAL::WindowFramework& windowing, Resources::Database& database)
+		: database(database)
+	{
+		LOG(Application, Info, "Starting rendering framework");
+
 		required_device_features.version12.bufferDeviceAddress = true;
 
 		required_device_extension_names = {
 			VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 		};
-	}
 
-	bool RenderingSystem::Startup(HAL::WindowingSystem& windowing, Resources::Database& database) {
 		Environment environment;
-		
-		windowing.destroying.Add(this, &RenderingSystem::OnDestroyingWindow);
+
+		windowing.window_destroyed.Add(this, &RenderingFramework::OnWindowDestroyed);
 
 		//The primary window must exist in order to start the rendering system
 		HAL::Window& primary_window = windowing.GetPrimaryWindow();
@@ -38,8 +41,8 @@ namespace Rendering {
 		framework.emplace(environment, required_layer_names, required_extension_names);
 
 		//Create the primary surface for the primary window
-		if (!CreateSurface(primary_window)) return false;
-		
+		if (!CreateSurface(primary_window)) throw std::runtime_error{ "Failed to create primary surface" };
+
 		Surface& primary_surface = GetPrimarySurface();
 		{
 			auto views = primary_surface.ts_views.LockExclusive();
@@ -48,23 +51,18 @@ namespace Rendering {
 			primary_view.rect_calculator = std::make_unique<FullViewRectCalculator>();
 			primary_view.camera_calculator = std::make_unique<EditorViewCameraCalculator>();
 		}
-		
+
 		//Select a default physical device
-		if (!SelectPhysicalDevice(0)) {
-			LOG(Rendering, Error, "Failed to select default physical device");
-			return false;
-		}
+		if (!SelectPhysicalDevice(0)) throw std::runtime_error{ "Failed to select default physical device" };
 
 		//Listen for when rendering-relevant resource types are created or destroyed
 		database.FindOrCreateCache<Material>()->AddObserver(*this);
 		database.FindOrCreateCache<StaticMesh>()->AddObserver(*this);
-		
-		//@todo Create a group for renderable entities, once we have more than one component to include in the group (i.e. renderer and transform).
-
-		return true;
 	}
 
-	bool RenderingSystem::Shutdown(Resources::Database& database) {
+	RenderingFramework::~RenderingFramework() {
+		LOG(Application, Info, "Stopping rendering framework");
+
 		if (device) {
 			//Wait until all current rendering operations finish
 			vkDeviceWaitIdle(*device);
@@ -85,16 +83,15 @@ namespace Rendering {
 			transferCommandPool.reset();
 			uniformLayouts.reset();
 			passes.reset();
-			
+
 			//Destroy the device itself
 			device.reset();
 		}
 
 		framework.reset();
-		return true;
 	}
 
-	bool RenderingSystem::Render(entt::registry& registry) {
+	bool RenderingFramework::Render(entt::registry& registry) {
 		//If we're still destroying resources that were used on the previous frame, wait for that to finish now.
 		cleanup_thread.reset();
 
@@ -132,7 +129,7 @@ namespace Rendering {
 		return success;
 	}
 
-	void RenderingSystem::RebuildResources() {
+	void RenderingFramework::RebuildResources() {
 		if (dirtyMaterials.size() > 0) {
 			LOG(Rendering, Info, "Creating new pipelines");
 			RefreshMaterials();
@@ -143,7 +140,7 @@ namespace Rendering {
 		}
 	}
 
-	bool RenderingSystem::SelectPhysicalDevice(size_t index) {
+	bool RenderingFramework::SelectPhysicalDevice(size_t index) {
 		if (index != selectedPhysicalIndex) {
 			if (index >= framework->GetPhysicalDevices().size()) throw FormatType<std::out_of_range>("Physical device index {} out of range", index);
 			
@@ -212,7 +209,7 @@ namespace Rendering {
 		return false;
 	}
 
-	Surface* RenderingSystem::CreateSurface(HAL::Window& window) {
+	Surface* RenderingFramework::CreateSurface(HAL::Window& window) {
 		//Check if we already have a surface for this window, and return it if we do
 		if (Surface* existing = FindSurface(window.id)) return existing;
 
@@ -222,13 +219,13 @@ namespace Rendering {
 		return surface.get();
 	}
 
-	Surface* RenderingSystem::FindSurface(HAL::Window::IdType id) const {
+	Surface* RenderingFramework::FindSurface(HAL::WindowID id) const {
 		const auto iter = std::find_if(surfaces.begin(), surfaces.end(), [&](const auto& surface) { return surface->GetID() == id; });
 		if (iter != surfaces.end()) return iter->get();
 		else return nullptr;
 	}
 
-	void RenderingSystem::DestroySurface(HAL::Window::IdType id) {
+	void RenderingFramework::DestroySurface(HAL::WindowID id) {
 		const auto iter = std::find_if(surfaces.begin(), surfaces.end(), [=](auto const& surface) { return surface->GetID() == id; });
 		if (iter != surfaces.end() && iter != surfaces.begin()) {
 			if (device) vkDeviceWaitIdle(*device);
@@ -238,7 +235,7 @@ namespace Rendering {
 		}
 	}
 
-	std::tuple<SharedQueues::References, SurfaceQueues::References> RenderingSystem::GetQueueRequests(PhysicalDeviceDescription const& physical, VkSurfaceKHR surface) {
+	std::tuple<SharedQueues::References, SurfaceQueues::References> RenderingFramework::GetQueueRequests(PhysicalDeviceDescription const& physical, VkSurfaceKHR surface) {
 		struct {
 			std::optional<SurfaceQueues::References> surface;
 			std::optional<SharedQueues::References> shared;
@@ -256,7 +253,7 @@ namespace Rendering {
 		return std::make_tuple(*found.shared, *found.surface);
 	}
 
-	SharedQueues::References RenderingSystem::GetHeadlessQueueRequests(PhysicalDeviceDescription const& physical) {
+	SharedQueues::References RenderingFramework::GetHeadlessQueueRequests(PhysicalDeviceDescription const& physical) {
 		QueueFamilySelectors selectors{ physical.families };
 
 		const auto shared = selectors.SelectSharedQueues();
@@ -265,32 +262,32 @@ namespace Rendering {
 		return *shared;
 	}
 
-	void RenderingSystem::OnDestroyingWindow(HAL::Window::IdType id) {
-		if (id == HAL::Window::Invalid) {
+	void RenderingFramework::OnWindowDestroyed(HAL::WindowID id) {
+		if (id) {
+			DestroySurface(id);
+		} else {
 			if (device) vkDeviceWaitIdle(*device);
 			surfaces.clear();
-		} else {
-			DestroySurface(id);
 		}
 	}
 
-	void RenderingSystem::OnCreated(Resources::Handle<Material> const& material) {
+	void RenderingFramework::OnCreated(Resources::Handle<Material> const& material) {
 		MarkMaterialDirty(material);
 	}
 	
-	void RenderingSystem::OnDestroyed(Resources::Handle<Material> const& material) {
+	void RenderingFramework::OnDestroyed(Resources::Handle<Material> const& material) {
 		MarkMaterialStale(material);
 	}
 
-	void RenderingSystem::OnCreated(Resources::Handle<StaticMesh> const& mesh) {
+	void RenderingFramework::OnCreated(Resources::Handle<StaticMesh> const& mesh) {
 		MarkStaticMeshDirty(mesh);
 	}
 
-	void RenderingSystem::OnDestroyed(Resources::Handle<StaticMesh> const& mesh) {
+	void RenderingFramework::OnDestroyed(Resources::Handle<StaticMesh> const& mesh) {
 		MarkStaticMeshStale(mesh);
 	}
 
-	void RenderingSystem::RefreshMaterials() {
+	void RenderingFramework::RefreshMaterials() {
 		//The library of shader modules that will stay loaded as long as we need to continue creating pipelines
 		PipelineCreationHelper helper{ *device };
 
@@ -303,17 +300,17 @@ namespace Rendering {
 		dirtyMaterials.clear();
 	}
 
-	void RenderingSystem::MarkMaterialDirty(Resources::Handle<Material> const& material) {
+	void RenderingFramework::MarkMaterialDirty(Resources::Handle<Material> const& material) {
 		//Keep track of the dirty material so we can refresh it during the next render
 		dirtyMaterials.emplace_back(material);
 	}
 
-	void RenderingSystem::MarkMaterialStale(Resources::Handle<Material> const& material) {
+	void RenderingFramework::MarkMaterialStale(Resources::Handle<Material> const& material) {
 		//Steal the resources from the material so we can destroy them later when they're no longer being used
 		stale_collection << material->objects;
 	}
 
-	void RenderingSystem::RefreshStaticMeshes() {
+	void RenderingFramework::RefreshStaticMeshes() {
 		MeshCreationHelper helper{ *device, queues->transfers[0], *transferCommandPool };
 
 		for (const Resources::Handle<StaticMesh>& mesh : dirtyStaticMeshes) {
@@ -326,17 +323,17 @@ namespace Rendering {
 		dirtyStaticMeshes.clear();
 	}
 
-	void RenderingSystem::MarkStaticMeshDirty(Resources::Handle<StaticMesh> const& mesh) {
+	void RenderingFramework::MarkStaticMeshDirty(Resources::Handle<StaticMesh> const& mesh) {
 		//Keep track of the dirty resources so we can destroy them during the next render
 		dirtyStaticMeshes.emplace_back(mesh);
 	}
 
-	void RenderingSystem::MarkStaticMeshStale(Resources::Handle<StaticMesh> const& mesh) {
+	void RenderingFramework::MarkStaticMeshStale(Resources::Handle<StaticMesh> const& mesh) {
 		//Keep track of the dirty resources so we can destroy them during the next render
 		stale_collection << mesh->objects;
 	}
 
-	t_vector<char const*> RenderingSystem::GetRequiredInstanceLayerNames() {
+	t_vector<char const*> RenderingFramework::GetRequiredInstanceLayerNames() {
 		return {
 #ifdef VULKAN_DEBUG
 			"VK_LAYER_KHRONOS_validation"
@@ -344,7 +341,7 @@ namespace Rendering {
 		};
 	}
 
-	t_vector<char const*> RenderingSystem::GetRequiredInstanceExtensionNames(HAL::Window const& window) {
+	t_vector<char const*> RenderingFramework::GetRequiredInstanceExtensionNames(HAL::Window const& window) {
 		//Standard extensions which the application requires
 		constexpr char const* standard_extensions[] = {
 #ifdef VULKAN_DEBUG
@@ -371,7 +368,7 @@ namespace Rendering {
 		return extensions;
 	}
 
-	std::shared_ptr<GraphicsPipelineResources> RenderingSystem::CreateGraphicsPipeline(Material const& material, PipelineCreationHelper& helper) {
+	std::shared_ptr<GraphicsPipelineResources> RenderingFramework::CreateGraphicsPipeline(Material const& material, PipelineCreationHelper& helper) {
 		GraphicsPipelineResources::ShaderModules modules;
 		modules.vertex = helper.GetModule(material.shaders.vertex);
 		modules.fragment = helper.GetModule(material.shaders.fragment);
@@ -379,7 +376,7 @@ namespace Rendering {
 		return std::make_shared<GraphicsPipelineResources>(*device, modules, *uniformLayouts, passes->surface);
 	}
 
-	std::shared_ptr<MeshResources> RenderingSystem::CreateMesh(StaticMesh const& mesh, TransferCommandPool& pool, MeshCreationHelper& helper) {
+	std::shared_ptr<MeshResources> RenderingFramework::CreateMesh(StaticMesh const& mesh, TransferCommandPool& pool, MeshCreationHelper& helper) {
 		//Calculate byte size values for the input mesh
 		const auto BufferSizeVisitor = [](auto const& v) { return v.size() * sizeof(typename std::remove_reference_t<decltype(v)>::value_type); };
 		size_t const vertexBytes = std::visit(BufferSizeVisitor, mesh.vertices);

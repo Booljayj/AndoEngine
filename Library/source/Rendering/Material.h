@@ -4,7 +4,7 @@
 
 namespace Rendering {
 	struct GraphicsPipelineResources;
-	struct RenderingSystem;
+	struct RenderingFramework;
 	struct VertexShader;
 	struct FragmentShader;
 

@@ -1,8 +1,6 @@
 #pragma once
 #include "Engine/Array.h"
 #include "Engine/Core.h"
-#include "Engine/TemporaryContainers.h"
-#include "HAL/WindowingSystem.h"
 #include "Rendering/Vulkan/PhysicalDevice.h"
 #include "Rendering/Vulkan/Vulkan.h"
 
@@ -49,8 +47,6 @@ namespace Rendering {
 #ifdef VULKAN_DEBUG
 		/** Callback function invoked by the Vulkan API when a message should be logged */
 		static VKAPI_ATTR VkBool32 VKAPI_CALL VulkanDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData);
-		/** Get the creation info struct for the debug messenger */
-		static VkDebugUtilsMessengerCreateInfoEXT GetDebugUtilsMessengerCreateInfo();
 #endif
 
 	};

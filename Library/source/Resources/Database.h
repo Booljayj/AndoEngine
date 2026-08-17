@@ -13,7 +13,7 @@ namespace Resources {
 	/** Base class for databases, which manage a set of packages and their resources. Protected methods can be exposed by derived type as needed. */
 	struct Database : std::enable_shared_from_this<Database>, public IResourceProvider {
 	public:
-		/** Get the global temporary package */
+		/** Get the global temporary package, which contains resources that don't belong to another package and will not be ever saved to disk. */
 		static std::shared_ptr<Package> const& GetTemporary() noexcept { return temporary; }
 
 		/** Returns true if the database contains an existing package with the provided name */
@@ -61,7 +61,7 @@ namespace Resources {
 		std::shared_ptr<Package> FindPackage(StringID name) const noexcept;
 		/** Create a new empty package with the provided name. If a package with this name already exists, that will be returned instead. */
 		std::shared_ptr<Package> CreatePackage(StringID name);
-		/** Find an existing package by name if it already exists, or create a new package if it doesn't already exists. If the package exists but is not loaded, the package will not be loaded and this will throw and exception. */
+		/** Find an existing package by name if it already exists, or create a new package if it doesn't already exists. If the package exists but is not loaded, the package will not be loaded and this will throw an exception. */
 		std::shared_ptr<Package> FindOrCreatePackage(StringID name);
 
 		/** Create a new package with the provided name and contents. The contents must not already belong to another package, and the package name must not already exist. */
